@@ -1,0 +1,11 @@
+{
+  "id": "d5dde3154b72",
+  "created_at": "2025-10-13 13:39:00.535747",
+  "updated_at": "2025-10-13 13:39:00.535902",
+  "messages": [],
+  "context_files": [],
+  "working_directory": "/path/project",
+  "metadata": {
+    "description": "test"
+  }
+}

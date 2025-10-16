@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python test_approval_corruption.py:*)",
+      "Bash(python:*)",
+      "Bash(cp:*)",
+      "Bash(awk:*)",
+      "Bash(sort:*)",
+      "Bash(git add:*)",
+      "Bash(git init:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "id": "45bbd8f4fbde",
+  "created_at": "2025-10-13 13:39:26.541420",
+  "updated_at": "2025-10-13 13:39:26.542123",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Describe setup",
+      "timestamp": "2025-10-13 13:39:26.541768",
+      "metadata": {},
+      "tool_calls": [],
+      "tokens": null
+    },
+    {
+      "role": "assistant",
+      "content": "Setup summary",
+      "timestamp": "2025-10-13 13:39:26.542015",
+      "metadata": {},
+      "tool_calls": [],
+      "tokens": null
+    }
+  ],
+  "context_files": [],
+  "working_directory": "/repo",
+  "metadata": {}
+}
