@@ -1,142 +1,213 @@
-<p align="center">
-  <h1 align="center">OpenCLI</h1>
+<div align="center">
+
+<img src="logo/swe-cli-high-resolution-logo-grayscale-transparent.png" alt="SWE-CLI Logo" width="300"/>
+
+# SWE-CLI: One-Stop CLI-based Coding Agent for Modern Software Engineering
+
+<p>
+  <a href="https://github.com/swe-cli/swe-cli/stargazers"><img src="https://img.shields.io/github/stars/swe-cli/swe-cli?style=for-the-badge&logo=star&logoColor=white&labelColor=1a1a2e&color=00d9ff" /></a>
+  <img src="https://img.shields.io/badge/Python-3.10+-4ecdc4?style=for-the-badge&logo=python&logoColor=white&labelColor=1a1a2e">
+  <img src="https://img.shields.io/badge/License-MIT-ff6b6b?style=for-the-badge&logo=opensourceinitiative&logoColor=white&labelColor=1a1a2e">
 </p>
-<p align="center">One-Stop CLI-based Coding Agents for Vibe Coding</p>
-<p align="center">
-  <a href="#"><img alt="Technical Report" src="https://img.shields.io/badge/technical%20report-coming%20soon-blue?style=flat-square" /></a>
-  <a href="#"><img alt="Website" src="https://img.shields.io/badge/website-coming%20soon-blue?style=flat-square" /></a>
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-green?style=flat-square" /></a>
-  <a href="https://www.python.org/downloads/"><img alt="Python" src="https://img.shields.io/badge/python-3.9+-blue?style=flat-square" /></a>
+
+<p>
+  <img src="https://img.shields.io/badge/Architecture-SOLID-9b59b6?style=for-the-badge&logoColor=white&labelColor=1a1a2e">
+  <img src="https://img.shields.io/badge/Status-Active-00b894?style=for-the-badge&logoColor=white&labelColor=1a1a2e">
+</p>
+
+<p>
+  <img src="https://img.shields.io/badge/📄_Technical_Report-Coming_Soon-ffa726?style=for-the-badge&logoColor=white&labelColor=1a1a2e">
 </p>
 
 ---
 
-OpenCLI is a sophisticated command-line interface that integrates LLM-powered AI agents directly into your development environment. Designed for "vibe coding" - a fluid, intuitive development experience where AI assistance feels natural and seamless - OpenCLI combines powerful AI capabilities with a beautiful, responsive terminal UI.
+### 🎬 Demo
 
-### Features
+![SWE-CLI Demo](demo_video/opencli_demo.gif)
 
-- **Elegant Split-Screen Interface** - Chat-style interaction with scrollable conversation history and fixed input at the bottom
-- **Dual Operating Modes** - Normal Mode for direct code execution with interactive approval, Plan Mode for strategic planning and analysis
-- **Real-Time Interruption** - Press `ESC` to instantly interrupt any running operation
-- **Smart File Mentions** - Use `@filename` to reference files with intelligent autocomplete
-- **Tool Integration** - Seamless file operations, command execution, and project navigation
-- **Session Management** - Automatic session saving and restoration across sessions
-- **Context Awareness** - Real-time token counting and intelligent context management
-- **MCP Server Support** - Extensible architecture with Model Context Protocol integration
+*Interactive coding assistant in action*
+
+</div>
+
+---
+
+## 📖 Overview
+
+**SWE-CLI** is a one-stop coding agent that interacts with users through a powerful command-line interface. Created with the goal to **democratize how coding agents are built, designed, and optimized**, SWE-CLI aims to be comparable to state-of-the-art CLI tools on the market while remaining **fully open-source** and bringing substantial benefits to the developer community.
+
+We support standard features such as **MCP (Model Context Protocol) integration**, **shell command execution**, **session and context management**, and **multi-provider LLM support**. Beyond these foundations, we plan to deliver unique capabilities including:
+
+- **GitHub Issue Resolution**: Automated issue fixing following state-of-the-art scaffolds like SWE-Agent, Agentless, and HyperAgent
+- **Intelligent Code Understanding**: LSP-powered codebase analysis for accurate context-aware assistance
+- **Sub-Agent Architecture**: Specialized agents for different coding tasks (testing, refactoring, documentation)
+- **CI/CD Integration**: Seamless connection with GitHub workflows for automated development pipelines
+- **Paper2Code & Text2Web**: Advanced code generation from research papers and natural language specifications
+
+Built on **SOLID principles** with **dependency injection** and **interface-driven design**, SWE-CLI serves not only as a powerful development tool but also as an educational resource for understanding modern agentic system architecture.
+
+## ✨ Features
+
+### ✅ Ready Features
+- **Interactive Coding Agent that Understand Codebase**
+- **Basic Access to Shell Commands and Control Them Through LLMs**
+- **Context Management**
+- **Compact Context Automatically**
+- **Session Management**
+- **MCP Support**
+- **Switch between Plan Mode and Normal Mode**
+
+### 🔄 In-Progress
+- **Compatible with Multiple Providers** (OpenAI, Anthropic, OpenRouter, Fireworks AI, Z.ai, DeepSeek, Alibaba Cloud)
+- **Coding Rules**
+- **LSP for Accurate Codebase Understanding**
+- **Github Issues Resolve** (across scaffolds: SWE-Agent, Agentless, HyperAgent)
+- **UI Management**
+
+### 📋 In-Plan
+- **Sub-Agents**
+- **Connect with Github CI/CD workflows**
+- **Paper2Code**
+- **Text2Web**
+- **CodeWiki Integration**
+
+---
+
+## 🚀 Quick Start
 
 ### Installation
 
+**macOS (Homebrew)**
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/OpenCLI.git
-cd OpenCLI
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Set up your API key
-export ANTHROPIC_API_KEY="your-api-key-here"
-# Or use other providers
-# export OPENAI_API_KEY="your-api-key-here"
-
-# Start OpenCLI
-python -m opencli.main
+brew install swe-cli
 ```
 
-> [!TIP]
-> Requires Python 3.9+ and a terminal with 256-color support for optimal display.
+**pip**
+```bash
+pip install swe-cli
+```
 
-### Documentation
-
-For more info on how to use OpenCLI [**head over to our docs**](./docs).
+**From source**
+```bash
+git clone https://github.com/swe-cli/swe-cli.git
+cd swe-cli
+pip install -e .
+```
 
 ### Usage
 
-Simply type your coding requests naturally:
-
-```
-› build a python script to analyze log files
-› refactor the authentication module to use JWT
-› explain what this code does @src/main.py
-```
-
-| Shortcut | Action |
-|----------|--------|
-| `Shift+Tab` | Toggle between Plan/Normal mode |
-| `ESC` | Interrupt current operation |
-| `Ctrl+C` (twice) | Exit application |
-| `Ctrl+L` | Clear conversation |
-| `↑` / `↓` | Navigate command history |
-| `@` | Trigger file autocomplete |
-| `/` | Trigger slash command autocomplete |
-
-#### Operating Modes
-
-- **Normal Mode** (`▶`) - Direct code execution with interactive command approval, best for iterative development
-- **Plan Mode** (`⏸`) - Strategic analysis and planning without automatic execution, ideal for understanding complex problems
-
-Toggle between modes with `Shift+Tab` or use `/mode plan` and `/mode normal`.
-
-#### Slash Commands
-
-```
-/help        Show available commands
-/mode        Switch operating mode
-/session     Manage sessions
-/tree        Show project structure
-/clear       Clear conversation
-```
-
-### Contributing
-
-OpenCLI is designed to be extensible and community-driven.
-
-> [!IMPORTANT]
-> We encourage contributions for bug fixes, performance improvements, documentation, and provider support.
-
-To run OpenCLI locally:
+Run `swecli` to start the interactive coding assistant:
 
 ```bash
-# Install development dependencies
-pip install -r requirements-dev.txt
-
-# Run tests
-pytest
-
-# Format code
-black opencli/
+swecli
 ```
 
-### Architecture
-
-OpenCLI is built with a modular architecture:
-
-- **Async Query Processor** - Handles LLM interactions with ReAct loop
-- **Tool Executor** - Manages tool execution with approval flow
-- **Context Compactor** - Intelligent context window management
-- **Chat UI** - Beautiful split-screen terminal interface
-- **Key Binding Manager** - Sophisticated keyboard interaction handling
-
-### Configuration
-
-Configure OpenCLI through environment variables or config file:
-
-```bash
-# Environment Variables
-export ANTHROPIC_API_KEY="your-key"
-export OPENCLI_MODEL="your-model-name"
-```
-
-Or use `.opencli/config.json`:
+Configure your settings in `~/.swecli/settings.json`:
 
 ```json
 {
-  "model": "your-model-name",
-  "auto_save_interval": 5,
-  "context_limit": 256000
+  "provider": "fireworks",
+  "api_key": "your-api-key-here",
+  "model": "accounts/fireworks/models/llama-v3p1-70b-instruct"
 }
 ```
 
+For more details, see the [documentation](./docs).
+
 ---
 
-**Made for vibe coding** • [License: MIT](LICENSE)
+## ⚙️ Configuration
+
+OpenCLI uses JSON configuration with environment variable support:
+
+**Example** (`config-fireworks-sample.json`):
+
+```json
+{
+  "providers": {
+    "fireworks": {
+      "api_key": "$FIREWORKS_API_KEY",
+      "default_model": "accounts/fireworks/models/llama-v3p1-70b-instruct"
+    }
+  },
+  "experimental": {
+    "use_pydantic_ai": false
+  },
+  "permissions": {
+    "skip_requests": true
+  }
+}
+```
+
+**Key Configuration Options**:
+- `providers` - LLM provider configurations (Anthropic, OpenAI, Fireworks)
+- `experimental.use_pydantic_ai` - Enable PydanticAI engine (Phase 1 complete)
+- `permissions.skip_requests` - Skip tool approval prompts
+
+---
+
+## 🏗️ Architecture
+
+<div align="center">
+
+### 📁 Project Structure
+
+</div>
+
+```
+src/opencli/
+├── ui/                      # User Interface Layer (SOLID-refactored)
+│   ├── chat_engine.py       # Main orchestrator
+│   ├── interfaces.py        # Service abstractions
+│   ├── services/            # SOLID-compliant services
+│   └── main_ui.py           # UI entry point
+├── llm/                     # LLM Integration
+│   ├── providers/           # Provider implementations
+│   ├── manager.py           # Multi-provider orchestration
+│   └── base.py              # Base classes and types
+├── tools/                   # Tool System
+│   ├── filesystem.py        # File operations
+│   ├── shell.py             # Shell execution
+│   ├── search.py            # Code search
+│   ├── edit.py              # File editing
+│   └── registry.py          # Tool registry
+├── pydantic_ai/             # PydanticAI Integration (Experimental)
+│   └── adapter.py           # PydanticAI chat engine
+└── config/                  # Configuration Management
+    ├── models.py            # Pydantic models
+    └── loader.py            # Config loading
+```
+
+### 🎯 Design Principles
+
+<table align="center" width="80%">
+<tr>
+<td align="center" width="25%">
+<h4>🎨 SOLID</h4>
+<p>Clean, maintainable code following SOLID principles</p>
+</td>
+<td align="center" width="25%">
+<h4>🔌 Interface-Driven</h4>
+<p>Loose coupling through interface abstractions</p>
+</td>
+<td align="center" width="25%">
+<h4>💉 Dependency Injection</h4>
+<p>Services injected into ChatEngine</p>
+</td>
+<td align="center" width="25%">
+<h4>🧩 Service-Oriented</h4>
+<p>Modular services with clear responsibilities</p>
+</td>
+</tr>
+</table>
+
+---
+
+## 📄 License
+
+<div align="center">
+
+**MIT License**
+
+Copyright (c) 2025 OpenCLI Contributors
+
+</div>
