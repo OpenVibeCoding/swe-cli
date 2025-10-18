@@ -7,8 +7,8 @@ import tempfile
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from opencli.core.management import SessionManager
-from opencli.models.message import ChatMessage, Role
+from swecli.core.management import SessionManager
+from swecli.models.message import ChatMessage, Role
 
 
 def test_context_display_updates():
@@ -29,7 +29,7 @@ def test_context_display_updates():
         # Add messages and check token count updates
         test_messages = [
             "Hello, how are you?",
-            "I'm working on improving the OpenCLI interface.",
+            "I'm working on improving the SWE-CLI interface.",
             "Can you help me understand how the context tracking works?",
             "Let me search for the relevant files in the codebase.",
             "I found several files related to session management and token counting.",

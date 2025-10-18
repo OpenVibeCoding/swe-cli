@@ -60,14 +60,14 @@ Successfully completed Phase 3A: Rich Output Formatting, transforming plain text
 
 **Before:**
 ```
-⏺ list_directory(path='opencli/')
+⏺ list_directory(path='swecli/')
   ⎿  __init__.py\nrepl\ncore\ntools\nui\nmodels
 ```
 
 **After:**
 ```
-╭─ 📁 list_directory - opencli/ ───────────────────────────╮
-│ opencli/                                                 │
+╭─ 📁 list_directory - swecli/ ───────────────────────────╮
+│ swecli/                                                 │
 │ ├── 📄 __init__.py                                       │
 │ ├── 📁 repl                                              │
 │ ├── 📁 core                                              │
@@ -100,7 +100,7 @@ Successfully completed Phase 3A: Rich Output Formatting, transforming plain text
 
 ### New Files
 ```
-opencli/ui/formatters.py          # OutputFormatter class (500+ lines)
+swecli/ui/formatters.py          # OutputFormatter class (500+ lines)
 test_output_formatters.py         # Comprehensive test suite
 docs/UI_UX_PHASE3_STRATEGY.md     # Complete Phase 3+ strategy
 docs/UI_IMPROVEMENTS_PHASE3A_COMPLETE.md  # This file
@@ -108,8 +108,8 @@ docs/UI_IMPROVEMENTS_PHASE3A_COMPLETE.md  # This file
 
 ### Modified Files
 ```
-opencli/ui/__init__.py            # Export OutputFormatter
-opencli/repl/repl.py              # Integrate formatter
+swecli/ui/__init__.py            # Export OutputFormatter
+swecli/repl/repl.py              # Integrate formatter
   - Line 35: Import OutputFormatter
   - Line 85: Initialize formatter
   - Lines 290-295: Use formatter for tool output
@@ -223,7 +223,7 @@ class OutputFormatter:
 ### Integration
 
 ```python
-# In REPL (opencli/repl/repl.py)
+# In REPL (swecli/repl/repl.py)
 
 # Initialize formatter
 self.output_formatter = OutputFormatter(self.console)
@@ -336,7 +336,7 @@ Notice the improvements:
 
 ## 📝 Usage Examples
 
-### In OpenCLI
+### In SWE-CLI
 
 ```
 [PLAN] > create a Python hello world script
@@ -397,7 +397,7 @@ qwen3-coder-480b | ~/project | main | 2.5k/100k
 ### Planned Configuration Options
 
 ```python
-# ~/.opencli/config.yaml
+# ~/.swecli/config.yaml
 
 ui:
   output_format:
@@ -484,12 +484,12 @@ Coverage: 100%
 The rich output formatter is live and integrated! Try it out:
 
 ```bash
-opencli
+swecli
 ```
 
 Then try any operation:
 - `create a test.py file` → See rich output with syntax highlighting
-- `list files in opencli/` → See tree visualization
+- `list files in swecli/` → See tree visualization
 - `run ls -la` → See formatted command output
 
 **The output is now beautiful, informative, and professional!** 🎉

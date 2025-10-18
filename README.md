@@ -23,7 +23,7 @@
 
 ### 🎬 Demo
 
-![SWE-CLI Demo](demo_video/opencli_demo.gif)
+![SWE-CLI Demo](demo_video/swecli_demo.gif)
 
 *Interactive coding assistant in action*
 
@@ -117,7 +117,7 @@ For more details, see the [documentation](./docs).
 
 ## ⚙️ Configuration
 
-OpenCLI uses JSON configuration with environment variable support:
+SWE-CLI uses JSON configuration with environment variable support:
 
 **Example** (`config-fireworks-sample.json`):
 
@@ -154,7 +154,7 @@ OpenCLI uses JSON configuration with environment variable support:
 </div>
 
 ```
-src/opencli/
+src/swecli/
 ├── ui/                      # User Interface Layer (SOLID-refactored)
 │   ├── chat_engine.py       # Main orchestrator
 │   ├── interfaces.py        # Service abstractions
@@ -208,6 +208,6 @@ src/opencli/
 
 **MIT License**
 
-Copyright (c) 2025 OpenCLI Contributors
+Copyright (c) 2025 SWE-CLI Contributors
 
 </div>

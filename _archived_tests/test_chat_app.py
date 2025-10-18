@@ -6,7 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from opencli.ui.chat_app import ChatApplication
+from swecli.ui.chat_app import ChatApplication
 
 
 def handle_message(text: str):
@@ -40,10 +40,10 @@ def main():
 
     # Add welcome messages
     chat.conversation.add_system_message("═══════════════════════════════════════════════")
-    chat.conversation.add_system_message("  Welcome to OpenCLI Chat Interface Test")
+    chat.conversation.add_system_message("  Welcome to SWE-CLI Chat Interface Test")
     chat.conversation.add_system_message("═══════════════════════════════════════════════")
     chat.conversation.add_system_message("")
-    chat.conversation.add_assistant_message("Hello! I'm the OpenCLI assistant.")
+    chat.conversation.add_assistant_message("Hello! I'm the SWE-CLI assistant.")
     chat.conversation.add_assistant_message("Try typing messages in the input box below.")
     chat.conversation.add_assistant_message("The input box will stay at the bottom, just like ChatGPT!")
 

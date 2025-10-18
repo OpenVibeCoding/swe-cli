@@ -7,8 +7,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 try:
-    from opencli.repl.repl import REPL
-    from opencli.models.config import AppConfig
+    from swecli.repl.repl import REPL
+    from swecli.models.config import AppConfig
 
     print("Testing REPL initialization...")
 

@@ -5,7 +5,7 @@
 
 ## Current State
 
-- **File**: `opencli/repl/repl_chat.py`
+- **File**: `swecli/repl/repl_chat.py`
 - **Size**: 1,420 lines
 - **Methods**: 21 total methods
 - **Complexity**: High (async/await, threading, chat UI integration)
@@ -61,7 +61,7 @@
 If/when refactoring `repl_chat.py`:
 
 ### Step 1: Extract Simple Helpers First
-Create `opencli/repl/chat/ui_helpers.py`:
+Create `swecli/repl/chat/ui_helpers.py`:
 ```python
 class ChatUIHelpers:
     @staticmethod
@@ -81,7 +81,7 @@ class ChatUIHelpers:
 ```
 
 ### Step 2: Extract Spinner Animation
-Create `opencli/repl/chat/spinner.py`:
+Create `swecli/repl/chat/spinner.py`:
 ```python
 class ChatSpinner:
     """Animated spinner for chat interface."""
@@ -100,7 +100,7 @@ class ChatSpinner:
 ```
 
 ### Step 3: Consider Async Query Processor
-Create `opencli/repl/chat/async_query_processor.py` - BUT this is complex:
+Create `swecli/repl/chat/async_query_processor.py` - BUT this is complex:
 - Needs careful handling of chat app state
 - Must preserve interrupt handling
 - Requires context compaction integration

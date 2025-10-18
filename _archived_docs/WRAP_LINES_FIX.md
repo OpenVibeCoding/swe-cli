@@ -33,7 +33,7 @@ The conversation window had `wrap_lines=True` enabled, causing:
 
 ### 1. Disabled Window Auto-Wrapping
 
-**File:** `opencli/ui/chat_app.py:182`
+**File:** `swecli/ui/chat_app.py:182`
 
 ```python
 self._conversation_window = Window(
@@ -48,7 +48,7 @@ self._conversation_window = Window(
 
 ### 2. Smart Content Detection
 
-**File:** `opencli/repl/repl_chat.py:66-77`
+**File:** `swecli/repl/repl_chat.py:66-77`
 
 ```python
 def add_assistant_message(self, content: str) -> None:
@@ -173,10 +173,10 @@ With `wrap_lines=False`:
 
 ## Files Modified
 
-1. `opencli/ui/chat_app.py`
+1. `swecli/ui/chat_app.py`
    - Line 182: Changed `wrap_lines=True` → `wrap_lines=False`
 
-2. `opencli/repl/repl_chat.py`
+2. `swecli/repl/repl_chat.py`
    - Lines 66-77: Added smart content detection and conditional wrapping
 
 ## Status

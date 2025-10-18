@@ -7,14 +7,14 @@ These files are candidates for removal once the new architecture is fully integr
 
 ### Core Infrastructure
 **OLD:** N/A (new functionality)
-**NEW:** `opencli/ui/core/`
+**NEW:** `swecli/ui/core/`
 - `component.py` - Base component class
 - `renderer.py` - Renderer interface
 - `event_handler.py` - Event handling
 
 ### Formatters
-**OLD:** `opencli/ui/formatters.py` (612 lines)
-**NEW:** `opencli/ui/formatters/`
+**OLD:** `swecli/ui/formatters.py` (612 lines)
+**NEW:** `swecli/ui/formatters/`
 - `base.py` - BaseFormatter abstract class
 - `file_formatter.py` - File operation formatters
 - `command_formatter.py` - Command execution formatters
@@ -25,56 +25,56 @@ These files are candidates for removal once the new architecture is fully integr
 
 ### Widgets
 **OLD:** Individual widget files scattered across UI
-**NEW:** `opencli/ui/widgets/`
+**NEW:** `swecli/ui/widgets/`
 - `status_bar.py` - Extracted from `status_line.py`
 - `spinner.py` - Extracted from `animations.py`
 - `progress.py` - Extracted from `animations.py` and `task_progress.py`
 - `scrollable_text.py` - Cleaned version of `scrollable_formatted_text.py`
 
 **Deprecated files:**
-- `opencli/ui/animations.py` (187 lines) - Functionality moved to widgets
-- `opencli/ui/status_line.py` (164 lines) - Functionality moved to widgets
-- `opencli/ui/task_progress.py` (193 lines) - Functionality moved to widgets
-- `opencli/ui/scrollable_formatted_text2.py` (61 lines) - Duplicate, unused
+- `swecli/ui/animations.py` (187 lines) - Functionality moved to widgets
+- `swecli/ui/status_line.py` (164 lines) - Functionality moved to widgets
+- `swecli/ui/task_progress.py` (193 lines) - Functionality moved to widgets
+- `swecli/ui/scrollable_formatted_text2.py` (61 lines) - Duplicate, unused
 
 ### Chat Application
-**OLD:** `opencli/ui/chat_app.py` (1155 lines)
-**NEW:** `opencli/ui/chat/`
+**OLD:** `swecli/ui/chat_app.py` (1155 lines)
+**NEW:** `swecli/ui/chat/`
 - `conversation.py` - ConversationBuffer
 - `approval_handler.py` - Approval modal logic
 - `key_bindings.py` - Key binding management
 - `application.py` - Main ChatApplication
 
 **Deprecated files:**
-- `opencli/ui/conversation_buffer.py` (74 lines) - Embedded in chat_app, now separate
+- `swecli/ui/conversation_buffer.py` (74 lines) - Embedded in chat_app, now separate
 
 ### Autocomplete
-**OLD:** `opencli/ui/autocomplete.py` (411 lines)
-**NEW:** `opencli/ui/autocomplete/`
-- `completer.py` - OpenCLICompleter
+**OLD:** `swecli/ui/autocomplete.py` (411 lines)
+**NEW:** `swecli/ui/autocomplete/`
+- `completer.py` - SWE-CLICompleter
 - `slash_commands.py` - Slash command system
 - `file_mentions.py` - File mention completion
 
 ### Unused/Deprecated Files (Never Integrated)
 These files were found to be unused or superseded:
 
-1. **`opencli/ui/approval_modal.py`** (209 lines)
+1. **`swecli/ui/approval_modal.py`** (209 lines)
    - Old approval modal implementation
    - Superseded by inline approval in chat
 
-2. **`opencli/ui/approval_modal_v2.py`** (173 lines)
+2. **`swecli/ui/approval_modal_v2.py`** (173 lines)
    - Second version of approval modal
    - Also superseded
 
-3. **`opencli/ui/approval_modal_pt.py`** (84 lines)
+3. **`swecli/ui/approval_modal_pt.py`** (84 lines)
    - prompt_toolkit version
    - Also superseded
 
-4. **`opencli/ui/rules_editor_modal.py`** (411 lines)
+4. **`swecli/ui/rules_editor_modal.py`** (411 lines)
    - Never imported or used in codebase
    - Safe to remove
 
-5. **`opencli/ui/notifications.py`** (74 lines)
+5. **`swecli/ui/notifications.py`** (74 lines)
    - Barely used, can be integrated into status system
 
 ## Migration Checklist

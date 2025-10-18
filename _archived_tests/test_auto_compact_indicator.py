@@ -7,9 +7,9 @@ import tempfile
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from opencli.core.management import SessionManager
-from opencli.core.monitoring import TaskMonitor
-from opencli.models.message import ChatMessage, Role
+from swecli.core.management import SessionManager
+from swecli.core.monitoring import TaskMonitor
+from swecli.models.message import ChatMessage, Role
 from rich.console import Console
 
 

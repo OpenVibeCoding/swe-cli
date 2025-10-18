@@ -6,9 +6,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from opencli.models.config import AppConfig
-from opencli.ui.conversation_buffer import ConversationBuffer
-from opencli.ui.dual_console import DualConsole
+from swecli.models.config import AppConfig
+from swecli.ui.conversation_buffer import ConversationBuffer
+from swecli.ui.dual_console import DualConsole
 from rich.panel import Panel
 from rich.text import Text
 import time

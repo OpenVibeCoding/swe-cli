@@ -5,7 +5,7 @@ Fixed text wrapping and formatting issues in the split-screen chat interface whe
 
 ## Changes Made
 
-### 1. `opencli/ui/rich_to_text.py`
+### 1. `swecli/ui/rich_to_text.py`
 
 **Fixed:**
 - ✅ Width reduced from 80 to 78 characters (adds margin)
@@ -41,7 +41,7 @@ def _remove_ansi(text: str) -> str:
     return ansi_escape.sub('', text)
 ```
 
-### 2. `opencli/repl/repl_chat.py`
+### 2. `swecli/repl/repl_chat.py`
 
 **Added text wrapping method:**
 ```python
@@ -128,7 +128,7 @@ Essential Commands:
   /help - Show all commands  |  /tree - Project structure
   /mode plan - Auto mode     |  /mode normal - Interactive mode
 
-📁 Directory: ~/OpenCLI  |  👤 User: quocnghi  |  🎯 Mode: NORMAL
+📁 Directory: ~/SWE-CLI  |  👤 User: quocnghi  |  🎯 Mode: NORMAL
 ──────────────────────────────────────────────────────────────────
 ```
 - Total messages: 12
@@ -159,7 +159,7 @@ This ensures:
 - Analyzing existing codebases
 ⏺ Writing scripts and applications
 - Debugging and fixing code
-Hello! I'm OpenCLI...
+Hello! I'm SWE-CLI...
 ```
 - Text overlapping ❌
 - Garbled output ❌
@@ -173,7 +173,7 @@ Hello! I'm OpenCLI...
 
 › hello
 
-⏺ Hello! I'm OpenCLI, an AI-powered assistant specialized in
+⏺ Hello! I'm SWE-CLI, an AI-powered assistant specialized in
 software development tasks. I can help you with:
 - Analyzing existing codebases
 - Writing scripts and applications
@@ -212,9 +212,9 @@ python test_repl_chat.py
 
 Or programmatically:
 ```python
-from opencli.repl.repl_chat import create_repl_chat
-from opencli.core.config_manager import ConfigManager
-from opencli.core.session_manager import SessionManager
+from swecli.repl.repl_chat import create_repl_chat
+from swecli.core.config_manager import ConfigManager
+from swecli.core.session_manager import SessionManager
 from pathlib import Path
 
 config_manager = ConfigManager()

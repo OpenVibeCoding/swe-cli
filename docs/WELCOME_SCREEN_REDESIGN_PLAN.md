@@ -11,7 +11,7 @@ Current welcome screen is confusing and outdated:
 **Current:**
 ```
 ╭─ Welcome ─────────────────────────────────────────╮
-│ # OpenCLI v0.2.0 (Phase 2)                        │
+│ # SWE-CLI v0.2.0 (Phase 2)                        │
 │                                                    │
 │ AI-powered command-line tool...                   │
 │                                                    │
@@ -31,7 +31,7 @@ Current welcome screen is confusing and outdated:
 ### Option A: Minimal & Clean (RECOMMENDED)
 
 ```
-OpenCLI v0.3.0                         quocnghi • ~/codes/OpenCLI
+SWE-CLI v0.3.0                         quocnghi • ~/codes/SWE-CLI
 
 AI-powered development assistant
 
@@ -47,10 +47,10 @@ Type / for commands • @ for files • Ctrl+K for palette
 ```
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃                                                          ┃
-┃   OpenCLI                                      v0.3.0    ┃
+┃   SWE-CLI                                      v0.3.0    ┃
 ┃   AI-powered development assistant                      ┃
 ┃                                                          ┃
-┃   Working directory: ~/codes/OpenCLI                    ┃
+┃   Working directory: ~/codes/SWE-CLI                    ┃
 ┃   Current mode: NORMAL                                  ┃
 ┃                                                          ┃
 ┃   Quick start:                                          ┃
@@ -66,7 +66,7 @@ Type / for commands • @ for files • Ctrl+K for palette
 ### Option C: Super Minimal (Like Modern CLIs)
 
 ```
-OpenCLI v0.3.0
+SWE-CLI v0.3.0
 
 Ready. Type /help to get started.
 ```
@@ -83,7 +83,7 @@ def _print_welcome(self) -> None:
     mode = self.mode_manager.current_mode.value
 
     # Create welcome text with subtle styling
-    welcome = f"""[bold white]OpenCLI[/bold white] [dim]v0.3.0[/dim]        [dim]{username} • ~/{cwd}[/dim]
+    welcome = f"""[bold white]SWE-CLI[/bold white] [dim]v0.3.0[/dim]        [dim]{username} • ~/{cwd}[/dim]
 
 [dim]AI-powered development assistant[/dim]
 
@@ -100,7 +100,7 @@ def _print_welcome(self) -> None:
 
 **Visual Result:**
 ```
-OpenCLI v0.3.0        quocnghi • ~/OpenCLI
+SWE-CLI v0.3.0        quocnghi • ~/SWE-CLI
 
 AI-powered development assistant
 
@@ -111,7 +111,7 @@ AI-powered development assistant
 Type / for commands • @ for files • Ctrl+K for palette
 
 
-[NORMAL] ~/OpenCLI >
+[NORMAL] ~/SWE-CLI >
 ```
 
 ## 🎨 Design Principles
@@ -129,8 +129,8 @@ Type / for commands • @ for files • Ctrl+K for palette
 ```
 [Product Name] [Version]        [Context: User • Directory]
 ```
-- Left: OpenCLI v0.3.0
-- Right: quocnghi • ~/OpenCLI
+- Left: SWE-CLI v0.3.0
+- Right: quocnghi • ~/SWE-CLI
 
 ### Tagline
 ```
@@ -210,13 +210,13 @@ Type / for commands • @ for files • Ctrl+K for palette
 
 ### Super Minimal (2 lines)
 ```python
-welcome = "[bold]OpenCLI[/bold] [dim]v0.3.0[/dim]\nType [cyan]/help[/cyan] to get started."
+welcome = "[bold]SWE-CLI[/bold] [dim]v0.3.0[/dim]\nType [cyan]/help[/cyan] to get started."
 ```
 
 ### With Box (But Clean)
 ```python
 welcome = Text()
-welcome.append("OpenCLI ", style="bold")
+welcome.append("SWE-CLI ", style="bold")
 welcome.append("v0.3.0\n\n", style="dim")
 welcome.append("AI-powered development assistant\n\n", style="dim")
 welcome.append("  /help  ", style="cyan")
@@ -240,7 +240,7 @@ def _print_welcome(self) -> None:
 
     # Elegant minimal welcome
     self.console.print()
-    self.console.print(f"[bold white]OpenCLI[/bold white] [dim]v0.3.0[/dim]        [dim]{username} • ~/{cwd}[/dim]")
+    self.console.print(f"[bold white]SWE-CLI[/bold white] [dim]v0.3.0[/dim]        [dim]{username} • ~/{cwd}[/dim]")
     self.console.print()
     self.console.print("[dim]AI-powered development assistant[/dim]")
     self.console.print()
@@ -256,7 +256,7 @@ def _print_welcome(self) -> None:
 ```
 
 
-OpenCLI v0.3.0        quocnghi • ~/OpenCLI
+SWE-CLI v0.3.0        quocnghi • ~/SWE-CLI
 
 AI-powered development assistant
 
@@ -283,7 +283,7 @@ Type / for commands • @ for files • Ctrl+K for palette
 ### Before (Current)
 ```
 ╭─ Welcome ─────────────────────────────────────────╮
-│ # OpenCLI v0.2.0 (Phase 2)                        │
+│ # SWE-CLI v0.2.0 (Phase 2)                        │
 │                                                    │
 │ **Phase 2 Features:**                             │
 │ - /write <file> - Create new files                │
@@ -297,14 +297,14 @@ Type / for commands • @ for files • Ctrl+K for palette
 │ - /help - Show all commands                       │
 │ - /clear - Clear session                          │
 │ - /sessions - List sessions                       │
-│ - /exit - Exit OpenCLI                            │
+│ - /exit - Exit SWE-CLI                            │
 ╰────────────────────────────────────────────────────╯
 ```
 **Issues:** Confusing phases, too much info, boring
 
 ### After (Recommended)
 ```
-OpenCLI v0.3.0        quocnghi • ~/OpenCLI
+SWE-CLI v0.3.0        quocnghi • ~/SWE-CLI
 
 AI-powered development assistant
 

@@ -2,7 +2,7 @@
 
 ## Summary
 
-The new ChatApplication has been successfully integrated into OpenCLI! The interface now features:
+The new ChatApplication has been successfully integrated into SWE-CLI! The interface now features:
 
 ✅ **Fixed input box** at the bottom (no more repeated boxes!)
 ✅ **Scrollable conversation** area above
@@ -13,37 +13,37 @@ The new ChatApplication has been successfully integrated into OpenCLI! The inter
 
 ### Files Modified
 
-1. **opencli/repl/repl.py**
+1. **swecli/repl/repl.py**
    - Added `ChatApplication` import
    - Replaced blocking `while` loop with `ChatApplication.run()`
    - Created `_handle_user_message()` for processing user input
    - Created `_process_query_for_chat()` (placeholder for LLM integration)
-   - Old code backed up to `opencli/repl/repl_old.py`
+   - Old code backed up to `swecli/repl/repl_old.py`
 
-2. **opencli/ui/chat_app.py**
+2. **swecli/ui/chat_app.py**
    - Added `clear_conversation()` method
    - Added `get_status_info()` method for future status bar integration
 
 ### New Files
 
-1. **opencli/ui/chat_app.py** - Chat application with fixed input
+1. **swecli/ui/chat_app.py** - Chat application with fixed input
 2. **test_chat_app.py** - Standalone test script
 3. **docs/chat_interface_design.md** - Design documentation
 4. **docs/chat_app_testing.md** - Testing instructions
 
 ## Testing
 
-### Test the integrated OpenCLI:
+### Test the integrated SWE-CLI:
 
 ```bash
-cd /Users/quocnghi/codes/OpenCLI
-opencli
+cd /Users/quocnghi/codes/SWE-CLI
+swecli
 ```
 
 or
 
 ```bash
-python -m opencli
+python -m swecli
 ```
 
 ### What to Test
@@ -58,7 +58,7 @@ python -m opencli
 2. **Commands**
    - Try `/help` - see available commands
    - Try `/clear` - clear the conversation
-   - Try `/exit` - exit OpenCLI
+   - Try `/exit` - exit SWE-CLI
 
 3. **Regular Messages**
    - Type anything (not a command)
@@ -186,7 +186,7 @@ Input box clears, stays at bottom
 
 ### Key Classes
 
-**ChatApplication** (opencli/ui/chat_app.py):
+**ChatApplication** (swecli/ui/chat_app.py):
 - Manages full-screen layout
 - Fixed input at bottom
 - Scrollable conversation above
@@ -198,7 +198,7 @@ Input box clears, stays at bottom
 - Formats for display
 - Supports updating last message (for streaming)
 
-**REPL** (opencli/repl/repl.py):
+**REPL** (swecli/repl/repl.py):
 - Creates ChatApplication
 - Handles message callbacks
 - Processes commands
@@ -235,17 +235,17 @@ Input box clears, stays at bottom
 
 Original REPL backed up to:
 ```
-opencli/repl/repl_old.py
+swecli/repl/repl_old.py
 ```
 
 To revert if needed:
 ```bash
-mv opencli/repl/repl_old.py opencli/repl/repl.py
+mv swecli/repl/repl_old.py swecli/repl/repl.py
 ```
 
 ## Testing Checklist
 
-- [ ] Run `opencli` - should show chat interface
+- [ ] Run `swecli` - should show chat interface
 - [ ] Type message - should move to conversation above
 - [ ] Input box should clear and stay at bottom
 - [ ] Try `/help` - should show commands

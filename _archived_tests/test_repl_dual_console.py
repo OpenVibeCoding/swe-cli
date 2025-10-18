@@ -6,9 +6,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from opencli.core.management import ConfigManager
-from opencli.core.management import SessionManager
-from opencli.repl.repl import REPL
+from swecli.core.management import ConfigManager
+from swecli.core.management import SessionManager
+from swecli.repl.repl import REPL
 
 
 def test_repl_with_dual_console():
@@ -34,7 +34,7 @@ def test_repl_with_dual_console():
         return False
 
     # Test 2: Check that console is DualConsole
-    from opencli.ui.dual_console import DualConsole
+    from swecli.ui.dual_console import DualConsole
     assert isinstance(repl.console, DualConsole), "Console should be DualConsole instance"
     print("✓ Console is DualConsole instance")
 

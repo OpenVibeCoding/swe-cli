@@ -43,7 +43,7 @@ enhanced_query = self.repl.query_processor.enhance_query(query)
 thinking_verb = random.choice(self.repl.THINKING_VERBS)
 
 # After (fixed):
-from opencli.repl.query_processor import QueryProcessor
+from swecli.repl.query_processor import QueryProcessor
 thinking_verb = random.choice(QueryProcessor.THINKING_VERBS)
 ```
 
@@ -80,11 +80,11 @@ def enhance_query(self, query: str) -> str:
 
 ## Files Modified
 
-1. `opencli/repl/repl_chat.py` (2 lines changed)
+1. `swecli/repl/repl_chat.py` (2 lines changed)
    - Line 592: Fixed `_enhance_query` access
    - Line 682: Fixed `THINKING_VERBS` access
 
-2. `opencli/repl/query_processor.py` (11 lines changed)
+2. `swecli/repl/query_processor.py` (11 lines changed)
    - Added regex pattern to strip `@` prefix from file references
    - Updated docstring
    - Enhanced query preprocessing

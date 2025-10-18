@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from opencli.ui.animations import Spinner
+from swecli.ui.animations import Spinner
 from rich.console import Console
 
 console = Console()
@@ -16,7 +16,7 @@ print("Testing Braille Dots Spinner")
 print("=" * 50)
 
 # Show the frames
-from opencli.ui.animations import Spinner as S
+from swecli.ui.animations import Spinner as S
 print(f"\nSpinner frames: {' '.join(S.FRAMES)}")
 print(f"Total frames: {len(S.FRAMES)}")
 print(f"Pattern: ⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏")

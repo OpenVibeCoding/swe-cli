@@ -7,7 +7,7 @@
 ### ✅ Completed Tasks
 
 1. **Backup Branch Created**: `pre-repl-refactor-backup` ✅
-2. **Commands Directory Structure**: `opencli/repl/commands/` created ✅
+2. **Commands Directory Structure**: `swecli/repl/commands/` created ✅
 3. **Base Classes**: CommandHandler ABC with CommandResult dataclass ✅
 4. **5 Command Handler Modules Extracted**: ✅
    - `session_commands.py` (94 lines) - /clear, /sessions, /resume
@@ -34,7 +34,7 @@ The REPL class has been successfully updated with command handlers:
 
 ```python
 # In __init__ method, after line 252:
-from opencli.repl.commands import (
+from swecli.repl.commands import (
     SessionCommands,
     FileCommands,
     ModeCommands,
@@ -165,7 +165,7 @@ All command handlers have been tested and verified:
 ### 📁 Files Created
 
 ```
-opencli/repl/commands/
+swecli/repl/commands/
 ├── __init__.py              (25 lines) - Package exports
 ├── base.py                  (88 lines) - CommandHandler ABC + CommandResult
 ├── session_commands.py      (94 lines) - Session management

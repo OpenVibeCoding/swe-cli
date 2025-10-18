@@ -113,11 +113,11 @@ TOTAL: ~2,200 lines of documentation
 
 | Component | Lines | File |
 |-----------|-------|------|
-| TokenMonitor | 188 | `opencli/core/token_monitor.py` |
-| ContextCompactor | 195 | `opencli/core/compactor.py` |
-| ContextRetriever | 223 | `opencli/core/context_retriever.py` |
-| InitCommand | 189 | `opencli/commands/init_command.py` |
-| StatsCommand | 45 | `opencli/commands/stats_command.py` |
+| TokenMonitor | 188 | `swecli/core/token_monitor.py` |
+| ContextCompactor | 195 | `swecli/core/compactor.py` |
+| ContextRetriever | 223 | `swecli/core/context_retriever.py` |
+| InitCommand | 189 | `swecli/commands/init_command.py` |
+| StatsCommand | 45 | `swecli/commands/stats_command.py` |
 | **TOTAL** | **~840** | **5 new files + integrations** |
 
 ### Tests (Ready to Run)
@@ -137,7 +137,7 @@ TOTAL: ~2,200 lines of documentation
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     USER INTERACTION                         │
-│  "Fix the login bug" → OpenCLI REPL → LLM + Tools          │
+│  "Fix the login bug" → SWE-CLI REPL → LLM + Tools          │
 └──────────────────────────┬──────────────────────────────────┘
                            │
                            ▼
@@ -175,9 +175,9 @@ TOTAL: ~2,200 lines of documentation
 **Goal:** Replace rough token estimation with tiktoken
 
 **Files:**
-- Create: `opencli/core/token_monitor.py` (188 lines)
-- Modify: `opencli/models/session.py`
-- Modify: `opencli/models/message.py`
+- Create: `swecli/core/token_monitor.py` (188 lines)
+- Modify: `swecli/models/session.py`
+- Modify: `swecli/models/message.py`
 
 **Test:** `python test_token_monitor.py`
 
@@ -189,8 +189,8 @@ TOTAL: ~2,200 lines of documentation
 **Goal:** AI-driven context compaction
 
 **Files:**
-- Create: `opencli/core/compactor.py` (195 lines)
-- Modify: `opencli/core/session_manager.py`
+- Create: `swecli/core/compactor.py` (195 lines)
+- Modify: `swecli/core/session_manager.py`
 
 **Test:** `python test_compactor.py`
 
@@ -202,7 +202,7 @@ TOTAL: ~2,200 lines of documentation
 **Goal:** Proactive context loading
 
 **Files:**
-- Create: `opencli/core/context_retriever.py` (223 lines)
+- Create: `swecli/core/context_retriever.py` (223 lines)
 
 **Test:** `python test_context_retriever.py`
 
@@ -214,7 +214,7 @@ TOTAL: ~2,200 lines of documentation
 **Goal:** Generate OPENCLI.md
 
 **Files:**
-- Create: `opencli/commands/init_command.py` (189 lines)
+- Create: `swecli/commands/init_command.py` (189 lines)
 
 **Test:** `python test_init_command.py`
 
@@ -226,9 +226,9 @@ TOTAL: ~2,200 lines of documentation
 **Goal:** Integrate all components
 
 **Files:**
-- Modify: `opencli/repl/repl.py` (main loop)
-- Modify: `opencli/core/task_monitor.py` (add session_context)
-- Modify: `opencli/ui/task_progress.py` (show context stats)
+- Modify: `swecli/repl/repl.py` (main loop)
+- Modify: `swecli/core/task_monitor.py` (add session_context)
+- Modify: `swecli/ui/task_progress.py` (show context stats)
 
 **Test:** End-to-end REPL testing
 
@@ -240,7 +240,7 @@ TOTAL: ~2,200 lines of documentation
 **Goal:** Monitoring and optimization
 
 **Files:**
-- Create: `opencli/commands/stats_command.py` (45 lines)
+- Create: `swecli/commands/stats_command.py` (45 lines)
 
 **Test:** Real-world usage scenarios
 
@@ -322,7 +322,7 @@ pip install tiktoken
 ### 3. Implement Phase 1 (2-3 days)
 ```bash
 # Create token monitor
-touch opencli/core/token_monitor.py
+touch swecli/core/token_monitor.py
 
 # Follow implementation plan
 # See: CONTEXT_ENGINEERING_IMPLEMENTATION_PLAN.md - Phase 1
@@ -378,7 +378,7 @@ python test_context_task_monitor_integration.py
 
 ## 🔗 Related Documentation
 
-### OpenCLI Features
+### SWE-CLI Features
 
 **Already Implemented:**
 - ✅ Task Monitor (`TASK_MONITOR_COMPLETE.md`)

@@ -2,7 +2,7 @@
 
 from rich.console import Console
 
-from opencli.ui.formatters import OutputFormatter
+from swecli.ui.formatters import OutputFormatter
 
 
 def test_write_file_formatter():
@@ -105,7 +105,7 @@ def test_read_file_formatter():
     result = {
         "success": True,
         "output": """{
-  "name": "OpenCLI",
+  "name": "SWE-CLI",
   "version": "1.0.0",
   "description": "AI-powered CLI",
   "model": "accounts/fireworks/models/glm-4p5"

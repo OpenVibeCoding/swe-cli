@@ -3,13 +3,13 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "opencli"
+name = "swe-cli"
 version = "0.1.0"
 description = "AI-powered command-line tool for accelerated development workflows"
 readme = "README.md"
 requires-python = ">=3.9"
 authors = [
-    {name = "OpenCLI Team"}
+    {name = "SWE-CLI Team"}
 ]
 dependencies = [
     "pydantic>=2.5.0",
@@ -32,7 +32,7 @@ dev = [
 ]
 
 [project.scripts]
-opencli = "opencli.cli:main"
+swecli = "swecli.cli:main"
 
 [tool.black]
 line-length = 100

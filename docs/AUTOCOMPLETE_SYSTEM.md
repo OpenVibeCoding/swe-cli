@@ -52,7 +52,7 @@ Type `/` to see all available commands:
 **Dropdown shows:**
 ```
 /model      - choose what model and reasoning effort to use
-/approvals  - choose what OpenCLI can do without approval
+/approvals  - choose what SWE-CLI can do without approval
 /review     - review my current changes and find issues
 /new        - start a new chat during a conversation
 /init       - create an AGENTS.md file with instructions
@@ -60,7 +60,7 @@ Type `/` to see all available commands:
 /diff       - show git diff (including untracked files)
 /mention    - mention a file
 /help       - show available commands and help
-/exit       - exit OpenCLI
+/exit       - exit SWE-CLI
 ...
 ```
 
@@ -78,7 +78,7 @@ Type `/` to see all available commands:
 | Command | Description |
 |---------|-------------|
 | `/model` | Choose what model and reasoning effort to use |
-| `/approvals` | Choose what OpenCLI can do without approval |
+| `/approvals` | Choose what SWE-CLI can do without approval |
 | `/review` | Review my current changes and find issues |
 | `/new` | Start a new chat during a conversation |
 | `/init` | Create an AGENTS.md file with instructions |
@@ -86,8 +86,8 @@ Type `/` to see all available commands:
 | `/diff` | Show git diff (including untracked files) |
 | `/mention` | Mention a file |
 | `/help` | Show available commands and help |
-| `/exit` | Exit OpenCLI |
-| `/quit` | Exit OpenCLI |
+| `/exit` | Exit SWE-CLI |
+| `/quit` | Exit SWE-CLI |
 | `/clear` | Clear the screen |
 | `/history` | Show command history |
 | `/save` | Save current session |
@@ -101,9 +101,9 @@ Type `/` to see all available commands:
 
 ### Architecture
 
-**Autocomplete Module** (`opencli/ui/autocomplete.py`):
+**Autocomplete Module** (`swecli/ui/autocomplete.py`):
 ```python
-class OpenCLICompleter(Completer):
+class SWE-CLICompleter(Completer):
     """Custom completer for @ mentions and / commands."""
 
     def get_completions(self, document, complete_event):
@@ -119,10 +119,10 @@ class OpenCLICompleter(Completer):
             yield from self._get_file_mention_completions(word)
 ```
 
-**REPL Integration** (`opencli/repl/repl.py`):
+**REPL Integration** (`swecli/repl/repl.py`):
 ```python
 # Create autocomplete for @ mentions and / commands
-self.completer = OpenCLICompleter(working_dir=self.config_manager.working_dir)
+self.completer = SWE-CLICompleter(working_dir=self.config_manager.working_dir)
 
 self.prompt_session = PromptSession(
     history=FileHistory(str(history_file)),
@@ -137,15 +137,15 @@ self.prompt_session = PromptSession(
 
 ### New Files
 ```
-opencli/ui/autocomplete.py          # Autocomplete system
+swecli/ui/autocomplete.py          # Autocomplete system
 test_autocomplete.py                # Test suite
 docs/AUTOCOMPLETE_SYSTEM.md         # This file
 ```
 
 ### Modified Files
 ```
-opencli/ui/__init__.py              # Export autocomplete classes
-opencli/repl/repl.py                # Integrate completer
+swecli/ui/__init__.py              # Export autocomplete classes
+swecli/repl/repl.py                # Integrate completer
 ```
 
 ---
@@ -158,7 +158,7 @@ All tests passed successfully!
 $ python test_autocomplete.py
 
 ═══════════════════════════════════════════════
-  OpenCLI Autocomplete Test Suite
+  SWE-CLI Autocomplete Test Suite
 ═══════════════════════════════════════════════
 
 Test 1: Slash Command Autocomplete
@@ -206,9 +206,9 @@ Test 4: Completer Integration
 
 ### Interactive Testing
 
-1. **Start OpenCLI:**
+1. **Start SWE-CLI:**
    ```bash
-   opencli
+   swecli
    ```
 
 2. **Try Slash Commands:**
@@ -269,7 +269,7 @@ Automatically excludes common directories:
 
 ## 📊 Comparison with Claude Code
 
-| Feature | Claude Code | OpenCLI | Status |
+| Feature | Claude Code | SWE-CLI | Status |
 |---------|-------------|---------|--------|
 | Slash command autocomplete | ✓ | ✓ | ✅ |
 | File mention autocomplete | ✓ | ✓ | ✅ |
@@ -310,7 +310,7 @@ Press ↑/↓ to navigate
 
 1. **Quick File Reference:**
    ```
-   Can you update @opencli/repl/repl.py to add a new feature?
+   Can you update @swecli/repl/repl.py to add a new feature?
    ```
 
 2. **Command Discovery:**
@@ -335,7 +335,7 @@ Press ↑/↓ to navigate
 
 ### Custom Commands
 
-To add custom slash commands, edit `opencli/ui/autocomplete.py`:
+To add custom slash commands, edit `swecli/ui/autocomplete.py`:
 
 ```python
 SLASH_COMMANDS = [
@@ -374,9 +374,9 @@ exclude_dirs = {
 
 ### Completer Classes
 
-**OpenCLICompleter** - Main completer (handles both @ and /):
+**SWE-CLICompleter** - Main completer (handles both @ and /):
 ```python
-completer = OpenCLICompleter(working_dir=Path.cwd())
+completer = SWE-CLICompleter(working_dir=Path.cwd())
 ```
 
 **FileMentionCompleter** - File mentions only:
@@ -441,7 +441,7 @@ Uses `prompt_toolkit.completion.Completer` interface:
 The autocomplete system is live and ready! Try it out:
 
 ```bash
-opencli
+swecli
 ```
 
 Then type:
@@ -449,4 +449,4 @@ Then type:
 - **@** and press **Tab** to see files
 - Start typing to filter results
 
-Enjoy the enhanced OpenCLI experience with Claude Code-style autocomplete! 🎉
+Enjoy the enhanced SWE-CLI experience with Claude Code-style autocomplete! 🎉

@@ -6,9 +6,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from opencli.core.management import ConfigManager
-from opencli.core.management import SessionManager
-from opencli.repl.repl_chat import create_repl_chat
+from swecli.core.management import ConfigManager
+from swecli.core.management import SessionManager
+from swecli.repl.repl_chat import create_repl_chat
 
 def test_bash_enabled():
     """Test that bash execution is enabled after chat REPL initialization."""

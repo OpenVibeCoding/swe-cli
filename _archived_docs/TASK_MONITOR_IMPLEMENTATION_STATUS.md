@@ -3,7 +3,7 @@
 ## ✅ What's Been Completed
 
 ### 1. Core Logic - TaskMonitor Class
-**File:** `opencli/core/task_monitor.py`
+**File:** `swecli/core/task_monitor.py`
 
 **Features Implemented:**
 - ✅ Timer tracking (elapsed seconds)
@@ -40,7 +40,7 @@
 ---
 
 ### 2. UI Component - TaskProgressDisplay
-**File:** `opencli/ui/task_progress.py`
+**File:** `swecli/ui/task_progress.py`
 
 **Features Implemented:**
 - ✅ Live updating display using Rich
@@ -101,7 +101,7 @@ Test 3: ⏺ Compacting conversation (completed in 3s, ↓ 1.8k tokens)
 
 ### Phase 1: Token Tracking Integration (Not Started)
 **Required:**
-1. Examine `opencli/core/agent.py` to find `call_llm()` method
+1. Examine `swecli/core/agent.py` to find `call_llm()` method
 2. Determine how to extract token usage from LLM responses
 3. Options:
    - Use LLM API response metadata (`usage.total_tokens`)
@@ -111,7 +111,7 @@ Test 3: ⏺ Compacting conversation (completed in 3s, ↓ 1.8k tokens)
 5. Update tokens in task_monitor during/after LLM calls
 
 **Files to Modify:**
-- `opencli/core/agent.py` - Add token tracking to LLM calls
+- `swecli/core/agent.py` - Add token tracking to LLM calls
 
 ---
 
@@ -164,7 +164,7 @@ progress.print_final_status()
 ```
 
 **Files to Modify:**
-- `opencli/repl/repl.py` - Replace spinner with TaskProgressDisplay
+- `swecli/repl/repl.py` - Replace spinner with TaskProgressDisplay
 
 ---
 
@@ -177,7 +177,7 @@ progress.print_final_status()
 3. Return interrupted status if ESC pressed
 
 **Files to Modify:**
-- `opencli/core/tool_registry.py` - Accept optional task_monitor parameter
+- `swecli/core/tool_registry.py` - Accept optional task_monitor parameter
 - Individual tool implementations - Check interrupt flag
 
 ---
@@ -234,7 +234,7 @@ progress.print_final_status()
 ## 🎯 Next Steps
 
 ### Immediate (Phase 2):
-1. **Read and analyze** `opencli/core/agent.py`:
+1. **Read and analyze** `swecli/core/agent.py`:
    - Find `call_llm()` method
    - Understand LLM response structure
    - Determine token tracking approach
@@ -245,7 +245,7 @@ progress.print_final_status()
    - Replace spinner with TaskProgressDisplay for tool execution
 
 3. **Test integration**:
-   - Run opencli REPL
+   - Run swecli REPL
    - Execute simple command
    - Verify task monitor displays correctly
 
@@ -361,7 +361,7 @@ Test 3: Token Compression (3 seconds)
 ## 🔧 Dependencies
 
 ### Required
-- `rich`: Terminal formatting (already used in OpenCLI)
+- `rich`: Terminal formatting (already used in SWE-CLI)
 - `threading`: Standard library
 - `time`: Standard library
 

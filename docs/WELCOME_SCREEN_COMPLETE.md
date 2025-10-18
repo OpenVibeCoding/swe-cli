@@ -13,7 +13,7 @@
 ### Before (Old)
 ```
 ╭─ Welcome ──────────────────────────────────────────────╮
-│ # OpenCLI v0.2.0 (Phase 2)                             │
+│ # SWE-CLI v0.2.0 (Phase 2)                             │
 │                                                         │
 │ AI-powered command-line tool for accelerated...        │
 │                                                         │
@@ -29,7 +29,7 @@
 │ - /help - Show all commands                            │
 │ - /clear - Clear session                               │
 │ - /sessions - List sessions                            │
-│ - /exit - Exit OpenCLI                                 │
+│ - /exit - Exit SWE-CLI                                 │
 │                                                         │
 │ **Current Mode:** [NORMAL] - Interactive execution...  │
 │ Type /help for full command list.                      │
@@ -47,7 +47,7 @@
 ```
 
 
-OpenCLI v0.3.0        quocnghi • ~/OpenCLI
+SWE-CLI v0.3.0        quocnghi • ~/SWE-CLI
 
 AI-powered development assistant
 
@@ -58,7 +58,7 @@ AI-powered development assistant
 Type / for commands • @ for files • Ctrl+K for palette
 
 
-[NORMAL] ~/OpenCLI >
+[NORMAL] ~/SWE-CLI >
 ```
 
 **Improvements:**
@@ -74,7 +74,7 @@ Type / for commands • @ for files • Ctrl+K for palette
 
 ## 📁 Files Modified
 
-### `opencli/repl/repl.py`
+### `swecli/repl/repl.py`
 
 **Added import (Line 4):**
 ```python
@@ -93,7 +93,7 @@ def _print_welcome(self) -> None:
 
     # Elegant minimal welcome - no box, clean typography
     self.console.print()
-    self.console.print(f"[bold white]OpenCLI[/bold white] [dim]v0.3.0[/dim]        [dim]{username} • ~/{cwd_name}[/dim]")
+    self.console.print(f"[bold white]SWE-CLI[/bold white] [dim]v0.3.0[/dim]        [dim]{username} • ~/{cwd_name}[/dim]")
     self.console.print()
     self.console.print("[dim]AI-powered development assistant[/dim]")
     self.console.print()
@@ -137,7 +137,7 @@ def _print_welcome(self) -> None:
 
 | Element | Style | Purpose |
 |---------|-------|---------|
-| **OpenCLI** | Bold white | Product name stands out |
+| **SWE-CLI** | Bold white | Product name stands out |
 | **v0.3.0** | Dim gray | Version is secondary |
 | **User • Directory** | Dim gray | Context is subtle |
 | **Description** | Dim gray | Tagline is muted |
@@ -222,12 +222,12 @@ def _print_welcome(self) -> None:
 
 ## 🚀 Usage
 
-When users start OpenCLI, they now see:
+When users start SWE-CLI, they now see:
 
 ```
 
 
-OpenCLI v0.3.0        quocnghi • ~/OpenCLI
+SWE-CLI v0.3.0        quocnghi • ~/SWE-CLI
 
 AI-powered development assistant
 
@@ -238,13 +238,13 @@ AI-powered development assistant
 Type / for commands • @ for files • Ctrl+K for palette
 
 
-[NORMAL] ~/OpenCLI >
+[NORMAL] ~/SWE-CLI >
 ```
 
 **First impression:** Modern, clean, elegant, helpful
 
 **User knows:**
-- What tool they're using (OpenCLI v0.3.0)
+- What tool they're using (SWE-CLI v0.3.0)
 - Where they are (their directory)
 - What they can do (3 starter commands)
 - How to discover more (type /, @, or Ctrl+K)
@@ -292,7 +292,7 @@ cwd_name = cwd_path.name              # Just the dir name
 ### Rich Text Styling
 ```python
 # Bold white
-[bold white]OpenCLI[/bold white]
+[bold white]SWE-CLI[/bold white]
 
 # Dim gray (muted)
 [dim]v0.3.0[/dim]

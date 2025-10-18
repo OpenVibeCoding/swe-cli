@@ -1,7 +1,7 @@
-# OpenCLI UI Refactoring Summary
+# SWE-CLI UI Refactoring Summary
 
 ## Overview
-This document summarizes the complete refactoring of the `opencli/ui/` directory to improve code organization, reduce complexity, and follow SOLID principles.
+This document summarizes the complete refactoring of the `swecli/ui/` directory to improve code organization, reduce complexity, and follow SOLID principles.
 
 ## Phases Completed
 
@@ -145,7 +145,7 @@ This document summarizes the complete refactoring of the `opencli/ui/` directory
 ## Files Structure After Refactoring
 
 ```
-opencli/ui/
+swecli/ui/
 ├── __init__.py                    # Updated with all new imports
 ├── animations.py                  # Unchanged
 ├── approval_input_handler.py      # NEW - Approval input handling

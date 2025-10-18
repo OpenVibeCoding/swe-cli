@@ -1,8 +1,8 @@
-# ReAct Pattern Implementation in OpenCLI
+# ReAct Pattern Implementation in SWE-CLI
 
 ## Overview
 
-OpenCLI implements the **ReAct** (Reasoning + Acting) pattern, a powerful AI agent architecture that enables autonomous task completion through iterative cycles of reasoning, acting, and observing.
+SWE-CLI implements the **ReAct** (Reasoning + Acting) pattern, a powerful AI agent architecture that enables autonomous task completion through iterative cycles of reasoning, acting, and observing.
 
 **ReAct** stands for:
 - **Reasoning**: LLM thinks about what to do next
@@ -17,7 +17,7 @@ This pattern allows the AI to break down complex tasks into manageable steps, ad
 
 ### 1. Main ReAct Loop
 
-Located in: `opencli/repl/chat/async_query_processor.py:244-346`
+Located in: `swecli/repl/chat/async_query_processor.py:244-346`
 
 ```python
 async def process_query(self, query: str) -> None:
@@ -112,7 +112,7 @@ messages.append({
 
 ## Two-Phase Approval System
 
-Located in: `opencli/repl/chat/tool_executor.py:30-207`
+Located in: `swecli/repl/chat/tool_executor.py:30-207`
 
 ### Phase 1: Approval Collection (Lines 45-104)
 
@@ -468,7 +468,7 @@ messages = [
     # System prompt (always first)
     {
         "role": "system",
-        "content": "You are OpenCLI, an AI coding assistant..."
+        "content": "You are SWE-CLI, an AI coding assistant..."
     },
 
     # User message
@@ -600,7 +600,7 @@ Instead of truncating old messages:
 
 1. **Register tool in tool registry:**
 ```python
-# opencli/core/tools/registry.py
+# swecli/core/tools/registry.py
 self.register_tool(
     name="analyze_performance",
     description="Analyze performance bottlenecks in code",
@@ -659,7 +659,7 @@ User → LLM → Execute all tools → Done
 - Can't handle unexpected situations
 - Fixed plan
 
-### ReAct (OpenCLI)
+### ReAct (SWE-CLI)
 ```
 User → [LLM → Tools → Observe → LLM → Tools → ...] → Done
 ```
@@ -776,7 +776,7 @@ logger.debug(f"Token usage: {calculate_tokens(messages)}")
 
 ## Conclusion
 
-The ReAct pattern in OpenCLI provides:
+The ReAct pattern in SWE-CLI provides:
 
 ✓ **Autonomous operation** - Agent decides its own steps
 ✓ **Adaptability** - Handles unexpected situations
@@ -786,4 +786,4 @@ The ReAct pattern in OpenCLI provides:
 ✓ **Efficiency** - Smart context management
 ✓ **Extensibility** - Easy to add new tools
 
-This architecture enables OpenCLI to tackle complex coding tasks while maintaining user control and transparency throughout the process.
+This architecture enables SWE-CLI to tackle complex coding tasks while maintaining user control and transparency throughout the process.

@@ -6,10 +6,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from opencli.core.management import ConfigManager
-from opencli.core.management import SessionManager
-from opencli.repl.repl import REPL
-from opencli.models.config import AppConfig
+from swecli.core.management import ConfigManager
+from swecli.core.management import SessionManager
+from swecli.repl.repl import REPL
+from swecli.models.config import AppConfig
 
 
 def test_split_layout_disabled():
@@ -36,7 +36,7 @@ def test_split_layout_disabled():
     print("✓ Split layout is not created when disabled")
 
     # Verify console is DualConsole
-    from opencli.ui.dual_console import DualConsole
+    from swecli.ui.dual_console import DualConsole
     assert isinstance(repl.console, DualConsole), "Console should be DualConsole"
     print("✓ Console is DualConsole")
 
@@ -76,7 +76,7 @@ def test_split_layout_enabled():
     print("✓ Split layout is created when enabled")
 
     # Verify it's the right type
-    from opencli.ui.split_layout import SplitScreenLayout
+    from swecli.ui.split_layout import SplitScreenLayout
     assert isinstance(repl._split_layout, SplitScreenLayout), "Should be SplitScreenLayout instance"
     print("✓ Split layout is correct type")
 
@@ -85,7 +85,7 @@ def test_split_layout_enabled():
     print("✓ Split layout uses conversation buffer")
 
     # Verify console is still DualConsole
-    from opencli.ui.dual_console import DualConsole
+    from swecli.ui.dual_console import DualConsole
     assert isinstance(repl.console, DualConsole), "Console should be DualConsole"
     print("✓ Console is DualConsole")
 

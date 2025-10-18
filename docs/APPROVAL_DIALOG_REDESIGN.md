@@ -85,7 +85,7 @@ Choice: _
 
 ### Modified
 ```
-opencli/core/approval.py
+swecli/core/approval.py
 ├── Updated imports (added prompt_toolkit layout components)
 ├── Changed ApprovalChoice enum values (1, 2, 3 instead of y, n, a)
 ├── Added _create_operation_message() - Generates conversational messages
@@ -162,7 +162,7 @@ def _create_operation_message(self, operation: Operation, preview: str) -> str:
 **Output:**
 ```bash
 ═══════════════════════════════════════════════
-  OpenCLI Approval Structure Test
+  SWE-CLI Approval Structure Test
 ═══════════════════════════════════════════════
 
 Test 1: ApprovalChoice enum values
@@ -195,7 +195,7 @@ Manual testing required to verify:
 
 ## 🎯 Comparison with Claude Code
 
-| Feature | Claude Code | OpenCLI (New) | Status |
+| Feature | Claude Code | SWE-CLI (New) | Status |
 |---------|-------------|---------------|--------|
 | Numbered options | ✓ | ✓ | ✅ |
 | Arrow navigation | ✓ | ✓ | ✅ |
@@ -219,9 +219,9 @@ python test_approval_structure.py
 python test_approval_menu.py
 ```
 
-### Use in OpenCLI:
+### Use in SWE-CLI:
 ```bash
-opencli
+swecli
 ```
 
 When an operation requires approval, you'll now see:
@@ -348,10 +348,10 @@ All existing code using `ApprovalManager` will continue to work without changes.
 
 ## 🎉 Ready to Use!
 
-The approval dialog redesign is complete and ready. Try it out by running OpenCLI in NORMAL mode:
+The approval dialog redesign is complete and ready. Try it out by running SWE-CLI in NORMAL mode:
 
 ```bash
-opencli
+swecli
 ```
 
 When you perform an operation that requires approval, you'll see the new interactive menu with:
@@ -362,4 +362,4 @@ When you perform an operation that requires approval, you'll see the new interac
 - ↕️ Arrow key navigation
 - ❯ Visual cursor
 
-Enjoy the enhanced OpenCLI experience! 🚀
+Enjoy the enhanced SWE-CLI experience! 🚀

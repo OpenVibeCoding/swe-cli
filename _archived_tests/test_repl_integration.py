@@ -9,28 +9,28 @@ sys.path.insert(0, str(Path(__file__).parent))
 print("Testing imports...")
 
 try:
-    from opencli.core.monitoring import TaskMonitor
+    from swecli.core.monitoring import TaskMonitor
     print("✓ TaskMonitor import successful")
 except Exception as e:
     print(f"✗ TaskMonitor import failed: {e}")
     sys.exit(1)
 
 try:
-    from opencli.ui.task_progress import TaskProgressDisplay
+    from swecli.ui.task_progress import TaskProgressDisplay
     print("✓ TaskProgressDisplay import successful")
 except Exception as e:
     print(f"✗ TaskProgressDisplay import failed: {e}")
     sys.exit(1)
 
 try:
-    from opencli.core.agents import OpenCLIAgent
-    print("✓ OpenCLIAgent import successful")
+    from swecli.core.agents import SWE-CLIAgent
+    print("✓ SWE-CLIAgent import successful")
 except Exception as e:
-    print(f"✗ OpenCLIAgent import failed: {e}")
+    print(f"✗ SWE-CLIAgent import failed: {e}")
     sys.exit(1)
 
 try:
-    from opencli.repl.repl import REPL
+    from swecli.repl.repl import REPL
     print("✓ REPL import successful")
 except Exception as e:
     print(f"✗ REPL import failed: {e}")

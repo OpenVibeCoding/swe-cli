@@ -1,4 +1,4 @@
-# OpenCLI Depth Analysis - Complete ✅
+# SWE-CLI Depth Analysis - Complete ✅
 
 **Date**: 2025-10-07
 **Status**: Analysis complete, ready for implementation
@@ -7,7 +7,7 @@
 
 ## Summary
 
-I've completed a comprehensive analysis of OpenCLI's shallow implementation and created actionable plans for deepening each feature to achieve 5-10x productivity gains.
+I've completed a comprehensive analysis of SWE-CLI's shallow implementation and created actionable plans for deepening each feature to achieve 5-10x productivity gains.
 
 ---
 
@@ -217,7 +217,7 @@ User: Reviews PR, done
 ## Key Architectural Changes
 
 ### 1. AutonomousExecutor (New Class)
-**File**: `opencli/core/autonomous_executor.py`
+**File**: `swecli/core/autonomous_executor.py`
 **Purpose**: Handles iteration logic, error recovery, test execution
 **Core loop**:
 ```python
@@ -424,19 +424,19 @@ Commit? [y/n] y
 
 ## Files Created in This Session
 
-1. `/Users/quocnghi/codes/OpenCLI/SHALLOW_IMPLEMENTATION_GAPS.md` (873 lines)
+1. `/Users/quocnghi/codes/SWE-CLI/SHALLOW_IMPLEMENTATION_GAPS.md` (873 lines)
    - Comprehensive gap analysis
    - 9 shallow features documented
    - Before/after examples
    - Implementation requirements
 
-2. `/Users/quocnghi/codes/OpenCLI/PHASE2_DEEP_REFACTOR_PLAN.md` (308 lines)
+2. `/Users/quocnghi/codes/SWE-CLI/PHASE2_DEEP_REFACTOR_PLAN.md` (308 lines)
    - 5-day implementation plan
    - Day-by-day tasks
    - Code examples and architecture
    - Success criteria and risks
 
-3. `/Users/quocnghi/codes/OpenCLI/DEPTH_ANALYSIS_COMPLETE.md` (This file)
+3. `/Users/quocnghi/codes/SWE-CLI/DEPTH_ANALYSIS_COMPLETE.md` (This file)
    - Executive summary
    - Key findings and priorities
    - Real-world scenarios

@@ -12,7 +12,7 @@ Improved the approval dialog visual design and cleaned up the slash command auto
 
 ### 1. Approval Dialog Visual Improvements
 
-**File:** `opencli/core/approval.py`
+**File:** `swecli/core/approval.py`
 
 #### Changed Box Drawing Characters (Lines 123, 135)
 - **Before:** Light box characters `╭─╮│╯╰` (hard to see)
@@ -69,7 +69,7 @@ app = Application(
 
 ### 2. Slash Command Cleanup
 
-**File:** `opencli/ui/autocomplete.py` (Lines 26-51)
+**File:** `swecli/ui/autocomplete.py` (Lines 26-51)
 
 #### Removed Unimplemented Commands
 - **Before:** 17 commands (7 unimplemented)
@@ -77,7 +77,7 @@ app = Application(
 
 **Removed commands:**
 - `/model` - choose what model and reasoning effort to use
-- `/approvals` - choose what OpenCLI can do without approval
+- `/approvals` - choose what SWE-CLI can do without approval
 - `/review` - review my current changes and find issues
 - `/new` - create a new blank session
 - `/compact` - turn on compact mode (less verbose)
@@ -152,11 +152,11 @@ Created comprehensive test files:
 ## 📁 Files Modified
 
 ### Core Files
-1. `opencli/core/approval.py`
+1. `swecli/core/approval.py`
    - Lines 116-164: Visual design improvements
    - Lines 225-242: Added erase_when_done functionality
 
-2. `opencli/ui/autocomplete.py`
+2. `swecli/ui/autocomplete.py`
    - Lines 26-51: Removed 7 unimplemented slash commands
 
 ### Test Files (Created)
@@ -198,14 +198,14 @@ app = Application(
 This uses prompt_toolkit's built-in functionality to clear the dialog from the terminal after the user makes a selection, preventing visual clutter.
 
 ### Command Verification
-Verified against `opencli/repl/repl.py` (lines 364-397) to ensure only implemented commands are shown in autocomplete.
+Verified against `swecli/repl/repl.py` (lines 364-397) to ensure only implemented commands are shown in autocomplete.
 
 ## 🚀 Ready to Use
 
 The improvements are now live! Try them out:
 
 ```bash
-opencli
+swecli
 ```
 
 Then perform any operation that requires approval:

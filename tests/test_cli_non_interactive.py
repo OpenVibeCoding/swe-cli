@@ -5,11 +5,11 @@ from types import SimpleNamespace
 import pytest
 from rich.console import Console
 
-from opencli.cli import _run_non_interactive
-from opencli.core.approval import ApprovalManager
-from opencli.core.management import ConfigManager, SessionManager, UndoManager
-from opencli.core.services import RuntimeService
-from opencli.models.message import ChatMessage, Role
+from swecli.cli import _run_non_interactive
+from swecli.core.approval import ApprovalManager
+from swecli.core.management import ConfigManager, SessionManager, UndoManager
+from swecli.core.services import RuntimeService
+from swecli.models.message import ChatMessage, Role
 
 
 class _StubAgent:
@@ -32,9 +32,9 @@ def _setup_config(tmp_path, monkeypatch):
     config_manager = ConfigManager(tmp_path)
     config = config_manager.get_config()
     config.api_key = "dummy"
-    config.opencli_dir = str(tmp_path / ".opencli")
-    config.session_dir = str(tmp_path / ".opencli" / "sessions")
-    config.log_dir = str(tmp_path / ".opencli" / "logs")
+    config.swecli_dir = str(tmp_path / ".swecli")
+    config.session_dir = str(tmp_path / ".swecli" / "sessions")
+    config.log_dir = str(tmp_path / ".swecli" / "logs")
     config.permissions.bash.enabled = True
     config_manager._config = config  # Reassign cached config
 

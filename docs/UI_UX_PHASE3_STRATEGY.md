@@ -12,7 +12,7 @@
 
 ### 🔍 What Needs Improvement
 
-After analyzing the current REPL output (opencli/repl/repl.py:287-298), I've identified these gaps:
+After analyzing the current REPL output (swecli/repl/repl.py:287-298), I've identified these gaps:
 
 ```python
 # Current tool output (lines 287-298)
@@ -291,7 +291,7 @@ qwen3-coder-480b | ~/project | main | 2.5k/100k (2%)
 ### New Components
 
 ```
-opencli/ui/
+swecli/ui/
 ├── __init__.py
 ├── animations.py          [Existing]
 ├── status_line.py         [Existing]
@@ -301,7 +301,7 @@ opencli/ui/
 ├── streaming.py           [NEW] - StreamingResponse, TypingEffect
 └── themes.py              [NEW] - Color schemes, icons
 
-opencli/repl/
+swecli/repl/
 ├── repl.py                [Modified] - Use new formatters
 └── output_manager.py      [NEW] - Manage output state
 ```

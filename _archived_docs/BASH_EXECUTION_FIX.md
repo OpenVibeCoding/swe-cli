@@ -8,7 +8,7 @@ When attempting to run bash commands through the chat interface, the BashTool wo
 
 ## Root Cause
 
-The BashTool checks `self.config.permissions.bash.enabled` before executing commands (`opencli/tools/bash_tool.py:91`):
+The BashTool checks `self.config.permissions.bash.enabled` before executing commands (`swecli/tools/bash_tool.py:91`):
 
 ```python
 if not self.config.permissions.bash.enabled:
@@ -25,7 +25,7 @@ By default, this setting is `False` for security reasons. The chat interface nee
 
 Enable bash execution when initializing the chat REPL by setting the config flag.
 
-**Location:** `opencli/repl/repl_chat.py:449-453`
+**Location:** `swecli/repl/repl_chat.py:449-453`
 
 ```python
 def create_repl_chat(config_manager: ConfigManager, session_manager: SessionManager):
@@ -124,7 +124,7 @@ The chat interface operates in **PLAN mode** by default, which:
 
 ### Original REPL Comparison
 
-The original REPL (`opencli/repl/repl.py`) also enables bash:
+The original REPL (`swecli/repl/repl.py`) also enables bash:
 - In **NORMAL mode**: Prompts for approval before execution
 - In **PLAN mode**: Auto-executes (same as chat interface)
 
@@ -132,7 +132,7 @@ The chat interface essentially operates like PLAN mode with a different UI.
 
 ## Files Modified
 
-### `opencli/repl/repl_chat.py`
+### `swecli/repl/repl_chat.py`
 - Lines 449-453: Enable bash execution in `create_repl_chat()`
 
 ### Test Files Created

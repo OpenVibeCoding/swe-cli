@@ -2,7 +2,7 @@
 
 ## Summary
 
-Successfully merged **ALL** styling from `opencli/repl/repl.py` into `opencli/repl/repl_chat.py`. The chat interface now uses the exact same Rich markup and ANSI color codes as the original REPL.
+Successfully merged **ALL** styling from `swecli/repl/repl.py` into `swecli/repl/repl_chat.py`. The chat interface now uses the exact same Rich markup and ANSI color codes as the original REPL.
 
 ## Styling Elements Merged
 
@@ -249,16 +249,16 @@ python test_repl_chat.py
 
 ## Files Modified
 
-**`opencli/repl/repl_chat.py`**
+**`swecli/repl/repl_chat.py`**
 - Lines 90-144: Complete welcome message with Rich markup
 - Lines 103-107: `rich_markup_to_ansi()` helper function
 - Uses EXACT same Rich markup as original REPL
 
-**`opencli/ui/rich_to_text.py`**
+**`swecli/ui/rich_to_text.py`**
 - Lines 23-33: Preserve ANSI codes (force_terminal=True)
 - No ANSI removal for proper color rendering
 
-**`opencli/ui/chat_app.py`**
+**`swecli/ui/chat_app.py`**
 - Line 182: Disabled wrap_lines for Rich panels
 
 ## Status

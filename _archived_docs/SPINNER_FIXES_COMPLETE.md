@@ -11,8 +11,8 @@
 - **Render delay**: Added 50ms delay after starting progress to ensure display renders before HTTP call blocks
 
 **Files Changed:**
-- `opencli/ui/task_progress.py` lines 23, 90-107
-- `opencli/repl/repl.py` lines 552-553
+- `swecli/ui/task_progress.py` lines 23, 90-107
+- `swecli/repl/repl.py` lines 552-553
 
 ### 2. Useless Spinner Messages Replaced with Actual LLM Text ✅
 **Problem:** Generic messages like "⏺ Composing (completed in 55s)" instead of actual LLM explanation.
@@ -20,8 +20,8 @@
 **Fix:** Spinner now acts as placeholder, then gets **replaced** with actual LLM message when done.
 
 **Files Changed:**
-- `opencli/ui/task_progress.py` lines 142-176 (added `replacement_message` parameter)
-- `opencli/repl/repl.py` lines 556-561 (pass LLM message to replace spinner)
+- `swecli/ui/task_progress.py` lines 142-176 (added `replacement_message` parameter)
+- `swecli/repl/repl.py` lines 556-561 (pass LLM message to replace spinner)
 
 ### 3. Duplicate Messages ✅
 **Problem:** Same message appeared twice with different timings:
@@ -35,7 +35,7 @@
 - Changed tool spinner to use tool call display instead of LLM message (line 609)
 
 **Files Changed:**
-- `opencli/repl/repl.py` lines 609, 640-642
+- `swecli/repl/repl.py` lines 609, 640-642
 
 ### 4. Spinner Speed Increased ✅
 **Problem:** Spinner animation was too slow at 80ms per frame.
@@ -43,7 +43,7 @@
 **Fix:** Reduced interval from 80ms to 50ms (60% faster, smoother animation).
 
 **Files Changed:**
-- `opencli/ui/animations.py` line 15
+- `swecli/ui/animations.py` line 15
 
 ### 5. Braille Dots Pattern ✅
 **Problem:** Spinner used different pattern than requested.
@@ -51,18 +51,18 @@
 **Fix:** Changed to Braille dots: `⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏`
 
 **Files Changed:**
-- `opencli/ui/animations.py` line 14
+- `swecli/ui/animations.py` line 14
 
 ## Summary of Changes
 
-### `opencli/ui/animations.py`
+### `swecli/ui/animations.py`
 ```python
 # Line 14-15
 FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]  # Basic Braille Dots
 INTERVAL = 0.05  # 50ms per frame (faster, smoother animation)
 ```
 
-### `opencli/ui/task_progress.py`
+### `swecli/ui/task_progress.py`
 ```python
 # Line 23
 UPDATE_INTERVAL = 0.5  # More responsive (was 1.0)
@@ -91,7 +91,7 @@ def print_final_status(self, replacement_message: Optional[str] = None) -> None:
     status_msg = f"{symbol} {message_text} ({status} in {elapsed}s, {token_display})"
 ```
 
-### `opencli/repl/repl.py`
+### `swecli/repl/repl.py`
 ```python
 # Lines 548-557: Replace spinner with LLM message
 progress = TaskProgressDisplay(self.console, task_monitor)
@@ -138,7 +138,7 @@ if self.mode_manager.current_mode == OperationMode.PLAN and tool_progress:
 All fixes tested with:
 - `python test_spinner_live.py` - Spinner animation
 - `python test_spinner_comparison.py` - Speed comparison
-- `python -m opencli` - Real usage
+- `python -m swecli` - Real usage
 
 The spinner now:
 - ✅ Shows immediately when HTTP calls start

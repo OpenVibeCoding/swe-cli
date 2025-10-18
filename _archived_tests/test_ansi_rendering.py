@@ -7,8 +7,8 @@ from pathlib import Path
 # Add opencli to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from opencli.ui.chat_app import ChatApplication
-from opencli.ui.chat_formatters import ChatBoxFormatter
+from swecli.ui.chat_app import ChatApplication
+from swecli.ui.chat_formatters import ChatBoxFormatter
 from prompt_toolkit.formatted_text import ANSI
 
 print("Testing ANSI Rendering in Chat UI")
@@ -64,7 +64,7 @@ try:
     if is_ansi:
         print("\n✅ ANSI object is being created!")
         print("   • ANSI codes will be parsed by prompt_toolkit")
-        print("   • Colors should now render properly in OpenCLI")
+        print("   • Colors should now render properly in SWE-CLI")
         sys.exit(0)
     else:
         print("\n❌ ANSI object not being created")

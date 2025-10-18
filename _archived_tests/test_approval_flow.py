@@ -7,8 +7,8 @@ from rich.console import Console
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from opencli.core.management import ModeManager, OperationMode
-from opencli.models.operation import Operation, OperationType
+from swecli.core.management import ModeManager, OperationMode
+from swecli.models.operation import Operation, OperationType
 
 
 def main():

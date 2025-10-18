@@ -41,7 +41,7 @@ Key Commands:
   @filename        Mention files in your prompt
   /command         Execute slash commands
 
-Working Directory: ~/OpenCLI • User: quocnghi • Mode: NORMAL
+Working Directory: ~/SWE-CLI • User: quocnghi • Mode: NORMAL
 ```
 
 ### Option 2: Gradient-Style Banner
@@ -60,7 +60,7 @@ Working Directory: ~/OpenCLI • User: quocnghi • Mode: NORMAL
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 Essential Commands:
-  /help            Get started with OpenCLI
+  /help            Get started with SWE-CLI
   /tree            Browse your project files
   /mode plan       Enable auto-execution mode
   /mode normal     Enable interactive approval mode
@@ -70,7 +70,7 @@ Keyboard Shortcuts:
   Esc+S            Toggle status bar verbosity
   Esc+N            View notification history
 
-Context: ~/OpenCLI • quocnghi • NORMAL mode
+Context: ~/SWE-CLI • quocnghi • NORMAL mode
 ```
 
 ### Option 3: Simple Styled Header (Elegant)
@@ -93,7 +93,7 @@ Essential Commands:
   /mode       Switch modes          /cmd      Run commands
 
 Current Context:
-  Directory: ~/OpenCLI
+  Directory: ~/SWE-CLI
   User: quocnghi
   Mode: NORMAL (interactive approval)
 
@@ -107,7 +107,7 @@ Current Context:
 │                                                                 │
 │    ╔═════════════════════════════════════════════════╗         │
 │    ║                                                 ║         │
-│    ║   OpenCLI - AI Development Assistant           ║         │
+│    ║   SWE-CLI - AI Development Assistant           ║         │
 │    ║   Version 0.3.0                                 ║         │
 │    ║                                                 ║         │
 │    ╚═════════════════════════════════════════════════╝         │
@@ -127,7 +127,7 @@ Key Bindings:
   Esc+S            Toggle status bar
   Esc+N            View notifications
 
-Session Info: quocnghi @ ~/OpenCLI • Mode: NORMAL
+Session Info: quocnghi @ ~/SWE-CLI • Mode: NORMAL
 ```
 
 ---
@@ -156,7 +156,7 @@ Keyboard Shortcuts:
 
 Current Session:
 ──────────────────────────────────────────────────────────────────
-  Directory: ~/OpenCLI
+  Directory: ~/SWE-CLI
   User: quocnghi
   Mode: NORMAL (requires approval for operations)
 ```
@@ -219,7 +219,7 @@ Keyboard Shortcuts:
 ```
 Current Session:
 ──────────────────────────────────────────────────────────────────
-  Directory: ~/OpenCLI
+  Directory: ~/SWE-CLI
   User: quocnghi
   Mode: NORMAL (requires approval for operations)
 ```
@@ -390,7 +390,7 @@ Keyboard Shortcuts:
 
 Current Session:
 ──────────────────────────────────────────────────────────────────
-  Directory: ~/OpenCLI
+  Directory: ~/SWE-CLI
   User: quocnghi
   Mode: NORMAL (requires approval for operations)
 

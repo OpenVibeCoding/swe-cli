@@ -35,21 +35,21 @@
 ## 📁 Files Created (11 new files)
 
 ### Production Code
-1. **`opencli/core/task_monitor.py`** (178 lines)
+1. **`swecli/core/task_monitor.py`** (178 lines)
    - Core logic: timer, tokens, interrupts
    - Thread-safe with mutex locks
 
-2. **`opencli/ui/task_progress.py`** (141 lines)
+2. **`swecli/ui/task_progress.py`** (141 lines)
    - Live Rich display (1-second updates)
    - ESC key listener (pynput)
    - Background thread for non-blocking UI
 
 ### Integration (Modified)
-3. **`opencli/core/agent.py`**
+3. **`swecli/core/agent.py`**
    - Added `task_monitor` parameter to `call_llm()`
    - Automatic token extraction from API response
 
-4. **`opencli/repl/repl.py`**
+4. **`swecli/repl/repl.py`**
    - Replaced spinner with TaskProgressDisplay
    - Works for both LLM calls and tool execution
 
@@ -104,8 +104,8 @@ Watch the task monitor in action with a real LLM call!
 
 ### Real Usage
 ```bash
-cd /Users/quocnghi/codes/test_opencli
-opencli
+cd /Users/quocnghi/codes/test_swecli
+swecli
 ```
 
 Then try any command:
@@ -224,8 +224,8 @@ Then try any command:
 
 ### Usage Pattern
 ```python
-from opencli.core.task_monitor import TaskMonitor
-from opencli.ui.task_progress import TaskProgressDisplay
+from swecli.core.task_monitor import TaskMonitor
+from swecli.ui.task_progress import TaskProgressDisplay
 
 # Create and start
 task_monitor = TaskMonitor()
@@ -243,9 +243,9 @@ progress.print_final_status()
 ```
 
 ### Integration Points
-- **LLM calls:** `opencli/repl/repl.py:543-561`
-- **Tool execution:** `opencli/repl/repl.py:608-645`
-- **Token extraction:** `opencli/core/agent.py:291-296`
+- **LLM calls:** `swecli/repl/repl.py:543-561`
+- **Tool execution:** `swecli/repl/repl.py:608-645`
+- **Token extraction:** `swecli/core/agent.py:291-296`
 
 ---
 
@@ -256,7 +256,7 @@ Try it now:
 python test_task_monitor_live_demo.py
 ```
 
-Or use in real OpenCLI:
+Or use in real SWE-CLI:
 ```bash
-cd /Users/quocnghi/codes/test_opencli && opencli
+cd /Users/quocnghi/codes/test_swecli && swecli
 ```

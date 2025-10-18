@@ -43,10 +43,10 @@ class REPL:
 ```
 
 **What it DELEGATES**:
-- ✅ Commands → `opencli/repl/commands/*`
-- ✅ UI rendering → `opencli/repl/ui/*`
-- 🔄 Query processing → `opencli/repl/query_processor.py` (to extract)
-- 🔄 Lifecycle → `opencli/repl/lifecycle.py` (to extract)
+- ✅ Commands → `swecli/repl/commands/*`
+- ✅ UI rendering → `swecli/repl/ui/*`
+- 🔄 Query processing → `swecli/repl/query_processor.py` (to extract)
+- 🔄 Lifecycle → `swecli/repl/lifecycle.py` (to extract)
 
 **What gets DELETED**:
 - ❌ ~500 lines of legacy command methods (never called)
@@ -79,11 +79,11 @@ class ChatREPL:
 ```
 
 **What it DELEGATES**:
-- 🔄 Text rendering → `opencli/repl/ui/text_renderer.py` (to extract)
-- 🔄 Spinner → `opencli/repl/ui/spinner.py` or reuse existing
-- 🔄 Status display → `opencli/repl/ui/status_display.py` (to extract)
-- 🔄 Query processing → `opencli/repl/chat_query_processor.py` (to extract)
-- 🔄 Key bindings → `opencli/repl/chat_key_bindings.py` (to extract)
+- 🔄 Text rendering → `swecli/repl/ui/text_renderer.py` (to extract)
+- 🔄 Spinner → `swecli/repl/ui/spinner.py` or reuse existing
+- 🔄 Status display → `swecli/repl/ui/status_display.py` (to extract)
+- 🔄 Query processing → `swecli/repl/chat_query_processor.py` (to extract)
+- 🔄 Key bindings → `swecli/repl/chat_key_bindings.py` (to extract)
 
 **What gets DELETED**:
 - ❌ Duplicate implementations (consolidate with repl.py where possible)
@@ -93,7 +93,7 @@ class ChatREPL:
 ## Final Architecture
 
 ```
-opencli/repl/
+swecli/repl/
 ├── repl.py                      # CLI REPL orchestrator (~850 lines)
 │   └── class REPL
 │       ├── Delegates to commands/
@@ -145,8 +145,8 @@ opencli/repl/
 ### 1. **Entry Points**
 These are the main classes that external code uses:
 ```python
-from opencli.repl.repl import REPL
-from opencli.repl.repl_chat import ChatREPL
+from swecli.repl.repl import REPL
+from swecli.repl.repl_chat import ChatREPL
 
 # Used by main application
 repl = REPL(config_manager, session_manager)
@@ -164,7 +164,7 @@ They coordinate multiple components:
 Keeping these files maintains the public API:
 ```python
 # Users expect this to work
-from opencli.repl import REPL
+from swecli.repl import REPL
 ```
 
 ---

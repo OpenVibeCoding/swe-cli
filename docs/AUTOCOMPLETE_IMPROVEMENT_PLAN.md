@@ -22,7 +22,7 @@ The current autocomplete for @ (file mentions) and / (slash commands) uses promp
 ### Using prompt_toolkit's Completion System
 
 ```python
-# Current completion (opencli/ui/autocomplete.py)
+# Current completion (swecli/ui/autocomplete.py)
 yield Completion(
     text=f"/{cmd.name}",
     start_position=start_position,
@@ -34,7 +34,7 @@ yield Completion(
 **Rendering:**
 ```
 /help              show available commands and help
-/exit              exit OpenCLI
+/exit              exit SWE-CLI
 /tree              show directory tree structure
 ```
 
@@ -136,14 +136,14 @@ Use Rich for rendering but integrate with prompt_toolkit for input.
 **Goal:** Add icons, colors, and better formatting to completions
 
 **Files to Modify:**
-- `opencli/ui/autocomplete.py`
-- `opencli/repl/repl.py` (for style integration)
+- `swecli/ui/autocomplete.py`
+- `swecli/repl/repl.py` (for style integration)
 
 **Features:**
 1. **Slash Command Icons**
    ```
    📚 /help          show available commands and help
-   🚪 /exit          exit OpenCLI
+   🚪 /exit          exit SWE-CLI
    🌲 /tree          show directory tree structure
    📖 /read          read a file
    📝 /write         write to a file
@@ -171,7 +171,7 @@ Use Rich for rendering but integrate with prompt_toolkit for input.
    ```
    ╭─ Slash Commands ─────────────────────────────────╮
    │ 📚 /help          show available commands         │
-   │ 🚪 /exit          exit OpenCLI                    │
+   │ 🚪 /exit          exit SWE-CLI                    │
    │ 🌲 /tree          show directory tree             │
    ╰───────────────────────────────────────────────────╯
    ```
@@ -211,7 +211,7 @@ Matches:
 │                                      │
 │ Preview:                             │
 │   1  import sys                      │
-│   2  from opencli import ...         │
+│   2  from swecli import ...         │
 │   3                                  │
 ╰──────────────────────────────────────╯
 ```
@@ -245,7 +245,7 @@ Matches:
 3. **Keyboard Shortcuts Display**
    ```
    📚 /help          show available commands     [Enter]
-   🚪 /exit          exit OpenCLI                [Ctrl+X]
+   🚪 /exit          exit SWE-CLI                [Ctrl+X]
    ```
 
 ---
@@ -280,7 +280,7 @@ Matches:
 ### Slash Command Autocomplete (Before)
 ```
 /help              show available commands and help
-/exit              exit OpenCLI
+/exit              exit SWE-CLI
 /tree              show directory tree structure
 ```
 
@@ -288,7 +288,7 @@ Matches:
 ```
 ╭─ Commands ───────────────────────────────────────────╮
 │ 📚 /help          show available commands and help   │
-│ 🚪 /exit          exit OpenCLI                       │
+│ 🚪 /exit          exit SWE-CLI                       │
 │ 🌲 /tree          show directory tree structure      │
 │ 📖 /read          read a file                        │
 │ 📝 /write         write to a file                    │
@@ -320,7 +320,7 @@ tests/             file
 │ ─────────────────────────────────────────────────── │
 │ Preview:                                             │
 │   1  import sys                                      │
-│   2  from opencli.repl import REPL                   │
+│   2  from swecli.repl import REPL                   │
 │   3                                                  │
 │   4  def main():                                     │
 │   5      repl = REPL()                               │
@@ -435,14 +435,14 @@ autocomplete_style = Style.from_dict({
 ### 4. Integration with REPL
 
 ```python
-# In opencli/repl/repl.py
+# In swecli/repl/repl.py
 
-from opencli.ui.autocomplete import OpenCLICompleter
+from swecli.ui.autocomplete import SWE-CLICompleter
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import ThreadedCompleter
 
 # Initialize with styled completer
-completer = OpenCLICompleter(self.config.working_dir)
+completer = SWE-CLICompleter(self.config.working_dir)
 threaded_completer = ThreadedCompleter(completer)
 
 self.session = PromptSession(
@@ -485,14 +485,14 @@ pip install rapidfuzz  # For fuzzy matching
 ```
 
 ### Step 2: Implement Phase 1
-1. Update `opencli/ui/autocomplete.py` with icon mapping
+1. Update `swecli/ui/autocomplete.py` with icon mapping
 2. Create `StyledCompletion` class
 3. Update completers to use styled completions
 4. Add custom style in REPL
 
 ### Step 3: Test
 ```bash
-opencli
+swecli
 # Type / to see styled slash commands
 # Type @ to see styled file mentions
 ```

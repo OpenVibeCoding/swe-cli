@@ -37,7 +37,7 @@ From analysis of `repl.py`, the following UI methods need extraction:
 
 **Target Structure:**
 ```
-opencli/repl/ui/
+swecli/repl/ui/
 ├── __init__.py              - Package exports
 ├── toolbar.py               - Toolbar component
 ├── context_display.py       - Context overview component
@@ -50,7 +50,7 @@ opencli/repl/ui/
 
 ### ✅ Completed Tasks
 
-1. ✅ **Created UI Package Structure** (`opencli/repl/ui/`)
+1. ✅ **Created UI Package Structure** (`swecli/repl/ui/`)
    - Created package with proper `__init__.py` and exports
 
 2. ✅ **Extracted Components**

@@ -7,8 +7,8 @@ python -m pytest _archived_tests/test_chat_app.py -v
 # Lint/format
 ruff check . --fix
 ruff format .
-black opencli/
-mypy opencli/ --strict
+black swecli/
+mypy swecli/ --strict
 
 # Build & install
 pip install -e .

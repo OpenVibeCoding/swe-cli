@@ -6,9 +6,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from opencli.core.management import ConfigManager
-from opencli.core.management import SessionManager
-from opencli.repl.repl_chat import create_repl_chat
+from swecli.core.management import ConfigManager
+from swecli.core.management import SessionManager
+from swecli.repl.repl_chat import create_repl_chat
 
 def main():
     """Test status bar with mode toggling."""
@@ -37,7 +37,7 @@ def main():
     # Create chat REPL
     chat_repl = create_repl_chat(config_manager, session_manager)
 
-    print("Starting OpenCLI...")
+    print("Starting SWE-CLI...")
     print("Watch the status bar at the bottom!")
     print()
 

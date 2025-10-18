@@ -45,7 +45,7 @@ Strip whitespace from LLM content before adding the prefix.
 
 ### Fix 1: Main Response Display
 
-**Location:** `opencli/repl/repl_chat.py:250`
+**Location:** `swecli/repl/repl_chat.py:250`
 
 **Before:**
 ```python
@@ -61,7 +61,7 @@ if llm_description:
 
 ### Fix 2: Safety Limit Summary
 
-**Location:** `opencli/repl/repl_chat.py:232`
+**Location:** `swecli/repl/repl_chat.py:232`
 
 **Before:**
 ```python
@@ -164,7 +164,7 @@ python test_repl_chat.py
 
 ## Files Modified
 
-### `opencli/repl/repl_chat.py`
+### `swecli/repl/repl_chat.py`
 - Line 232: Strip content in safety limit summary
 - Line 250: Strip llm_description in main response
 
@@ -172,7 +172,7 @@ python test_repl_chat.py
 
 ### Consistent with Original REPL
 
-The original REPL (`opencli/repl/repl.py`) doesn't use a prefix symbol, so this issue didn't exist there. However, this fix maintains the expected behavior where symbols and their associated text appear together.
+The original REPL (`swecli/repl/repl.py`) doesn't use a prefix symbol, so this issue didn't exist there. However, this fix maintains the expected behavior where symbols and their associated text appear together.
 
 ### Message Session Storage
 

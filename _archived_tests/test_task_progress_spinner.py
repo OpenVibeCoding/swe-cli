@@ -7,8 +7,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from opencli.ui.task_progress import TaskProgressDisplay
-from opencli.core.monitoring import TaskMonitor
+from swecli.ui.task_progress import TaskProgressDisplay
+from swecli.core.monitoring import TaskMonitor
 from rich.console import Console
 
 
@@ -66,7 +66,7 @@ def test_spinner_frames():
     print("Testing Spinner Frame Sequence")
     print("=" * 70)
 
-    from opencli.ui.task_progress import TaskProgressDisplay
+    from swecli.ui.task_progress import TaskProgressDisplay
 
     expected_frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 

@@ -47,7 +47,7 @@ Successfully removed all redundant legacy methods that were replaced by command 
 
 ### 2. Extracted QueryProcessor Module (~298 lines)
 
-Created new module `opencli/repl/query_processor.py` containing:
+Created new module `swecli/repl/query_processor.py` containing:
 
 **Extracted Methods**:
 - `process_query()` - Main ReAct loop for processing user queries (200 lines)
@@ -90,7 +90,7 @@ The following methods were kept in `repl.py` as they are tightly coupled to REPL
 ## Architecture After Phase 3
 
 ```
-opencli/repl/
+swecli/repl/
 ├── repl.py                    (614 lines) - Main REPL orchestrator
 ├── query_processor.py         (450 lines) - Query processing with ReAct pattern
 ├── commands/                  - Command handlers (Phase 1)

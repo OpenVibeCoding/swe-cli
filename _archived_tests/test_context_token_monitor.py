@@ -6,9 +6,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from opencli.core.context import ContextTokenMonitor
-from opencli.models.message import ChatMessage, Role, ToolCall
-from opencli.models.session import Session
+from swecli.core.context import ContextTokenMonitor
+from swecli.models.message import ChatMessage, Role, ToolCall
+from swecli.models.session import Session
 
 def test_basic_counting():
     """Test basic token counting."""

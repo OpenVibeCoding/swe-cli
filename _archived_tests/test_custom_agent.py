@@ -1,22 +1,22 @@
-"""Smoke-test OpenCLI agent wiring (requires real API access)."""
+"""Smoke-test SWE-CLI agent wiring (requires real API access)."""
 
 import os
 from pathlib import Path
 
 import pytest
 
-from opencli.models.config import AppConfig
-from opencli.core.tools import ToolRegistry
-from opencli.tools.file_ops import FileOperations
-from opencli.tools.write_tool import WriteTool
-from opencli.tools.edit_tool import EditTool
-from opencli.tools.bash_tool import BashTool
-from opencli.core.agents import OpenCLIAgent
-from opencli.core.management import ModeManager, OperationMode
-from opencli.core.approval import ApprovalManager
-from opencli.core.management import UndoManager
-from opencli.core.management import SessionManager
-from opencli.models.agent_deps import AgentDependencies
+from swecli.models.config import AppConfig
+from swecli.core.tools import ToolRegistry
+from swecli.tools.file_ops import FileOperations
+from swecli.tools.write_tool import WriteTool
+from swecli.tools.edit_tool import EditTool
+from swecli.tools.bash_tool import BashTool
+from swecli.core.agents import SWE-CLIAgent
+from swecli.core.management import ModeManager, OperationMode
+from swecli.core.approval import ApprovalManager
+from swecli.core.management import UndoManager
+from swecli.core.management import SessionManager
+from swecli.models.agent_deps import AgentDependencies
 from rich.console import Console
 
 
@@ -44,7 +44,7 @@ def test_agent_creates_file(tmp_path: Path) -> None:
     mode_manager = ModeManager()
     mode_manager.set_mode(OperationMode.PLAN)  # Avoid interactive approvals
 
-    agent = OpenCLIAgent(config, tool_registry, mode_manager)
+    agent = SWE-CLIAgent(config, tool_registry, mode_manager)
     console = Console()
 
     deps = AgentDependencies(

@@ -1,4 +1,4 @@
-# 🎉 OpenCLI Phase 1 Complete!
+# 🎉 SWE-CLI Phase 1 Complete!
 
 ## Summary
 
@@ -29,7 +29,7 @@ A fully functional AI-powered command-line tool with:
 
 ## File Breakdown
 
-### Core Modules (opencli/)
+### Core Modules (swecli/)
 ```
 cli.py                 238 lines  # CLI entry point
 models/
@@ -61,7 +61,7 @@ QUICKSTART.md        # Getting started guide
 ## Features Implemented
 
 ### 1. Interactive REPL ✅
-- Launch with `opencli`
+- Launch with `swecli`
 - Natural language queries: "Explain what main.py does"
 - Streaming responses with real-time output
 - Command history with Ctrl+R search
@@ -76,14 +76,14 @@ QUICKSTART.md        # Getting started guide
 
 ### 3. Session Management ✅
 - Auto-save every 5 turns (configurable)
-- Save to `~/.opencli/sessions/<id>.json`
+- Save to `~/.swecli/sessions/<id>.json`
 - List all sessions with metadata
 - Resume previous sessions
 - Delete old sessions
 
 ### 4. Configuration ✅
-- Global: `~/.opencli/settings.json`
-- Project: `.opencli/settings.json`
+- Global: `~/.swecli/settings.json`
+- Project: `.swecli/settings.json`
 - Context: `OPENCLI.md` (hierarchical)
 - Environment variables for API keys
 
@@ -98,7 +98,7 @@ QUICKSTART.md        # Getting started guide
 ### 6. Slash Commands ✅
 ```
 /help              # Show command list
-/exit              # Exit OpenCLI
+/exit              # Exit SWE-CLI
 /clear             # Clear session
 /sessions          # List sessions
 /resume <id>       # Resume session
@@ -112,7 +112,7 @@ QUICKSTART.md        # Getting started guide
 ### Quick Start
 ```bash
 # 1. Navigate to project
-cd /Users/quocnghi/codes/opencli
+cd /Users/quocnghi/codes/swecli
 
 # 2. Create virtual environment
 python -m venv venv
@@ -125,15 +125,15 @@ pip install -e .
 export FIREWORKS_API_KEY="your-key-here"
 
 # 5. Launch
-opencli
+swecli
 ```
 
 ### Example Session
 ```
-$ opencli
+$ swecli
 
 ╭─────────────────── Welcome ────────────────────╮
-│ OpenCLI v0.1.0                                 │
+│ SWE-CLI v0.1.0                                 │
 │                                                │
 │ AI-powered command-line tool for accelerated  │
 │ development.                                   │
@@ -142,7 +142,7 @@ $ opencli
 │ - /help - Show available commands              │
 │ - /clear - Clear session context               │
 │ - /sessions - List saved sessions              │
-│ - /exit - Exit OpenCLI                         │
+│ - /exit - Exit SWE-CLI                         │
 ╰────────────────────────────────────────────────╯
 
 > Explain what this project does

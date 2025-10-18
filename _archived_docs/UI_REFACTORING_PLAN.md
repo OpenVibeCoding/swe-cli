@@ -1,8 +1,8 @@
-# OpenCLI UI Refactoring Plan
+# SWE-CLI UI Refactoring Plan
 
 ## Executive Summary
 
-The `opencli/ui/` directory needs refactoring to improve modularity, remove unused code, eliminate duplication, and follow SOLID principles. Current issues include:
+The `swecli/ui/` directory needs refactoring to improve modularity, remove unused code, eliminate duplication, and follow SOLID principles. Current issues include:
 - Large files (chat_app.py: 1155 lines, formatters.py: 612 lines)
 - Duplicate approval modal implementations (3 versions)
 - Unused files (scrollable_formatted_text2.py, rules_editor_modal.py)
@@ -60,7 +60,7 @@ The `opencli/ui/` directory needs refactoring to improve modularity, remove unus
 ### Principle: Separation of Concerns
 
 ```
-opencli/ui/
+swecli/ui/
 ├── core/                    # Core UI abstractions (NEW)
 │   ├── __init__.py
 │   ├── component.py         # Base UI component class
@@ -144,22 +144,22 @@ opencli/ui/
 Create foundation classes and interfaces
 
 **Tasks:**
-1. Create `opencli/ui/core/` directory
+1. Create `swecli/ui/core/` directory
 2. Implement `Component` base class
 3. Implement `Renderer` interface
 4. Implement `EventHandler` base class
 5. Update `__init__.py` exports
 
 **Files Created:**
-- `opencli/ui/core/component.py` (~100 lines)
-- `opencli/ui/core/renderer.py` (~50 lines)
-- `opencli/ui/core/event_handler.py` (~80 lines)
+- `swecli/ui/core/component.py` (~100 lines)
+- `swecli/ui/core/renderer.py` (~50 lines)
+- `swecli/ui/core/event_handler.py` (~80 lines)
 
 ### Phase 2: Split Formatters (Days 3-4)
 Break down large formatters.py into specialized classes
 
 **Tasks:**
-1. Create `opencli/ui/formatters/` directory
+1. Create `swecli/ui/formatters/` directory
 2. Extract `BaseFormatter` abstract class
 3. Split file operations → `file_formatter.py`
 4. Split command operations → `command_formatter.py`
@@ -168,20 +168,20 @@ Break down large formatters.py into specialized classes
 7. Update imports in consuming code
 
 **Files Created:**
-- `opencli/ui/formatters/base.py` (~80 lines)
-- `opencli/ui/formatters/file_formatter.py` (~200 lines)
-- `opencli/ui/formatters/command_formatter.py` (~100 lines)
-- `opencli/ui/formatters/plan_formatter.py` (~80 lines)
-- `opencli/ui/formatters/syntax_highlighter.py` (~60 lines)
+- `swecli/ui/formatters/base.py` (~80 lines)
+- `swecli/ui/formatters/file_formatter.py` (~200 lines)
+- `swecli/ui/formatters/command_formatter.py` (~100 lines)
+- `swecli/ui/formatters/plan_formatter.py` (~80 lines)
+- `swecli/ui/formatters/syntax_highlighter.py` (~60 lines)
 
 **Files Removed:**
-- `opencli/ui/formatters.py` (612 lines)
+- `swecli/ui/formatters.py` (612 lines)
 
 ### Phase 3: Extract Widgets (Days 5-6)
 Create reusable widget components
 
 **Tasks:**
-1. Create `opencli/ui/widgets/` directory
+1. Create `swecli/ui/widgets/` directory
 2. Extract status bar → `status_bar.py`
 3. Extract progress indicators → `progress.py`
 4. Extract spinners → `spinner.py`
@@ -189,93 +189,93 @@ Create reusable widget components
 6. Update imports
 
 **Files Created:**
-- `opencli/ui/widgets/status_bar.py` (~120 lines)
-- `opencli/ui/widgets/progress.py` (~150 lines)
-- `opencli/ui/widgets/spinner.py` (~100 lines)
-- `opencli/ui/widgets/scrollable_text.py` (~150 lines)
+- `swecli/ui/widgets/status_bar.py` (~120 lines)
+- `swecli/ui/widgets/progress.py` (~150 lines)
+- `swecli/ui/widgets/spinner.py` (~100 lines)
+- `swecli/ui/widgets/scrollable_text.py` (~150 lines)
 
 **Files Modified:**
-- `opencli/ui/animations.py` (shrink from 187 → ~50 lines)
-- `opencli/ui/status_line.py` (shrink from 164 → ~80 lines)
-- `opencli/ui/task_progress.py` (shrink from 193 → ~100 lines)
+- `swecli/ui/animations.py` (shrink from 187 → ~50 lines)
+- `swecli/ui/status_line.py` (shrink from 164 → ~80 lines)
+- `swecli/ui/task_progress.py` (shrink from 193 → ~100 lines)
 
 **Files Removed:**
-- `opencli/ui/scrollable_formatted_text2.py` (61 lines - duplicate)
+- `swecli/ui/scrollable_formatted_text2.py` (61 lines - duplicate)
 
 ### Phase 4: Refactor Chat Application (Days 7-9)
 Break down massive chat_app.py
 
 **Tasks:**
-1. Create `opencli/ui/chat/` directory
+1. Create `swecli/ui/chat/` directory
 2. Extract conversation display → `conversation.py`
 3. Extract input handling → `input_handler.py`
 4. Extract key bindings → `key_bindings.py`
 5. Extract approval logic → `approval_handler.py`
 6. Refactor main app → `application.py`
-7. Update imports in `opencli/repl/repl_chat.py`
+7. Update imports in `swecli/repl/repl_chat.py`
 
 **Files Created:**
-- `opencli/ui/chat/application.py` (~250 lines)
-- `opencli/ui/chat/conversation.py` (~180 lines)
-- `opencli/ui/chat/input_handler.py` (~150 lines)
-- `opencli/ui/chat/key_bindings.py` (~200 lines)
-- `opencli/ui/chat/approval_handler.py` (~150 lines)
+- `swecli/ui/chat/application.py` (~250 lines)
+- `swecli/ui/chat/conversation.py` (~180 lines)
+- `swecli/ui/chat/input_handler.py` (~150 lines)
+- `swecli/ui/chat/key_bindings.py` (~200 lines)
+- `swecli/ui/chat/approval_handler.py` (~150 lines)
 
 **Files Removed:**
-- `opencli/ui/chat_app.py` (1155 lines)
-- `opencli/ui/conversation_buffer.py` (74 lines - merged into conversation.py)
+- `swecli/ui/chat_app.py` (1155 lines)
+- `swecli/ui/conversation_buffer.py` (74 lines - merged into conversation.py)
 
 ### Phase 5: Split Autocomplete (Days 10)
 Modularize autocomplete system
 
 **Tasks:**
-1. Create `opencli/ui/autocomplete/` directory
+1. Create `swecli/ui/autocomplete/` directory
 2. Extract slash commands → `slash_commands.py`
 3. Extract file mentions → `file_mentions.py`
 4. Refactor main completer → `completer.py`
 5. Update imports
 
 **Files Created:**
-- `opencli/ui/autocomplete/completer.py` (~150 lines)
-- `opencli/ui/autocomplete/slash_commands.py` (~150 lines)
-- `opencli/ui/autocomplete/file_mentions.py` (~110 lines)
+- `swecli/ui/autocomplete/completer.py` (~150 lines)
+- `swecli/ui/autocomplete/slash_commands.py` (~150 lines)
+- `swecli/ui/autocomplete/file_mentions.py` (~110 lines)
 
 **Files Removed:**
-- `opencli/ui/autocomplete.py` (411 lines)
+- `swecli/ui/autocomplete.py` (411 lines)
 
 ### Phase 6: Create Theme System (Day 11)
 Centralize styling and themes
 
 **Tasks:**
-1. Create `opencli/ui/themes/` directory
+1. Create `swecli/ui/themes/` directory
 2. Extract colors → `colors.py`
 3. Extract icons → `icons.py`
 4. Extract Rich styles → `styles.py`
 5. Update all UI files to use theme system
 
 **Files Created:**
-- `opencli/ui/themes/colors.py` (~60 lines)
-- `opencli/ui/themes/icons.py` (~40 lines)
-- `opencli/ui/themes/styles.py` (~80 lines)
+- `swecli/ui/themes/colors.py` (~60 lines)
+- `swecli/ui/themes/icons.py` (~40 lines)
+- `swecli/ui/themes/styles.py` (~80 lines)
 
 ### Phase 7: Create Utilities (Day 12)
 Extract common utility functions
 
 **Tasks:**
-1. Create `opencli/ui/utils/` directory
+1. Create `swecli/ui/utils/` directory
 2. Move markdown utils → `markdown.py`
 3. Create text utilities → `text_utils.py`
 4. Create Rich helpers → `rich_utils.py`
 5. Update imports
 
 **Files Created:**
-- `opencli/ui/utils/markdown.py` (~80 lines)
-- `opencli/ui/utils/text_utils.py` (~60 lines)
-- `opencli/ui/utils/rich_utils.py` (~70 lines)
+- `swecli/ui/utils/markdown.py` (~80 lines)
+- `swecli/ui/utils/text_utils.py` (~60 lines)
+- `swecli/ui/utils/rich_utils.py` (~70 lines)
 
 **Files Modified:**
-- `opencli/ui/markdown_formatter.py` (shrink from 105 → ~40 lines)
-- `opencli/ui/rich_to_text.py` (shrink from 106 → ~50 lines)
+- `swecli/ui/markdown_formatter.py` (shrink from 105 → ~40 lines)
+- `swecli/ui/rich_to_text.py` (shrink from 106 → ~50 lines)
 
 ### Phase 8: Cleanup & Remove Unused (Day 13)
 Delete unused files and consolidate
@@ -288,17 +288,17 @@ Delete unused files and consolidate
 5. Update documentation
 
 **Files Removed:**
-- `opencli/ui/approval_modal.py` (209 lines)
-- `opencli/ui/approval_modal_v2.py` (173 lines)
-- `opencli/ui/approval_modal_pt.py` (84 lines)
-- `opencli/ui/rules_editor_modal.py` (411 lines)
-- `opencli/ui/notifications.py` (74 lines)
+- `swecli/ui/approval_modal.py` (209 lines)
+- `swecli/ui/approval_modal_v2.py` (173 lines)
+- `swecli/ui/approval_modal_pt.py` (84 lines)
+- `swecli/ui/rules_editor_modal.py` (411 lines)
+- `swecli/ui/notifications.py` (74 lines)
 
 ### Phase 9: Update Main __init__.py (Day 14)
 Clean public API
 
 **Tasks:**
-1. Update `opencli/ui/__init__.py` with new structure
+1. Update `swecli/ui/__init__.py` with new structure
 2. Ensure backward compatibility where needed
 3. Add deprecation warnings for old imports
 4. Update documentation
@@ -310,10 +310,10 @@ Clean public API
 Create compatibility shims in main `__init__.py`:
 
 ```python
-# opencli/ui/__init__.py
-from opencli.ui.formatters.base import OutputFormatter  # New location
-from opencli.ui.widgets.status_bar import StatusLine    # New location
-from opencli.ui.chat.application import ChatApplication # New location
+# swecli/ui/__init__.py
+from swecli.ui.formatters.base import OutputFormatter  # New location
+from swecli.ui.widgets.status_bar import StatusLine    # New location
+from swecli.ui.chat.application import ChatApplication # New location
 
 # Deprecated imports (with warnings)
 import warnings
@@ -325,7 +325,7 @@ def __getattr__(name):
             DeprecationWarning,
             stacklevel=2
         )
-        from opencli.ui.new_module import NewClass
+        from swecli.ui.new_module import NewClass
         return NewClass
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 ```
@@ -350,7 +350,7 @@ def __getattr__(name):
 - Easy to test (small, focused components)
 
 ### Developer Experience
-- Clear imports: `from opencli.ui.chat import ChatApplication`
+- Clear imports: `from swecli.ui.chat import ChatApplication`
 - Semantic organization: formatters/, widgets/, chat/
 - Self-documenting structure
 
@@ -369,7 +369,7 @@ def __getattr__(name):
 
 ### Risk 2: Conflicts with REPL Refactoring
 **Mitigation:**
-- Don't touch `opencli/repl/` imports
+- Don't touch `swecli/repl/` imports
 - Only update UI-internal structure
 - Coordinate with REPL refactoring team
 - Use feature flags to enable gradually

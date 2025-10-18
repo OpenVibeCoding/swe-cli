@@ -4,8 +4,8 @@ import sys
 from pathlib import Path
 from rich.console import Console
 
-from opencli.core.approval import ApprovalManager
-from opencli.models.operation import Operation, OperationType
+from swecli.core.approval import ApprovalManager
+from swecli.models.operation import Operation, OperationType
 
 def test_approval_menu():
     """Test the approval menu with different operations."""
@@ -13,7 +13,7 @@ def test_approval_menu():
     approval_manager = ApprovalManager(console)
 
     console.print("\n[bold cyan]═══════════════════════════════════════════════[/bold cyan]")
-    console.print("[bold cyan]  OpenCLI Approval Menu Test[/bold cyan]")
+    console.print("[bold cyan]  SWE-CLI Approval Menu Test[/bold cyan]")
     console.print("[bold cyan]═══════════════════════════════════════════════[/bold cyan]\n")
 
     # Test 1: File write operation

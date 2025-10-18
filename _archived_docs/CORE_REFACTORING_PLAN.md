@@ -1,12 +1,12 @@
 
 ## Phase 8 Progress (Utilities & Cleanup)
-- Relocated the action summarizer into `opencli/core/utils/` with compatibility stubs, completing the core directory reorganisation
+- Relocated the action summarizer into `swecli/core/utils/` with compatibility stubs, completing the core directory reorganisation
 - Verified CLI entrypoint and targeted pytest suite still pass after the migration
 - All top-level core modules now either represent cohesive packages or compatibility wrappers for their new structure
 
 ## Phase 9 Progress (Session Continuation)
 - Extended `SessionMetadata`/`SessionManager` to track working directories and locate the most recent session per repo
-- Added `opencli --continue` to resume the latest session for the current repository with guard rails against missing sessions or conflicting flags
+- Added `swecli --continue` to resume the latest session for the current repository with guard rails against missing sessions or conflicting flags
 - Expanded automated coverage (`tests/test_session_manager.py`) alongside existing CLI tests to validate the new session lookup helpers
 
 ## Phase 10 Progress (Session Commands)

@@ -6,16 +6,16 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from opencli.core.monitoring import TaskMonitor
-from opencli.ui.task_progress import TaskProgressDisplay
-from opencli.core.agents import OpenCLIAgent
-from opencli.models.config import AppConfig
-from opencli.core.tools import ToolRegistry
-from opencli.tools.file_ops import FileOperations
-from opencli.tools.write_tool import WriteTool
-from opencli.tools.edit_tool import EditTool
-from opencli.tools.bash_tool import BashTool
-from opencli.core.management import ModeManager, OperationMode
+from swecli.core.monitoring import TaskMonitor
+from swecli.ui.task_progress import TaskProgressDisplay
+from swecli.core.agents import SWE-CLIAgent
+from swecli.models.config import AppConfig
+from swecli.core.tools import ToolRegistry
+from swecli.tools.file_ops import FileOperations
+from swecli.tools.write_tool import WriteTool
+from swecli.tools.edit_tool import EditTool
+from swecli.tools.bash_tool import BashTool
+from swecli.core.management import ModeManager, OperationMode
 from rich.console import Console
 
 print("╔════════════════════════════════════════════════════════════╗")
@@ -44,7 +44,7 @@ mode_manager = ModeManager()
 mode_manager.set_mode(OperationMode.PLAN)
 
 # Create agent
-agent = OpenCLIAgent(config, tool_registry, mode_manager)
+agent = SWE-CLIAgent(config, tool_registry, mode_manager)
 
 print(f"Using model: {config.model}")
 print("Making a simple LLM call...\n")

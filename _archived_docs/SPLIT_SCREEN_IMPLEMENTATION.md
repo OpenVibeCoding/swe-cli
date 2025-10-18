@@ -2,14 +2,14 @@
 
 ## Status: Simple Split-Screen Display Complete ✅
 
-This document describes the split-screen chat interface implementation for OpenCLI.
+This document describes the split-screen chat interface implementation for SWE-CLI.
 
 ---
 
 ## What's Been Implemented
 
 ### Phase 1: Conversation Buffer ✅
-**File:** `opencli/ui/conversation_buffer.py`
+**File:** `swecli/ui/conversation_buffer.py`
 
 A buffer that stores all chat outputs (messages, panels, spinners, etc.) as Rich renderables.
 
@@ -20,7 +20,7 @@ A buffer that stores all chat outputs (messages, panels, spinners, etc.) as Rich
 - All tests passing
 
 ### Phase 2: Dual Console ✅
-**File:** `opencli/ui/dual_console.py`
+**File:** `swecli/ui/dual_console.py`
 
 A wrapper around Rich Console that outputs to both terminal AND buffer simultaneously.
 
@@ -33,11 +33,11 @@ A wrapper around Rich Console that outputs to both terminal AND buffer simultane
 - All tests passing
 
 **Integration:**
-- `opencli/repl/repl.py:169-170` - REPL now uses DualConsole
+- `swecli/repl/repl.py:169-170` - REPL now uses DualConsole
 - All existing output automatically captured
 
 ### Phase 3: Split Layout Structure ✅
-**File:** `opencli/ui/split_layout.py`
+**File:** `swecli/ui/split_layout.py`
 
 The split-screen layout component with scrollable conversation area.
 
@@ -51,9 +51,9 @@ The split-screen layout component with scrollable conversation area.
 
 ### Phase 4: Integration with Feature Flag ✅
 **Files Modified:**
-- `opencli/models/config.py:85` - Added `use_split_layout` flag
-- `opencli/repl/repl.py:173-179` - Create split layout when flag enabled
-- `opencli/repl/repl.py:373-387` - Hide input frame borders in split mode
+- `swecli/models/config.py:85` - Added `use_split_layout` flag
+- `swecli/repl/repl.py:173-179` - Create split layout when flag enabled
+- `swecli/repl/repl.py:373-387` - Hide input frame borders in split mode
 
 **Features:**
 - Config flag `use_split_layout` (default: False)
@@ -176,7 +176,7 @@ python test_split_layout_integration.py # ✅ Feature flag
 ## How to Enable (Once Complete)
 
 ### Via Config File
-Edit `~/.opencli/config.yaml`:
+Edit `~/.swecli/config.yaml`:
 ```yaml
 use_split_layout: true
 ```
@@ -262,15 +262,15 @@ export OPENCLI_USE_SPLIT_LAYOUT=true
 
 ### New Files Created (3)
 ```
-opencli/ui/conversation_buffer.py  - Buffer for chat history
-opencli/ui/dual_console.py         - Dual output console wrapper
-opencli/ui/split_layout.py         - Split-screen layout component
+swecli/ui/conversation_buffer.py  - Buffer for chat history
+swecli/ui/dual_console.py         - Dual output console wrapper
+swecli/ui/split_layout.py         - Split-screen layout component
 ```
 
 ### Modified Files (2)
 ```
-opencli/models/config.py     - Added use_split_layout flag
-opencli/repl/repl.py         - Integrated dual console & split layout
+swecli/models/config.py     - Added use_split_layout flag
+swecli/repl/repl.py         - Integrated dual console & split layout
 ```
 
 ### Test Files (5)

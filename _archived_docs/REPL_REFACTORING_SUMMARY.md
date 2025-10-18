@@ -1,4 +1,4 @@
-# OpenCLI REPL Refactoring - Complete Summary
+# SWE-CLI REPL Refactoring - Complete Summary
 
 ## Overview
 
@@ -15,7 +15,7 @@ Multi-phase refactoring to transform monolithic REPL files into modular, maintai
 
 **Goal**: Extract command logic from REPL into separate handler classes
 
-**Created Modules** (`opencli/repl/commands/`):
+**Created Modules** (`swecli/repl/commands/`):
 - `__init__.py` - Package exports
 - `session_commands.py` - Session management (/clear, /sessions, /resume)
 - `file_commands.py` - File operations (/tree, /read, /search)
@@ -31,7 +31,7 @@ Multi-phase refactoring to transform monolithic REPL files into modular, maintai
 
 **Goal**: Extract UI rendering logic into reusable components
 
-**Created Modules** (`opencli/repl/ui/`):
+**Created Modules** (`swecli/repl/ui/`):
 - `__init__.py` - Package exports
 - `text_utils.py` - Text truncation utilities
 - `message_printer.py` - Message rendering with markdown support
@@ -128,7 +128,7 @@ The `_process_query()` method is monolithic and contains:
 - Error handling
 - Status line rendering
 
-**Action**: Extract to `opencli/repl/query_processor.py`
+**Action**: Extract to `swecli/repl/query_processor.py`
 
 ```python
 class QueryProcessor:
@@ -146,7 +146,7 @@ Methods:
 - `_connect_mcp_servers()` - Lines 1682-1702
 - `_cleanup()` - Lines 1704-1718
 
-**Action**: Extract to `opencli/repl/lifecycle.py`
+**Action**: Extract to `swecli/repl/lifecycle.py`
 
 ```python
 class REPLLifecycle:
@@ -221,8 +221,8 @@ Rewrite repl.py from scratch using the extracted components
 ## Testing Checklist
 
 After Phase 3:
-- [ ] Import test: `python -c "from opencli.repl.repl import REPL"`
-- [ ] REPL starts: `python -m opencli`
+- [ ] Import test: `python -c "from swecli.repl.repl import REPL"`
+- [ ] REPL starts: `python -m swecli`
 - [ ] Commands work: `/help`, `/tree`, `/clear`, `/mode plan`, `/mcp list`
 - [ ] Query processing: Ask the AI a question
 - [ ] UI components: Verify prompt, toolbar, context display

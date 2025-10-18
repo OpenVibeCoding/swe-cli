@@ -5,7 +5,7 @@
 
 ## Summary
 
-Successfully refactored OpenCLI to use **Pydantic AI** as the core AI framework, replacing the custom HTTP-based AI client with a modern, type-safe, and feature-rich agent system.
+Successfully refactored SWE-CLI to use **Pydantic AI** as the core AI framework, replacing the custom HTTP-based AI client with a modern, type-safe, and feature-rich agent system.
 
 **All tests passing:**
 - ✅ Basic file operations (write, edit, read)
@@ -43,7 +43,7 @@ User Input → Session → Pydantic AI Agent → Automatic Tool Calling → Resu
 
 ## Files Created
 
-### 1. `opencli/models/agent_deps.py`
+### 1. `swecli/models/agent_deps.py`
 **Purpose**: Dependency injection model for Pydantic AI tools
 
 ```python
@@ -60,8 +60,8 @@ class AgentDependencies(BaseModel):
 
 **Why**: Pydantic AI uses RunContext to pass dependencies to tools, making them testable and isolated.
 
-### 2. `opencli/core/pydantic_agent.py`
-**Purpose**: Wraps Pydantic AI Agent with OpenCLI configuration
+### 2. `swecli/core/pydantic_agent.py`
+**Purpose**: Wraps Pydantic AI Agent with SWE-CLI configuration
 
 **Key features**:
 - Configures Fireworks AI via OpenAI-compatible provider
@@ -70,7 +70,7 @@ class AgentDependencies(BaseModel):
 - Type-safe with dependency injection
 
 ```python
-class OpenCLIAgent:
+class SWE-CLIAgent:
     def __init__(self, config, tool_registry, mode_manager):
         # Create OpenAI-compatible model for Fireworks AI
         model = OpenAIModel(
@@ -90,8 +90,8 @@ class OpenCLIAgent:
         self._register_tools()
 ```
 
-### 3. `opencli/tools/pydantic_tools.py`
-**Purpose**: Wraps OpenCLI tools as Pydantic AI tools
+### 3. `swecli/tools/pydantic_tools.py`
+**Purpose**: Wraps SWE-CLI tools as Pydantic AI tools
 
 **Key features**:
 - Uses `@agent.tool` decorator
@@ -119,7 +119,7 @@ def write_file(ctx: RunContext[AgentDependencies], file_path: str, content: str)
     return result["output"]
 ```
 
-### 4. `opencli/core/pydantic_executor.py`
+### 4. `swecli/core/pydantic_executor.py`
 **Purpose**: Simplified executor using Pydantic AI
 
 **Before** (`autonomous_executor.py`): 400+ lines
@@ -152,10 +152,10 @@ class PydanticExecutor:
 
 ## Files Modified
 
-### `opencli/repl/repl.py`
+### `swecli/repl/repl.py`
 **Changes**:
 - Removed `AIClient` initialization
-- Added `OpenCLIAgent` and `PydanticExecutor`
+- Added `SWE-CLIAgent` and `PydanticExecutor`
 - Same interface, different backend
 
 **Before**:
@@ -170,7 +170,7 @@ self.autonomous_executor = AutonomousExecutor(
 
 **After**:
 ```python
-self.pydantic_agent = OpenCLIAgent(
+self.pydantic_agent = SWE-CLIAgent(
     self.config,
     self.tool_registry,
     self.mode_manager
@@ -311,7 +311,7 @@ class AIClient:
 
 **After** (`pydantic_agent.py` - 150 lines):
 ```python
-class OpenCLIAgent:
+class SWE-CLIAgent:
     def __init__(self, config, ...):
         model = OpenAIModel(config.model, ...)
         self.agent = Agent(model=model, ...)
@@ -325,7 +325,7 @@ class OpenCLIAgent:
 
 ### Manual Test
 ```bash
-$ opencli
+$ swecli
 [NORMAL] > create a test file called hello.txt with content "Hello Pydantic AI!"
 
 # Expected:
@@ -454,7 +454,7 @@ pip install "pydantic-ai-slim[openai]"
 - Users: Same great experience, better reliability
 - Future: Ready for advanced features (streaming, structured output, multi-agent)
 
-**This refactor positions OpenCLI for rapid future development with a solid, modern foundation!** 🚀
+**This refactor positions SWE-CLI for rapid future development with a solid, modern foundation!** 🚀
 
 ---
 
@@ -468,7 +468,7 @@ pip install "pydantic-ai-slim[openai]"
 6. ✅ Remove `autonomous_executor.py` (replaced by pydantic_executor.py) - DONE
 7. ✅ Fix all imports in `__init__.py` files - DONE
 8. ✅ Update `tool_registry.py` to work without tool_schemas - DONE
-9. ✅ Verify opencli starts and runs correctly - DONE
+9. ✅ Verify swecli starts and runs correctly - DONE
 
 ## Future Enhancements (Optional)
 

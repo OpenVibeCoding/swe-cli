@@ -49,7 +49,7 @@ while running:
 
 ### Phase 1: Create Chat Application Framework
 
-**New file**: `opencli/ui/chat_app.py`
+**New file**: `swecli/ui/chat_app.py`
 
 Components needed:
 1. **ConversationBuffer**: Manages message history
@@ -180,7 +180,7 @@ The existing REPL class will be refactored:
 Create test script:
 ```python
 # test_chat_app.py
-from opencli.ui.chat_app import ChatApplication
+from swecli.ui.chat_app import ChatApplication
 
 app = ChatApplication()
 

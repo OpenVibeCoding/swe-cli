@@ -61,7 +61,7 @@ console.print("\n[bold cyan]═════════════════�
 console.print("[bold cyan]  Slash Command Improvements[/bold cyan]")
 console.print("[bold cyan]═══════════════════════════════════════════════[/bold cyan]\n")
 
-from opencli.ui.autocomplete import SLASH_COMMANDS
+from swecli.ui.autocomplete import SLASH_COMMANDS
 
 console.print(f"[bold]Total commands:[/bold] [green]{len(SLASH_COMMANDS)}[/green] (down from 17)")
 console.print(f"[bold]Removed:[/bold] [red]7[/red] unimplemented commands\n")

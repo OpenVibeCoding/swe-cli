@@ -1,15 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python test_approval_corruption.py:*)",
-      "Bash(python:*)",
-      "Bash(cp:*)",
-      "Bash(awk:*)",
-      "Bash(sort:*)",
-      "Bash(git add:*)",
-      "Bash(git init:*)",
-      "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(find:*)",
+      "Bash(swecli --version:*)",
+      "Bash(timeout 5 swecli:*)",
+      "Bash(python3:*)",
+      "Bash(pip install:*)",
+      "Read(//Users/quocnghi/.swecli/**)",
+      "Bash(cat:*)",
+      "Bash(env)"
     ],
     "deny": [],
     "ask": []

@@ -6,8 +6,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from opencli.tools.bash_tool import BashTool
-from opencli.models.config import AppConfig
+from swecli.tools.bash_tool import BashTool
+from swecli.models.config import AppConfig
 
 
 def test_bash_error_messages():

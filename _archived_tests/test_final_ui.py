@@ -7,8 +7,8 @@ from pathlib import Path
 # Add opencli to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from opencli.ui.chat_app import ChatApplication
-from opencli.ui.chat_formatters import ChatBoxFormatter
+from swecli.ui.chat_app import ChatApplication
+from swecli.ui.chat_formatters import ChatBoxFormatter
 
 print("Testing Final UI: Scrolling + ANSI Colors")
 print("=" * 50)
@@ -76,7 +76,7 @@ if has_custom_control and has_ansi and has_boxes and scroll_works:
     print("   ✓ ANSI codes for colors")
     print("   ✓ Box characters for borders")
     print("   ✓ Scroll control methods")
-    print("\nOpenCLI should now have:")
+    print("\nSWE-CLI should now have:")
     print("   • Colored text (cyan, green, etc.)")
     print("   • Bordered tool call/result boxes")
     print("   • Working scrolling (auto + manual)")

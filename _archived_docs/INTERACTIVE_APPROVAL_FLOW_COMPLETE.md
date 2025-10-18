@@ -51,7 +51,7 @@ Great! Your pingpong game is now running...
 ## Changes Made
 
 ### 1. Fixed Mode Manager Logic
-**File**: `opencli/core/mode_manager.py`
+**File**: `swecli/core/mode_manager.py`
 
 **Changed** (lines 62-64):
 ```python
@@ -63,7 +63,7 @@ if self._current_mode == OperationMode.NORMAL:
 **Result**: NORMAL mode now requires approval for ALL operations (write_file, run_command, etc.)
 
 ### 2. Updated Mode Descriptions
-**File**: `opencli/core/mode_manager.py`
+**File**: `swecli/core/mode_manager.py`
 
 **Changed** (line 12):
 ```python
@@ -76,7 +76,7 @@ OperationMode.NORMAL: "Interactive execution with approval for each operation",
 ```
 
 ### 3. Enhanced System Prompt
-**File**: `opencli/core/pydantic_agent.py`
+**File**: `swecli/core/pydantic_agent.py`
 
 **Changed** (lines 58-72):
 ```python
@@ -98,7 +98,7 @@ You: "Done! Your snake game is running. It features..."
 **Result**: Agent now explains before acting, making the workflow conversational.
 
 ### 4. Updated Welcome Message
-**File**: `opencli/repl/repl.py`
+**File**: `swecli/repl/repl.py`
 
 **Changed** (line 156):
 ```python
@@ -166,8 +166,8 @@ Understood, I've cancelled the operation. Your files are safe.
 
 ### Test 1: Approval Flow Works
 ```bash
-cd /Users/quocnghi/codes/test_opencli
-opencli
+cd /Users/quocnghi/codes/test_swecli
+swecli
 [NORMAL] > create a test.txt file
 # Should prompt for approval before creating
 ```
@@ -194,7 +194,7 @@ opencli
 
 ## Comparison to Claude Code
 
-| Feature | Claude Code | OpenCLI (Now) | Status |
+| Feature | Claude Code | SWE-CLI (Now) | Status |
 |---------|------------|---------------|---------|
 | Explains plan first | ✅ | ✅ | ✅ MATCH |
 | Approval for each operation | ✅ | ✅ | ✅ MATCH |
@@ -248,15 +248,15 @@ opencli
 
 ## Files Modified
 
-1. **`opencli/core/mode_manager.py`**
+1. **`swecli/core/mode_manager.py`**
    - Line 12: Updated mode comment
    - Lines 62-64: Changed approval logic to always return True in NORMAL mode
    - Line 143: Updated mode description
 
-2. **`opencli/core/pydantic_agent.py`**
+2. **`swecli/core/pydantic_agent.py`**
    - Lines 58-72: Enhanced system prompt with explain-first workflow
 
-3. **`opencli/repl/repl.py`**
+3. **`swecli/repl/repl.py`**
    - Line 156: Updated welcome message
 
 ## Verification
@@ -290,12 +290,12 @@ All operations should show "✓ Requires approval".
 
 ## Status: ✅ COMPLETE
 
-The interactive approval flow is now fully implemented and tested. OpenCLI now provides a safe, transparent, and interactive development experience similar to Claude Code.
+The interactive approval flow is now fully implemented and tested. SWE-CLI now provides a safe, transparent, and interactive development experience similar to Claude Code.
 
 Try it out:
 ```bash
-cd /Users/quocnghi/codes/test_opencli
-opencli
+cd /Users/quocnghi/codes/test_swecli
+swecli
 [NORMAL] > create a simple game for me
 ```
 

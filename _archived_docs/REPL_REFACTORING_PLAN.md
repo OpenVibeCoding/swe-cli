@@ -1,7 +1,7 @@
 # REPL Refactoring Plan
 
 ## Overview
-The `opencli/repl/` directory contains two massive files that need refactoring:
+The `swecli/repl/` directory contains two massive files that need refactoring:
 - **repl.py**: 1,686 lines - Core REPL logic with 50+ methods
 - **repl_chat.py**: 1,419 lines - Chat interface wrapper with complex state management
 
@@ -29,7 +29,7 @@ The `opencli/repl/` directory contains two massive files that need refactoring:
 
 **New Structure**:
 ```
-opencli/repl/
+swecli/repl/
 ├── commands/
 │   ├── __init__.py
 │   ├── base.py              # CommandHandler ABC
@@ -55,7 +55,7 @@ opencli/repl/
 
 **New Structure**:
 ```
-opencli/repl/
+swecli/repl/
 ├── ui/
 │   ├── __init__.py
 │   ├── prompt_builder.py     # Prompt tokens, input frames
@@ -80,7 +80,7 @@ opencli/repl/
 
 **New Structure**:
 ```
-opencli/repl/
+swecli/repl/
 ├── query/
 │   ├── __init__.py
 │   ├── processor.py          # QueryProcessor class
@@ -104,7 +104,7 @@ opencli/repl/
 
 **New Structure**:
 ```
-opencli/repl/
+swecli/repl/
 ├── chat/
 │   ├── __init__.py
 │   ├── application.py        # Main REPLChatApplication (simplified)
@@ -130,7 +130,7 @@ opencli/repl/
 
 **New Structure**:
 ```
-opencli/core/
+swecli/core/
 ├── approval/
 │   ├── __init__.py
 │   ├── manager.py           # Base ApprovalManager (already exists)
@@ -153,7 +153,7 @@ opencli/core/
 
 **New Structure**:
 ```
-opencli/repl/
+swecli/repl/
 ├── __init__.py
 ├── repl.py                   # Slim REPL class (~300 lines)
 ├── repl_chat.py             # Slim REPLChatApplication (~300 lines)
@@ -184,8 +184,8 @@ opencli/repl/
 **Day 1-2: Setup + Session Commands**
 ```bash
 # Create structure
-mkdir -p opencli/repl/commands
-touch opencli/repl/commands/{__init__.py,base.py,session_commands.py}
+mkdir -p swecli/repl/commands
+touch swecli/repl/commands/{__init__.py,base.py,session_commands.py}
 
 # Extract methods:
 # - _clear_session() → SessionCommands.clear()
@@ -215,7 +215,7 @@ def test_clear_session_command():
 **Verification**:
 ```bash
 # After Phase 1, REPL should still work:
-python -m opencli.repl
+python -m swecli.repl
 # Try: /help, /clear, /mode plan, /mcp list
 ```
 
@@ -240,7 +240,7 @@ python -m opencli.repl
 **Verification**:
 ```bash
 # UI should look identical:
-python -m opencli.repl
+python -m swecli.repl
 # Visual check: welcome banner, toolbar, prompts
 ```
 
@@ -266,7 +266,7 @@ python -m opencli.repl
 **Verification**:
 ```bash
 # AI queries should work:
-python -m opencli.repl
+python -m swecli.repl
 > "list all python files"
 # Should execute successfully
 ```
@@ -293,7 +293,7 @@ python -m opencli.repl
 **Verification**:
 ```bash
 # Chat mode should work:
-python -m opencli.cli chat
+python -m swecli.cli chat
 # Test: typing, spinners, context display
 ```
 
@@ -302,7 +302,7 @@ python -m opencli.cli chat
 #### **Week 5: Phase 5 - Approval Management**
 
 **Day 1-3: Move ChatApprovalManager**
-- Move to opencli/core/approval/
+- Move to swecli/core/approval/
 - Update imports
 - Approval flow tests
 
@@ -314,7 +314,7 @@ python -m opencli.cli chat
 **Verification**:
 ```bash
 # Approval should work in NORMAL mode:
-python -m opencli.repl
+python -m swecli.repl
 /mode normal
 > "delete all files"  # Should prompt for approval
 ```
@@ -336,11 +336,11 @@ python -m opencli.repl
 **Final Verification**:
 ```bash
 # Run full test suite:
-pytest opencli/repl/
+pytest swecli/repl/
 
 # Manual testing:
-python -m opencli.repl  # Try all commands
-python -m opencli.cli chat  # Try full chat session
+python -m swecli.repl  # Try all commands
+python -m swecli.cli chat  # Try full chat session
 ```
 
 ---
@@ -455,41 +455,41 @@ git checkout pre-repl-refactor-backup
 ### Files to Create (29 new files)
 
 #### Commands (7 files)
-1. `opencli/repl/commands/__init__.py`
-2. `opencli/repl/commands/base.py`
-3. `opencli/repl/commands/session_commands.py`
-4. `opencli/repl/commands/file_commands.py`
-5. `opencli/repl/commands/mode_commands.py`
-6. `opencli/repl/commands/mcp_commands.py`
-7. `opencli/repl/commands/help_command.py`
+1. `swecli/repl/commands/__init__.py`
+2. `swecli/repl/commands/base.py`
+3. `swecli/repl/commands/session_commands.py`
+4. `swecli/repl/commands/file_commands.py`
+5. `swecli/repl/commands/mode_commands.py`
+6. `swecli/repl/commands/mcp_commands.py`
+7. `swecli/repl/commands/help_command.py`
 
 #### UI (6 files)
-8. `opencli/repl/ui/__init__.py`
-9. `opencli/repl/ui/prompt_builder.py`
-10. `opencli/repl/ui/toolbar.py`
-11. `opencli/repl/ui/welcome_screen.py`
-12. `opencli/repl/ui/status_renderer.py`
-13. `opencli/repl/ui/constants.py`
+8. `swecli/repl/ui/__init__.py`
+9. `swecli/repl/ui/prompt_builder.py`
+10. `swecli/repl/ui/toolbar.py`
+11. `swecli/repl/ui/welcome_screen.py`
+12. `swecli/repl/ui/status_renderer.py`
+13. `swecli/repl/ui/constants.py`
 
 #### Query (5 files)
-14. `opencli/repl/query/__init__.py`
-15. `opencli/repl/query/processor.py`
-16. `opencli/repl/query/enhancer.py`
-17. `opencli/repl/query/react_loop.py`
-18. `opencli/repl/query/monitoring.py`
+14. `swecli/repl/query/__init__.py`
+15. `swecli/repl/query/processor.py`
+16. `swecli/repl/query/enhancer.py`
+17. `swecli/repl/query/react_loop.py`
+18. `swecli/repl/query/monitoring.py`
 
 #### Chat (6 files)
-19. `opencli/repl/chat/__init__.py`
-20. `opencli/repl/chat/application.py`
-21. `opencli/repl/chat/spinner_manager.py`
-22. `opencli/repl/chat/context_monitor.py`
-23. `opencli/repl/chat/message_renderer.py`
-24. `opencli/repl/chat/key_bindings.py`
-25. `opencli/repl/chat/session_runner.py` (already exists!)
+19. `swecli/repl/chat/__init__.py`
+20. `swecli/repl/chat/application.py`
+21. `swecli/repl/chat/spinner_manager.py`
+22. `swecli/repl/chat/context_monitor.py`
+23. `swecli/repl/chat/message_renderer.py`
+24. `swecli/repl/chat/key_bindings.py`
+25. `swecli/repl/chat/session_runner.py` (already exists!)
 
 #### Approval (2 files)
-26. `opencli/core/approval/__init__.py`
-27. `opencli/core/approval/chat_approval.py`
+26. `swecli/core/approval/__init__.py`
+27. `swecli/core/approval/chat_approval.py`
 
 #### Tests (2 files)
 28. `tests/repl/test_commands.py`
@@ -530,8 +530,8 @@ git checkout -b refactor/repl-phase1-commands
 
 3. **Create command structure**:
 ```bash
-mkdir -p opencli/repl/commands
-touch opencli/repl/commands/{__init__.py,base.py,session_commands.py}
+mkdir -p swecli/repl/commands
+touch swecli/repl/commands/{__init__.py,base.py,session_commands.py}
 ```
 
 4. **Start extracting**: Begin with session commands (simplest)

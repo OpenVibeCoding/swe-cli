@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from opencli.ui.animations import Spinner
+from swecli.ui.animations import Spinner
 from rich.console import Console
 
 console = Console()

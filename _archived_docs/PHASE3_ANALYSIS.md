@@ -22,8 +22,8 @@ Break down these large files into more manageable, focused modules by extracting
 ### Current Method Groups
 
 #### ✅ Already Extracted (Phase 1 & 2)
-- Command handlers → `opencli/repl/commands/`
-- UI components → `opencli/repl/ui/`
+- Command handlers → `swecli/repl/commands/`
+- UI components → `swecli/repl/ui/`
 
 #### 🔴 Still in REPL - Need Extraction
 
@@ -33,7 +33,7 @@ Break down these large files into more manageable, focused modules by extracting
 - `_process_query()` - Main ReAct loop (203 lines!)
 - `_enhance_query()` - Query enhancement logic
 
-**Recommendation**: Extract to `opencli/repl/query_processor.py`
+**Recommendation**: Extract to `swecli/repl/query_processor.py`
 ```python
 class QueryProcessor:
     """Handles query processing with ReAct pattern."""
@@ -85,7 +85,7 @@ class QueryProcessor:
 - `_connect_mcp_servers()` - Lines 1682-1702
 - `_cleanup()` - Lines 1704-1718
 
-**Recommendation**: Extract to `opencli/repl/lifecycle.py`
+**Recommendation**: Extract to `swecli/repl/lifecycle.py`
 ```python
 class REPLLifecycle:
     """Manages REPL startup and shutdown."""
@@ -116,7 +116,7 @@ class REPLLifecycle:
 - `_wrap_text()` - Lines 248-300
 - `_render_markdown_message()` - Lines 302-317
 
-**Recommendation**: Extract to `opencli/repl/ui/text_renderer.py`
+**Recommendation**: Extract to `swecli/repl/ui/text_renderer.py`
 
 ### 2. **Spinner Management** (~80 lines)
 **Methods**:
@@ -124,25 +124,25 @@ class REPLLifecycle:
 - `_stop_spinner()` - Lines 342-362
 - `_spinner_loop()` - Lines 364-397
 
-**Recommendation**: Extract to `opencli/repl/ui/spinner.py` (or reuse existing Spinner)
+**Recommendation**: Extract to `swecli/repl/ui/spinner.py` (or reuse existing Spinner)
 
 ### 3. **Status Display** (~100 lines)
 **Methods**:
 - `_get_status_text()` - Lines 119-234
 
-**Recommendation**: Extract to `opencli/repl/ui/status_display.py`
+**Recommendation**: Extract to `swecli/repl/ui/status_display.py`
 
 ### 4. **Query Processing** (~600 lines!)
 **Methods**:
 - `_process_query()` - Lines 561-1172 (611 LINES!)
 
-**Recommendation**: Extract to `opencli/repl/chat_query_processor.py`
+**Recommendation**: Extract to `swecli/repl/chat_query_processor.py`
 
 ### 5. **Key Bindings** (~40 lines)
 **Methods**:
 - `_create_key_bindings()` - Lines 76-117
 
-**Recommendation**: Extract to `opencli/repl/chat_key_bindings.py`
+**Recommendation**: Extract to `swecli/repl/chat_key_bindings.py`
 
 ---
 

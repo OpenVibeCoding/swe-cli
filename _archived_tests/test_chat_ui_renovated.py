@@ -7,8 +7,8 @@ from pathlib import Path
 # Add opencli to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from opencli.ui.chat_app import ChatApplication
-from opencli.ui.chat_formatters import ChatBoxFormatter
+from swecli.ui.chat_app import ChatApplication
+from swecli.ui.chat_formatters import ChatBoxFormatter
 
 print("Testing Renovated Chat UI")
 print("=" * 50)

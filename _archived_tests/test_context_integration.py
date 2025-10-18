@@ -7,14 +7,14 @@ import tempfile
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from opencli.core.context import ContextTokenMonitor
-from opencli.core.context import ContextCompactor
-from opencli.core.context import ContextRetriever
-from opencli.core.context import CodebaseIndexer
-from opencli.core.monitoring import TaskMonitor
-from opencli.core.management import SessionManager
-from opencli.models.message import ChatMessage, Role
-from opencli.models.session import Session
+from swecli.core.context import ContextTokenMonitor
+from swecli.core.context import ContextCompactor
+from swecli.core.context import ContextRetriever
+from swecli.core.context import CodebaseIndexer
+from swecli.core.monitoring import TaskMonitor
+from swecli.core.management import SessionManager
+from swecli.models.message import ChatMessage, Role
+from swecli.models.session import Session
 
 
 def test_full_workflow():

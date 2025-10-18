@@ -25,7 +25,7 @@
 ### Current (Ugly prompt_toolkit default)
 ```
 /help              show available commands and help
-/exit              exit OpenCLI
+/exit              exit SWE-CLI
 /tree              show directory tree structure
 ```
 *Problems: Plain, no structure, hard to scan*
@@ -34,7 +34,7 @@
 ```
 Commands
   help              show available commands and help
-  exit              exit OpenCLI
+  exit              exit SWE-CLI
   tree              show directory tree structure
   read              read a file
   write             write to a file
@@ -46,7 +46,7 @@ Commands
 ```
 ┌─ Commands ─────────────────────────────────────┐
 │ help              show available commands       │
-│ exit              exit OpenCLI                  │
+│ exit              exit SWE-CLI                  │
 │ tree              show directory tree           │
 │ read              read a file                   │
 │ write             write to a file               │
@@ -56,7 +56,7 @@ Commands
 ### File Mentions - Elegant
 ```
 Files
-  opencli/
+  swecli/
     core/
       approval.py                    2.5 KB
       tool_registry.py               1.8 KB
@@ -78,12 +78,12 @@ Files
 ```
 # Good spacing, aligned columns
 help              show available commands and help
-exit              exit OpenCLI
+exit              exit SWE-CLI
 tree              show directory tree structure
 
 # VS bad (current)
 /help              show available commands and help
-/exit              exit OpenCLI
+/exit              exit SWE-CLI
 ```
 
 **Key improvements:**
@@ -116,7 +116,7 @@ COLORS = {
 Commands
 
   help              show available commands and help
-  exit              exit OpenCLI
+  exit              exit SWE-CLI
   tree              show directory tree structure
 
 ↑↓ navigate  ⏎ select
@@ -126,7 +126,7 @@ Commands
 ```
 ┌─ Commands ─────────────────────────────────────┐
 │ help              show available commands       │
-│ exit              exit OpenCLI                  │
+│ exit              exit SWE-CLI                  │
 │ tree              show directory tree           │
 └─────────────────────────────────────────────────┘
 ```
@@ -135,7 +135,7 @@ Commands
 ```
 ─── Commands ─────────────────────────────────────
   help              show available commands
-  exit              exit OpenCLI
+  exit              exit SWE-CLI
   tree              show directory tree
 ──────────────────────────────────────────────────
 ```
@@ -150,13 +150,13 @@ Commands
 
 **Goal:** Fix spacing, alignment, and remove visual clutter
 
-**Changes to `opencli/ui/autocomplete.py`:**
+**Changes to `swecli/ui/autocomplete.py`:**
 
 ```python
 from prompt_toolkit.completion import Completion
 from prompt_toolkit.formatted_text import FormattedText
 
-class OpenCLICompleter(Completer):
+class SWE-CLICompleter(Completer):
     def _get_slash_command_completions(self, word: str):
         query = word[1:].lower()
 
@@ -210,7 +210,7 @@ elegant_style = Style.from_dict({
 ```
 Session
   help              show available commands
-  exit              exit OpenCLI
+  exit              exit SWE-CLI
   clear             clear session
 
 Files
@@ -248,7 +248,7 @@ def _get_slash_command_completions_with_categories(self, word: str):
 
 **For file mentions:**
 ```
-opencli/
+swecli/
   core/
     approval.py                2.5 KB
     tool_registry.py           1.8 KB
@@ -357,7 +357,7 @@ def _get_file_mention_completions(self, word: str):
 ### Before (Current)
 ```
 /help              show available commands and help
-/exit              exit OpenCLI
+/exit              exit SWE-CLI
 /tree              show directory tree structure
 ```
 *Rating: 3/10 - Plain and hard to scan*
@@ -365,7 +365,7 @@ def _get_file_mention_completions(self, word: str):
 ### After Phase 1 (Clean Typography)
 ```
 help              show available commands and help
-exit              exit OpenCLI
+exit              exit SWE-CLI
 tree              show directory tree structure
 read              read a file
 write             write to a file
@@ -376,7 +376,7 @@ write             write to a file
 ```
 Session
   help              show available commands and help
-  exit              exit OpenCLI
+  exit              exit SWE-CLI
   clear             clear current session
 
 Files
@@ -406,7 +406,7 @@ Execution
 
 ### Step 3: Test
 ```bash
-opencli
+swecli
 # Type / to see clean command list
 # Type @ to see organized file list
 ```

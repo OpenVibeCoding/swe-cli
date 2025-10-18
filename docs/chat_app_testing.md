@@ -14,7 +14,7 @@ The chat application requires a real terminal and cannot be tested through Claud
 ### Test the standalone chat app:
 
 ```bash
-cd /Users/quocnghi/codes/OpenCLI
+cd /Users/quocnghi/codes/SWE-CLI
 python test_chat_app.py
 ```
 
@@ -82,7 +82,7 @@ This will open a full-screen chat interface where you can:
 
 ## Code Structure
 
-### `opencli/ui/chat_app.py`
+### `swecli/ui/chat_app.py`
 
 **ConversationBuffer**:
 - Manages message history

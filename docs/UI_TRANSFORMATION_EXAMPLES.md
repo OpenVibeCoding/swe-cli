@@ -1,4 +1,4 @@
-# OpenCLI UI/UX Transformation
+# SWE-CLI UI/UX Transformation
 ## Before & After Examples
 
 ---

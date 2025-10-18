@@ -1,4 +1,4 @@
-# Context Engineering Design for OpenCLI
+# Context Engineering Design for SWE-CLI
 
 **Based on:** [Anthropic's Context Engineering Article](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)
 
@@ -21,7 +21,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                      OpenCLI Context System                      │
+│                      SWE-CLI Context System                      │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │  ┌────────────────┐  ┌──────────────┐  ┌──────────────────┐   │
@@ -66,7 +66,7 @@
 
 ### Phase 1: Context State Foundation
 
-**File:** `opencli/core/context_engine.py`
+**File:** `swecli/core/context_engine.py`
 
 ```python
 from pydantic import BaseModel, Field
@@ -102,7 +102,7 @@ class TaskContext(BaseModel):
     tokens: int = 0
 
 class ContextState(BaseModel):
-    """Main context state for OpenCLI."""
+    """Main context state for SWE-CLI."""
 
     # Conversation history
     messages: List[Message] = []
@@ -181,7 +181,7 @@ User Input
     │
     └─► 7. Update Token Count
            • Recalculate total_tokens
-           • Log to .opencli/logs/<session>.log
+           • Log to .swecli/logs/<session>.log
 ```
 
 ---
@@ -281,7 +281,7 @@ Recent messages follow below (unmodified)...
 
 ### Anthropic Principle: "Persist memory outside context windows"
 
-**File:** `.opencli/memory/session_notes.md`
+**File:** `.swecli/memory/session_notes.md`
 
 Created automatically during conversation to track:
 - Project goals and plans
@@ -295,7 +295,7 @@ Created automatically during conversation to track:
 ```markdown
 # Session Memory: 2025-10-07
 
-## Project: test_opencli
+## Project: test_swecli
 
 ### Current Goal
 Implement user authentication feature with JWT tokens.
@@ -415,14 +415,14 @@ class ContextRetriever:
 **OPENCLI.md Structure:**
 
 ```markdown
-# Project: test_opencli
+# Project: test_swecli
 
 ## Overview
 A web application using FastAPI for authentication and user management.
 
 ## Structure
 ```
-test_opencli/
+test_swecli/
 ├── api/
 │   ├── auth.py (JWT token generation)
 │   ├── users.py (User CRUD endpoints)
@@ -655,7 +655,7 @@ async def execute_tool_autonomous(tool_name: str, tool_args: Dict) -> Dict:
 
 ## 📝 Logging System
 
-### File: `.opencli/logs/<session_id>.log`
+### File: `.swecli/logs/<session_id>.log`
 
 **Structure:**
 
@@ -663,7 +663,7 @@ async def execute_tool_autonomous(tool_name: str, tool_args: Dict) -> Dict:
 {
   "session_id": "2025-10-07-14-30-45",
   "started_at": "2025-10-07T14:30:45Z",
-  "working_dir": "/Users/user/test_opencli",
+  "working_dir": "/Users/user/test_swecli",
   "events": [
     {
       "timestamp": "2025-10-07T14:30:50Z",
@@ -737,7 +737,7 @@ Based on Anthropic's principles and your requirements:
 ## 📁 File Structure
 
 ```
-opencli/
+swecli/
 ├── core/
 │   ├── context_engine.py         (NEW) - ContextState, compaction
 │   ├── token_monitor.py           (NEW) - Token counting with tiktoken
@@ -749,7 +749,7 @@ opencli/
 └── models/
     └── context_models.py          (NEW) - Pydantic models
 
-.opencli/
+.swecli/
 ├── OPENCLI.md                     (GENERATED) - Codebase summary
 ├── memory/
 │   └── session_notes.md           (GENERATED) - Structured notes
@@ -783,7 +783,7 @@ opencli/
 - [ ] Implement /init command
 - [ ] Generate OPENCLI.md
 - [ ] Structured note-taking (session_notes.md)
-- [ ] Session logs (.opencli/logs/)
+- [ ] Session logs (.swecli/logs/)
 
 ### Phase 5: Streaming & UX (Week 5)
 - [ ] Stream reasoning and actions

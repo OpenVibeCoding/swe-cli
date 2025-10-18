@@ -3,8 +3,8 @@
 from pathlib import Path
 from prompt_toolkit.document import Document
 
-from opencli.ui.autocomplete import (
-    OpenCLICompleter,
+from swecli.ui.autocomplete import (
+    SWE-CLICompleter,
     FileMentionCompleter,
     SlashCommandCompleter,
     SLASH_COMMANDS,
@@ -17,7 +17,7 @@ def test_slash_command_autocomplete():
     print("  Test 1: Slash Command Autocomplete")
     print("═══════════════════════════════════════════════\n")
 
-    completer = OpenCLICompleter(working_dir=Path.cwd())
+    completer = SWE-CLICompleter(working_dir=Path.cwd())
 
     # Test 1: Partial command "/m"
     doc = Document("/m")
@@ -53,7 +53,7 @@ def test_file_mention_autocomplete():
     print("  Test 2: File Mention Autocomplete")
     print("═══════════════════════════════════════════════\n")
 
-    completer = OpenCLICompleter(working_dir=Path.cwd())
+    completer = SWE-CLICompleter(working_dir=Path.cwd())
 
     # Test 1: Search for Python files "@test"
     doc = Document("@test")
@@ -109,7 +109,7 @@ def test_completer_integration():
     print("  Test 4: Completer Integration")
     print("═══════════════════════════════════════════════\n")
 
-    completer = OpenCLICompleter(working_dir=Path.cwd())
+    completer = SWE-CLICompleter(working_dir=Path.cwd())
 
     # Test various inputs
     test_cases = [
@@ -133,7 +133,7 @@ def test_completer_integration():
 
 if __name__ == "__main__":
     print("\n[bold magenta]═══════════════════════════════════════════════[/bold magenta]")
-    print("[bold magenta]  OpenCLI Autocomplete Test Suite[/bold magenta]")
+    print("[bold magenta]  SWE-CLI Autocomplete Test Suite[/bold magenta]")
     print("[bold magenta]═══════════════════════════════════════════════[/bold magenta]")
 
     try:
@@ -148,7 +148,7 @@ if __name__ == "__main__":
         print("═══════════════════════════════════════════════\n")
 
         print("To test interactively:")
-        print("  1. Run 'opencli'")
+        print("  1. Run 'swecli'")
         print("  2. Type '/' and press Tab to see slash commands")
         print("  3. Type '@' and press Tab to see file mentions")
         print("  4. Start typing to filter results\n")

@@ -63,7 +63,7 @@ Many methods in repl.py are redundant because they duplicate functionality alrea
 ## 📋 Pending Tasks
 
 ### Step 3: Extract QueryProcessor (~200 lines)
-Create `opencli/repl/query_processor.py`:
+Create `swecli/repl/query_processor.py`:
 ```python
 class QueryProcessor:
     """Handles query processing with ReAct pattern."""
@@ -72,7 +72,7 @@ class QueryProcessor:
 ```
 
 ### Step 4: Extract Lifecycle Management (~50 lines)
-Create `opencli/repl/lifecycle.py`:
+Create `swecli/repl/lifecycle.py`:
 ```python
 class REPLLifecycle:
     """Manages REPL startup and shutdown."""

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test if OpenCLI starts without errors."""
+"""Test if SWE-CLI starts without errors."""
 
 import sys
 from pathlib import Path
@@ -9,9 +9,9 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 try:
     print("Testing imports...")
-    from opencli.ui.chat_app import ChatApplication
-    from opencli.ui.chat_console import ChatConsole
-    from opencli.ui.chat_formatters import ChatBoxFormatter
+    from swecli.ui.chat_app import ChatApplication
+    from swecli.ui.chat_console import ChatConsole
+    from swecli.ui.chat_formatters import ChatBoxFormatter
     print("✓ All imports successful")
 
     print("\nTesting ChatApplication creation...")
@@ -36,7 +36,7 @@ try:
     result_box = formatter.success_result_box("test_tool", "Success!")
     print(f"✓ Result box created: {len(result_box)} chars")
 
-    print("\n✅ All tests passed! OpenCLI should start properly.")
+    print("\n✅ All tests passed! SWE-CLI should start properly.")
     sys.exit(0)
 
 except Exception as e:

@@ -1,7 +1,7 @@
-# OpenCLI UI/UX Improvement Strategy
+# SWE-CLI UI/UX Improvement Strategy
 ## Inspired by Claude Code's Design Philosophy
 
-> **Goal**: Transform OpenCLI into an elegant, minimal, highly usable CLI tool with Claude Code-level UX
+> **Goal**: Transform SWE-CLI into an elegant, minimal, highly usable CLI tool with Claude Code-level UX
 
 ---
 
@@ -228,7 +228,7 @@ Elapsed: 4s | Est. remaining: 2s
 #### Implementation Architecture
 
 ```python
-# opencli/ui/animations.py
+# swecli/ui/animations.py
 
 class Spinner:
     """Animated spinner for loading states"""
@@ -433,7 +433,7 @@ Error: File not found
 
   Suggestions:
   • Did you mean: config.yml?
-  • Create file: opencli write config.yaml
+  • Create file: swecli write config.yaml
   • Check path: ls -la | grep config
 ```
 
@@ -522,7 +522,7 @@ Press ↑ to expand any operation
 
 ### File Structure
 ```
-opencli/ui/
+swecli/ui/
 ├── __init__.py
 ├── display.py          # Core display logic
 ├── status_line.py      # Status bar component
@@ -591,7 +591,7 @@ class StatusLine:
 ## 🗓️ Implementation Timeline
 
 ### Week 1: Foundation
-- [ ] Create `opencli/ui/` module structure
+- [ ] Create `swecli/ui/` module structure
 - [ ] Implement `DisplayManager` class
 - [ ] Add collapsible content system
 - [ ] Smart truncation for common content types
@@ -682,7 +682,7 @@ claude-sonnet-4 | ~/project | main | 5k/200k
 ──────────────────────────────────────────
 ```
 
-### OpenCLI Target Style
+### SWE-CLI Target Style
 ```
 I'll update the configuration file for you.
 
@@ -699,7 +699,7 @@ The timeout is currently 30 seconds. I'll increase it to 60.
 Done! Configuration updated.
 
 ──────────────────────────────────────────
-qwen3-coder | ~/opencli | main | 3k/100k
+qwen3-coder | ~/swecli | main | 3k/100k
 ──────────────────────────────────────────
 ```
 

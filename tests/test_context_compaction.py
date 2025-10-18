@@ -1,9 +1,9 @@
 """Test context compaction with 1000 token limit."""
 
 import asyncio
-from opencli.models.config import AppConfig
-from opencli.core.context import ContextTokenMonitor
-from opencli.core.agents.compact_agent import CompactAgent
+from swecli.models.config import AppConfig
+from swecli.core.context import ContextTokenMonitor
+from swecli.core.agents.compact_agent import CompactAgent
 
 
 def test_token_counting():
@@ -147,5 +147,5 @@ if __name__ == "__main__":
 
     print("\n" + "=" * 50)
     print("\n✅ All tests passed!")
-    print("\nNext step: Run OpenCLI and test with actual conversations")
+    print("\nNext step: Run SWE-CLI and test with actual conversations")
     print("The context should trigger compaction at 99% (0% remaining)")

@@ -13,7 +13,7 @@ The `ChatApprovalManager.request_approval()` method had a different signature th
 
 ## Original Signature
 
-**`opencli/core/approval.py:245-250`:**
+**`swecli/core/approval.py:245-250`:**
 ```python
 def request_approval(
     self,
@@ -143,7 +143,7 @@ def create_repl_chat(...):
 
 ## Files Modified
 
-**`opencli/repl/repl_chat.py`**
+**`swecli/repl/repl_chat.py`**
 - Lines 407-415: Updated `request_approval()` signature to match original
 
 ## Status

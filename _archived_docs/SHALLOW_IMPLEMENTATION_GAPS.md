@@ -1,4 +1,4 @@
-# OpenCLI Implementation Gap Analysis
+# SWE-CLI Implementation Gap Analysis
 
 **Date**: 2025-10-07
 **Purpose**: Document all shallow features that need deepening for 5-10x productivity
@@ -7,7 +7,7 @@
 
 ## Executive Summary
 
-Current OpenCLI has **working features but delivers minimal value**. All features are shallow implementations that don't provide the autonomous, proactive experience needed for 5-10x productivity gains.
+Current SWE-CLI has **working features but delivers minimal value**. All features are shallow implementations that don't provide the autonomous, proactive experience needed for 5-10x productivity gains.
 
 ### Critical Issues:
 - ❌ **Auto mode just skips approvals** - No autonomous iteration
@@ -24,7 +24,7 @@ Current OpenCLI has **working features but delivers minimal value**. All feature
 ## 1. Auto Mode (Phase 2) - CRITICALLY SHALLOW
 
 ### Current Implementation:
-**File**: `opencli/core/mode_manager.py:68-74`
+**File**: `swecli/core/mode_manager.py:68-74`
 ```python
 # Auto mode
 if self._current_mode == OperationMode.AUTO:
@@ -90,7 +90,7 @@ Ready for review!
 ```
 
 ### Required Changes:
-**File**: `opencli/repl/repl.py:144-256` (entire `_process_query` method)
+**File**: `swecli/repl/repl.py:144-256` (entire `_process_query` method)
 - Add iteration loop (max 5 attempts)
 - Check tool results for errors
 - Auto-fix common errors (imports, syntax)
@@ -104,7 +104,7 @@ Ready for review!
 ## 2. Tool Execution - NO ERROR RECOVERY
 
 ### Current Implementation:
-**File**: `opencli/repl/repl.py:176-204`
+**File**: `swecli/repl/repl.py:176-204`
 ```python
 # Execute each tool call
 tool_results = []
@@ -176,7 +176,7 @@ Success! Pygame installed in venv and tetris.py running.
 ## 3. Codebase Intelligence - COMPLETELY MISSING
 
 ### Current Implementation:
-**File**: `opencli/repl/repl.py:282-324`
+**File**: `swecli/repl/repl.py:282-324`
 - Only commands: `/read`, `/search`, `/tree`
 - No `/init` command exists
 - No codebase scanning
@@ -217,7 +217,7 @@ Project Analysis:
 ├── Tests: pytest (127 tests, 94% coverage)
 └── Commands: make test, make run, make migrate
 
-Generated: .opencli/OPENCLI.md (856 tokens)
+Generated: .swecli/OPENCLI.md (856 tokens)
 Context loaded. Ready!
 
 > Add role-based permissions to authentication
@@ -238,9 +238,9 @@ Proceed? [y/n]
 
 ### Required Changes:
 **New files needed**:
-1. `opencli/tools/codebase_scanner.py` - AST parsing, framework detection
-2. `opencli/tools/context_loader.py` - Hierarchical OPENCLI.md loading
-3. `opencli/commands/init.py` - /init command handler
+1. `swecli/tools/codebase_scanner.py` - AST parsing, framework detection
+2. `swecli/tools/context_loader.py` - Hierarchical OPENCLI.md loading
+3. `swecli/commands/init.py` - /init command handler
 
 **New slash commands**:
 - `/init` - Scan and analyze codebase
@@ -288,13 +288,13 @@ Token usage: 4,821/100,000 (5%)
 ```
 
 ### Required Changes:
-**File**: `opencli/repl/repl.py` - Add after tool execution
+**File**: `swecli/repl/repl.py` - Add after tool execution
 - After write/edit: suggest tests
 - After test pass: suggest commit
 - At 70% tokens: suggest /compact
 - After error: suggest /mode auto
 
-**New file**: `opencli/core/suggestion_engine.py`
+**New file**: `swecli/core/suggestion_engine.py`
 ```python
 class SuggestionEngine:
     def suggest_next_steps(self, last_operation, context):
@@ -310,7 +310,7 @@ class SuggestionEngine:
 ## 5. Autonomous Debugging - COMPLETELY MISSING
 
 ### Current Implementation:
-**File**: `opencli/core/error_handler.py`
+**File**: `swecli/core/error_handler.py`
 ```python
 def handle_error(self, error: Exception) -> None:
     """Display formatted error."""
@@ -368,7 +368,7 @@ Committed: "fix: add test data validation and fixtures"
 ```
 
 ### Required Changes:
-**New file**: `opencli/tools/debug_assistant.py`
+**New file**: `swecli/tools/debug_assistant.py`
 ```python
 class DebugAssistant:
     def analyze_error(self, error_msg, stack_trace):
@@ -383,7 +383,7 @@ class DebugAssistant:
         # Iterate until pass
 ```
 
-**File**: `opencli/core/error_handler.py` - Complete rewrite
+**File**: `swecli/core/error_handler.py` - Complete rewrite
 - Add stack trace parsing
 - Identify error patterns
 - Suggest fixes proactively
@@ -396,7 +396,7 @@ class DebugAssistant:
 ## 6. Keyboard Shortcuts & REPL Flow - MISSING
 
 ### Current Implementation:
-**File**: `opencli/repl/repl.py:74-76`
+**File**: `swecli/repl/repl.py:74-76`
 ```python
 self.prompt_session: PromptSession[str] = PromptSession(
     history=FileHistory(str(history_file))
@@ -439,7 +439,7 @@ Assistant: I'll create a REST API...
 ```
 
 ### Required Changes:
-**File**: `opencli/repl/repl.py:74-76`
+**File**: `swecli/repl/repl.py:74-76`
 ```python
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.completion import WordCompleter
@@ -466,7 +466,7 @@ self.prompt_session: PromptSession[str] = PromptSession(
 )
 ```
 
-**File**: `opencli/core/ai_client.py` - Add connection pooling
+**File**: `swecli/core/ai_client.py` - Add connection pooling
 ```python
 import httpx
 
@@ -553,7 +553,7 @@ Ready for review!
 ```
 
 ### Required Changes:
-**New file**: `opencli/tools/git_integration.py`
+**New file**: `swecli/tools/git_integration.py`
 ```python
 import subprocess
 from typing import Optional
@@ -731,7 +731,7 @@ Switching to Auto mode...
 ```
 
 ### Required Changes:
-**New file**: `opencli/tools/planner.py`
+**New file**: `swecli/tools/planner.py`
 ```python
 class PlanningEngine:
     def quick_plan(self, task: str) -> dict:
@@ -768,7 +768,7 @@ class PlanningEngine:
 ## 9. Session Management - SHALLOW
 
 ### Current Implementation:
-**File**: `opencli/core/session_manager.py`
+**File**: `swecli/core/session_manager.py`
 - Saves sessions as JSON
 - Can resume sessions
 - No compacting
@@ -800,7 +800,7 @@ Compacted! Continue working.
 ```
 
 ### Required Changes:
-**New file**: `opencli/tools/session_compactor.py`
+**New file**: `swecli/tools/session_compactor.py`
 - AI-powered summarization
 - Preserve code and decisions
 - Remove redundant conversation
@@ -870,4 +870,4 @@ After deepening implementation, we should see:
 4. → **Iterate and test** - Each feature must deliver value
 5. → **Measure impact** - Track time savings and success rates
 
-**The goal**: Transform OpenCLI from "features that work" to "features that deliver 5-10x productivity"
+**The goal**: Transform SWE-CLI from "features that work" to "features that deliver 5-10x productivity"

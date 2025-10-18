@@ -1,4 +1,4 @@
-# OpenCLI Agent Guidelines
+# SWE-CLI Agent Guidelines
 
 ## Commands
 - **Build**: `pip install -e .`

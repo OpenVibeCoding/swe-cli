@@ -7,8 +7,8 @@ import tempfile
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from opencli.core.context import CodebaseIndexer
-from opencli.core.context import ContextTokenMonitor
+from swecli.core.context import CodebaseIndexer
+from swecli.core.context import ContextTokenMonitor
 
 
 def test_generate_index():
@@ -17,7 +17,7 @@ def test_generate_index():
     print("Test 1: Generate Index")
     print("=" * 60)
 
-    # Test on OpenCLI itself
+    # Test on SWE-CLI itself
     indexer = CodebaseIndexer(working_dir=Path.cwd())
     content = indexer.generate_index()
 
@@ -211,9 +211,9 @@ def test_project_type_detection():
 
 
 def test_real_opencli_index():
-    """Test generating index for real OpenCLI project."""
+    """Test generating index for real SWE-CLI project."""
     print("=" * 60)
-    print("Test 9: Real OpenCLI Index Generation")
+    print("Test 9: Real SWE-CLI Index Generation")
     print("=" * 60)
 
     indexer = CodebaseIndexer(working_dir=Path.cwd())
@@ -221,7 +221,7 @@ def test_real_opencli_index():
 
     stats = indexer.get_stats(content)
 
-    print(f"\nOpenCLI Index Statistics:")
+    print(f"\nSWE-CLI Index Statistics:")
     print(f"  Tokens: {stats['tokens']:,}")
     print(f"  Characters: {stats['characters']:,}")
     print(f"  Lines: {stats['lines']}")
@@ -239,7 +239,7 @@ def test_real_opencli_index():
         print(f"✓ Successfully under 3k tokens!")
     else:
         print(f"⚠️  Note: {stats['tokens']} tokens (over 3k)")
-        print("   (OpenCLI is a large project, compression may be needed)")
+        print("   (SWE-CLI is a large project, compression may be needed)")
 
     print()
 

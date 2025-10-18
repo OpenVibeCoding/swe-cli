@@ -6,10 +6,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from opencli.repl.repl_chat import create_repl_chat
-from opencli.core.management import ConfigManager
-from opencli.core.management import SessionManager
-from opencli.ui.rich_to_text import rich_to_text_box
+from swecli.repl.repl_chat import create_repl_chat
+from swecli.core.management import ConfigManager
+from swecli.core.management import SessionManager
+from swecli.ui.rich_to_text import rich_to_text_box
 from rich.panel import Panel
 
 

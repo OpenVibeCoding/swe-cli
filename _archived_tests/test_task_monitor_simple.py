@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from opencli.core.monitoring import TaskMonitor
+from swecli.core.monitoring import TaskMonitor
 from rich.console import Console
 
 

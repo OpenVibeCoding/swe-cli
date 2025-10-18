@@ -2,7 +2,7 @@
 
 ## 🎉 What Was Implemented
 
-Successfully completed Phase 2 of UI/UX improvements, bringing OpenCLI closer to Claude Code's polished experience:
+Successfully completed Phase 2 of UI/UX improvements, bringing SWE-CLI closer to Claude Code's polished experience:
 
 ### 1. **Approval Dialog Redesign** ✅
 - Interactive numbered menu (1, 2, 3) instead of letter-based (y/n/e/a/q)
@@ -97,7 +97,7 @@ Press Tab to complete, ↑/↓ to navigate
 
 ### New Files
 ```
-opencli/ui/autocomplete.py              # Autocomplete system (400+ lines)
+swecli/ui/autocomplete.py              # Autocomplete system (400+ lines)
 test_approval_structure.py              # Approval dialog tests
 test_approval_menu.py                   # Interactive approval tests
 test_autocomplete.py                    # Autocomplete tests
@@ -108,9 +108,9 @@ docs/UI_IMPROVEMENTS_PHASE2_COMPLETE.md # This file
 
 ### Modified Files
 ```
-opencli/core/approval.py                # Redesigned approval system
-opencli/ui/__init__.py                  # Export autocomplete classes
-opencli/repl/repl.py                    # Integrated autocomplete
+swecli/core/approval.py                # Redesigned approval system
+swecli/ui/__init__.py                  # Export autocomplete classes
+swecli/repl/repl.py                    # Integrated autocomplete
 ```
 
 ---
@@ -169,7 +169,7 @@ Test 4: Completer Integration
 
 ## 🎯 Features Comparison with Claude Code
 
-| Feature | Claude Code | OpenCLI Phase 2 | Status |
+| Feature | Claude Code | SWE-CLI Phase 2 | Status |
 |---------|-------------|-----------------|--------|
 | **Animations** | | | |
 | Spinner (thinking) | ✓ | ✓ | ✅ Phase 1 |
@@ -186,7 +186,7 @@ Test 4: Completer Integration
 | Real-time filtering | ✓ | ✓ | ✅ Phase 2 |
 | Context-aware | ✓ | ✓ | ✅ Phase 2 |
 
-**Result**: OpenCLI now matches Claude Code's UX! 🎉
+**Result**: SWE-CLI now matches Claude Code's UX! 🎉
 
 ---
 
@@ -215,7 +215,7 @@ You'll see:
 ### 2. **File Mentions (@)**
 
 ```
-[NORMAL] > Can you update @opencli/repl/repl.py?
+[NORMAL] > Can you update @swecli/repl/repl.py?
                           ^
                           Type @ and press Tab
 ```
@@ -246,10 +246,10 @@ You'll see:
 
 ### Example 1: File Refactoring
 ```
-[NORMAL] > Refactor @opencli/core/approval.py to extract the menu logic
+[NORMAL] > Refactor @swecli/core/approval.py to extract the menu logic
 ```
 
-The `@opencli/core/approval.py` will be autocompleted as you type!
+The `@swecli/core/approval.py` will be autocompleted as you type!
 
 ### Example 2: Quick Commands
 ```
@@ -282,7 +282,7 @@ Opens model selection menu (once implemented).
 ┌─────────────────────────────────────────────────┐
 │                  REPL Layer                     │
 │  - User input with PromptSession                │
-│  - OpenCLICompleter integration                 │
+│  - SWE-CLICompleter integration                 │
 │  - History and context management               │
 └──────────────────┬──────────────────────────────┘
                    │
@@ -299,17 +299,17 @@ Opens model selection menu (once implemented).
 
 ### Key Components
 
-1. **OpenCLICompleter** (`opencli/ui/autocomplete.py`)
+1. **SWE-CLICompleter** (`swecli/ui/autocomplete.py`)
    - Handles @ and / triggers
    - Returns `Completion` objects
    - Filters results in real-time
 
-2. **ApprovalManager** (`opencli/core/approval.py`)
+2. **ApprovalManager** (`swecli/core/approval.py`)
    - Interactive menu with `prompt_toolkit`
    - Arrow key bindings
    - Keyboard shortcuts
 
-3. **REPL** (`opencli/repl/repl.py`)
+3. **REPL** (`swecli/repl/repl.py`)
    - Integrates completer
    - Mode-aware animations
    - Status line rendering
@@ -448,7 +448,7 @@ Total: 10/10 tests passing
 All Phase 2 improvements are live and ready. Try them out:
 
 ```bash
-opencli
+swecli
 ```
 
 Then:
@@ -458,10 +458,10 @@ Then:
 4. Use **↑/↓** arrows to navigate, **Enter** to select
 5. Try **Shift+Tab** for quick "approve all"
 
-**Enjoy the enhanced OpenCLI experience!** 🚀
+**Enjoy the enhanced SWE-CLI experience!** 🚀
 
 The UI/UX is now on par with Claude Code, providing a professional, polished developer experience.
 
 ---
 
-*Phase 2 Complete - OpenCLI is now production-ready with Claude Code-level UX!* ✨
+*Phase 2 Complete - SWE-CLI is now production-ready with Claude Code-level UX!* ✨

@@ -8,8 +8,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from rich.text import Text
 from rich.panel import Panel
-from opencli.ui.conversation_buffer import ConversationBuffer
-from opencli.ui.split_layout import SplitScreenLayout
+from swecli.ui.conversation_buffer import ConversationBuffer
+from swecli.ui.split_layout import SplitScreenLayout
 
 
 def test_split_layout():

@@ -20,7 +20,7 @@ Implement a task display similar to Claude Code:
 ### 1. Core Components
 
 #### A. `TaskMonitor` Class (Logic)
-**Location**: `opencli/core/task_monitor.py`
+**Location**: `swecli/core/task_monitor.py`
 
 **Responsibilities**:
 - Track elapsed time
@@ -42,7 +42,7 @@ class TaskMonitor:
 ```
 
 #### B. `TaskProgressDisplay` Class (UI)
-**Location**: `opencli/ui/task_progress.py`
+**Location**: `swecli/ui/task_progress.py`
 
 **Responsibilities**:
 - Display task with live updates
@@ -71,7 +71,7 @@ class TaskProgressDisplay:
 ### 2. Integration Points
 
 #### A. LLM API Calls
-**File**: `opencli/repl/repl.py`
+**File**: `swecli/repl/repl.py`
 
 **Current flow**:
 ```python
@@ -96,7 +96,7 @@ stats = task_monitor.stop()
 ```
 
 #### B. Tool Execution
-**File**: `opencli/repl/repl.py`
+**File**: `swecli/repl/repl.py`
 
 **Current flow**:
 ```python
@@ -243,13 +243,13 @@ if task_monitor.should_interrupt():
 ## Implementation Steps
 
 ### Phase 1: Core Logic
-1. Create `TaskMonitor` class in `opencli/core/task_monitor.py`
+1. Create `TaskMonitor` class in `swecli/core/task_monitor.py`
 2. Implement timer tracking
 3. Implement token tracking
 4. Implement interrupt flag management
 
 ### Phase 2: UI Component
-1. Create `TaskProgressDisplay` class in `opencli/ui/task_progress.py`
+1. Create `TaskProgressDisplay` class in `swecli/ui/task_progress.py`
 2. Implement Rich Live display
 3. Implement ESC key listener
 4. Implement real-time updates (1 second intervals)

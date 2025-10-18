@@ -82,21 +82,21 @@ python demo_before_after.py
 
 ### Core Files (To Review/Use)
 
-1. **Logic:** `opencli/core/task_monitor.py` (178 lines)
+1. **Logic:** `swecli/core/task_monitor.py` (178 lines)
    - TaskMonitor class
    - Timer, tokens, interrupts
    - Thread-safe operations
 
-2. **UI:** `opencli/ui/task_progress.py` (141 lines)
+2. **UI:** `swecli/ui/task_progress.py` (141 lines)
    - TaskProgressDisplay class
    - Live Rich display
    - ESC key listener
 
-3. **Agent:** `opencli/core/agent.py` (modified)
+3. **Agent:** `swecli/core/agent.py` (modified)
    - Lines 250: Added task_monitor parameter
    - Lines 291-296: Token extraction
 
-4. **REPL:** `opencli/repl/repl.py` (modified)
+4. **REPL:** `swecli/repl/repl.py` (modified)
    - Lines 543-561: LLM call integration
    - Lines 608-645: Tool execution integration
 
@@ -107,10 +107,10 @@ python demo_before_after.py
 ### By Purpose
 
 **Production Code:**
-- `opencli/core/task_monitor.py`
-- `opencli/ui/task_progress.py`
-- `opencli/core/agent.py` (modified)
-- `opencli/repl/repl.py` (modified)
+- `swecli/core/task_monitor.py`
+- `swecli/ui/task_progress.py`
+- `swecli/core/agent.py` (modified)
+- `swecli/repl/repl.py` (modified)
 
 **Tests:**
 - `test_task_monitor_simple.py`
@@ -145,8 +145,8 @@ python demo_before_after.py
 ### "I want to see it working"
 → Run `python test_task_monitor_live_demo.py`
 
-### "I want to use it in OpenCLI"
-→ Run `cd /Users/quocnghi/codes/test_opencli && opencli`
+### "I want to use it in SWE-CLI"
+→ Run `cd /Users/quocnghi/codes/test_swecli && swecli`
 
 ### "I want to see before/after comparison"
 → Run `python demo_before_after.py`
@@ -164,7 +164,7 @@ python demo_before_after.py
 → Read `SESSION_COMPLETE_SUMMARY.md`
 
 ### "I want to modify the code"
-→ Read `TASK_MONITOR_COMPLETE.md` → Then edit `opencli/core/task_monitor.py` or `opencli/ui/task_progress.py`
+→ Read `TASK_MONITOR_COMPLETE.md` → Then edit `swecli/core/task_monitor.py` or `swecli/ui/task_progress.py`
 
 ### "I want to run all tests"
 ```bash
@@ -197,7 +197,7 @@ python test_task_monitor_live_demo.py
 ### Path 1: Quick Start (5 minutes)
 1. Read `TASK_MONITOR_README.md` (2 min)
 2. Run `python test_task_monitor_live_demo.py` (1 min)
-3. Try in OpenCLI: `cd test_opencli && opencli` (2 min)
+3. Try in SWE-CLI: `cd test_swecli && swecli` (2 min)
 
 ### Path 2: Full Understanding (20 minutes)
 1. Read `IMPLEMENTATION_COMPLETE.md` (5 min)
@@ -206,8 +206,8 @@ python test_task_monitor_live_demo.py
 
 ### Path 3: Developer Deep Dive (1 hour)
 1. Read `TASK_MONITOR_COMPLETE.md` (15 min)
-2. Review code in `opencli/core/task_monitor.py` (15 min)
-3. Review code in `opencli/ui/task_progress.py` (15 min)
+2. Review code in `swecli/core/task_monitor.py` (15 min)
+3. Review code in `swecli/ui/task_progress.py` (15 min)
 4. Run and modify tests (15 min)
 
 ### Path 4: Manager Review (10 minutes)
@@ -232,13 +232,13 @@ python test_task_monitor_live_demo.py
 - [ ] Run all 5 test files
 
 **To use it:**
-- [ ] Run `opencli` in test directory
+- [ ] Run `swecli` in test directory
 - [ ] Try a command and watch the task monitor
 
 **To modify it:**
 - [ ] Read `TASK_MONITOR_DESIGN.md`
 - [ ] Read `TASK_MONITOR_COMPLETE.md`
-- [ ] Review code in `opencli/core/` and `opencli/ui/`
+- [ ] Review code in `swecli/core/` and `swecli/ui/`
 
 ---
 
@@ -255,7 +255,7 @@ python test_task_monitor_live_demo.py
 
 **Try it:** `python test_task_monitor_live_demo.py`
 
-**Use it:** `cd /Users/quocnghi/codes/test_opencli && opencli`
+**Use it:** `cd /Users/quocnghi/codes/test_swecli && swecli`
 
 ---
 

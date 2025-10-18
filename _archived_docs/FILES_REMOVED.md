@@ -12,30 +12,30 @@ Removed **10 deprecated files** totaling ~2,800 lines of code that were supersed
 ### Completely Unused Files (Never Integrated)
 These files were never imported or used in the codebase:
 
-1. **`opencli/ui/approval_modal.py`** (209 lines)
+1. **`swecli/ui/approval_modal.py`** (209 lines)
    - Old approval modal implementation
    - Superseded by inline approval in chat
 
-2. **`opencli/ui/approval_modal_v2.py`** (173 lines)
+2. **`swecli/ui/approval_modal_v2.py`** (173 lines)
    - Second version of approval modal
    - Also superseded
 
-3. **`opencli/ui/approval_modal_pt.py`** (84 lines)
+3. **`swecli/ui/approval_modal_pt.py`** (84 lines)
    - prompt_toolkit version
    - Also superseded
 
-4. **`opencli/ui/rules_editor_modal.py`** (411 lines)
+4. **`swecli/ui/rules_editor_modal.py`** (411 lines)
    - Never imported or used
    - Safe to remove
 
 **Subtotal:** 877 lines removed
 
 ### Duplicate Files
-5. **`opencli/ui/scrollable_formatted_text2.py`** (61 lines)
+5. **`swecli/ui/scrollable_formatted_text2.py`** (61 lines)
    - Duplicate of scrollable_formatted_text.py
    - Unused
 
-6. **`opencli/ui/conversation_buffer.py`** (74 lines)
+6. **`swecli/ui/conversation_buffer.py`** (74 lines)
    - Was embedded in chat_app.py
    - Now properly extracted to chat/conversation.py
 
@@ -43,30 +43,30 @@ These files were never imported or used in the codebase:
 
 ### Superseded Large Files (Refactored into Modules)
 
-7. **`opencli/ui/chat_app.py`** (1155 lines)
-   - **Replaced by:** `opencli/ui/chat/` (4 modules)
+7. **`swecli/ui/chat_app.py`** (1155 lines)
+   - **Replaced by:** `swecli/ui/chat/` (4 modules)
    - Import updated in repl_chat.py
 
-8. **`opencli/ui/formatters.py`** (612 lines)
-   - **Replaced by:** `opencli/ui/formatters/` (6 modules)
+8. **`swecli/ui/formatters.py`** (612 lines)
+   - **Replaced by:** `swecli/ui/formatters/` (6 modules)
    - Re-exported in formatters/__init__.py
 
-9. **`opencli/ui/autocomplete.py`** (411 lines)
-   - **Replaced by:** `opencli/ui/autocomplete/` (4 modules)
+9. **`swecli/ui/autocomplete.py`** (411 lines)
+   - **Replaced by:** `swecli/ui/autocomplete/` (4 modules)
    - Re-exported in autocomplete/__init__.py
 
 **Subtotal:** 2,178 lines removed
 
 ### Superseded Widget Files
 
-10. **`opencli/ui/animations.py`** (187 lines)
-    - **Replaced by:** `opencli/ui/widgets/spinner.py` + `widgets/progress.py`
+10. **`swecli/ui/animations.py`** (187 lines)
+    - **Replaced by:** `swecli/ui/widgets/spinner.py` + `widgets/progress.py`
 
-11. **`opencli/ui/status_line.py`** (164 lines)
-    - **Replaced by:** `opencli/ui/widgets/status_bar.py`
+11. **`swecli/ui/status_line.py`** (164 lines)
+    - **Replaced by:** `swecli/ui/widgets/status_bar.py`
 
-12. **`opencli/ui/task_progress.py`** (193 lines)
-    - **Replaced by:** `opencli/ui/widgets/progress.py`
+12. **`swecli/ui/task_progress.py`** (193 lines)
+    - **Replaced by:** `swecli/ui/widgets/progress.py`
 
 **Subtotal:** 544 lines removed
 
@@ -84,10 +84,10 @@ These files were never imported or used in the codebase:
 ### Updated Import Statements
 ```python
 # OLD
-from opencli.ui.chat_app import ChatApplication
+from swecli.ui.chat_app import ChatApplication
 
 # NEW
-from opencli.ui.chat import ChatApplication
+from swecli.ui.chat import ChatApplication
 ```
 
 All other imports continue to work because the new `__init__.py` files properly re-export the classes from their new locations.
@@ -95,23 +95,23 @@ All other imports continue to work because the new `__init__.py` files properly 
 ## Verification
 
 ✅ **All imports tested and working:**
-- `from opencli.ui import ChatApplication` ✓
-- `from opencli.ui import OutputFormatter` ✓
-- `from opencli.ui import OpenCLICompleter` ✓
-- `from opencli.ui.chat import ChatApplication` ✓
-- `from opencli.ui.formatters import OutputFormatter` ✓
-- `from opencli.ui.widgets import Spinner` ✓
+- `from swecli.ui import ChatApplication` ✓
+- `from swecli.ui import OutputFormatter` ✓
+- `from swecli.ui import SWE-CLICompleter` ✓
+- `from swecli.ui.chat import ChatApplication` ✓
+- `from swecli.ui.formatters import OutputFormatter` ✓
+- `from swecli.ui.widgets import Spinner` ✓
 
 ## Files Kept (Pending Review)
 
 The following files were kept because they're still used:
 
-- **`opencli/ui/notifications.py`** - Imported by repl.py (minimal usage)
-- **`opencli/ui/markdown_formatter.py`** - Used by repl_chat.py
-- **`opencli/ui/rich_to_text.py`** - Used by repl_chat.py
-- **`opencli/ui/scrollable_formatted_text.py`** - Still used (not the duplicate)
-- **`opencli/ui/approval_message.py`** - Used by approval_handler.py
-- **`opencli/ui/welcome.py`** - Welcome message display
+- **`swecli/ui/notifications.py`** - Imported by repl.py (minimal usage)
+- **`swecli/ui/markdown_formatter.py`** - Used by repl_chat.py
+- **`swecli/ui/rich_to_text.py`** - Used by repl_chat.py
+- **`swecli/ui/scrollable_formatted_text.py`** - Still used (not the duplicate)
+- **`swecli/ui/approval_message.py`** - Used by approval_handler.py
+- **`swecli/ui/welcome.py`** - Welcome message display
 
 These can be migrated into the new structure in a future update.
 

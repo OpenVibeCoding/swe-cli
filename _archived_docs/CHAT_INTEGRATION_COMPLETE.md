@@ -48,10 +48,10 @@ Successfully integrated your `ChatApplication` with the REPL, preserving **ALL**
 
 ## Files Created
 
-### 1. `opencli/ui/rich_to_text.py`
+### 1. `swecli/ui/rich_to_text.py`
 Utility to convert Rich renderables (Panels, Tables) to plain text boxes for chat display.
 
-### 2. `opencli/repl/repl_chat.py`
+### 2. `swecli/repl/repl_chat.py`
 **Main integration file** - REPLChatApplication class that:
 - Extends your ChatApplication
 - Integrates all REPL logic (tools, LLM, session management)
@@ -119,9 +119,9 @@ python test_repl_chat.py
 ### Option 2: Import in Code
 
 ```python
-from opencli.repl.repl_chat import create_repl_chat
-from opencli.core.config_manager import ConfigManager
-from opencli.core.session_manager import SessionManager
+from swecli.repl.repl_chat import create_repl_chat
+from swecli.core.config_manager import ConfigManager
+from swecli.core.session_manager import SessionManager
 from pathlib import Path
 
 # Create managers
@@ -140,7 +140,7 @@ chat_repl.run()
 
 ### Option 3: Integrate with Main Entry Point
 
-Update `opencli/__main__.py` or `opencli/cli.py` to use the chat REPL by default.
+Update `swecli/__main__.py` or `swecli/cli.py` to use the chat REPL by default.
 
 ## What's Different from Original REPL
 

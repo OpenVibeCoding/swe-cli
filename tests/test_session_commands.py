@@ -4,9 +4,9 @@ from pathlib import Path
 
 from rich.console import Console
 
-from opencli.core.management import ConfigManager, SessionManager
-from opencli.models.message import ChatMessage, Role
-from opencli.repl.commands.session_commands import SessionCommands
+from swecli.core.management import ConfigManager, SessionManager
+from swecli.models.message import ChatMessage, Role
+from swecli.repl.commands.session_commands import SessionCommands
 
 
 def _make_console():

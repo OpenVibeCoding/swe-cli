@@ -13,7 +13,7 @@ Successfully implemented elegant, minimalist autocomplete design for both `/` sl
 ### Before (Old Design)
 ```
 /help              show available commands and help
-/exit              exit OpenCLI
+/exit              exit SWE-CLI
 /tree              show directory tree structure
 ```
 *Problems: Cluttered with `/` prefixes, no visual hierarchy, plain display*
@@ -23,7 +23,7 @@ Successfully implemented elegant, minimalist autocomplete design for both `/` sl
 **Slash Commands:**
 ```
 help              show available commands and help
-exit              exit OpenCLI
+exit              exit SWE-CLI
 tree              show directory tree structure
 read              read a file
 write             write to a file
@@ -31,10 +31,10 @@ write             write to a file
 
 **File Mentions:**
 ```
-opencli/core/approval.py                            2.5 KB
-opencli/core/tool_registry.py                       1.8 KB
-opencli/ui/autocomplete.py                          4.2 KB
-opencli/ui/formatters.py                            8.1 KB
+swecli/core/approval.py                            2.5 KB
+swecli/core/tool_registry.py                       1.8 KB
+swecli/ui/autocomplete.py                          4.2 KB
+swecli/ui/formatters.py                            8.1 KB
 docs/README.md                                      3.4 KB
 ```
 
@@ -51,7 +51,7 @@ docs/README.md                                      3.4 KB
 
 ## 📁 Files Modified
 
-### 1. `opencli/ui/autocomplete.py`
+### 1. `swecli/ui/autocomplete.py`
 
 **Added import:**
 ```python
@@ -97,7 +97,7 @@ yield Completion(
 )
 ```
 
-### 2. `opencli/repl/repl.py`
+### 2. `swecli/repl/repl.py`
 
 **Added import (Line 13):**
 ```python
@@ -192,9 +192,9 @@ self.prompt_session: PromptSession[str] = PromptSession(
 
 ### How to Test
 
-1. **Start OpenCLI:**
+1. **Start SWE-CLI:**
    ```bash
-   opencli
+   swecli
    ```
 
 2. **Test Slash Commands:**
@@ -214,8 +214,8 @@ self.prompt_session: PromptSession[str] = PromptSession(
 **Slash Commands:**
 ```
 help              show available commands and help
-exit              exit OpenCLI
-quit              exit OpenCLI (alias for /exit)
+exit              exit SWE-CLI
+quit              exit SWE-CLI (alias for /exit)
 clear             clear current session and start fresh
 tree              show directory tree structure
 read              read a file
@@ -223,11 +223,11 @@ read              read a file
 
 **File Mentions:**
 ```
-opencli/__init__.py                                   234 B
-opencli/core/approval.py                            2.5 KB
-opencli/core/tool_registry.py                       1.8 KB
-opencli/ui/autocomplete.py                          4.2 KB
-opencli/ui/formatters.py                            8.1 KB
+swecli/__init__.py                                   234 B
+swecli/core/approval.py                            2.5 KB
+swecli/core/tool_registry.py                       1.8 KB
+swecli/ui/autocomplete.py                          4.2 KB
+swecli/ui/formatters.py                            8.1 KB
 ```
 
 ---

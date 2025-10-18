@@ -6,10 +6,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from opencli.core.context import CompactionResult, ContextCompactor
-from opencli.core.context import ContextTokenMonitor
-from opencli.models.message import ChatMessage, Role, ToolCall
-from opencli.models.session import Session
+from swecli.core.context import CompactionResult, ContextCompactor
+from swecli.core.context import ContextTokenMonitor
+from swecli.models.message import ChatMessage, Role, ToolCall
+from swecli.models.session import Session
 
 
 def test_should_compact():

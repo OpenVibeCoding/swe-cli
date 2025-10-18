@@ -10,7 +10,7 @@ Transform the minimal welcome screen into a banner-style welcome screen with:
 
 ## 📋 What Was Done
 
-### 1. Modified `opencli/repl/repl.py` (lines 406-447)
+### 1. Modified `swecli/repl/repl.py` (lines 406-447)
 
 Completely replaced the `_print_welcome()` method with a banner-style implementation featuring:
 
@@ -58,7 +58,7 @@ Keyboard Shortcuts:
 ```
 Current Session:
 ──────────────────────────────────────────────────────────────────
-  Directory: ~/OpenCLI
+  Directory: ~/SWE-CLI
   User: quocnghi
   Mode: NORMAL (requires approval for operations)
 ```
@@ -97,7 +97,7 @@ Created `test_welcome_banner.py` to test the implementation:
 """Test the new banner-style welcome screen."""
 
 import os
-from opencli.core.mode_manager import ModeManager
+from swecli.core.mode_manager import ModeManager
 from rich.console import Console
 
 def test_welcome_banner():
@@ -127,7 +127,7 @@ The test successfully displayed:
 
 ### Code Changes
 
-**File**: `opencli/repl/repl.py`
+**File**: `swecli/repl/repl.py`
 **Lines**: 406-447 (42 lines)
 
 **Key implementation features**:
@@ -173,7 +173,7 @@ The test successfully displayed:
 
 ### Before (Minimal Design)
 ```
-OpenCLI v0.3.0        quocnghi • ~/OpenCLI
+SWE-CLI v0.3.0        quocnghi • ~/SWE-CLI
 
 AI-powered development assistant
 
@@ -213,7 +213,7 @@ Keyboard Shortcuts:
 
 Current Session:
 ──────────────────────────────────────────────────────────────────
-  Directory: ~/OpenCLI
+  Directory: ~/SWE-CLI
   User: quocnghi
   Mode: NORMAL (requires approval for operations)
 ```
@@ -238,7 +238,7 @@ Current Session:
 
 ## 🚀 User Experience
 
-When users start OpenCLI, they now see:
+When users start SWE-CLI, they now see:
 
 1. **Immediate brand recognition**: OPENCLI banner stands out
 2. **Quick orientation**: Current directory, user, and mode visible
@@ -282,7 +282,7 @@ The banner-style welcome screen successfully:
 - **Guides** users with clear next steps
 - **Impresses** users with professional design
 
-**The welcome screen now matches the quality and elegance of the rest of OpenCLI's UI!** ✨
+**The welcome screen now matches the quality and elegance of the rest of SWE-CLI's UI!** ✨
 
 ---
 

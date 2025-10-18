@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from opencli.core.management.session_manager import SessionManager
-from opencli.models.message import ChatMessage, Role
+from swecli.core.management.session_manager import SessionManager
+from swecli.models.message import ChatMessage, Role
 
 
 def test_find_latest_session(tmp_path):

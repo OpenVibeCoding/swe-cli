@@ -2,7 +2,7 @@
 
 ## 🎉 What Was Implemented
 
-I've successfully implemented the first phase of UI/UX improvements for OpenCLI, including:
+I've successfully implemented the first phase of UI/UX improvements for SWE-CLI, including:
 
 ### 1. **Spinner Animation** (LLM Thinking)
 - Animated spinner while waiting for model response
@@ -57,7 +57,7 @@ Assistant response appears...
 **Example:**
 ```
 ────────────────────────────────────────────────────────
-qwen3-coder-480b | ~/codes/OpenCLI | main | 2.5k/100k
+qwen3-coder-480b | ~/codes/SWE-CLI | main | 2.5k/100k
 ────────────────────────────────────────────────────────
 ```
 
@@ -79,7 +79,7 @@ qwen3-coder-480b | ~/codes/OpenCLI | main | 2.5k/100k
 
 ### New UI Module
 ```
-opencli/ui/
+swecli/ui/
 ├── __init__.py           # Module exports
 ├── animations.py         # Spinner, FlashingSymbol, ProgressIndicator
 └── status_line.py        # StatusLine component
@@ -115,7 +115,7 @@ All tests passed successfully! Here's what was verified:
 **Test output:**
 ```bash
 ═══════════════════════════════════════════════
-  OpenCLI UI Improvements - Test Suite
+  SWE-CLI UI Improvements - Test Suite
 ═══════════════════════════════════════════════
 
 Testing Spinner (LLM Thinking):
@@ -128,7 +128,7 @@ Testing Flashing Symbol (Tool Execution):
 
 Testing Status Line:
 ────────────────────────────────────────────────
-qwen3-coder-480b | ~/codes/OpenCLI | main | 1.2k/100k
+qwen3-coder-480b | ~/codes/SWE-CLI | main | 1.2k/100k
 ────────────────────────────────────────────────
 ✓ Status line test complete
 
@@ -144,9 +144,9 @@ qwen3-coder-480b | ~/codes/OpenCLI | main | 1.2k/100k
 python test_ui_improvements.py
 ```
 
-### Use OpenCLI with new UI:
+### Use SWE-CLI with new UI:
 ```bash
-opencli
+swecli
 ```
 
 The UI improvements are automatically active! You'll now see:
@@ -281,7 +281,7 @@ self.status_line.render(
 The UI improvements are live and ready. Try them out by running:
 
 ```bash
-opencli
+swecli
 ```
 
 You'll immediately notice the improved UX with:
@@ -289,4 +289,4 @@ You'll immediately notice the improved UX with:
 - Flashing symbols during execution
 - Clean status line with context
 
-Enjoy the enhanced OpenCLI experience! 🚀
+Enjoy the enhanced SWE-CLI experience! 🚀

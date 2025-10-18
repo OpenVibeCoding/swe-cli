@@ -8,7 +8,7 @@
 
 ## 🎯 Overview
 
-This plan implements Anthropic's context engineering principles in OpenCLI by enhancing the existing `Session`, `ChatMessage`, and `SessionManager` infrastructure.
+This plan implements Anthropic's context engineering principles in SWE-CLI by enhancing the existing `Session`, `ChatMessage`, and `SessionManager` infrastructure.
 
 **Existing Foundation:**
 - ✅ `Session` model with messages and metadata
@@ -33,7 +33,7 @@ EXISTING:
 │  │  ├─ messages: List[ChatMessage]    │
 │  │  ├─ context_files: List[str]       │
 │  │  └─ metadata: Dict                 │
-│  └─ save/load from .opencli/sessions/ │
+│  └─ save/load from .swecli/sessions/ │
 └────────────────────────────────────────┘
 
 NEW (ADDITIONS):
@@ -59,14 +59,14 @@ Replace rough token estimation with accurate tiktoken-based counting.
 
 ### Files to Create/Modify
 
-#### 1. Create `opencli/core/token_monitor.py`
+#### 1. Create `swecli/core/token_monitor.py`
 
 ```python
 """Accurate token counting using tiktoken."""
 
 import tiktoken
 from typing import List, Dict, Any
-from opencli.models.message import ChatMessage, ToolCall
+from swecli.models.message import ChatMessage, ToolCall
 
 
 class TokenMonitor:
@@ -168,12 +168,12 @@ class TokenMonitor:
         }
 ```
 
-#### 2. Modify `opencli/models/session.py`
+#### 2. Modify `swecli/models/session.py`
 
 Add token_monitor integration:
 
 ```python
-from opencli.core.token_monitor import TokenMonitor
+from swecli.core.token_monitor import TokenMonitor
 
 class Session(BaseModel):
     """Represents a conversation session."""
@@ -236,8 +236,8 @@ Create `test_token_monitor.py`:
 #!/usr/bin/env python3
 """Test TokenMonitor."""
 
-from opencli.core.token_monitor import TokenMonitor
-from opencli.models.message import ChatMessage, Role, ToolCall
+from swecli.core.token_monitor import TokenMonitor
+from swecli.models.message import ChatMessage, Role, ToolCall
 
 def test_basic_counting():
     """Test basic token counting."""
@@ -311,25 +311,25 @@ Implement AI-driven context compaction that reduces token usage by 60-80%.
 
 ### Files to Create
 
-#### 1. Create `opencli/core/compactor.py`
+#### 1. Create `swecli/core/compactor.py`
 
 ```python
 """AI-driven context compaction."""
 
 from typing import List, Dict, Any
 from datetime import datetime
-from opencli.models.message import ChatMessage, Role
-from opencli.core.agent import OpenCLIAgent
+from swecli.models.message import ChatMessage, Role
+from swecli.core.agent import SWE-CLIAgent
 
 
 class ContextCompactor:
     """Compact conversation history using AI summarization."""
 
-    def __init__(self, agent: OpenCLIAgent):
+    def __init__(self, agent: SWE-CLIAgent):
         """Initialize compactor.
 
         Args:
-            agent: OpenCLI agent for LLM calls
+            agent: SWE-CLI agent for LLM calls
         """
         self.agent = agent
 
@@ -484,22 +484,22 @@ all critical context. Use bullet points and clear sections. Be concise but compl
         }
 ```
 
-#### 2. Modify `opencli/core/session_manager.py`
+#### 2. Modify `swecli/core/session_manager.py`
 
 Add compaction support:
 
 ```python
-from opencli.core.compactor import ContextCompactor
+from swecli.core.compactor import ContextCompactor
 
 class SessionManager:
     """Manages session persistence and retrieval."""
 
-    def __init__(self, session_dir: Path, agent: Optional[OpenCLIAgent] = None):
+    def __init__(self, session_dir: Path, agent: Optional[SWE-CLIAgent] = None):
         """Initialize session manager.
 
         Args:
             session_dir: Directory to store session files
-            agent: OpenCLI agent for compaction (optional)
+            agent: SWE-CLI agent for compaction (optional)
         """
         self.session_dir = Path(session_dir).expanduser()
         self.session_dir.mkdir(parents=True, exist_ok=True)
@@ -575,8 +575,8 @@ Create `test_compactor.py`:
 """Test ContextCompactor."""
 
 import asyncio
-from opencli.core.compactor import ContextCompactor
-from opencli.models.message import ChatMessage, Role
+from swecli.core.compactor import ContextCompactor
+from swecli.models.message import ChatMessage, Role
 
 async def test_compaction():
     """Test message compaction."""
@@ -607,11 +607,11 @@ async def test_compaction():
     print(f"Original: {len(messages)} messages")
 
     # Create compactor (needs agent)
-    from opencli.core.agent import OpenCLIAgent
-    from opencli.models.config import AppConfig
+    from swecli.core.agent import SWE-CLIAgent
+    from swecli.models.config import AppConfig
 
     config = AppConfig()
-    agent = OpenCLIAgent(config, None, None)
+    agent = SWE-CLIAgent(config, None, None)
     compactor = ContextCompactor(agent)
 
     # Compact
@@ -636,15 +636,15 @@ Implement proactive context retrieval based on user intent.
 
 ### Files to Create
 
-#### 1. Create `opencli/core/context_retriever.py`
+#### 1. Create `swecli/core/context_retriever.py`
 
 ```python
 """Just-in-time context retrieval."""
 
 from typing import List, Dict, Any, Optional
 from pathlib import Path
-from opencli.tools.file_ops import FileOperations
-from opencli.tools.bash_tool import BashTool
+from swecli.tools.file_ops import FileOperations
+from swecli.tools.bash_tool import BashTool
 
 
 class ContextRetriever:
@@ -875,7 +875,7 @@ Create `test_context_retriever.py`:
 
 import asyncio
 from pathlib import Path
-from opencli.core.context_retriever import ContextRetriever
+from swecli.core.context_retriever import ContextRetriever
 
 async def test_entity_extraction():
     """Test entity extraction."""
@@ -906,16 +906,16 @@ Generate and maintain OPENCLI.md codebase summary.
 
 ### Files to Create
 
-#### 1. Create `opencli/commands/init_command.py`
+#### 1. Create `swecli/commands/init_command.py`
 
 ```python
 """Initialize project with OPENCLI.md generation."""
 
 from pathlib import Path
 from typing import Dict, Any
-from opencli.tools.file_ops import FileOperations
-from opencli.tools.bash_tool import BashTool
-from opencli.core.agent import OpenCLIAgent
+from swecli.tools.file_ops import FileOperations
+from swecli.tools.bash_tool import BashTool
+from swecli.core.agent import SWE-CLIAgent
 
 
 class InitCommand:
@@ -925,14 +925,14 @@ class InitCommand:
         self,
         file_ops: FileOperations,
         bash_tool: BashTool,
-        agent: OpenCLIAgent
+        agent: SWE-CLIAgent
     ):
         """Initialize command.
 
         Args:
             file_ops: File operations
             bash_tool: Bash tool
-            agent: OpenCLI agent
+            agent: SWE-CLI agent
         """
         self.file_ops = file_ops
         self.bash_tool = bash_tool
@@ -967,12 +967,12 @@ class InitCommand:
         )
 
         # 5. Write OPENCLI.md
-        opencli_md_path = working_dir / "OPENCLI.md"
-        self.file_ops.write_file(str(opencli_md_path), summary, create_dirs=False)
+        swecli_md_path = working_dir / "OPENCLI.md"
+        self.file_ops.write_file(str(swecli_md_path), summary, create_dirs=False)
 
-        print(f"✅ Generated {opencli_md_path}")
+        print(f"✅ Generated {swecli_md_path}")
 
-        return str(opencli_md_path)
+        return str(swecli_md_path)
 
     async def _scan_structure(self, working_dir: Path) -> Dict[str, List[str]]:
         """Scan project structure.
@@ -1127,23 +1127,23 @@ Create `test_init_command.py`:
 
 import asyncio
 from pathlib import Path
-from opencli.commands.init_command import InitCommand
+from swecli.commands.init_command import InitCommand
 
 async def test_init():
     """Test /init command."""
-    working_dir = Path("/Users/quocnghi/codes/test_opencli")
+    working_dir = Path("/Users/quocnghi/codes/test_swecli")
 
     cmd = InitCommand(file_ops, bash_tool, agent)
 
-    opencli_md = await cmd.execute(working_dir)
+    swecli_md = await cmd.execute(working_dir)
 
-    print(f"Generated: {opencli_md}")
+    print(f"Generated: {swecli_md}")
 
     # Verify file exists
-    assert Path(opencli_md).exists()
+    assert Path(swecli_md).exists()
 
     # Read and display
-    with open(opencli_md) as f:
+    with open(swecli_md) as f:
         content = f.read()
         print(f"\n{content[:500]}...")
 
@@ -1160,13 +1160,13 @@ Integrate all components into REPL flow.
 
 ### Files to Modify
 
-#### 1. Modify `opencli/repl/repl.py`
+#### 1. Modify `swecli/repl/repl.py`
 
 Add context management to main loop:
 
 ```python
-from opencli.core.token_monitor import TokenMonitor
-from opencli.core.context_retriever import ContextRetriever
+from swecli.core.token_monitor import TokenMonitor
+from swecli.core.context_retriever import ContextRetriever
 
 class REPL:
     """Main REPL loop."""
@@ -1227,9 +1227,9 @@ class REPL:
         })
 
         # 2. Codebase summary (if exists)
-        opencli_md = self.working_dir / "OPENCLI.md"
-        if opencli_md.exists():
-            with open(opencli_md) as f:
+        swecli_md = self.working_dir / "OPENCLI.md"
+        if swecli_md.exists():
+            with open(swecli_md) as f:
                 messages.append({
                     "role": "system",
                     "content": f"# Codebase Context\n\n{f.read()}"
@@ -1252,7 +1252,7 @@ Add metrics dashboard and optimization.
 
 ### Files to Create
 
-#### 1. Create `opencli/commands/stats_command.py`
+#### 1. Create `swecli/commands/stats_command.py`
 
 ```python
 """/stats command to show context statistics."""

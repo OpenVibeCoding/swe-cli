@@ -3,8 +3,8 @@
 from pathlib import Path
 from rich.console import Console
 
-from opencli.core.approval import ApprovalManager, ApprovalChoice
-from opencli.models.operation import Operation, OperationType
+from swecli.core.approval import ApprovalManager, ApprovalChoice
+from swecli.models.operation import Operation, OperationType
 
 def test_approval_structure():
     """Test the approval menu structure and methods."""
@@ -12,7 +12,7 @@ def test_approval_structure():
     approval_manager = ApprovalManager(console)
 
     print("\n═══════════════════════════════════════════════")
-    print("  OpenCLI Approval Structure Test")
+    print("  SWE-CLI Approval Structure Test")
     print("═══════════════════════════════════════════════\n")
 
     # Test 1: Verify ApprovalChoice enum values

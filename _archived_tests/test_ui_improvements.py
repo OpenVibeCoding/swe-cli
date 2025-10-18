@@ -4,8 +4,8 @@ import time
 from pathlib import Path
 from rich.console import Console
 
-from opencli.ui.animations import Spinner, FlashingSymbol, ProgressIndicator
-from opencli.ui.status_line import StatusLine
+from swecli.ui.animations import Spinner, FlashingSymbol, ProgressIndicator
+from swecli.ui.status_line import StatusLine
 
 
 def test_spinner():
@@ -140,7 +140,7 @@ def test_complete_flow():
 if __name__ == "__main__":
     console = Console()
     console.print("\n[bold magenta]═══════════════════════════════════════════════[/bold magenta]")
-    console.print("[bold magenta]  OpenCLI UI Improvements - Test Suite[/bold magenta]")
+    console.print("[bold magenta]  SWE-CLI UI Improvements - Test Suite[/bold magenta]")
     console.print("[bold magenta]═══════════════════════════════════════════════[/bold magenta]\n")
 
     # Run individual tests

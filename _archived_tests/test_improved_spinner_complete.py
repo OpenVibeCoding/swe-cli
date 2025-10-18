@@ -7,9 +7,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from opencli.core.monitoring import TaskMonitor
-from opencli.core.utils import ActionSummarizer
-from opencli.ui.task_progress import TaskProgressDisplay
+from swecli.core.monitoring import TaskMonitor
+from swecli.core.utils import ActionSummarizer
+from swecli.ui.task_progress import TaskProgressDisplay
 from rich.console import Console
 import random
 

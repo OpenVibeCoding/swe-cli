@@ -2,7 +2,7 @@
 
 ## 🎉 Implementation Complete!
 
-The task monitor feature with ESC interrupt, timer, and token tracking has been successfully implemented and integrated into OpenCLI!
+The task monitor feature with ESC interrupt, timer, and token tracking has been successfully implemented and integrated into SWE-CLI!
 
 ---
 
@@ -10,14 +10,14 @@ The task monitor feature with ESC interrupt, timer, and token tracking has been 
 
 ### 1. Core Components ✅
 
-#### TaskMonitor Class (`opencli/core/task_monitor.py`)
+#### TaskMonitor Class (`swecli/core/task_monitor.py`)
 - **Timer tracking**: Tracks elapsed seconds
 - **Token tracking**: Monitors token usage with ↑/↓ indicators
 - **Interrupt flag**: Thread-safe interrupt management
 - **Token formatting**: Formats large numbers (3700 → 3.7k)
 - **Thread-safe**: All operations protected with mutex locks
 
-#### TaskProgressDisplay Class (`opencli/ui/task_progress.py`)
+#### TaskProgressDisplay Class (`swecli/ui/task_progress.py`)
 - **Live updates**: Display updates every 1 second
 - **ESC key listener**: Cross-platform keyboard interrupt (using pynput)
 - **Display format**: `· Task… (esc to interrupt · XXs · ↓/↑ XXk tokens)`
@@ -28,7 +28,7 @@ The task monitor feature with ESC interrupt, timer, and token tracking has been 
 
 ### 2. LLM Integration ✅
 
-#### Agent Modifications (`opencli/core/agent.py`)
+#### Agent Modifications (`swecli/core/agent.py`)
 
 **Modified `call_llm()` method:**
 - Added optional `task_monitor` parameter
@@ -57,7 +57,7 @@ def call_llm(self, messages: list[dict], task_monitor: Optional[Any] = None) -> 
 
 ### 3. REPL Integration ✅
 
-#### LLM API Calls (`opencli/repl/repl.py` lines 543-561)
+#### LLM API Calls (`swecli/repl/repl.py` lines 543-561)
 
 **Replaced spinner with TaskProgressDisplay:**
 
@@ -95,7 +95,7 @@ progress.print_final_status()
 
 ---
 
-#### Tool Execution (`opencli/repl/repl.py` lines 608-645)
+#### Tool Execution (`swecli/repl/repl.py` lines 608-645)
 
 **Replaced spinner with TaskProgressDisplay:**
 
@@ -173,8 +173,8 @@ if self.mode_manager.current_mode == OperationMode.PLAN and tool_progress:
 ## 📊 Implementation Summary
 
 ### Files Created
-1. `opencli/core/task_monitor.py` - Core logic class (178 lines)
-2. `opencli/ui/task_progress.py` - UI component (141 lines)
+1. `swecli/core/task_monitor.py` - Core logic class (178 lines)
+2. `swecli/ui/task_progress.py` - UI component (141 lines)
 3. `test_task_monitor_simple.py` - Logic tests
 4. `test_task_monitor_quick.py` - Quick UI tests (10 seconds total)
 5. `test_task_monitor.py` - Full demo with ESC interrupt
@@ -183,8 +183,8 @@ if self.mode_manager.current_mode == OperationMode.PLAN and tool_progress:
 8. `TASK_MONITOR_COMPLETE.md` - This file!
 
 ### Files Modified
-1. `opencli/core/agent.py` - Added task_monitor parameter to call_llm()
-2. `opencli/repl/repl.py` - Replaced spinner with TaskProgressDisplay
+1. `swecli/core/agent.py` - Added task_monitor parameter to call_llm()
+2. `swecli/repl/repl.py` - Replaced spinner with TaskProgressDisplay
 
 ### Lines of Code
 - **Core Logic**: ~200 lines
@@ -277,10 +277,10 @@ Test 3: Token Compression (3 seconds)
 **Result:** UI works perfectly!
 
 ### Integration Testing
-Ready for real-world testing with OpenCLI REPL:
+Ready for real-world testing with SWE-CLI REPL:
 ```bash
-cd /Users/quocnghi/codes/test_opencli
-opencli
+cd /Users/quocnghi/codes/test_swecli
+swecli
 ```
 
 Then try a command like: `create a hello world python script`
@@ -290,10 +290,10 @@ Then try a command like: `create a hello world python script`
 ## 🔧 Dependencies
 
 ### Required
-- `rich`: Terminal formatting (already in OpenCLI)
+- `rich`: Terminal formatting (already in SWE-CLI)
 - `threading`: Standard library
 - `time`: Standard library
-- `requests`: HTTP client (already in OpenCLI)
+- `requests`: HTTP client (already in SWE-CLI)
 
 ### Optional
 - `pynput`: ESC key listening
@@ -367,7 +367,7 @@ Display: ⏺ Thinking (completed in 3s, ↑ 2.3k tokens)
 ## 🚀 Next Steps
 
 ### Immediate
-1. **Test in Real REPL**: Run opencli and test with actual commands
+1. **Test in Real REPL**: Run swecli and test with actual commands
 2. **Test ESC Interrupt**: Try pressing ESC during long operations
 3. **Verify Token Tracking**: Check that token counts are accurate
 
@@ -420,8 +420,8 @@ Display: ⏺ Thinking (completed in 3s, ↑ 2.3k tokens)
 **Adding Task Monitor to New Operations:**
 
 ```python
-from opencli.core.task_monitor import TaskMonitor
-from opencli.ui.task_progress import TaskProgressDisplay
+from swecli.core.task_monitor import TaskMonitor
+from swecli.ui.task_progress import TaskProgressDisplay
 
 # Create monitor
 task_monitor = TaskMonitor()
@@ -446,7 +446,7 @@ progress.print_final_status()
 
 The task monitor feature is **fully implemented**, **tested**, and **integrated**.
 
-**Ready to enhance your OpenCLI experience with:**
+**Ready to enhance your SWE-CLI experience with:**
 - Real-time progress tracking
 - ESC key interruption
 - Token usage monitoring
@@ -454,8 +454,8 @@ The task monitor feature is **fully implemented**, **tested**, and **integrated*
 
 **Try it now:**
 ```bash
-cd /Users/quocnghi/codes/test_opencli
-opencli
+cd /Users/quocnghi/codes/test_swecli
+swecli
 ```
 
 Then run any command and watch the new task monitor in action!
@@ -469,4 +469,4 @@ Then run any command and watch the new task monitor in action!
 **Test Coverage:** Full
 **Ready for Production:** Yes!
 
-🎉 **Thank you for using OpenCLI!** 🎉
+🎉 **Thank you for using SWE-CLI!** 🎉

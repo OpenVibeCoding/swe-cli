@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 from rich.console import Console
 
-from opencli.core.approval import ApprovalManager
-from opencli.models.operation import Operation, OperationType
+from swecli.core.approval import ApprovalManager
+from swecli.models.operation import Operation, OperationType
 
 
 @pytest.mark.skip(reason="interactive approval dialog demo; run manually with -s")
@@ -72,7 +72,7 @@ def test_autocomplete_commands():
     console.print("[bold cyan]  Testing Slash Command Autocomplete[/bold cyan]")
     console.print("[bold cyan]═══════════════════════════════════════════════[/bold cyan]\n")
 
-    from opencli.ui.autocomplete import SLASH_COMMANDS
+    from swecli.ui.autocomplete import SLASH_COMMANDS
 
     console.print(f"[green]Total slash commands available:[/green] {len(SLASH_COMMANDS)}")
     console.print("\n[bold]Available commands:[/bold]\n")

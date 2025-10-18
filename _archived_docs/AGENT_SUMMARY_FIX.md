@@ -33,7 +33,7 @@ The word "can" made it optional. Kimi K2 would often skip the summary and just r
 
 ## Solution
 
-Updated `opencli/core/pydantic_agent.py` system prompt to make summaries **mandatory**:
+Updated `swecli/core/pydantic_agent.py` system prompt to make summaries **mandatory**:
 
 ```python
 CRITICAL INSTRUCTIONS:
@@ -52,7 +52,7 @@ Tested with:
 
 ## Files Modified
 
-- **`opencli/core/pydantic_agent.py`** (lines 58-64)
+- **`swecli/core/pydantic_agent.py`** (lines 58-64)
 
 ## Impact
 
@@ -71,7 +71,7 @@ pip install -e . --quiet
 
 Then test in REPL:
 ```bash
-opencli
+swecli
 [NORMAL] > create a simple calculator in HTML
 ```
 

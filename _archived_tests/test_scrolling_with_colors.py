@@ -7,8 +7,8 @@ from pathlib import Path
 # Add opencli to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from opencli.ui.chat_app import ChatApplication
-from opencli.ui.chat_formatters import ChatBoxFormatter
+from swecli.ui.chat_app import ChatApplication
+from swecli.ui.chat_formatters import ChatBoxFormatter
 
 print("Testing Scrolling + ANSI Colors")
 print("=" * 50)
@@ -59,7 +59,7 @@ if is_ansi and scroll_pos > 0 and scroll_pos == line_count:
     print("   • ANSI colors: Working")
     print("   • Auto-scroll: Working")
     print("   • Scroll position: Correct")
-    print("\nOpenCLI should now have:")
+    print("\nSWE-CLI should now have:")
     print("   ✓ Colored text (cyan › prompt, cyan tool boxes, green results)")
     print("   ✓ Auto-scrolling to bottom on new messages")
     print("   ✓ Manual scrolling with PageUp/PageDown")
