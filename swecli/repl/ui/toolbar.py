@@ -52,6 +52,10 @@ class Toolbar:
             else 'fg:#2ecc71 bold'
         )
 
+        # Extract readable model name (last part after /)
+        model_name = self.config.model.split('/')[-1] if self.config.model else 'unknown'
+        provider_name = self.config.model_provider.capitalize()
+
         return FormattedText(
             [
                 (mode_style, f" {mode} "),
@@ -60,5 +64,7 @@ class Toolbar:
                     " • Shift+Tab: Toggle Mode • Ctrl+C: Exit • Context Left: ",
                 ),
                 ('fg:#aaaaaa', f"{remaining_pct:.0f}% "),
+                ('fg:#aaaaaa', f"• {provider_name}: "),
+                ('fg:#6c5ce7', f"{model_name} "),
             ]
         )

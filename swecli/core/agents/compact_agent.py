@@ -6,11 +6,17 @@ from typing import Dict, List
 
 import requests
 
+from swecli.prompts import load_prompt
+
 
 class CompactAgent:
     """Agent specialized in context compaction and summarization."""
 
-    SYSTEM_PROMPT = """You are a context compaction specialist for SWE-CLI, an AI-powered CLI tool.
+    # Load system prompt from file
+    SYSTEM_PROMPT = load_prompt("agent_compact")
+
+    # Legacy prompt kept for backwards compatibility
+    _LEGACY_PROMPT = """You are a context compaction specialist for SWE-CLI, an AI-powered CLI tool.
 
 Your task: Summarize conversation history while preserving critical information for continuity.
 

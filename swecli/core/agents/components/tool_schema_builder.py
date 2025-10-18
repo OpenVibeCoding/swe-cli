@@ -258,4 +258,21 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "open_browser",
+            "description": "Opens a URL in the user's default web browser. Useful for showing web applications during development (e.g., 'open http://localhost:3000'). Automatically handles localhost URLs.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "The URL to open in the browser. Can be a full URL (http://example.com) or localhost address (localhost:3000)",
+                    },
+                },
+                "required": ["url"],
+            },
+        },
+    },
 ]

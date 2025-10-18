@@ -23,13 +23,15 @@ from swecli.repl.chat.tool_executor import ToolExecutor
 class REPLChatApplication(ChatApplication):
     """Chat application customized for REPL with split-screen UI."""
 
-    def __init__(self, repl: REPL):
+    def __init__(self, repl: REPL, is_continuation: bool = False):
         """Initialize REPL chat application.
 
         Args:
             repl: The REPL instance containing all the logic
+            is_continuation: Whether this is continuing an existing session
         """
         self.repl = repl
+        self.is_continuation = is_continuation
 
         # Track current working messages for real-time token counting
         self._current_messages: list = []
@@ -228,12 +230,19 @@ class REPLChatApplication(ChatApplication):
             context_limit = self.context_monitor.context_limit
             context_display = f"Context Left: 100% (0/{context_limit})"
 
+        # Extract readable model name and provider
+        config = self.repl.config_manager.get_config()
+        model_name = config.model.split('/')[-1] if config.model else 'unknown'
+        provider_name = config.model_provider.capitalize()
+
         # Build status text - elegant Claude Code style with context info
         return [
             ("", f"{mode_symbol} "),
             (mode_style, f"{mode_name} mode"),
             ("", " (shift+tab to cycle) • "),
             ("class:context-info", context_display),
+            ("", f" • {provider_name}: "),
+            ("class:model-info", model_name),
         ]
 
     def _get_content_width(self) -> int:
@@ -327,6 +336,13 @@ class REPLChatApplication(ChatApplication):
             super().add_assistant_message(wrapped_content)
 
     def _show_welcome(self) -> None:
+        """Show welcome banner or recent messages when continuing."""
+        if self.is_continuation:
+            self._show_continuation_summary()
+        else:
+            self._show_welcome_banner()
+
+    def _show_welcome_banner(self) -> None:
         """Show compact welcome banner using shared welcome module."""
         from rich.console import Console
         from io import StringIO
@@ -384,6 +400,45 @@ class REPLChatApplication(ChatApplication):
 
         self._update_conversation_buffer()
         # Don't lock input for welcome message - it happens before app.run()
+        self.app.invalidate()
+
+    def _show_continuation_summary(self) -> None:
+        """Show recent messages when continuing a session."""
+        from rich.console import Console
+        from io import StringIO
+
+        # Helper to render Rich markup to ANSI
+        def rich_markup_to_ansi(markup: str) -> str:
+            string_io = StringIO()
+            temp_console = Console(
+                file=string_io, width=200, force_terminal=True, legacy_windows=False
+            )
+            temp_console.print(markup, end="")
+            return string_io.getvalue()
+
+        # Get session info
+        session = self.repl.session_manager.get_current_session()
+        if not session:
+            return
+
+        # Show continuation header with session info
+        header = f"[dim]Continuing session[/dim] [cyan]{session.id}[/cyan] [dim]({len(session.messages)} messages)[/dim]"
+        self.conversation.add_system_message(rich_markup_to_ansi(header))
+
+        # Show recent messages (last 6) using the same display style as regular conversation
+        recent_messages = session.messages[-6:] if len(session.messages) > 6 else session.messages
+
+        for msg in recent_messages:
+            # Display messages using the same methods as regular conversation
+            if msg.role.value == "user":
+                self.conversation.add_user_message(msg.content)
+            elif msg.role.value == "assistant":
+                self.conversation.add_assistant_message(msg.content)
+            elif msg.role.value == "system":
+                self.conversation.add_system_message(msg.content)
+            # Skip tool-related messages for cleaner display
+
+        self._update_conversation_buffer()
         self.app.invalidate()
 
     def _handle_user_message(self, text: str) -> None:
@@ -560,13 +615,16 @@ class REPLChatApplication(ChatApplication):
 
 
 def create_repl_chat(
-    config_manager: ConfigManager, session_manager: SessionManager
+    config_manager: ConfigManager,
+    session_manager: SessionManager,
+    is_continuation: bool = False
 ) -> REPLChatApplication:
     """Create REPL with chat interface.
 
     Args:
         config_manager: Configuration manager
         session_manager: Session manager
+        is_continuation: Whether this is continuing an existing session
 
     Returns:
         REPLChatApplication instance
@@ -592,7 +650,7 @@ def create_repl_chat(
     repl._connect_mcp_servers()
 
     # Create chat application wrapper
-    chat_app = REPLChatApplication(repl)
+    chat_app = REPLChatApplication(repl, is_continuation=is_continuation)
 
     # Set chat app reference in approval manager for modal dialogs
     repl.approval_manager.chat_app = chat_app

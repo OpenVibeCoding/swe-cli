@@ -102,6 +102,7 @@ class REPL:
     def _init_tools(self):
         """Initialize file operation and command tools."""
         from swecli.tools.web_fetch_tool import WebFetchTool
+        from swecli.tools.open_browser_tool import OpenBrowserTool
         from swecli.mcp.manager import MCPManager
 
         self.file_ops = FileOperations(self.config, self.config_manager.working_dir)
@@ -109,6 +110,7 @@ class REPL:
         self.edit_tool = EditTool(self.config, self.config_manager.working_dir)
         self.bash_tool = BashTool(self.config, self.config_manager.working_dir)
         self.web_fetch_tool = WebFetchTool(self.config, self.config_manager.working_dir)
+        self.open_browser_tool = OpenBrowserTool(self.config, self.config_manager.working_dir)
         self.mcp_manager = MCPManager(working_dir=self.config_manager.working_dir)
 
     def _init_managers(self):
@@ -127,6 +129,7 @@ class REPL:
             edit_tool=self.edit_tool,
             bash_tool=self.bash_tool,
             web_fetch_tool=self.web_fetch_tool,
+            open_browser_tool=self.open_browser_tool,
             mcp_manager=self.mcp_manager,
         )
 

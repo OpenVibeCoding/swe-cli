@@ -43,6 +43,7 @@ class RuntimeService:
         edit_tool: Union[Any, None],
         bash_tool: Union[Any, None],
         web_fetch_tool: Union[Any, None],
+        open_browser_tool: Union[Any, None] = None,
         mcp_manager: Union[Any, None] = None,
     ) -> RuntimeSuite:
         """Create a runtime suite containing the tool registry and agents."""
@@ -53,6 +54,7 @@ class RuntimeService:
                 edit_tool=edit_tool,
                 bash_tool=bash_tool,
                 web_fetch_tool=web_fetch_tool,
+                open_browser_tool=open_browser_tool,
             )
         )
         tool_registry = tool_factory.create_registry(mcp_manager=mcp_manager)

@@ -13,6 +13,8 @@ from swecli.models.agent_deps import AgentDependencies
 from swecli.models.message import ChatMessage, Role
 from swecli.repl.repl import REPL
 from swecli.repl.repl_chat import create_repl_chat
+from swecli.setup import run_setup_wizard
+from swecli.setup.wizard import config_exists
 from swecli.tools.bash_tool import BashTool
 from swecli.tools.edit_tool import EditTool
 from swecli.tools.file_ops import FileOperations
@@ -28,9 +30,11 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  swecli                          # Start interactive session
+  swecli                          # Start interactive session (web server in background)
+  swecli run ui                   # Start web UI dev server and open browser
   swecli -p "create hello.py"     # Non-interactive mode
   swecli -r abc123                # Resume session
+  swecli --ui-port 3000           # Web UI on custom port
   swecli mcp list                 # List MCP servers
   swecli mcp add myserver uvx mcp-server-example
         """
@@ -84,8 +88,43 @@ Examples:
         help="List saved sessions and exit",
     )
 
+    parser.add_argument(
+        "--ui-port",
+        type=int,
+        default=8080,
+        metavar="PORT",
+        help="Port for web UI server (default: 8080)",
+    )
+
+    parser.add_argument(
+        "--ui-host",
+        default="127.0.0.1",
+        metavar="HOST",
+        help="Host for web UI server (default: 127.0.0.1)",
+    )
+
     # Add subparsers for commands
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    # Config subcommand
+    config_parser = subparsers.add_parser(
+        "config",
+        help="Manage SWE-CLI configuration",
+        description="Configure AI providers, models, and other settings",
+    )
+    config_subparsers = config_parser.add_subparsers(dest="config_command", help="Config operations")
+
+    # config setup
+    config_subparsers.add_parser(
+        "setup",
+        help="Run the interactive setup wizard"
+    )
+
+    # config show
+    config_subparsers.add_parser(
+        "show",
+        help="Display current configuration"
+    )
 
     # MCP subcommand
     mcp_parser = subparsers.add_parser(
@@ -161,14 +200,44 @@ Examples:
     )
     mcp_disable.add_argument("name", help="Name of the server to disable")
 
+    # Run subcommand
+    run_parser = subparsers.add_parser(
+        "run",
+        help="Run development tools",
+        description="Run development servers and tools"
+    )
+    run_subparsers = run_parser.add_subparsers(dest="run_command", help="Run operations")
+
+    # run ui
+    run_subparsers.add_parser(
+        "ui",
+        help="Start the web UI development server (Vite) and open in browser"
+    )
+
     args = parser.parse_args()
+
+    # Handle config commands
+    if args.command == "config":
+        _handle_config_command(args)
+        return
 
     # Handle MCP commands
     if args.command == "mcp":
         _handle_mcp_command(args)
         return
 
+    # Handle run commands
+    if args.command == "run":
+        _handle_run_command(args)
+        return
+
     console = Console()
+
+    # Run setup wizard if config doesn't exist
+    if not config_exists():
+        if not run_setup_wizard():
+            console.print("[yellow]Setup cancelled. Exiting.[/yellow]")
+            sys.exit(0)
 
     # Set working directory
     working_dir = Path(args.working_dir) if args.working_dir else Path.cwd()
@@ -235,8 +304,41 @@ Examples:
             _run_non_interactive(config_manager, session_manager, args.prompt)
             return
 
+        # Start web UI automatically (silently in background)
+        web_server_thread = None
+        mode_manager = ModeManager()
+        approval_manager = ApprovalManager(console)
+        undo_manager = UndoManager(config.max_undo_history)
+
+        try:
+            from swecli.web import start_server
+
+            web_server_thread = start_server(
+                config_manager=config_manager,
+                session_manager=session_manager,
+                mode_manager=mode_manager,
+                approval_manager=approval_manager,
+                undo_manager=undo_manager,
+                host=args.ui_host,
+                port=args.ui_port,
+                open_browser=False,
+            )
+
+            # Small delay to ensure server is ready
+            import time
+            time.sleep(0.3)
+
+        except ImportError:
+            # Silently ignore if web dependencies not installed
+            pass
+        except Exception:
+            # Silently ignore web server startup errors
+            pass
+
         # Interactive REPL mode with chat UI
-        chat_app = create_repl_chat(config_manager, session_manager)
+        # Check if continuing/resuming a session
+        is_continuation = bool(args.resume or args.continue_session)
+        chat_app = create_repl_chat(config_manager, session_manager, is_continuation=is_continuation)
         chat_app.run()
 
     except KeyboardInterrupt:
@@ -299,6 +401,70 @@ def _print_sessions(console: Console, session_manager: SessionManager) -> None:
             )
 
         console.print(table)
+
+
+def _handle_config_command(args) -> None:
+    """Handle config subcommands.
+
+    Args:
+        args: Parsed command-line arguments
+    """
+    import json
+    from pathlib import Path
+
+    console = Console()
+
+    if not args.config_command:
+        console.print("[yellow]No config subcommand specified. Use --help for available commands.[/yellow]")
+        sys.exit(1)
+
+    if args.config_command == "setup":
+        # Run setup wizard (can be used to reconfigure)
+        if not run_setup_wizard():
+            console.print("[yellow]Setup cancelled.[/yellow]")
+            sys.exit(0)
+
+    elif args.config_command == "show":
+        # Display current configuration
+        config_file = Path.home() / ".swecli" / "settings.json"
+
+        if not config_file.exists():
+            console.print("[yellow]No configuration found. Run 'swecli config setup' first.[/yellow]")
+            sys.exit(1)
+
+        try:
+            with open(config_file, "r") as f:
+                config = json.load(f)
+
+            from rich.table import Table
+
+            table = Table(title="Current Configuration", show_header=True, header_style="bold cyan")
+            table.add_column("Setting", style="cyan")
+            table.add_column("Value", style="white")
+
+            # Display non-sensitive config values
+            for key, value in config.items():
+                if key == "api_key":
+                    # Mask API key
+                    if value:
+                        masked = value[:8] + "*" * (len(value) - 12) + value[-4:] if len(value) > 12 else "*" * len(value)
+                        table.add_row(key, masked)
+                    else:
+                        table.add_row(key, "[dim]Not set[/dim]")
+                else:
+                    table.add_row(key, str(value))
+
+            console.print()
+            console.print(table)
+            console.print()
+            console.print(f"[dim]Config file: {config_file}[/dim]")
+
+        except json.JSONDecodeError:
+            console.print(f"[red]Error: Invalid JSON in configuration file: {config_file}[/red]")
+            sys.exit(1)
+        except Exception as e:
+            console.print(f"[red]Error reading configuration: {e}[/red]")
+            sys.exit(1)
 
 
 def _handle_mcp_command(args) -> None:
@@ -417,6 +583,124 @@ def _handle_mcp_command(args) -> None:
     except Exception as e:
         console.print(f"[red]Error: {str(e)}[/red]")
         sys.exit(1)
+
+
+def _handle_run_command(args) -> None:
+    """Handle run subcommands.
+
+    Args:
+        args: Parsed command-line arguments
+    """
+    import subprocess
+    import webbrowser
+    import time
+    from pathlib import Path
+
+    console = Console()
+
+    if not args.run_command:
+        console.print("[yellow]No run subcommand specified. Use --help for available commands.[/yellow]")
+        sys.exit(1)
+
+    if args.run_command == "ui":
+        try:
+            # Find the web-ui directory
+            import swecli
+            import os
+
+            package_dir = Path(swecli.__file__).parent
+
+            # Check environment variable first
+            env_path = os.getenv("SWECLI_WEB_UI_PATH")
+            if env_path:
+                web_ui_dir = Path(env_path)
+                if web_ui_dir.exists() and (web_ui_dir / "package.json").exists():
+                    console.print(f"[cyan]📦 Using web-ui from SWECLI_WEB_UI_PATH: {web_ui_dir}[/cyan]")
+                else:
+                    console.print(f"[yellow]⚠ SWECLI_WEB_UI_PATH is set but directory is invalid: {web_ui_dir}[/yellow]")
+                    web_ui_dir = None
+
+            if not env_path or not web_ui_dir:
+                # Check multiple locations
+                possible_locations = [
+                    # 1. Repository root (for development)
+                    package_dir.parent / "web-ui",
+                    # 2. Current directory (if user is in repo)
+                    Path.cwd() / "web-ui",
+                    # 3. Package installation directory
+                    package_dir / "web-ui",
+                    # 4. Check parent directories up to 3 levels
+                    package_dir.parent.parent / "web-ui",
+                ]
+
+                web_ui_dir = None
+                for location in possible_locations:
+                    if location.exists() and (location / "package.json").exists():
+                        web_ui_dir = location
+                        break
+
+                if not web_ui_dir:
+                    console.print("[red]Error: web-ui directory not found[/red]")
+                    console.print("\nChecked locations:")
+                    for loc in possible_locations:
+                        console.print(f"  • {loc}")
+                    console.print("\n[yellow]Tip:[/yellow] Run this command from the swe-cli repository root,")
+                    console.print("or set SWECLI_WEB_UI_PATH environment variable:")
+                    console.print("[dim]  export SWECLI_WEB_UI_PATH=/path/to/swe-cli/web-ui[/dim]")
+                    sys.exit(1)
+
+            console.print(f"[cyan]📦 Found web-ui directory: {web_ui_dir}[/cyan]")
+
+            # Check if node_modules exists
+            node_modules = web_ui_dir / "node_modules"
+            if not node_modules.exists():
+                console.print("[yellow]⚠ node_modules not found. Running npm install...[/yellow]")
+                console.print("[dim]This may take a few minutes on first run...[/dim]\n")
+
+                # Run npm install
+                install_process = subprocess.run(
+                    ["npm", "install"],
+                    cwd=web_ui_dir,
+                    capture_output=False,
+                    text=True
+                )
+
+                if install_process.returncode != 0:
+                    console.print("[red]Error: npm install failed[/red]")
+                    sys.exit(1)
+
+                console.print("[green]✓ Dependencies installed successfully[/green]\n")
+
+            # Start the dev server
+            console.print("[cyan]🚀 Starting Vite dev server...[/cyan]")
+            console.print("[dim]Press Ctrl+C to stop the server[/dim]\n")
+
+            # Open browser after a short delay
+            def open_browser_delayed():
+                time.sleep(2)  # Wait for Vite to start
+                url = "http://localhost:5173"
+                console.print(f"[green]✓ Opening browser at {url}[/green]\n")
+                webbrowser.open(url)
+
+            import threading
+            browser_thread = threading.Thread(target=open_browser_delayed, daemon=True)
+            browser_thread.start()
+
+            # Run npm run dev (blocking)
+            subprocess.run(
+                ["npm", "run", "dev"],
+                cwd=web_ui_dir,
+            )
+
+        except KeyboardInterrupt:
+            console.print("\n[yellow]Stopping dev server...[/yellow]")
+        except FileNotFoundError:
+            console.print("[red]Error: npm not found. Please install Node.js and npm.[/red]")
+            console.print("Visit: https://nodejs.org/")
+            sys.exit(1)
+        except Exception as e:
+            console.print(f"[red]Error: {str(e)}[/red]")
+            sys.exit(1)
 
 
 def _run_non_interactive(

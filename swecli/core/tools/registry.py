@@ -31,6 +31,7 @@ class ToolRegistry:
         edit_tool: Union[Any, None] = None,
         bash_tool: Union[Any, None] = None,
         web_fetch_tool: Union[Any, None] = None,
+        open_browser_tool: Union[Any, None] = None,
         mcp_manager: Union[Any, None] = None,
     ) -> None:
         self.file_ops = file_ops
@@ -38,6 +39,7 @@ class ToolRegistry:
         self.edit_tool = edit_tool
         self.bash_tool = bash_tool
         self.web_fetch_tool = web_fetch_tool
+        self.open_browser_tool = open_browser_tool
 
         self._file_handler = FileToolHandler(file_ops, write_tool, edit_tool)
         self._process_handler = ProcessToolHandler(bash_tool)
@@ -56,6 +58,7 @@ class ToolRegistry:
             "get_process_output": self._process_handler.get_process_output,
             "kill_process": self._process_handler.kill_process,
             "fetch_url": self._web_handler.fetch_url,
+            "open_browser": self._open_browser,
         }
 
     def get_schemas(self) -> list[dict[str, Any]]:
@@ -133,3 +136,13 @@ class ToolRegistry:
         """Update the MCP manager and refresh the handler."""
         self.mcp_manager = mcp_manager
         self._mcp_handler = McpToolHandler(mcp_manager)
+
+    def _open_browser(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        """Execute the open_browser tool."""
+        if not self.open_browser_tool:
+            return {
+                "success": False,
+                "error": "open_browser tool not available",
+                "output": None,
+            }
+        return self.open_browser_tool.execute(**arguments)

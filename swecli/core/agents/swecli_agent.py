@@ -7,11 +7,10 @@ from typing import Any, Optional
 
 from swecli.core.abstract import BaseAgent
 from swecli.core.agents.components import (
-    AgentHttpClient,
     ResponseCleaner,
     SystemPromptBuilder,
     ToolSchemaBuilder,
-    resolve_api_config,
+    create_http_client,
 )
 from swecli.models.config import AppConfig
 
@@ -25,8 +24,7 @@ class SwecliAgent(BaseAgent):
         tool_registry: Any,
         mode_manager: Any,
     ) -> None:
-        self.api_url, self.headers = resolve_api_config(config)
-        self._http_client = AgentHttpClient(self.api_url, self.headers)
+        self._http_client = create_http_client(config)
         self._response_cleaner = ResponseCleaner()
         super().__init__(config, tool_registry, mode_manager)
 

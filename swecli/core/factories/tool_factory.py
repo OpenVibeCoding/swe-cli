@@ -17,6 +17,7 @@ class ToolDependencies:
     edit_tool: Union[Any, None]
     bash_tool: Union[Any, None]
     web_fetch_tool: Union[Any, None]
+    open_browser_tool: Union[Any, None] = None
 
 
 class ToolFactory:
@@ -33,6 +34,7 @@ class ToolFactory:
             edit_tool=self._deps.edit_tool,
             bash_tool=self._deps.bash_tool,
             web_fetch_tool=self._deps.web_fetch_tool,
+            open_browser_tool=self._deps.open_browser_tool,
             mcp_manager=mcp_manager,
         )
         return registry

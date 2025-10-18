@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any, Sequence
+from typing import Any, Sequence, Union
+
+from swecli.prompts import load_prompt
 
 
 class SystemPromptBuilder:
@@ -13,13 +15,16 @@ class SystemPromptBuilder:
 
     def build(self) -> str:
         """Return the formatted system prompt string."""
-        prompt = _BASE_PROMPT
+        # Load base prompt from file
+        prompt = load_prompt("agent_normal")
 
+        # Add MCP section if available
         mcp_prompt = self._build_mcp_section()
         if mcp_prompt:
             prompt += mcp_prompt
 
-        prompt += _GUIDELINES
+        # Add guidelines
+        prompt += load_prompt("agent_normal_guidelines")
         return prompt
 
     def _build_mcp_section(self) -> str:
@@ -46,9 +51,11 @@ class PlanningPromptBuilder:
 
     def build(self) -> str:
         """Return the static planning prompt."""
-        return _PLANNING_PROMPT
+        return load_prompt("agent_planning")
 
 
+# Legacy constants kept for backwards compatibility
+# These are now loaded from files in the prompts/ directory
 _BASE_PROMPT = """You are SWE-CLI, an AI-powered assistant specialized in software development tasks.
 
 # Interaction Style: ReAct Pattern
