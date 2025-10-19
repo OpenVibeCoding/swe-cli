@@ -66,9 +66,9 @@ class StatsCommandHandler:
             f"([{usage_color}]{usage_pct:.1f}%[/{usage_color}])"
         )
 
-        # Limit
+        # Limit (dynamically set from model context length)
         content.append(
-            f"[bold]Limit:[/bold] {stats['limit']:,} tokens (256k)"
+            f"[bold]Limit:[/bold] {stats['limit']:,} tokens"
         )
 
         # Available

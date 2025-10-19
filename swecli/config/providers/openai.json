@@ -1,0 +1,58 @@
+{
+  "id": "openai",
+  "name": "OpenAI",
+  "description": "GPT models for general purpose tasks",
+  "api_key_env": "OPENAI_API_KEY",
+  "api_base_url": "https://api.openai.com/v1",
+  "models": {
+    "gpt-4o": {
+      "id": "gpt-4o",
+      "name": "GPT-4o",
+      "provider": "OpenAI",
+      "pricing": {
+        "input": 2.50,
+        "output": 10.00,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": ["text", "vision", "code"],
+      "recommended": true
+    },
+    "gpt-4o-mini": {
+      "id": "gpt-4o-mini",
+      "name": "GPT-4o Mini",
+      "provider": "OpenAI",
+      "pricing": {
+        "input": 0.15,
+        "output": 0.60,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": ["text", "vision"]
+    },
+    "gpt-4-turbo": {
+      "id": "gpt-4-turbo-2024-04-09",
+      "name": "GPT-4 Turbo",
+      "provider": "OpenAI",
+      "pricing": {
+        "input": 10.00,
+        "output": 30.00,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": ["text", "vision", "code"]
+    },
+    "gpt-3.5-turbo": {
+      "id": "gpt-3.5-turbo",
+      "name": "GPT-3.5 Turbo",
+      "provider": "OpenAI",
+      "pricing": {
+        "input": 0.50,
+        "output": 1.50,
+        "unit": "per million tokens"
+      },
+      "context_length": 16385,
+      "capabilities": ["text"]
+    }
+  }
+}

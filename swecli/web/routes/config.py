@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from swecli.web.state import get_state
-from swecli.setup.providers import PROVIDERS
+from swecli.config import get_model_registry
 
 router = APIRouter(prefix="/api/config", tags=["config"])
 
@@ -103,20 +103,31 @@ async def list_providers() -> List[Dict[str, Any]]:
         HTTPException: If listing fails
     """
     try:
+        registry = get_model_registry()
         providers = []
-        for provider_id, provider_info in PROVIDERS.items():
+
+        for provider_info in registry.list_providers():
+            # Format models with pricing and context info
+            models = []
+            for model_info in provider_info.list_models():
+                description = (
+                    f"{model_info.format_pricing()} • "
+                    f"{model_info.context_length//1000}k context"
+                )
+                if model_info.recommended:
+                    description = "⭐ Recommended - " + description
+
+                models.append({
+                    "id": model_info.id,
+                    "name": model_info.name,
+                    "description": description,
+                })
+
             providers.append({
-                "id": provider_id,
-                "name": provider_info["name"],
-                "description": provider_info["description"],
-                "models": [
-                    {
-                        "id": model["id"],
-                        "name": model["name"],
-                        "description": model.get("description", ""),
-                    }
-                    for model in provider_info["models"]
-                ]
+                "id": provider_info.id,
+                "name": provider_info.name,
+                "description": provider_info.description,
+                "models": models
             })
 
         return providers

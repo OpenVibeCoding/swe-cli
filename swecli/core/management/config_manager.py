@@ -47,6 +47,17 @@ class ConfigManager:
 
         # Create AppConfig with merged data
         self._config = AppConfig(**config_data)
+
+        # Auto-set max_context_tokens from model if:
+        # 1. Not explicitly configured, OR
+        # 2. Set to old defaults (100000 or 256000)
+        current_max = config_data.get("max_context_tokens")
+        if current_max is None or current_max in [100000, 256000]:
+            model_info = self._config.get_model_info()
+            if model_info and model_info.context_length:
+                # Use 80% of context length to leave room for response
+                self._config.max_context_tokens = int(model_info.context_length * 0.8)
+
         return self._config
 
     def get_config(self) -> AppConfig:

@@ -430,7 +430,7 @@ class KeyBindingManager:
                 temp_console = Console(
                     file=string_io, force_terminal=True, legacy_windows=False
                 )
-                temp_console.print(f"⏺ [cyan]{self.chat_app._current_tool_display}[/cyan]", end="")
+                temp_console.print(f"[green]⏺[/green] [cyan]{self.chat_app._current_tool_display}[/cyan]", end="")
                 colored_tool_call = string_io.getvalue()
 
                 interrupted_box = "┌─ Interrupted ────────────────\n"

@@ -37,8 +37,8 @@ class ChatUIHelpers:
         wrapped_paragraphs = []
         for para in paragraphs:
             if para.strip():
-                # Check if line starts with ⏺ symbol
-                if para.startswith("⏺"):
+                # Check if line starts with ⏺ symbol (with or without ANSI color codes)
+                if para.startswith("⏺") or para.startswith("\033[32m⏺"):
                     # Add indentation for continuation lines (3 spaces to align with text after "⏺ ")
                     wrapped = textwrap.fill(
                         para,
@@ -93,10 +93,14 @@ class ChatUIHelpers:
         plain = markdown_to_plain_text(cleaned)
         lines = plain.splitlines() if plain else []
 
+        # ANSI color code for green
+        GREEN = "\033[32m"
+        RESET = "\033[0m"
+
         if lines:
-            lines[0] = f"⏺ {lines[0]}"
+            lines[0] = f"{GREEN}⏺{RESET} {lines[0]}"
         else:
-            lines = ["⏺"]
+            lines = [f"{GREEN}⏺{RESET}"]
 
         message = "\n".join(lines)
         return ChatUIHelpers.wrap_text(message, width=width)

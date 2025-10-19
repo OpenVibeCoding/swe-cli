@@ -77,7 +77,7 @@ class AsyncQueryProcessor:
             string_io = StringIO()
             temp_console = Console(file=string_io, force_terminal=True, legacy_windows=False)
             temp_console.print(
-                f"⏺ [cyan]{self.chat_app._current_tool_display}[/cyan]", end=""
+                f"[green]⏺[/green] [cyan]{self.chat_app._current_tool_display}[/cyan]", end=""
             )
             colored_tool_call = string_io.getvalue()
 
@@ -323,6 +323,43 @@ class AsyncQueryProcessor:
 
                 # Execute tool calls
                 await self.chat_app._handle_tool_calls(tool_calls, messages)
+
+                # Save assistant message with tool calls to session
+                from swecli.models.message import ToolCall as ToolCallModel
+                tool_call_objects = []
+                for tc in tool_calls:
+                    # Find the corresponding tool result in messages
+                    tool_result = None
+                    tool_error = None
+                    for msg in reversed(messages):
+                        if msg.get("role") == "tool" and msg.get("tool_call_id") == tc["id"]:
+                            content = msg.get("content", "")
+                            if content.startswith("Error:"):
+                                tool_error = content[6:].strip()  # Remove "Error: " prefix
+                            else:
+                                tool_result = content
+                            break
+
+                    tool_call_obj = ToolCallModel(
+                        id=tc["id"],
+                        name=tc["function"]["name"],
+                        parameters=json.loads(tc["function"]["arguments"]),
+                        result=tool_result,
+                        error=tool_error,
+                        approved=True  # If we got here, it was approved
+                    )
+                    tool_call_objects.append(tool_call_obj)
+
+                # Create and save assistant message with tool calls
+                if llm_description or tool_call_objects:
+                    assistant_msg = ChatMessage(
+                        role=Role.ASSISTANT,
+                        content=llm_description or "",
+                        tool_calls=tool_call_objects
+                    )
+                    self.repl.session_manager.add_message(
+                        assistant_msg, self.repl.config.auto_save_interval
+                    )
 
                 # Check for interrupt immediately after tool execution
                 if self._check_interrupt(messages):

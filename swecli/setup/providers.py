@@ -1,109 +1,70 @@
-"""Provider definitions and model configurations."""
+"""Provider definitions and model configurations using model registry."""
 
 from typing import Dict, List, Any, Optional
 
-# Provider configuration
-PROVIDERS: Dict[str, Dict[str, Any]] = {
-    "fireworks": {
-        "name": "Fireworks AI",
-        "description": "Fast, cost-effective (recommended)",
-        "env_var": "FIREWORKS_API_KEY",
-        "api_url": "https://api.fireworks.ai/inference/v1/chat/completions",
-        "api_format": "openai",
-        "models": [
-            {
-                "id": "accounts/fireworks/models/qwen3-235b-a22b-instruct-2507",
-                "name": "Qwen 3 235B",
-                "description": "Recommended - Fast & Smart",
-            },
-            {
-                "id": "accounts/fireworks/models/llama-v3p3-70b-instruct",
-                "name": "Llama 3.3 70B",
-                "description": "Meta's latest",
-            },
-            {
-                "id": "accounts/fireworks/models/glm-4p5",
-                "name": "GLM 4.5",
-                "description": "Chinese language optimized",
-            },
-            {
-                "id": "accounts/fireworks/models/qwen2p5-72b-instruct",
-                "name": "Qwen 2.5 72B",
-                "description": "Balanced performance",
-            },
-        ],
-    },
-    "openai": {
-        "name": "OpenAI",
-        "description": "GPT-4, GPT-3.5-turbo",
-        "env_var": "OPENAI_API_KEY",
-        "api_url": "https://api.openai.com/v1/chat/completions",
-        "api_format": "openai",
-        "models": [
-            {
-                "id": "gpt-4-turbo",
-                "name": "GPT-4 Turbo",
-                "description": "Most capable, 128K context",
-            },
-            {
-                "id": "gpt-4",
-                "name": "GPT-4",
-                "description": "High quality reasoning",
-            },
-            {
-                "id": "gpt-3.5-turbo",
-                "name": "GPT-3.5 Turbo",
-                "description": "Fast & affordable",
-            },
-        ],
-    },
-    "anthropic": {
-        "name": "Anthropic",
-        "description": "Claude 3.5 Sonnet, Opus",
-        "env_var": "ANTHROPIC_API_KEY",
-        "api_url": "https://api.anthropic.com/v1/messages",
-        "api_format": "anthropic",
-        "models": [
-            {
-                "id": "claude-3-5-sonnet-20241022",
-                "name": "Claude 3.5 Sonnet",
-                "description": "Best balance of speed & intelligence",
-            },
-            {
-                "id": "claude-3-opus-20240229",
-                "name": "Claude 3 Opus",
-                "description": "Most capable, deep reasoning",
-            },
-            {
-                "id": "claude-3-haiku-20240307",
-                "name": "Claude 3 Haiku",
-                "description": "Fast & affordable",
-            },
-        ],
-    },
-}
+from swecli.config import get_model_registry
 
 
 def get_provider_config(provider_id: str) -> Optional[Dict[str, Any]]:
-    """Get configuration for a specific provider."""
-    return PROVIDERS.get(provider_id)
+    """Get configuration for a specific provider from registry."""
+    registry = get_model_registry()
+    provider_info = registry.get_provider(provider_id)
+
+    if not provider_info:
+        return None
+
+    return {
+        "name": provider_info.name,
+        "description": provider_info.description,
+        "env_var": provider_info.api_key_env,
+        "api_url": provider_info.api_base_url,
+        "api_format": "openai" if provider_id != "anthropic" else "anthropic",
+    }
 
 
 def get_provider_models(provider_id: str) -> List[Dict[str, str]]:
-    """Get available models for a provider."""
-    provider = PROVIDERS.get(provider_id)
-    if not provider:
+    """Get available models for a provider from registry."""
+    registry = get_model_registry()
+    provider_info = registry.get_provider(provider_id)
+
+    if not provider_info:
         return []
-    return provider.get("models", [])
+
+    # Convert ModelInfo objects to dict format for wizard
+    models = []
+    for model_info in provider_info.list_models():
+        # Create description with pricing and context info
+        description = (
+            f"{model_info.format_pricing()} • "
+            f"{model_info.context_length//1000}k context"
+        )
+        if model_info.recommended:
+            description = "⭐ Recommended - " + description
+
+        models.append({
+            "id": model_info.id,
+            "name": model_info.name,
+            "description": description,
+        })
+
+    return models
 
 
 def get_provider_choices() -> List[tuple[str, str, str]]:
-    """Get provider choices for the wizard menu.
+    """Get provider choices for the wizard menu from registry.
 
     Returns:
         List of (id, name, description) tuples
     """
+    registry = get_model_registry()
     return [
-        (key, config["name"], config["description"])
-        for key, config in PROVIDERS.items()
+        (provider_info.id, provider_info.name, provider_info.description)
+        for provider_info in registry.list_providers()
     ]
+
+
+# Legacy PROVIDERS dict for backward compatibility
+PROVIDERS: Dict[str, Dict[str, Any]] = {
+    provider_id: get_provider_config(provider_id)
+    for provider_id in ["fireworks", "openai", "anthropic"]
+}

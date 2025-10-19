@@ -76,7 +76,7 @@ class AppConfig(BaseModel):
 
     # Session settings
     auto_save_interval: int = 5  # Save every N turns
-    max_context_tokens: int = 100000
+    max_context_tokens: int = 100000  # Dynamically set from model context_length (80%)
 
     # UI settings
     verbose: bool = False
@@ -127,3 +127,28 @@ class AppConfig(BaseModel):
                 f"No API key found. Set {self.model_provider.upper()}_API_KEY environment variable"
             )
         return key
+
+    def get_model_info(self):
+        """Get model information from the registry.
+
+        Returns:
+            ModelInfo object or None if model not found
+        """
+        from swecli.config import get_model_registry
+
+        registry = get_model_registry()
+        result = registry.find_model_by_id(self.model)
+        if result:
+            return result[2]  # Return ModelInfo
+        return None
+
+    def get_provider_info(self):
+        """Get provider information from the registry.
+
+        Returns:
+            ProviderInfo object or None if provider not found
+        """
+        from swecli.config import get_model_registry
+
+        registry = get_model_registry()
+        return registry.get_provider(self.model_provider)

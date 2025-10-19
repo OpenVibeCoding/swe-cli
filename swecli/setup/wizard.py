@@ -10,7 +10,7 @@ from rich.panel import Panel
 from rich.prompt import Prompt, Confirm
 from rich.table import Table
 
-from .providers import PROVIDERS, get_provider_choices, get_provider_models
+from .providers import get_provider_config, get_provider_choices, get_provider_models
 from .validator import validate_api_key
 
 
@@ -40,7 +40,10 @@ def run_setup_wizard() -> bool:
     if not provider_id:
         return False
 
-    provider_config = PROVIDERS[provider_id]
+    provider_config = get_provider_config(provider_id)
+    if not provider_config:
+        console.print(f"[red]Error: Provider '{provider_id}' not found[/red]")
+        return False
 
     # Step 2: Get API key
     api_key = get_api_key(provider_id, provider_config)
@@ -74,7 +77,7 @@ def run_setup_wizard() -> bool:
         "temperature": advanced.get("temperature", 0.7),
         "enable_bash": advanced.get("enable_bash", True),
         "auto_save_interval": 5,
-        "max_context_tokens": 100000,
+        # max_context_tokens is auto-set from model's context_length
     }
 
     if save_config(config):

@@ -39,8 +39,8 @@ class REPLChatApplication(ChatApplication):
         # Context monitoring and compaction
         self.context_monitor = ContextTokenMonitor(
             model=repl.config.model,
-            context_limit=256000,  # Full context budget (256k tokens)
-            compaction_threshold=0.80,  # Trigger at 80% usage (204.8k tokens) - leaves buffer room
+            context_limit=repl.config.max_context_tokens,  # Dynamic from model context_length
+            compaction_threshold=0.95,  # Trigger at 95% usage - leaves buffer room
         )
         self.compactor = CompactAgent(repl.config)
 
@@ -433,10 +433,65 @@ class REPLChatApplication(ChatApplication):
             if msg.role.value == "user":
                 self.conversation.add_user_message(msg.content)
             elif msg.role.value == "assistant":
-                self.conversation.add_assistant_message(msg.content)
+                # Display tool calls first (if any) using the SAME logic as live execution
+                for tool_call in msg.tool_calls:
+                    from io import StringIO
+                    from swecli.ui.utils.rich_to_text import rich_to_text_box
+
+                    # Format tool call arguments (same as tool_executor._format_tool_call)
+                    def format_arg_value(k, v):
+                        if k == "command" and isinstance(v, str):
+                            if len(v) > 100:
+                                first_line = v.split("\n")[0]
+                                if len(first_line) > 100:
+                                    return f"'{first_line[:97]}...'"
+                                return f"'{first_line}...'"
+                            return repr(v)
+                        v_str = repr(v)
+                        if len(v_str) > 100:
+                            return v_str[:97] + "..."
+                        return v_str
+
+                    args_str = ", ".join(f"{k}={format_arg_value(k, v)}" for k, v in tool_call.parameters.items())
+                    tool_call_display = f"{tool_call.name}({args_str})" if args_str else f"{tool_call.name}()"
+
+                    # Show tool call with green ⏺ and cyan tool name (same as live)
+                    string_io = StringIO()
+                    temp_console = Console(file=string_io, force_terminal=True, legacy_windows=False)
+                    temp_console.print(f"[green]⏺[/green] [cyan]{tool_call_display}[/cyan]", end="")
+                    self.conversation.add_assistant_message(string_io.getvalue())
+
+                    # Show tool result if available (same as live)
+                    if tool_call.result is not None:
+                        result_dict = {"success": True, "output": str(tool_call.result)}
+                        panel = self.repl.output_formatter.format_tool_result(
+                            tool_name=tool_call.name,
+                            tool_args=tool_call.parameters,
+                            result=result_dict
+                        )
+                        content_width = self._get_content_width()
+                        tool_text = rich_to_text_box(panel, width=content_width)
+                        self.conversation.add_assistant_message(tool_text)
+
+                    # Show error if any (same as live)
+                    if tool_call.error:
+                        error_box = f"┌─ Error ──────────────────────\n"
+                        error_box += f"│ ❌ {tool_call.error}\n"
+                        error_box += f"└──────────────────────────────"
+                        self.conversation.add_assistant_message(error_box)
+
+                # Display assistant response (if any content) with green ⏺
+                if msg.content:
+                    content = msg.content
+                    # Add green ⏺ if not already present
+                    if not content.startswith("⏺") and not content.startswith("┌") and not content.startswith("\033["):
+                        # ANSI green color for ⏺
+                        GREEN = "\033[32m"
+                        RESET = "\033[0m"
+                        content = f"{GREEN}⏺{RESET} {content}"
+                    self.conversation.add_assistant_message(content)
             elif msg.role.value == "system":
                 self.conversation.add_system_message(msg.content)
-            # Skip tool-related messages for cleaner display
 
         self._update_conversation_buffer()
         self.app.invalidate()

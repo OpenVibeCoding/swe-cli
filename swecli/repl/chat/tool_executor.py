@@ -255,7 +255,7 @@ class ToolExecutor:
         temp_console = Console(
             file=string_io, force_terminal=True, legacy_windows=False
         )
-        temp_console.print(f"⏺ [cyan]{tool_call_display}[/cyan]", end="")
+        temp_console.print(f"[green]⏺[/green] [cyan]{tool_call_display}[/cyan]", end="")
         colored_tool_call = string_io.getvalue()
 
         # Create interrupted box
@@ -279,10 +279,10 @@ class ToolExecutor:
         from io import StringIO
         from swecli.ui.utils.rich_to_text import rich_to_text_box
 
-        # Add tool call display with cyan color
+        # Add tool call display with green ⏺ and cyan tool name
         string_io = StringIO()
         temp_console = Console(file=string_io, force_terminal=True, legacy_windows=False)
-        temp_console.print(f"⏺ [cyan]{tool_call_display}[/cyan]", end="")
+        temp_console.print(f"[green]⏺[/green] [cyan]{tool_call_display}[/cyan]", end="")
         colored_tool_call = string_io.getvalue()
 
         # Format tool result using existing OutputFormatter
