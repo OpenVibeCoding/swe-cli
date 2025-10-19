@@ -368,6 +368,47 @@ class KeyBindingManager:
             """Handle j key (vim down) in approval mode - global binding."""
             self.chat_app._handle_approval_down()
 
+        # Model selector mode bindings
+        @Condition
+        def in_selector_mode():
+            return (hasattr(self.chat_app, '_selector_mode') and
+                    self.chat_app._selector_mode)
+
+        @kb.add("enter", filter=in_selector_mode, eager=True)
+        def on_selector_enter(event):
+            """Handle Enter key in selector mode - global binding."""
+            self.chat_app._handle_selector_enter()
+
+        @kb.add("escape", filter=in_selector_mode, eager=True)
+        def on_selector_escape(event):
+            """Handle Escape key in selector mode - global binding."""
+            self.chat_app._handle_selector_escape()
+
+        @kb.add("up", filter=in_selector_mode, eager=True)
+        def on_selector_up(event):
+            """Handle Up arrow in selector mode - global binding."""
+            self.chat_app._handle_selector_up()
+
+        @kb.add("down", filter=in_selector_mode, eager=True)
+        def on_selector_down(event):
+            """Handle Down arrow in selector mode - global binding."""
+            self.chat_app._handle_selector_down()
+
+        @kb.add("k", filter=in_selector_mode, eager=True)
+        def on_selector_k(event):
+            """Handle k key (vim up) in selector mode - global binding."""
+            self.chat_app._handle_selector_up()
+
+        @kb.add("j", filter=in_selector_mode, eager=True)
+        def on_selector_j(event):
+            """Handle j key (vim down) in selector mode - global binding."""
+            self.chat_app._handle_selector_down()
+
+        @kb.add("c-c", filter=in_selector_mode, eager=True)
+        def on_selector_ctrlc(event):
+            """Handle Ctrl+C in selector mode - cancel selection."""
+            self.chat_app._handle_selector_escape()
+
     def _add_history_bindings(self, kb: KeyBindings) -> None:
         """Add command history navigation key bindings."""
         # History navigation is handled in the navigation bindings

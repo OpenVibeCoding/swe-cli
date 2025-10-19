@@ -111,6 +111,8 @@ class LayoutManager:
             height=1,
             style="class:status-bar",
             align=WindowAlign.LEFT,
+            wrap_lines=False,
+            dont_extend_width=True,
         )
 
     def _create_input_area(self) -> VSplit:

@@ -356,7 +356,7 @@ class QueryProcessor:
             True if nudge was added
         """
         if consecutive_reads >= 5:
-            self.console.print(f"\n[dim]💭 You've explored the codebase. What's your assessment?[/dim]")
+            # Silently nudge the agent without displaying a message
             messages.append({
                 "role": "user",
                 "content": "Based on what you've seen, please summarize your findings and explain what needs to be done next."

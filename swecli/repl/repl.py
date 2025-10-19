@@ -52,6 +52,7 @@ from swecli.repl.commands import (
     ModeCommands,
     MCPCommands,
     HelpCommand,
+    ConfigCommands,
 )
 
 # UI components
@@ -215,6 +216,12 @@ class REPL:
             self.mode_manager,
             self.undo_manager,
             self.approval_manager,
+        )
+
+        self.config_commands = ConfigCommands(
+            self.console,
+            self.config_manager,
+            chat_app=None,  # Will be set by ReplChat
         )
 
         self.mcp_commands = MCPCommands(
@@ -463,6 +470,8 @@ class REPL:
             self.mode_commands.undo()
         elif cmd == "/history":
             self.mode_commands.show_history()
+        elif cmd == "/models":
+            self.config_commands.show_model_selector()
         elif cmd == "/mcp":
             self.mcp_commands.handle(args)
         elif cmd == "/init":
@@ -474,7 +483,7 @@ class REPL:
             self.console.print("Type /help for available commands.")
 
     def _init_codebase(self, command: str) -> None:
-        """Handle /init command to analyze codebase and generate OPENCLI.md.
+        """Handle /init command to analyze codebase and generate AGENTS.md.
 
         Args:
             command: The full command string (e.g., "/init" or "/init /path/to/project")

@@ -64,7 +64,7 @@ BUILTIN_COMMANDS.register(SlashCommand("clear", "clear current session and start
 BUILTIN_COMMANDS.register(SlashCommand("history", "show command history"))
 BUILTIN_COMMANDS.register(SlashCommand("sessions", "list all saved sessions"))
 BUILTIN_COMMANDS.register(SlashCommand("resume", "resume a previous session"))
-BUILTIN_COMMANDS.register(SlashCommand("model", "switch active AI model"))
+BUILTIN_COMMANDS.register(SlashCommand("models", "interactive model/provider selector"))
 BUILTIN_COMMANDS.register(SlashCommand("mention", "insert a workspace mention"))
 BUILTIN_COMMANDS.register(SlashCommand("context", "toggle context overview"))
 
@@ -77,5 +77,5 @@ BUILTIN_COMMANDS.register(SlashCommand("mode", "switch between NORMAL and PLAN m
 BUILTIN_COMMANDS.register(SlashCommand("undo", "undo the last operation"))
 
 # Advanced commands
-BUILTIN_COMMANDS.register(SlashCommand("init", "initialize codebase with AGENTS.md"))
+BUILTIN_COMMANDS.register(SlashCommand("init", "analyze codebase and generate AGENTS.md"))
 BUILTIN_COMMANDS.register(SlashCommand("mcp", "manage MCP servers and tools"))

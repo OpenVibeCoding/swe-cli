@@ -28,6 +28,7 @@ from prompt_toolkit.styles import Style
 from swecli.ui.conversation import ConversationBuffer
 from swecli.ui.key_bindings import KeyBindingManager
 from swecli.ui.approval_modal import ApprovalModalManager
+from swecli.ui.model_selector_modal import ModelSelectorModalManager
 from swecli.ui.layout_manager import LayoutManager
 
 
@@ -92,6 +93,9 @@ class ChatApplication:
 
         # Create approval modal manager
         self.approval_modal_manager = ApprovalModalManager(self)
+
+        # Create model selector modal manager
+        self.model_selector_modal_manager = ModelSelectorModalManager(self)
 
         # Create style
         self.style = self._create_style()
@@ -401,6 +405,27 @@ class ChatApplication:
     def _approval_mode(self) -> bool:
         """Check if approval mode is active."""
         return self.approval_modal_manager.is_in_approval_mode()
+
+    def _handle_selector_up(self):
+        """Handle up arrow in selector mode."""
+        return self.model_selector_modal_manager.handle_selector_up()
+
+    def _handle_selector_down(self):
+        """Handle down arrow in selector mode."""
+        return self.model_selector_modal_manager.handle_selector_down()
+
+    def _handle_selector_enter(self):
+        """Handle enter in selector mode."""
+        return self.model_selector_modal_manager.handle_selector_enter()
+
+    def _handle_selector_escape(self):
+        """Handle escape in selector mode."""
+        return self.model_selector_modal_manager.handle_selector_escape()
+
+    @property
+    def _selector_mode(self) -> bool:
+        """Check if selector mode is active."""
+        return self.model_selector_modal_manager.is_in_selector_mode()
 
     def run(self) -> None:
         """Run the chat application."""

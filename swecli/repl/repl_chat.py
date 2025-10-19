@@ -51,6 +51,10 @@ class REPLChatApplication(ChatApplication):
             completer=repl.completer,
         )
 
+        # Connect config_commands to this chat app for interactive modal
+        if hasattr(repl, 'config_commands'):
+            repl.config_commands.chat_app = self
+
         # AFTER parent init, add mode switching key binding
         self._add_mode_switching_binding()
 
@@ -234,6 +238,11 @@ class REPLChatApplication(ChatApplication):
         config = self.repl.config_manager.get_config()
         model_name = config.model.split('/')[-1] if config.model else 'unknown'
         provider_name = config.model_provider.capitalize()
+
+        # Truncate model name if too long to prevent wrapping
+        max_model_length = 35
+        if len(model_name) > max_model_length:
+            model_name = model_name[:max_model_length - 3] + "..."
 
         # Build status text - elegant Claude Code style with context info
         return [
@@ -480,11 +489,12 @@ class REPLChatApplication(ChatApplication):
                         error_box += f"└──────────────────────────────"
                         self.conversation.add_assistant_message(error_box)
 
-                # Display assistant response (if any content) with green ⏺
+                # Display assistant response (if any content)
+                # Only add ⏺ if there were tool calls - otherwise it's just a conversational response
                 if msg.content:
                     content = msg.content
-                    # Add green ⏺ if not already present
-                    if not content.startswith("⏺") and not content.startswith("┌") and not content.startswith("\033["):
+                    # Only add green ⏺ if this message had tool calls
+                    if msg.tool_calls and not content.startswith("⏺") and not content.startswith("┌") and not content.startswith("\033["):
                         # ANSI green color for ⏺
                         GREEN = "\033[32m"
                         RESET = "\033[0m"
@@ -512,13 +522,49 @@ class REPLChatApplication(ChatApplication):
         # Process as regular query
         self._process_query(text)
 
+    async def _handle_models_command(self) -> None:
+        """Handle /models command asynchronously."""
+        try:
+            # Call the async model selector (silently - no messages)
+            result = await self.repl.config_commands.show_model_selector_async()
+
+            # Just invalidate to ensure UI refreshes (footer will update)
+            self.app.invalidate()
+
+        except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            self.add_assistant_message(f"❌ Error showing model selector: {e}\n\n{error_details}")
+            self.app.invalidate()
+
     def _handle_command(self, command: str) -> None:
         """Handle slash commands.
 
         Args:
             command: Command string (e.g. "/help")
         """
-        # Delegate to REPL's command handler
+        # Special handling for async commands
+        cmd = command.split()[0].lower()
+        if cmd == "/models":
+            # Run async model selector
+            asyncio.create_task(self._handle_models_command())
+            return
+
+        # Convert /init to a natural language query for the agent
+        if cmd == "/init":
+            # Parse path if provided
+            parts = command.strip().split()
+            if len(parts) > 1:
+                path = parts[1]
+                query = f"Analyze the codebase at {path} and generate a comprehensive AGENTS.md file with repository guidelines. Use list_files to explore structure, read_file for key files, search for patterns, then write_file to create AGENTS.md with sections: Project Structure, Build/Test Commands, Coding Style, Testing Guidelines, Commit Guidelines, and Agent-Specific Tips."
+            else:
+                query = "Analyze this codebase and generate a comprehensive AGENTS.md file with repository guidelines. Use list_files to explore structure, read_file for key files, search for patterns, then write_file to create AGENTS.md with sections: Project Structure, Build/Test Commands, Coding Style, Testing Guidelines, Commit Guidelines, and Agent-Specific Tips."
+
+            # Process as normal query so all tool calls are visible
+            self._process_query(query)
+            return
+
+        # Delegate to REPL's command handler for other commands
         try:
             # More comprehensive output capture - redirect both stdout and stderr
             import sys

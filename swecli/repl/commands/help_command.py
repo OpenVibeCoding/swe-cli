@@ -34,7 +34,7 @@ class HelpCommand(CommandHandler):
 - `/run <command>` - Execute a bash command safely
 - `/mode <name>` - Switch mode: normal or plan
 - `/undo` - Undo the last operation
-- `/init [path]` - Analyze codebase and generate OPENCLI.md (auto-adapts to repo size)
+- `/init [path]` - Analyze codebase and generate AGENTS.md with repository guidelines
 - `/history` - Show operation history
 
 ## File Operations
@@ -44,6 +44,9 @@ class HelpCommand(CommandHandler):
 - `/clear` - Clear current session context
 - `/sessions` - List all saved sessions
 - `/resume <id>` - Resume a previous session
+
+## Configuration
+- `/models` - Interactive model/provider selector (use ↑/↓ arrows to choose)
 
 ## MCP (Model Context Protocol)
 - `/mcp list` - List configured MCP servers

@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from rich.console import Console
 
 from swecli.models.agent_deps import AgentDependencies
+from swecli.prompts import load_prompt
 
 
 class InitCommandArgs(BaseModel):
@@ -65,8 +66,8 @@ class InitCommandHandler:
         """Execute init command.
 
         This method creates a specialized task for the AI agent to analyze
-        the codebase and generate OPENCLI.md. The agent follows the 4-phase
-        strategic scanning approach defined in INIT_SCANNING_STRATEGY.md.
+        the codebase and generate AGENTS.md. The agent performs a comprehensive
+        analysis of the project structure, dependencies, and architecture.
 
         Args:
             args: Parsed command arguments
@@ -106,25 +107,25 @@ class InitCommandHandler:
             )
 
             if result["success"]:
-                opencli_path = args.path / "OPENCLI.md"
+                agents_path = args.path / "AGENTS.md"
 
                 # Check if agent wrote the file
-                if not opencli_path.exists():
+                if not agents_path.exists():
                     # Agent didn't write file - extract content and write it
                     content = result.get("content", "")
                     if content:
-                        opencli_path.write_text(content)
+                        agents_path.write_text(content)
                         self.console.print("[yellow]Note: Agent didn't write file, wrote manually[/yellow]")
 
                 return {
                     "success": True,
-                    "message": f"✓ Generated OPENCLI.md at {opencli_path}",
+                    "message": f"✓ Generated AGENTS.md at {agents_path}",
                     "content": result["content"]
                 }
             else:
                 return {
                     "success": False,
-                    "message": f"✗ Failed to generate OPENCLI.md: {result.get('content', 'Unknown error')}"
+                    "message": f"✗ Failed to generate AGENTS.md: {result.get('content', 'Unknown error')}"
                 }
 
         finally:
@@ -140,17 +141,9 @@ class InitCommandHandler:
         Returns:
             Prompt string for the agent
         """
-        return f"""Analyze codebase at {path} and create OPENCLI.md.
+        # Load prompt template from file
+        template = load_prompt("init_analysis")
 
-Tasks:
-1. Count files: run_command("cd {path} && find . -type f | wc -l")
-2. Find README: run_command("cd {path} && find . -maxdepth 1 -name README*")
-3. Read README using read_file
-4. Find configs: run_command("cd {path} && find . -maxdepth 2 -name package.json -o -name requirements.txt -o -name pyproject.toml")
-5. Read config files using read_file
-6. Get tree: run_command("cd {path} && tree -L 2 -I node_modules")
-7. Create markdown with overview, structure, dependencies
-8. Save using write_file("{path}/OPENCLI.md", content)
-
-IMPORTANT: For run_command, use single quotes for shell patterns like -name '*.py' NOT double quotes."""
+        # Replace path placeholder
+        return template.replace("{path}", str(path))
 

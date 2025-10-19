@@ -231,9 +231,7 @@ class AsyncQueryProcessor:
             True if nudged
         """
         if consecutive_reads >= 5:
-            self.chat_app.add_assistant_message(
-                "💭 You've explored the codebase. What's your assessment?"
-            )
+            # Silently nudge the agent without displaying a message
             messages.append({
                 "role": "user",
                 "content": "Based on what you've seen, please summarize your findings and explain what needs to be done next.",
