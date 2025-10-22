@@ -238,15 +238,35 @@ class KeyBindingManager:
         # Scrolling key bindings
         @kb.add("pageup")
         def on_pageup(event):
-            """Scroll conversation up."""
-            # Focus conversation window and scroll
-            event.app.layout.focus_next()
+            """Scroll conversation up (Page Up or fn + up arrow on Mac)."""
+            if hasattr(self.chat_app.layout_manager, 'get_conversation_control'):
+                control = self.chat_app.layout_manager.get_conversation_control()
+                window = self.chat_app.layout_manager.get_conversation_window()
+                if control and window:
+                    # Get window height for page scroll
+                    if window.render_info:
+                        height = window.render_info.window_height
+                    else:
+                        height = 10  # Default fallback
+                    # Scroll up by viewport height
+                    control.scroll_page_up(height)
+                    event.app.invalidate()
 
         @kb.add("pagedown")
         def on_pagedown(event):
-            """Scroll conversation down."""
-            # Focus conversation window and scroll
-            event.app.layout.focus_next()
+            """Scroll conversation down (Page Down or fn + down arrow on Mac)."""
+            if hasattr(self.chat_app.layout_manager, 'get_conversation_control'):
+                control = self.chat_app.layout_manager.get_conversation_control()
+                window = self.chat_app.layout_manager.get_conversation_window()
+                if control and window:
+                    # Get window height for page scroll
+                    if window.render_info:
+                        height = window.render_info.window_height
+                    else:
+                        height = 10  # Default fallback
+                    # Scroll down by viewport height
+                    control.scroll_page_down(height)
+                    event.app.invalidate()
 
     def _add_completion_bindings(self, kb: KeyBindings) -> None:
         """Add completion-related key bindings."""
