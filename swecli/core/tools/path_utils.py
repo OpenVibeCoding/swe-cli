@@ -8,16 +8,31 @@ def sanitize_path(path: str) -> str:
     if not path:
         return path
 
+    # Check if path starts with / (absolute path) before processing
+    is_absolute = path.startswith("/")
+
     # Trim leading mention markers
     while path and path[0] in {"@", "#"}:
         path = path[1:]
+
+    # Check again after removing markers in case we have @/path or #/path
+    if not is_absolute and path.startswith("/"):
+        is_absolute = True
 
     # Remove markers within path components
     parts = []
     for component in path.split("/"):
         while component and component[0] in {"@", "#"}:
             component = component[1:]
-        if component:
+        if component:  # Only add non-empty components
             parts.append(component)
 
-    return "/".join(parts) if parts else path
+    # Reconstruct path, preserving leading / for absolute paths
+    if not parts:
+        return path
+
+    result = "/".join(parts)
+    if is_absolute and not result.startswith("/"):
+        result = "/" + result
+
+    return result

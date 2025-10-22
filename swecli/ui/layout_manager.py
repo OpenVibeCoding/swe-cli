@@ -82,15 +82,10 @@ class LayoutManager:
             get_text=self.chat_app.conversation.get_plain_text,
         )
 
-        # Calculate max height for conversation window
-        # Must reserve space for: separator(1) + input(max=8) + status(1) + safety(2) = 12 lines
-        terminal_size = shutil.get_terminal_size(fallback=(80, 24))
-        terminal_height = terminal_size.lines
-        conversation_max_height = terminal_height - 12
-
+        # NO max height - allow conversation to grow infinitely for true unlimited scrollback
+        # The terminal's native scrollback buffer will handle viewing older messages
         self.conversation_window = Window(
             content=self.conversation_control,
-            height=Dimension(max=conversation_max_height),  # CRITICAL: enforce max height
             wrap_lines=False,
             always_hide_cursor=True,
             right_margins=[ScrollbarMargin(display_arrows=True)],
