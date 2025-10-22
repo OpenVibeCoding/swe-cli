@@ -4,6 +4,8 @@ import threading
 import time
 from typing import Optional, TYPE_CHECKING
 
+from swecli.ui.components.tips import TipsManager
+
 if TYPE_CHECKING:
     from swecli.ui.chat_app import Conversation
 
@@ -49,6 +51,10 @@ class ChatSpinner:
         self._start_time = 0.0
         self._lock = threading.Lock()  # Protect against race conditions
 
+        # Tips manager for displaying helpful hints
+        self._tips_manager = TipsManager()
+        self._current_tip = ""
+
     def start(self, text: str, add_message_callback) -> None:
         """Start animated spinner with given text.
 
@@ -82,10 +88,21 @@ class ChatSpinner:
             self._frame_index = 0
             self._start_time = time.time()
 
-        # Add initial spinner message with gradient color animation
+            # Get a new tip for this spinner
+            self._current_tip = self._tips_manager.get_next_tip()
+
+        # Add initial spinner message with gradient color animation and tip
         spinner_char = self.SPINNER_FRAMES[0]
         color = self.SPINNER_COLORS[0]
-        add_message_callback(f"{color}{spinner_char}\033[0m {text} (0s • esc to interrupt)")
+
+        # Format tip with dim gray color (Claude Code style)
+        tip_color = "\033[38;5;240m"  # Dim gray
+        reset = "\033[0m"
+        formatted_tip = f"{tip_color}  ⎿ Tip: {self._current_tip}{reset}"
+
+        # Combine spinner line and tip (two lines)
+        spinner_with_tip = f"{color}{spinner_char}{reset} {text} (0s • esc to interrupt)\n{formatted_tip}"
+        add_message_callback(spinner_with_tip)
 
         # Start NEW animation thread
         self._thread = threading.Thread(target=self._animation_loop, daemon=True)
@@ -154,11 +171,19 @@ class ChatSpinner:
                     and len(self.conversation.messages) > 0
                     and any(char in self.conversation.messages[-1][1] for char in self.SPINNER_FRAMES)
                 ):
-                    # Replace with new spinner frame with color gradient animation on entire line
+                    # Format tip with dim gray color (Claude Code style)
+                    tip_color = "\033[38;5;240m"  # Dim gray
+                    reset = "\033[0m"
+                    formatted_tip = f"{tip_color}  ⎿ Tip: {self._current_tip}{reset}"
+
+                    # Combine spinner line and tip (two lines)
+                    spinner_with_tip = f"{color}{spinner_char}{reset} {self._text} ({elapsed_seconds}s • esc to interrupt)\n{formatted_tip}"
+
+                    # Replace with new spinner frame with tip below it
                     old_message = self.conversation.messages[-1]
                     self.conversation.messages[-1] = (
                         old_message[0],  # role
-                        f"{color}{spinner_char} {self._text} ({elapsed_seconds}s • esc to interrupt)\033[0m",  # gradient animation on entire text
+                        spinner_with_tip,  # spinner line + tip
                         old_message[2] if len(old_message) > 2 else None,  # timestamp
                     )
                     # Trigger UI update through callback
