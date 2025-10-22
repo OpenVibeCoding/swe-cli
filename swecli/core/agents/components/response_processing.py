@@ -10,7 +10,7 @@ class ResponseCleaner:
     """Strips provider-specific tokens from model responses."""
 
     CLEANUP_PATTERNS = (
-        (re.compile(r"<\|[^>]+\|>"), ""),
+        (re.compile(r"<\|[^|]+\|>"), ""),  # Match chat template tokens like <|im_end|>, <|im_user|>, etc.
         (re.compile(r"</?tool_call>"), ""),
         (re.compile(r"</?tool_response>"), ""),
         (re.compile(r"<function=[^>]+>"), ""),

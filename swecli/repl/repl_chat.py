@@ -377,6 +377,7 @@ class REPLChatApplication(ChatApplication):
         )
 
         # Apply Rich styling and add to conversation
+        styled_lines = []
         for line in welcome_lines:
             # Apply styling based on content
             if line.startswith("╔") or line.startswith("║") or line.startswith("╚"):
@@ -405,7 +406,10 @@ class REPLChatApplication(ChatApplication):
             else:
                 styled_line = line
 
-            self.conversation.add_system_message(rich_markup_to_ansi(styled_line))
+            styled_lines.append(rich_markup_to_ansi(styled_line))
+
+        # Join all lines into a single message to compress display
+        self.conversation.add_system_message("\n".join(styled_lines))
 
         self._update_conversation_buffer()
         # Don't lock input for welcome message - it happens before app.run()

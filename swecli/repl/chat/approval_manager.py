@@ -78,7 +78,8 @@ class ChatApprovalManager:
         # Auto-approve rule
         if matched_rule.action == self.RuleAction.AUTO_APPROVE:
             self.rules_manager.add_history(command, True, rule_matched=matched_rule.id)
-            self.console.print(f"[dim]✓ Auto-approved by rule: {matched_rule.name}[/dim]")
+            # Don't show auto-approval messages in chat to reduce noise
+            # self.console.print(f"[dim]✓ Auto-approved by rule: {matched_rule.name}[/dim]")
             return ApprovalResult(
                 approved=True,
                 choice=ApprovalChoice.APPROVE,
