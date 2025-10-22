@@ -110,6 +110,7 @@ class ChatApplication:
             style=self.style,
             full_screen=True,
             mouse_support=True,
+            erase_when_done=False,
         )
 
     
@@ -280,8 +281,11 @@ class ChatApplication:
         # Input locking is ONLY for approval mode where we need exclusive control
         self.app.invalidate()
 
-        # Auto-scroll to bottom on new message
-        self._scroll_to_bottom()
+        # Auto-scroll to bottom ONLY if user hasn't manually scrolled up
+        # Check if auto_scroll is still enabled (if user scrolled, it's disabled)
+        conversation_control = self.layout_manager.get_conversation_control()
+        if conversation_control._auto_scroll:
+            self._scroll_to_bottom()
 
     async def _restore_input_after_render(self) -> None:
         """
@@ -340,8 +344,10 @@ class ChatApplication:
         # DON'T lock input - users should be able to type during spinner updates
         self.app.invalidate()
 
-        # Also scroll to bottom when updating messages
-        self._scroll_to_bottom()
+        # Only scroll to bottom if user hasn't manually scrolled up
+        conversation_control = self.layout_manager.get_conversation_control()
+        if conversation_control._auto_scroll:
+            self._scroll_to_bottom()
 
     def clear_conversation(self) -> None:
         """Clear all messages from conversation."""
@@ -429,12 +435,8 @@ class ChatApplication:
 
     def run(self) -> None:
         """Run the chat application."""
-        # Clear terminal screen before starting to hide previous terminal content
-        import sys
-
-        sys.stdout.write("\033[2J\033[H")  # ANSI: clear screen and move cursor to home
-        sys.stdout.flush()
-
+        # Simply let prompt_toolkit handle everything
+        # It will automatically use alternate screen buffer in full_screen mode
         self.app.run()
 
 

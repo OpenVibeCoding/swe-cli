@@ -8,7 +8,7 @@ from typing import Optional
 from swecli.core.management import ConfigManager, ModeManager, OperationMode, SessionManager
 from swecli.core.agents.compact_agent import CompactAgent
 from swecli.core.context import ContextTokenMonitor
-from swecli.ui.chat_app import ChatApplication
+from swecli.ui.chat_app_native import NativeChatApplication as ChatApplication
 from swecli.ui.utils.rich_to_text import rich_to_text_box
 from swecli.models.message import ChatMessage, Role
 from swecli.repl.repl import REPL  # Import existing REPL for all the logic

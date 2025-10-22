@@ -1,0 +1,110 @@
+import type { WSMessage } from '../types';
+
+export type WSEventHandler = (message: WSMessage) => void;
+
+class WebSocketClient {
+  private ws: WebSocket | null = null;
+  private handlers: Map<string, Set<WSEventHandler>> = new Map();
+  private reconnectTimer: number | null = null;
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
+  private reconnectDelay = 1000;
+
+  connect() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+    this.ws = new WebSocket(wsUrl);
+
+    this.ws.onopen = () => {
+      console.log('WebSocket connected');
+      this.reconnectAttempts = 0;
+      this.emit({ type: 'connected', data: {} });
+    };
+
+    this.ws.onmessage = (event) => {
+      try {
+        const message: WSMessage = JSON.parse(event.data);
+        this.emit(message);
+      } catch (error) {
+        console.error('Failed to parse WebSocket message:', error);
+      }
+    };
+
+    this.ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+
+    this.ws.onclose = () => {
+      console.log('WebSocket disconnected');
+      this.emit({ type: 'disconnected', data: {} });
+      this.attemptReconnect();
+    };
+  }
+
+  disconnect() {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+  }
+
+  send(message: any) {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(message));
+    } else {
+      console.warn('WebSocket is not connected');
+    }
+  }
+
+  on(eventType: string, handler: WSEventHandler) {
+    if (!this.handlers.has(eventType)) {
+      this.handlers.set(eventType, new Set());
+    }
+    this.handlers.get(eventType)!.add(handler);
+
+    // Return unsubscribe function
+    return () => {
+      const handlers = this.handlers.get(eventType);
+      if (handlers) {
+        handlers.delete(handler);
+      }
+    };
+  }
+
+  private emit(message: WSMessage) {
+    // Emit to specific type handlers
+    const typeHandlers = this.handlers.get(message.type);
+    if (typeHandlers) {
+      typeHandlers.forEach(handler => handler(message));
+    }
+
+    // Emit to wildcard handlers
+    const wildcardHandlers = this.handlers.get('*');
+    if (wildcardHandlers) {
+      wildcardHandlers.forEach(handler => handler(message));
+    }
+  }
+
+  private attemptReconnect() {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.error('Max reconnection attempts reached');
+      return;
+    }
+
+    this.reconnectAttempts++;
+    const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
+
+    console.log(`Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+
+    this.reconnectTimer = window.setTimeout(() => {
+      this.connect();
+    }, delay);
+  }
+}
+
+export const wsClient = new WebSocketClient();

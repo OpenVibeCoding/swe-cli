@@ -8,7 +8,10 @@
       "Bash(pip install:*)",
       "Read(//Users/quocnghi/.swecli/**)",
       "Bash(cat:*)",
-      "Bash(env)"
+      "Bash(env)",
+      "Bash(git commit:*)",
+      "Bash(gtimeout 5 swecli:*)",
+      "Bash(swecli:*)"
     ],
     "deny": [],
     "ask": []
