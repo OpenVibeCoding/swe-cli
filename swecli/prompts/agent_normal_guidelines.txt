@@ -8,9 +8,10 @@
 - When a task is complete, provide a brief summary of what was accomplished
 - Don't just read files endlessly - after 3-4 reads, summarize and move to action
 - For long-running commands (servers, watch processes, etc.), ALWAYS use background=true to avoid timeouts
-- After starting a background process, inform the user about the PID and how to check its output
+- After starting a background process, IMMEDIATELY use get_process_output(pid) to check for errors or output, then continue checking periodically if needed
 
 # Best Practices
 - Follow existing code conventions when modifying files
 - Create well-organized project structures
 - Verify solutions work correctly when possible
+- Be proactive: don't just tell the user how to do something, do it for them
