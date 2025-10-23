@@ -24,17 +24,23 @@ class ModelSelectorModalManager:
         self._selector_selected_index = 0
         self._selector_result = {"done": False, "selected": False, "item": None}
         self._selector_items = []
+        self._selection_mode = "normal"  # Default to normal model selection
+        self._is_category_selector = False  # Track if showing category vs model selector
+        self._normal_configured = False  # Track if normal model is configured
 
     def is_in_selector_mode(self) -> bool:
         """Check if selector mode is currently active."""
         return self._selector_mode
 
-    async def show_model_selector(self) -> Tuple[bool, Optional[dict]]:
+    async def show_model_selector(self, selection_mode: str = "normal") -> Tuple[bool, Optional[dict]]:
         """Show model selector modal with arrow key navigation.
+
+        Args:
+            selection_mode: Which model slot to select for ("normal", "thinking", "vlm")
 
         Returns:
             Tuple of (selected: bool, item: dict or None)
-                item format: {"type": "model", "provider_id": str, "model_id": str}
+                item format: {"type": "model", "provider_id": str, "model_id": str, "mode": str}
         """
         from swecli.ui.components.model_selector_message import (
             create_model_selector_message,
@@ -43,9 +49,10 @@ class ModelSelectorModalManager:
 
         # Reset state for new selection
         self.reset_state()
+        self._selection_mode = selection_mode
 
-        # Get all items (providers and models)
-        self._selector_items = get_model_items()
+        # Get all items (providers and models) filtered by capability
+        self._selector_items = get_model_items(selection_mode)
 
         # CRITICAL: Unlock input buffer before clearing it
         self.chat_app._input_locked = False
@@ -58,7 +65,7 @@ class ModelSelectorModalManager:
         self._selector_mode = True
 
         # Add initial selector message to conversation (as assistant message for proper display)
-        selector_msg = create_model_selector_message(self._selector_selected_index)
+        selector_msg = create_model_selector_message(self._selector_selected_index, self._selection_mode)
         self.chat_app.conversation.add_assistant_message(selector_msg)
         self.chat_app._update_conversation_buffer()
 
@@ -154,15 +161,37 @@ class ModelSelectorModalManager:
 
         # Get selected item
         if 0 <= self._selector_selected_index < len(self._selector_items):
-            item_type, provider_id, model_id, _ = self._selector_items[self._selector_selected_index]
+            item_tuple = self._selector_items[self._selector_selected_index]
+            item_type = item_tuple[0]
+            provider_id = item_tuple[1]
+            model_id = item_tuple[2]
 
-            # Only allow selection of models, not provider headers
+            # Handle model selection
             if item_type == "model":
                 self._selector_result["selected"] = True
                 self._selector_result["item"] = {
                     "type": "model",
                     "provider_id": provider_id,
-                    "model_id": model_id
+                    "model_id": model_id,
+                    "mode": self._selection_mode  # Include which mode was selected
+                }
+            # Handle category selection
+            elif item_type == "category":
+                # Check if this category is disabled
+                if len(item_tuple) > 5 and item_tuple[5]:  # is_disabled flag
+                    # Disabled category selected - do nothing, just return
+                    return True
+
+                self._selector_result["selected"] = True
+                self._selector_result["item"] = {
+                    "type": "category",
+                    "category": provider_id  # category_id is stored in provider_id slot
+                }
+            # Handle back button
+            elif item_type == "back":
+                self._selector_result["selected"] = True
+                self._selector_result["item"] = {
+                    "type": "back"
                 }
             else:
                 # Provider header selected - do nothing, just return
@@ -186,9 +215,17 @@ class ModelSelectorModalManager:
 
     def _update_selector_message(self) -> None:
         """Update the selector message with new selection."""
-        from swecli.ui.components.model_selector_message import create_model_selector_message
+        # Choose appropriate selector based on mode
+        if self._is_category_selector:
+            from swecli.ui.components.category_selector_message import create_category_selector_message
+            selector_msg = create_category_selector_message(
+                self._selector_selected_index,
+                self._normal_configured
+            )
+        else:
+            from swecli.ui.components.model_selector_message import create_model_selector_message
+            selector_msg = create_model_selector_message(self._selector_selected_index, self._selection_mode)
 
-        selector_msg = create_model_selector_message(self._selector_selected_index)
         if self.chat_app.conversation.messages:
             # Update last message (the selector) - keep as assistant message
             self.chat_app.conversation.messages[-1] = (

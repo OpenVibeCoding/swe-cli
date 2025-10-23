@@ -131,7 +131,9 @@ class ChatApplication:
                 "mode-normal": "#FFA500",  # Orange for normal mode
                 "mode-plan": "#90EE90",  # Light green for plan mode
                 "context-info": "#888888",  # Gray for context percentage
-                "model-info": "#6c5ce7",  # Purple for model name
+                "model-info": "#6c5ce7",  # Purple for normal model name
+                "model-thinking": "#FFD700",  # Gold for thinking model
+                "model-vlm": "#00CED1",  # Cyan for vision/VLM model
                 "exit-confirmation": "#808080",  # Gray for exit confirmation message
                 # Input area - clean, no gray background
                 "input-prompt": "#00FFFF bold",  # Cyan › symbol with bar

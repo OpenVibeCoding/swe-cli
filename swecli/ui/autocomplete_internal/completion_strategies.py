@@ -12,6 +12,130 @@ from .commands import SlashCommand, CommandRegistry
 from .utils import FileFinder, FileSizeFormatter
 
 
+def get_file_icon(file_path: Path) -> tuple[str, str]:
+    """Get professional icon for file based on extension or type.
+
+    Args:
+        file_path: Path to the file
+
+    Returns:
+        Tuple of (icon_text, color_class) for display
+    """
+    if file_path.is_dir():
+        return "📁", ""
+
+    suffix = file_path.suffix.lower()
+
+    # Programming languages - show extension
+    if suffix == ".py":
+        return "py", "cyan"
+    elif suffix == ".js":
+        return "js", "yellow"
+    elif suffix == ".jsx":
+        return "jsx", "yellow"
+    elif suffix == ".ts":
+        return "ts", "blue"
+    elif suffix == ".tsx":
+        return "tsx", "blue"
+    elif suffix == ".rs":
+        return "rs", "red"
+    elif suffix == ".go":
+        return "go", "cyan"
+    elif suffix == ".java":
+        return "java", "red"
+    elif suffix in [".c", ".h"]:
+        return "c", "blue"
+    elif suffix in [".cpp", ".cc", ".hpp"]:
+        return "cpp", "blue"
+    elif suffix == ".cs":
+        return "cs", "green"
+    elif suffix == ".rb":
+        return "rb", "red"
+    elif suffix == ".php":
+        return "php", "purple"
+    elif suffix == ".swift":
+        return "swift", "orange"
+    elif suffix == ".kt":
+        return "kt", "purple"
+    elif suffix == ".kts":
+        return "kts", "purple"
+
+    # Web files
+    elif suffix in [".html", ".htm"]:
+        return "html", "orange"
+    elif suffix == ".css":
+        return "css", "blue"
+    elif suffix in [".scss", ".sass"]:
+        return "scss", "pink"
+    elif suffix == ".less":
+        return "less", "blue"
+    elif suffix == ".json":
+        return "json", "yellow"
+    elif suffix == ".xml":
+        return "xml", "green"
+    elif suffix in [".yaml", ".yml"]:
+        return "yaml", "purple"
+    elif suffix == ".toml":
+        return "toml", "purple"
+
+    # Documentation
+    elif suffix in [".md", ".markdown"]:
+        return "md", "blue"
+    elif suffix == ".txt":
+        return "txt", "gray"
+    elif suffix == ".pdf":
+        return "pdf", "red"
+    elif suffix in [".doc", ".docx"]:
+        return "doc", "blue"
+
+    # Images
+    elif suffix in [".png", ".jpg", ".jpeg"]:
+        return "img", "magenta"
+    elif suffix == ".gif":
+        return "gif", "magenta"
+    elif suffix == ".svg":
+        return "svg", "magenta"
+    elif suffix in [".ico", ".webp"]:
+        return "img", "magenta"
+
+    # Data files
+    elif suffix == ".csv":
+        return "csv", "green"
+    elif suffix == ".sql":
+        return "sql", "orange"
+    elif suffix in [".db", ".sqlite"]:
+        return "db", "cyan"
+
+    # Archives
+    elif suffix in [".zip", ".tar", ".gz", ".bz2", ".7z", ".rar"]:
+        return "zip", "red"
+
+    # Shell scripts
+    elif suffix in [".sh", ".bash", ".zsh"]:
+        return "sh", "green"
+
+    # Configuration
+    elif suffix == ".env":
+        return "env", "yellow"
+    elif suffix in [".ini", ".conf", ".config"]:
+        return "cfg", "gray"
+
+    # Build files
+    elif file_path.name == "Makefile":
+        return "make", "red"
+    elif file_path.name == "Dockerfile":
+        return "dock", "blue"
+    elif file_path.name == "Vagrantfile":
+        return "vag", "blue"
+    elif suffix == ".lock":
+        return "lock", "gray"
+
+    # Default - show extension without dot, max 4 chars
+    else:
+        ext = suffix[1:] if suffix else "file"
+        return ext[:4], "gray"
+
+
 class CompletionStrategy(ABC):
     """Abstract base class for completion strategies."""
 
@@ -112,17 +236,27 @@ class FileMentionStrategy(CompletionStrategy):
             except ValueError:
                 rel_path = file_path
 
+            # Get file icon and color
+            icon_text, icon_color = get_file_icon(file_path)
+
+            # Format icon with padding for alignment (max 4 chars + brackets)
+            icon_display = f"[{icon_text:>4}]"
+
             # Get file size for display
             size_str = FileSizeFormatter.get_file_size(file_path)
 
-            # Elegant formatted display (no @ prefix, with file size)
+            # Elegant formatted display with professional icon
             if size_str:
                 display = FormattedText([
-                    ("", f"{str(rel_path):<50}"),
+                    (icon_color, icon_display),
+                    ("", " "),
+                    ("", f"{str(rel_path):<46}"),
                     ("class:completion-menu.meta", f"{size_str:>10}"),
                 ])
             else:
                 display = FormattedText([
+                    (icon_color, icon_display),
+                    ("", " "),
                     ("", str(rel_path)),
                 ])
 

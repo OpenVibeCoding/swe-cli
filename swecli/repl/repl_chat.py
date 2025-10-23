@@ -234,25 +234,59 @@ class REPLChatApplication(ChatApplication):
             context_limit = self.context_monitor.context_limit
             context_display = f"Context Left: 100% (0/{context_limit})"
 
-        # Extract readable model name and provider
+        # Extract readable model names for all three slots
         config = self.repl.config_manager.get_config()
-        model_name = config.model.split('/')[-1] if config.model else 'unknown'
-        provider_name = config.model_provider.capitalize()
 
-        # Truncate model name if too long to prevent wrapping
-        max_model_length = 35
-        if len(model_name) > max_model_length:
-            model_name = model_name[:max_model_length - 3] + "..."
+        # Build model display parts
+        model_parts = []
+
+        # Normal model (always shown)
+        if config.model:
+            normal_name = config.model.split('/')[-1]
+            provider_name = config.model_provider.capitalize()
+            # Truncate if too long
+            if len(normal_name) > 25:
+                normal_name = normal_name[:22] + "..."
+            model_parts.append(("", f"{provider_name}: "))
+            model_parts.append(("class:model-info", normal_name))
+
+        # Thinking model (if configured and different from normal)
+        if config.model_thinking and config.model_thinking != config.model:
+            thinking_name = config.model_thinking.split('/')[-1]
+            thinking_provider = config.model_thinking_provider.capitalize() if config.model_thinking_provider else "Unknown"
+            # Truncate if too long
+            if len(thinking_name) > 20:
+                thinking_name = thinking_name[:17] + "..."
+            model_parts.append(("", " | T: "))
+            model_parts.append(("class:model-thinking", f"{thinking_provider}: {thinking_name}"))
+
+        # VLM model (if configured and different from normal)
+        if config.model_vlm and config.model_vlm != config.model:
+            vlm_name = config.model_vlm.split('/')[-1]
+            vlm_provider = config.model_vlm_provider.capitalize() if config.model_vlm_provider else "Unknown"
+            # Truncate if too long
+            if len(vlm_name) > 20:
+                vlm_name = vlm_name[:17] + "..."
+            model_parts.append(("", " | V: "))
+            model_parts.append(("class:model-vlm", f"{vlm_provider}: {vlm_name}"))
 
         # Build status text - elegant Claude Code style with context info
-        return [
+        # Line 1: Mode and context
+        line1_parts = [
             ("", f"{mode_symbol} "),
             (mode_style, f"{mode_name} mode"),
             ("", " (shift+tab to cycle) • "),
             ("class:context-info", context_display),
-            ("", f" • {provider_name}: "),
-            ("class:model-info", model_name),
         ]
+
+        # Line 2: Model information
+        line2_parts = [("", "Models: ")]
+        line2_parts.extend(model_parts)
+
+        # Combine with newline
+        status_parts = line1_parts + [("", "\n")] + line2_parts
+
+        return status_parts
 
     def _get_content_width(self) -> int:
         """Get the current terminal width for content rendering."""
@@ -376,40 +410,9 @@ class REPLChatApplication(ChatApplication):
             working_dir=Path.cwd(),
         )
 
-        # Apply Rich styling and add to conversation
-        styled_lines = []
-        for line in welcome_lines:
-            # Apply styling based on content
-            if line.startswith("╔") or line.startswith("║") or line.startswith("╚"):
-                styled_line = f"[white]{line}[/white]"
-            elif "Essential Commands:" in line:
-                styled_line = f"[bold white]{line}[/bold white]"
-            elif "/help" in line or "/tree" in line or "/mode" in line:
-                # Highlight commands
-                styled_line = line.replace("/help", "[cyan]/help[/cyan]")
-                styled_line = styled_line.replace("/tree", "[cyan]/tree[/cyan]")
-                styled_line = styled_line.replace("/mode plan", "[cyan]/mode plan[/cyan]")
-                styled_line = styled_line.replace("/mode normal", "[cyan]/mode normal[/cyan]")
-            elif "Shortcuts:" in line:
-                styled_line = f"[bold white]{line.split(':')[0]}:[/bold white]"
-                rest = line.split(":", 1)[1] if ":" in line else ""
-                styled_line += rest.replace("Shift+Tab", "[yellow]Shift+Tab[/yellow]")
-                styled_line = styled_line.replace("@file", "[yellow]@file[/yellow]")
-                styled_line = styled_line.replace("↑↓", "[yellow]↑↓[/yellow]")
-            elif "Session:" in line:
-                styled_line = f"[bold white]{line.split(':')[0]}:[/bold white]"
-                rest = line.split(":", 1)[1] if ":" in line else ""
-                # Color the mode
-                if mode in rest:
-                    rest = rest.replace(mode, f"[{mode_color}]{mode}[/{mode_color}]")
-                styled_line += rest
-            else:
-                styled_line = line
-
-            styled_lines.append(rich_markup_to_ansi(styled_line))
-
-        # Join all lines into a single message to compress display
-        self.conversation.add_system_message("\n".join(styled_lines))
+        # Welcome lines already have ANSI styling from BoxStyles - use them directly
+        # No need for Rich markup conversion which adds extra bold codes
+        self.conversation.add_system_message("\n".join(welcome_lines))
 
         self._update_conversation_buffer()
         # Don't lock input for welcome message - it happens before app.run()

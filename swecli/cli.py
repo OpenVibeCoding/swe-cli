@@ -19,6 +19,8 @@ from swecli.tools.bash_tool import BashTool
 from swecli.tools.edit_tool import EditTool
 from swecli.tools.file_ops import FileOperations
 from swecli.tools.web_fetch_tool import WebFetchTool
+from swecli.tools.vlm_tool import VLMTool
+from swecli.tools.web_screenshot_tool import WebScreenshotTool
 from swecli.tools.write_tool import WriteTool
 
 
@@ -735,6 +737,8 @@ def _run_non_interactive(
     edit_tool = EditTool(config, config_manager.working_dir)
     bash_tool = BashTool(config, config_manager.working_dir)
     web_fetch_tool = WebFetchTool(config, config_manager.working_dir)
+    vlm_tool = VLMTool(config, config_manager.working_dir)
+    web_screenshot_tool = WebScreenshotTool(config, config_manager.working_dir)
 
     runtime_service = RuntimeService(config_manager, mode_manager)
     runtime_suite = runtime_service.build_suite(
@@ -743,6 +747,8 @@ def _run_non_interactive(
         edit_tool=edit_tool,
         bash_tool=bash_tool,
         web_fetch_tool=web_fetch_tool,
+        vlm_tool=vlm_tool,
+        web_screenshot_tool=web_screenshot_tool,
         mcp_manager=None,
     )
 

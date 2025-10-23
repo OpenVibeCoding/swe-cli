@@ -162,13 +162,13 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
         "type": "function",
         "function": {
             "name": "run_command",
-            "description": "Execute a bash command. Only use this when explicitly requested by the user. Commands are subject to safety checks and may require approval.",
+            "description": "Execute any bash/shell command. Use this whenever the user asks you to run a command. Commands are subject to safety checks and may require approval.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "command": {
                         "type": "string",
-                        "description": "The bash command to execute (e.g., 'ls -la', 'python test.py')",
+                        "description": "The bash command to execute",
                     },
                     "background": {
                         "type": "boolean",
@@ -272,6 +272,170 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
                     },
                 },
                 "required": ["url"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "capture_screenshot",
+            "description": "Capture a screenshot and save it to a temporary location. The user can then reference this screenshot in their queries by mentioning the file path. Useful when the user wants to discuss or analyze a screenshot.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "monitor": {
+                        "type": "integer",
+                        "description": "Monitor number to capture (default: 1 for primary monitor)",
+                        "default": 1,
+                    },
+                    "region": {
+                        "type": "object",
+                        "description": "Optional region to capture (x, y, width, height). If not provided, captures full screen.",
+                        "properties": {
+                            "x": {"type": "integer", "description": "X coordinate"},
+                            "y": {"type": "integer", "description": "Y coordinate"},
+                            "width": {"type": "integer", "description": "Width in pixels"},
+                            "height": {"type": "integer", "description": "Height in pixels"},
+                        },
+                    },
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_screenshots",
+            "description": "List all captured screenshots in the temporary directory. Shows the 10 most recent screenshots with their paths, sizes, and timestamps.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "clear_screenshots",
+            "description": "Clear old screenshots from the temporary directory to free up disk space. By default, keeps the 5 most recent screenshots.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "keep_recent": {
+                        "type": "integer",
+                        "description": "Number of recent screenshots to keep (default: 5)",
+                        "default": 5,
+                    },
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "analyze_image",
+            "description": "Analyze an image using the configured Vision Language Model (VLM). Supports both local image files and online URLs. Only available if user has configured a VLM model via /models command. Use this when user asks to analyze, describe, or extract information from images.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "prompt": {
+                        "type": "string",
+                        "description": "Text prompt describing what to analyze in the image (e.g., 'Describe this image', 'What errors do you see?', 'Extract text from this image')",
+                    },
+                    "image_path": {
+                        "type": "string",
+                        "description": "Path to local image file (relative to working directory or absolute). Supports .jpg, .jpeg, .png, .gif, .webp. Takes precedence over image_url if both provided.",
+                    },
+                    "image_url": {
+                        "type": "string",
+                        "description": "URL of online image (must start with http:// or https://). Used only if image_path not provided.",
+                    },
+                    "max_tokens": {
+                        "type": "integer",
+                        "description": "Maximum tokens in response (optional, defaults to config value)",
+                    },
+                },
+                "required": ["prompt"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "capture_web_screenshot",
+            "description": "Capture a full-page screenshot of a web page using Playwright. Better than capture_screenshot for web pages as it waits for page load, handles dynamic content, and captures full scrollable pages. Use this when user wants to screenshot a website or web application.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "URL of the web page to capture (must start with http:// or https://)",
+                    },
+                    "output_path": {
+                        "type": "string",
+                        "description": "Optional path to save screenshot (relative to working directory or absolute). If not provided, auto-generates filename in temp directory.",
+                    },
+                    "wait_until": {
+                        "type": "string",
+                        "description": "When to consider page loaded: 'load' (load event), 'domcontentloaded' (DOM ready), or 'networkidle' (no requests for 500ms, recommended). Default: 'networkidle'",
+                        "enum": ["load", "domcontentloaded", "networkidle"],
+                        "default": "networkidle",
+                    },
+                    "timeout_ms": {
+                        "type": "integer",
+                        "description": "Maximum time to wait for page load in milliseconds. Default: 30000 (30 seconds)",
+                        "default": 30000,
+                    },
+                    "full_page": {
+                        "type": "boolean",
+                        "description": "Whether to capture full scrollable page (true) or just viewport (false). Default: true",
+                        "default": True,
+                    },
+                    "viewport_width": {
+                        "type": "integer",
+                        "description": "Browser viewport width in pixels. Default: 1920",
+                        "default": 1920,
+                    },
+                    "viewport_height": {
+                        "type": "integer",
+                        "description": "Browser viewport height in pixels. Default: 1080",
+                        "default": 1080,
+                    },
+                },
+                "required": ["url"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_web_screenshots",
+            "description": "List all captured web screenshots in the temporary directory. Shows the 10 most recent web screenshots with their paths, sizes, and timestamps.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "clear_web_screenshots",
+            "description": "Clear old web screenshots from the temporary directory to free up disk space. By default, keeps the 5 most recent web screenshots.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "keep_recent": {
+                        "type": "integer",
+                        "description": "Number of recent web screenshots to keep (default: 5)",
+                        "default": 5,
+                    },
+                },
+                "required": [],
             },
         },
     },

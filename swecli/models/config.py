@@ -66,9 +66,19 @@ class AppConfig(BaseModel):
 
     model_config = {"protected_namespaces": ()}
 
-    # AI Provider settings
+    # AI Provider settings - Three model system
+    # Normal model: For standard coding tasks
     model_provider: str = "fireworks"
     model: str = "accounts/fireworks/models/qwen3-235b-a22b-instruct-2507"
+
+    # Thinking model: For complex reasoning tasks (optional, falls back to normal if not set)
+    model_thinking: Optional[str] = None
+    model_thinking_provider: Optional[str] = None
+
+    # Vision/Multi-modal model: For image processing tasks (optional, falls back to normal if not set)
+    model_vlm: Optional[str] = None
+    model_vlm_provider: Optional[str] = None
+
     api_key: Optional[str] = None
     api_base_url: Optional[str] = None
     max_tokens: int = 16384
@@ -152,3 +162,63 @@ class AppConfig(BaseModel):
 
         registry = get_model_registry()
         return registry.get_provider(self.model_provider)
+
+    def get_thinking_model_info(self):
+        """Get thinking model information, fallback to normal if not set.
+
+        Returns:
+            Tuple of (provider_id, model_id, ModelInfo) or None
+        """
+        from swecli.config import get_model_registry
+
+        registry = get_model_registry()
+
+        # Use thinking model if configured
+        if self.model_thinking and self.model_thinking_provider:
+            result = registry.find_model_by_id(self.model_thinking)
+            if result:
+                return result
+
+        # Fallback to normal model
+        result = registry.find_model_by_id(self.model)
+        return result
+
+    def get_vlm_model_info(self):
+        """Get VLM model information, fallback to normal if not set.
+
+        Returns:
+            Tuple of (provider_id, model_id, ModelInfo) or None
+        """
+        from swecli.config import get_model_registry
+
+        registry = get_model_registry()
+
+        # Use VLM model if configured
+        if self.model_vlm and self.model_vlm_provider:
+            result = registry.find_model_by_id(self.model_vlm)
+            if result:
+                return result
+
+        # Fallback to normal model if it has vision capability
+        result = registry.find_model_by_id(self.model)
+        if result:
+            _, _, model_info = result
+            if "vision" in model_info.capabilities:
+                return result
+
+        # No vision model available
+        return None
+
+    def should_use_provider_for_all(self, provider_id: str) -> bool:
+        """Check if provider supports all capabilities in all models (OpenAI/Anthropic).
+
+        For OpenAI and Anthropic, all models support text, vision, and code.
+        For other providers (Fireworks), models have specific capabilities.
+
+        Args:
+            provider_id: Provider ID to check
+
+        Returns:
+            True if all models from this provider support all capabilities
+        """
+        return provider_id in ["openai", "anthropic"]

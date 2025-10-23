@@ -18,6 +18,8 @@ class ToolDependencies:
     bash_tool: Union[Any, None]
     web_fetch_tool: Union[Any, None]
     open_browser_tool: Union[Any, None] = None
+    vlm_tool: Union[Any, None] = None
+    web_screenshot_tool: Union[Any, None] = None
 
 
 class ToolFactory:
@@ -35,6 +37,8 @@ class ToolFactory:
             bash_tool=self._deps.bash_tool,
             web_fetch_tool=self._deps.web_fetch_tool,
             open_browser_tool=self._deps.open_browser_tool,
+            vlm_tool=self._deps.vlm_tool,
+            web_screenshot_tool=self._deps.web_screenshot_tool,
             mcp_manager=mcp_manager,
         )
         return registry

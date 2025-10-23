@@ -103,7 +103,7 @@ class LayoutManager:
 
         return Window(
             content=status_control,
-            height=1,
+            height=2,  # Two lines: mode/context + models
             style="class:status-bar",
             align=WindowAlign.LEFT,
             wrap_lines=False,
