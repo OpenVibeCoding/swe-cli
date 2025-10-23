@@ -116,64 +116,138 @@ class WebScreenshotTool:
                     screenshot_options = {"path": str(screenshot_path)}
 
                     if full_page and clip_to_content:
-                        # Detect actual content height to avoid excessive whitespace
+                        # First, scroll through the page to trigger lazy-loaded content
+                        # Get total scrollable height
+                        total_height = page.evaluate("document.body.scrollHeight")
+                        viewport_height = page.evaluate("window.innerHeight")
+
+                        # Scroll down in steps to trigger lazy loading
+                        current_position = 0
+                        scroll_step = viewport_height
+
+                        while current_position < total_height:
+                            page.evaluate(f"window.scrollTo(0, {current_position})")
+                            page.wait_for_timeout(100)  # Small delay for lazy content
+                            current_position += scroll_step
+                            # Update total height in case new content loaded
+                            new_height = page.evaluate("document.body.scrollHeight")
+                            if new_height > total_height:
+                                total_height = new_height
+
+                        # Scroll back to top
+                        page.evaluate("window.scrollTo(0, 0)")
+                        page.wait_for_timeout(200)
+
+                        # Detect actual content height intelligently
                         content_height = page.evaluate("""
                             () => {
-                                // Get all possible content boundaries
+                                // Find the last element with meaningful content
                                 const body = document.body;
                                 const html = document.documentElement;
 
-                                // Find the maximum bottom position of all visible elements
-                                let maxBottom = 0;
-                                const elements = document.querySelectorAll('*');
+                                let lastContentBottom = 0;
+                                const elements = Array.from(document.querySelectorAll('*'));
 
                                 for (const el of elements) {
-                                    // Skip hidden elements
-                                    const style = window.getComputedStyle(el);
-                                    if (style.display === 'none' || style.visibility === 'hidden') {
+                                    // Skip structural/container elements
+                                    if (el.tagName === 'HTML' || el.tagName === 'BODY' || el.tagName === 'HEAD') {
                                         continue;
                                     }
 
-                                    const rect = el.getBoundingClientRect();
-                                    const bottom = rect.bottom + window.scrollY;
+                                    // Skip hidden, empty, or whitespace-only elements
+                                    const style = window.getComputedStyle(el);
+                                    if (style.display === 'none' ||
+                                        style.visibility === 'hidden' ||
+                                        style.opacity === '0') {
+                                        continue;
+                                    }
 
-                                    if (bottom > maxBottom) {
-                                        maxBottom = bottom;
+                                    // Check if element has meaningful content
+                                    const hasText = el.textContent?.trim().length > 0;
+                                    const hasImage = el.tagName === 'IMG' || el.tagName === 'SVG';
+                                    const hasCanvas = el.tagName === 'CANVAS';
+                                    const hasVideo = el.tagName === 'VIDEO';
+                                    const hasBackgroundImage = style.backgroundImage &&
+                                                               style.backgroundImage !== 'none';
+
+                                    // Check if element has visible dimensions
+                                    const rect = el.getBoundingClientRect();
+                                    const hasVisibleSize = rect.width > 0 && rect.height > 0;
+
+                                    if (hasVisibleSize && (hasText || hasImage || hasCanvas ||
+                                                          hasVideo || hasBackgroundImage)) {
+                                        // Calculate absolute position from top of document
+                                        // Use offsetTop for more reliable absolute positioning
+                                        let offsetTop = 0;
+                                        let element = el;
+                                        while (element) {
+                                            offsetTop += element.offsetTop || 0;
+                                            element = element.offsetParent;
+                                        }
+                                        const bottom = offsetTop + el.offsetHeight;
+
+                                        if (bottom > lastContentBottom) {
+                                            lastContentBottom = bottom;
+                                        }
                                     }
                                 }
 
-                                // Also check common height measurements
-                                const heights = [
-                                    maxBottom,
+                                // Add some padding to ensure we don't clip too aggressively
+                                const padding = 100;
+                                let finalHeight = lastContentBottom + padding;
+
+                                // Also check document height as fallback
+                                const docHeight = Math.max(
                                     body.scrollHeight,
                                     body.offsetHeight,
-                                    html.clientHeight,
                                     html.scrollHeight,
                                     html.offsetHeight
-                                ];
+                                );
 
-                                // Return the maximum that's reasonable (not absurdly large)
-                                const filtered = heights.filter(h => h > 0 && h < 50000);
-                                return Math.max(...filtered);
+                                // If detected content height is very close to document height,
+                                // use document height (likely a legitimately long page)
+                                if (finalHeight > docHeight * 0.9) {
+                                    finalHeight = docHeight;
+                                } else {
+                                    // Only apply minimum height if content is reasonably tall
+                                    // Otherwise keep the detected content height to remove whitespace
+                                    const minHeight = window.innerHeight;
+                                    if (finalHeight < minHeight && finalHeight > docHeight * 0.5) {
+                                        // Content is between 50-90% of page, use viewport as minimum
+                                        finalHeight = minHeight;
+                                    }
+                                    // If content is < 50% of page height, keep detected height (whitespace page)
+                                }
+
+                                return finalHeight;
                             }
                         """)
+
+                        # Get document height for comparison
+                        doc_height = page.evaluate("document.body.scrollHeight")
 
                         # Apply max_height limit if specified
                         if max_height and content_height > max_height:
                             content_height = max_height
 
-                        # Use clip parameter to capture only the content area
-                        screenshot_options["clip"] = {
-                            "x": 0,
-                            "y": 0,
-                            "width": viewport_width,
-                            "height": int(content_height)
-                        }
+                        # Always use full_page to capture scrollable content
+                        screenshot_options["full_page"] = True
+                        page.screenshot(**screenshot_options)
+
+                        # If content height is significantly less than document height,
+                        # crop the image to remove excessive whitespace
+                        if content_height < doc_height * 0.95:  # More than 5% whitespace
+                            from PIL import Image
+                            img = Image.open(str(screenshot_path))
+                            # Crop to content height
+                            cropped = img.crop((0, 0, img.width, int(content_height)))
+                            cropped.save(str(screenshot_path))
+
                     elif full_page:
                         screenshot_options["full_page"] = True
-
-                    # Capture screenshot
-                    page.screenshot(**screenshot_options)
+                        page.screenshot(**screenshot_options)
+                    else:
+                        page.screenshot(**screenshot_options)
 
                     return {
                         "success": True,
@@ -186,10 +260,10 @@ class WebScreenshotTool:
                     }
 
                 except PlaywrightTimeout:
-                    # Timeout - try to capture what we have anyway
+                    # Timeout - try to capture what we have anyway with a simple screenshot
                     try:
-                        # Use same clipping logic for partial screenshot
-                        page.screenshot(**screenshot_options)
+                        # Use simple full_page screenshot for timeout case
+                        page.screenshot(path=str(screenshot_path), full_page=full_page)
                         return {
                             "success": True,
                             "screenshot_path": str(screenshot_path),

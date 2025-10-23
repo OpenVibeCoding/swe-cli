@@ -149,7 +149,24 @@ class ToolExecutor:
 
                     return result
 
-                result = await asyncio.to_thread(execute_with_interrupt_check)
+                # Create the tool execution task
+                tool_task = asyncio.create_task(asyncio.to_thread(execute_with_interrupt_check))
+
+                # Poll for interrupts while tool is running (check every 50ms for fast response)
+                while not tool_task.done():
+                    if self.chat_app._interrupt_requested:
+                        # Cancel the tool task
+                        tool_task.cancel()
+                        try:
+                            await tool_task
+                        except asyncio.CancelledError:
+                            pass
+                        return
+                    # Short sleep to not consume CPU
+                    await asyncio.sleep(0.05)  # 50ms polling for very responsive interrupts
+
+                # Get the result
+                result = await tool_task
 
                 # Stop spinner
                 self.chat_app._stop_spinner()

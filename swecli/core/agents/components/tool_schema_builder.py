@@ -366,7 +366,7 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
         "type": "function",
         "function": {
             "name": "capture_web_screenshot",
-            "description": "Capture a full-page screenshot of a web page using Playwright. Better than capture_screenshot for web pages as it waits for page load, handles dynamic content, and captures full scrollable pages. Use this when user wants to screenshot a website or web application.",
+            "description": "Capture a full-page screenshot of a web page using Playwright. Better than capture_screenshot for web pages as it waits for page load, handles dynamic content, and captures full scrollable pages. Automatically clips to actual content height to avoid excessive whitespace. Use this when user wants to screenshot a website or web application.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -403,6 +403,15 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
                         "type": "integer",
                         "description": "Browser viewport height in pixels. Default: 1080",
                         "default": 1080,
+                    },
+                    "clip_to_content": {
+                        "type": "boolean",
+                        "description": "If true, automatically detect actual content height and clip to avoid excessive whitespace. Only works with full_page=true. Default: true. Set to false if you need the full scrollable area including whitespace.",
+                        "default": True,
+                    },
+                    "max_height": {
+                        "type": "integer",
+                        "description": "Optional maximum screenshot height in pixels. Prevents extremely tall screenshots. If content height exceeds this, screenshot will be clipped to this height.",
                     },
                 },
                 "required": ["url"],

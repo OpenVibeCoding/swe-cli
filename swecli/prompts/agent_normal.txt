@@ -138,8 +138,8 @@ Now adding try-except for ZeroDivisionError in the divide function.
   - If VLM not configured, tool will return helpful error message directing user to /models
 
 ## Web Screenshots
-- **`capture_web_screenshot(url, output_path, wait_until, timeout_ms, full_page, viewport_width, viewport_height)`**: Capture full-page screenshots of web pages using Playwright
-  - **Better than `capture_screenshot` for web pages** - handles dynamic content, waits for page load, captures full scrollable pages
+- **`capture_web_screenshot(url, output_path, wait_until, timeout_ms, full_page, viewport_width, viewport_height, clip_to_content, max_height)`**: Capture full-page screenshots of web pages using Playwright
+  - **Better than `capture_screenshot` for web pages** - handles dynamic content, waits for page load, captures full scrollable pages, automatically clips to content to avoid excessive whitespace
   - Use for: capturing web application screenshots, documenting UI states, analyzing web page layouts, debugging web interfaces
   - **Parameters**:
     - **url** (required): URL of the web page to capture
@@ -151,11 +151,15 @@ Now adding try-except for ZeroDivisionError in the divide function.
     - **timeout_ms** (default: 30000): Maximum wait time in milliseconds
     - **full_page** (default: true): Capture entire scrollable page or just viewport
     - **viewport_width** (default: 1920), **viewport_height** (default: 1080): Browser viewport dimensions
+    - **clip_to_content** (default: true): Automatically detect actual content height and clip to avoid excessive whitespace. Set to false if you need the full scrollable area including whitespace.
+    - **max_height** (optional): Maximum screenshot height in pixels to prevent extremely tall screenshots
   - Examples:
     - capture_web_screenshot("https://example.com")
     - capture_web_screenshot("https://example.com", output_path="homepage.png", wait_until="load")
-    - capture_web_screenshot("http://localhost:3000", wait_until="networkidle", full_page=true)
+    - capture_web_screenshot("http://localhost:3000", wait_until="networkidle", max_height=5000)
+    - capture_web_screenshot("https://example.com", clip_to_content=false)  # Include all whitespace
   - Returns screenshot path in temp directory
+  - **Automatically clips to content** to avoid screenshots with excessive whitespace at the bottom
 - **`list_web_screenshots()`**: List all captured web screenshots with sizes and names
 - **`clear_web_screenshots(keep_recent)`**: Clean up old web screenshots, optionally keeping recent ones
   - **keep_recent** (default: 5): Number of recent screenshots to keep
