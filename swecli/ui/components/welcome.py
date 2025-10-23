@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 from swecli.core.management import OperationMode
+from swecli.ui.components.box_styles import BoxStyles
 
 
 class WelcomeMessage:
@@ -72,18 +73,16 @@ class WelcomeMessage:
     ) -> str:
         left_block = cls._format(left, cls.LEFT_WIDTH, align=left_align)
         right_block = cls._format(right, cls.RIGHT_WIDTH, align=right_align)
-        return f"│{left_block}│{right_block}│"
+        # Use BoxStyles colors for consistent border styling
+        return f"{BoxStyles.BORDER_COLOR}{BoxStyles.VERTICAL}{BoxStyles.RESET}{left_block}{BoxStyles.BORDER_COLOR}{BoxStyles.VERTICAL}{BoxStyles.RESET}{right_block}{BoxStyles.BORDER_COLOR}{BoxStyles.VERTICAL}{BoxStyles.RESET}"
 
     @classmethod
     def _header_line(cls, title: str) -> str:
-        inner = cls._inner_width()
-        header = f"─── {title} ─"
-        padding = max(0, inner - len(header))
-        return f"╭{header}{'─' * padding}╮"
+        return BoxStyles.top_border(cls.TOTAL_WIDTH, title=title)
 
     @classmethod
     def _footer_line(cls) -> str:
-        return f"╰{'─' * cls._inner_width()}╯"
+        return BoxStyles.bottom_border(cls.TOTAL_WIDTH)
 
     @staticmethod
     def _shorten_path(path: Path, width: int) -> str:

@@ -5,6 +5,8 @@ import json
 import random
 from typing import TYPE_CHECKING
 
+from swecli.core.context_management import ExecutionReflector
+
 if TYPE_CHECKING:
     from swecli.repl.repl import REPL
     from swecli.repl.repl_chat import REPLChatApplication
@@ -26,6 +28,7 @@ class AsyncQueryProcessor:
         """
         self.repl = repl
         self.chat_app = chat_app
+        self.reflector = ExecutionReflector(min_tool_calls=2, min_confidence=0.65)
 
     def _initialize_processing_state(self):
         """Initialize processing state flags."""
@@ -44,26 +47,46 @@ class AsyncQueryProcessor:
         self.chat_app._current_tool_display = None
 
     def _prepare_messages(self, query: str, enhanced_query: str) -> list:
-        """Prepare messages for LLM API call.
+        """Prepare messages for LLM API call with playbook context.
+
+        Following ACE architecture: uses reflection window (last 5 interactions)
+        instead of full conversation history to prevent context pollution.
 
         Args:
             query: Original query
             enhanced_query: Enhanced query with file contents
 
         Returns:
-            List of API messages
+            List of API messages with learned strategies
         """
+        # ACE-inspired: Use reflection window instead of full history
+        # This limits context to recent interactions (default: 5)
+        REFLECTION_WINDOW_SIZE = 5
+
         messages = (
-            self.repl.session_manager.current_session.to_api_messages()
+            self.repl.session_manager.current_session.to_api_messages(
+                window_size=REFLECTION_WINDOW_SIZE
+            )
             if self.repl.session_manager.current_session
             else []
         )
         if enhanced_query != query:
             messages[-1]["content"] = enhanced_query
 
+        # Build system prompt with playbook strategies
+        system_content = self.repl.agent.system_prompt
+        if self.repl.session_manager.current_session:
+            try:
+                playbook = self.repl.session_manager.current_session.get_playbook()
+                playbook_context = playbook.as_context(max_strategies=30)
+                if playbook_context:
+                    system_content += playbook_context
+            except Exception:
+                pass  # Use base prompt if playbook fails
+
         # Add system prompt
         if not messages or messages[0].get("role") != "system":
-            messages.insert(0, {"role": "system", "content": self.repl.agent.system_prompt})
+            messages.insert(0, {"role": "system", "content": system_content})
 
         return messages
 
@@ -239,6 +262,56 @@ class AsyncQueryProcessor:
             return True
         return False
 
+    async def _reflect_and_learn(self, query: str, tool_call_objects: list) -> None:
+        """Extract learnings from tool execution and add to playbook.
+
+        Args:
+            query: Original user query
+            tool_call_objects: Executed tool calls with results
+        """
+        has_errors = any(tc.error for tc in tool_call_objects)
+        outcome = "error" if has_errors else "success"
+
+        result = self.reflector.reflect(query=query, tool_calls=tool_call_objects, outcome=outcome)
+        if result:
+            session = self.repl.session_manager.current_session
+            playbook = session.get_playbook()
+
+            # Track playbook size before
+            before_count = len(playbook.strategies)
+
+            # Add strategy
+            strategy = playbook.add_strategy(category=result.category, content=result.content)
+            session.update_playbook(playbook)
+
+            # Track playbook size after
+            after_count = len(playbook.strategies)
+
+            # Log the evolution
+            import os
+            debug_dir = "/tmp/swecli_debug"
+            os.makedirs(debug_dir, exist_ok=True)
+
+            with open(f"{debug_dir}/playbook_evolution.log", "a") as f:
+                from datetime import datetime
+                timestamp = datetime.now().isoformat()
+                f.write(f"\n{'='*60}\n")
+                f.write(f"🧠 PLAYBOOK EVOLUTION - {timestamp}\n")
+                f.write(f"{'='*60}\n")
+                f.write(f"Query: {query}\n")
+                f.write(f"Outcome: {outcome}\n")
+                f.write(f"Category: {result.category}\n")
+                f.write(f"Strategy ID: {strategy.id}\n")
+                f.write(f"Content: {result.content}\n")
+                f.write(f"Confidence: {result.confidence}\n")
+                f.write(f"Reasoning: {result.reasoning}\n")
+                f.write(f"\nPlaybook size: {before_count} → {after_count} strategies\n")
+                f.write(f"Session: {session.id}\n")
+                f.write(f"\nCurrent playbook strategies:\n")
+                for sid, strat in playbook.strategies.items():
+                    f.write(f"  [{sid}] {strat.category}: {strat.content}\n")
+                    f.write(f"       (+{strat.helpful_count}/-{strat.harmful_count}/~{strat.neutral_count})\n")
+
     async def process_query(self, query: str) -> None:
         """Process query asynchronously with full ReAct loop.
 
@@ -358,6 +431,13 @@ class AsyncQueryProcessor:
                     self.repl.session_manager.add_message(
                         assistant_msg, self.repl.config.auto_save_interval
                     )
+
+                # Reflect and learn from tool execution
+                if tool_call_objects and self.repl.session_manager.current_session:
+                    try:
+                        await self._reflect_and_learn(query, tool_call_objects)
+                    except Exception:
+                        pass  # Don't break on reflection errors
 
                 # Check for interrupt immediately after tool execution
                 if self._check_interrupt(messages):

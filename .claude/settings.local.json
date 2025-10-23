@@ -11,7 +11,8 @@
       "Bash(env)",
       "Bash(git commit:*)",
       "Bash(gtimeout 5 swecli:*)",
-      "Bash(swecli:*)"
+      "Bash(swecli:*)",
+      "Bash(python -m swecli.repl.chat.spinner:*)"
     ],
     "deny": [],
     "ask": []

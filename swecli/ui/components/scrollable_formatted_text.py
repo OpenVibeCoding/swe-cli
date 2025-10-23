@@ -114,9 +114,47 @@ class ScrollableFormattedTextControl(UIControl):
         self.scroll_offset = max(0, self.scroll_offset - 1)
 
     def scroll_page_down(self, height: int) -> None:
-        """Scroll down one page."""
-        self._auto_scroll = False  # Disable auto-scroll when manually scrolling
-        self.scroll_offset += height
+        """Scroll down one page.
+
+        If already near bottom, jump to bottom and re-enable auto-scroll.
+        """
+        # Calculate if we're scrolling near the bottom
+        # Get current text to calculate total lines
+        text = self.get_text()
+        formatted_text = ANSI(text)
+        fragments = list(formatted_text.__pt_formatted_text__())
+
+        # Count total lines
+        lines = []
+        current_line = []
+        for style, text_part in fragments:
+            if '\n' in text_part:
+                parts = text_part.split('\n')
+                for i, part in enumerate(parts):
+                    if part:
+                        current_line.append((style, part))
+                    if i < len(parts) - 1:
+                        lines.append(current_line)
+                        current_line = []
+            else:
+                current_line.append((style, text_part))
+        if current_line:
+            lines.append(current_line)
+
+        total_lines = len(lines)
+        BOTTOM_PADDING = 2
+        effective_height = max(1, height - BOTTOM_PADDING)
+        max_scroll = max(0, total_lines - effective_height)
+
+        # If scrolling down would go past max, or we're close to bottom, jump to bottom
+        if self.scroll_offset + height >= max_scroll:
+            # Jump to bottom and re-enable auto-scroll
+            self._auto_scroll = True
+            self.scroll_offset = max_scroll
+        else:
+            # Normal page down
+            self._auto_scroll = False
+            self.scroll_offset += height
 
     def scroll_page_up(self, height: int) -> None:
         """Scroll up one page."""
