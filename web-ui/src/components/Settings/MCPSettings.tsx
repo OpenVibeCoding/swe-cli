@@ -5,7 +5,7 @@
  * with real-time WebSocket updates
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AddMCPServerModal } from './AddMCPServerModal';
 import { EditMCPServerModal } from './EditMCPServerModal';
 import { MCPToolsModal } from './MCPToolsModal';
@@ -91,6 +91,7 @@ export function MCPSettings() {
     setProcessingServer(name);
     try {
       await connectMCPServer(name);
+      await loadServers(); // Reload to update UI
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to connect');
     } finally {
@@ -102,6 +103,7 @@ export function MCPSettings() {
     setProcessingServer(name);
     try {
       await disconnectMCPServer(name);
+      await loadServers(); // Reload to update UI
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to disconnect');
     } finally {
@@ -315,31 +317,35 @@ function ServerTable({
   onDelete,
 }: ServerTableProps) {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-      <table className="min-w-full divide-y divide-gray-200">
+    <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
+      <table className="w-full divide-y divide-gray-200">
+        <colgroup>
+          <col style={{ width: '40%' }} /> {/* Name */}
+          <col style={{ width: '15%' }} /> {/* Status */}
+          <col style={{ width: '15%' }} /> {/* Enabled */}
+          <col style={{ width: '15%' }} /> {/* Auto-start */}
+          <col style={{ width: '15%' }} /> {/* Actions */}
+        </colgroup>
         <thead className="bg-gray-50">
           <tr>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 uppercase whitespace-nowrap">
               Name
             </th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+            <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 uppercase whitespace-nowrap">
               Status
             </th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-              Command
-            </th>
-            <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+            <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 uppercase whitespace-nowrap">
               Enabled
             </th>
-            <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+            <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 uppercase whitespace-nowrap">
               Auto-start
             </th>
-            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
+            <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 uppercase whitespace-nowrap">
               Actions
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-white">
           {servers.map((server) => (
             <ServerRow
               key={server.name}
@@ -384,45 +390,59 @@ function ServerRow({
 
   return (
     <tr className="hover:bg-gray-50 transition-colors">
-      {/* Name */}
-      <td className="px-4 py-3 whitespace-nowrap">
-        <div className="text-sm font-medium text-gray-900">{server.name}</div>
-        <div className="text-xs text-gray-500">{server.config_location}</div>
+      {/* Name + Action Buttons */}
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium text-gray-900 truncate">{server.name}</div>
+            <div className="text-xs text-gray-500">{server.config_location}</div>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Connect Button */}
+            <button
+              onClick={() => onConnect(server.name)}
+              disabled={isProcessing || isConnected}
+              className="px-3 py-1.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400 whitespace-nowrap"
+            >
+              Connect
+            </button>
+
+            {/* Disconnect Button */}
+            <button
+              onClick={() => onDisconnect(server.name)}
+              disabled={isProcessing || !isConnected}
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+              Disconnect
+            </button>
+
+            {/* Tools Button */}
+            <button
+              onClick={() => onViewTools(server.name)}
+              disabled={isProcessing || !isConnected}
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+              Tools
+            </button>
+          </div>
+        </div>
       </td>
 
       {/* Status */}
-      <td className="px-4 py-3 whitespace-nowrap">
-        <div className="flex items-center gap-2">
-          {isProcessing ? (
-            <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
-          ) : (
-            <>
-              {isConnected ? (
-                <>
-                  <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <span className="text-sm font-medium text-green-700">Connected</span>
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
-                  <span className="text-sm text-gray-600">Disconnected</span>
-                </>
-              )}
-            </>
-          )}
-        </div>
-      </td>
-
-      {/* Command */}
-      <td className="px-4 py-3">
-        <div className="text-sm text-gray-900 font-mono truncate max-w-xs" title={`${server.config.command} ${server.config.args.join(' ')}`}>
-          {server.config.command} {server.config.args.slice(0, 2).join(' ')}
-          {server.config.args.length > 2 && '...'}
-        </div>
+      <td className="px-4 py-3 text-center whitespace-nowrap">
+        {isProcessing ? (
+          <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin mx-auto" />
+        ) : isConnected ? (
+          <div className="flex items-center justify-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-green-500" />
+            <span className="text-sm font-medium text-green-700">On</span>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-gray-300" />
+            <span className="text-sm text-gray-500">Off</span>
+          </div>
+        )}
       </td>
 
       {/* Enabled */}
@@ -432,7 +452,7 @@ function ServerRow({
             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
           </svg>
         ) : (
-          <span className="text-gray-400">-</span>
+          <span className="text-gray-300">-</span>
         )}
       </td>
 
@@ -443,68 +463,97 @@ function ServerRow({
             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
           </svg>
         ) : (
-          <span className="text-gray-400">-</span>
+          <span className="text-gray-300">-</span>
         )}
       </td>
 
-      {/* Actions */}
-      <td className="px-4 py-3 text-right whitespace-nowrap">
-        <div className="flex items-center justify-end gap-1">
-          {isConnected ? (
-            <>
-              <button
-                onClick={() => onViewTools(server.name)}
-                disabled={isProcessing}
-                className="px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
-                title="View Tools"
-              >
-                Tools
-              </button>
-              <button
-                onClick={() => onDisconnect(server.name)}
-                disabled={isProcessing}
-                className="px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
-                title="Disconnect"
-              >
-                Disconnect
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={() => onConnect(server.name)}
-              disabled={isProcessing}
-              className="px-2 py-1 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 rounded transition-colors disabled:opacity-50"
-              title="Connect"
-            >
-              Connect
-            </button>
-          )}
-          <button
-            onClick={() => onTest(server.name)}
-            disabled={isProcessing}
-            className="px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
-            title="Test Connection"
-          >
-            Test
-          </button>
-          <button
-            onClick={() => onEdit(server)}
-            disabled={isProcessing}
-            className="px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
-            title="Edit"
-          >
-            Edit
-          </button>
-          <button
-            onClick={() => onDelete(server.name)}
-            disabled={isProcessing}
-            className="px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
-            title="Remove"
-          >
-            Remove
-          </button>
+      {/* Actions - Dropdown only */}
+      <td className="px-4 py-3 text-center whitespace-nowrap">
+        <div className="flex items-center justify-center">
+          <DropdownMenu
+            server={server}
+            isProcessing={isProcessing}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
         </div>
       </td>
     </tr>
+  );
+}
+
+// ============================================================================
+// Dropdown Menu Component
+// ============================================================================
+
+interface DropdownMenuProps {
+  server: MCPServer;
+  isProcessing: boolean;
+  onEdit: (server: MCPServer) => void;
+  onDelete: (name: string) => void;
+}
+
+function DropdownMenu({ server, isProcessing, onEdit, onDelete }: DropdownMenuProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen]);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      {/* Dropdown Trigger Button */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        disabled={isProcessing}
+        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        title="More actions"
+      >
+        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+        </svg>
+      </button>
+
+      {/* Dropdown Menu */}
+      {isOpen && (
+        <div className="absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10 overflow-hidden">
+          <button
+            onClick={() => {
+              onEdit(server);
+              setIsOpen(false);
+            }}
+            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            Edit
+          </button>
+          <button
+            onClick={() => {
+              onDelete(server.name);
+              setIsOpen(false);
+            }}
+            className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Remove
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

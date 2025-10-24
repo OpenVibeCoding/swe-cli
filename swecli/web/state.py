@@ -132,12 +132,13 @@ class WebState:
                 "approved": None,
             }
 
-    def resolve_approval(self, approval_id: str, approved: bool) -> bool:
+    def resolve_approval(self, approval_id: str, approved: bool, auto_approve: bool = False) -> bool:
         """Resolve a pending approval request."""
         with self._lock:
             if approval_id in self._pending_approvals:
                 self._pending_approvals[approval_id]["resolved"] = True
                 self._pending_approvals[approval_id]["approved"] = approved
+                self._pending_approvals[approval_id]["auto_approve"] = auto_approve
                 return True
             return False
 

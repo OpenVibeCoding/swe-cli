@@ -150,13 +150,13 @@ export function MessageList() {
 
         {isLoading && (
           <div className="flex justify-start px-6 animate-fade-in">
-            <div className="max-w-[85%] bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl px-5 py-3 shadow-sm border border-gray-200">
+            <div className="max-w-[85%] px-5 py-3">
               <div className="flex items-center gap-3">
                 {/* Braille dots spinner matching terminal style */}
                 <span className={`text-lg font-medium ${SPINNER_COLORS[colorIndex]} transition-colors duration-100`}>
                   {SPINNER_FRAMES[spinnerIndex]}
                 </span>
-                <span className="text-sm text-gray-700 font-medium">
+                <span className="text-sm text-gray-600 font-medium">
                   {THINKING_VERBS[verbIndex]}...
                 </span>
               </div>

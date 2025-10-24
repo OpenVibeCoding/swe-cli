@@ -106,6 +106,7 @@ class WebSocketManager:
         approval_data = data.get("data", {})
         approval_id = approval_data.get("approvalId")
         approved = approval_data.get("approved")
+        auto_approve = approval_data.get("autoApprove", False)
 
         if approval_id is None or approved is None:
             await self.send_message(
@@ -116,7 +117,7 @@ class WebSocketManager:
 
         # Resolve the approval in shared state
         state = get_state()
-        success = state.resolve_approval(approval_id, approved)
+        success = state.resolve_approval(approval_id, approved, auto_approve)
 
         if not success:
             await self.send_message(

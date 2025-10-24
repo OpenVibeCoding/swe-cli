@@ -64,11 +64,18 @@ class SessionManager:
     def save_session(self, session: Optional[Session] = None) -> None:
         """Save session to disk.
 
+        Only saves sessions that have at least one message to avoid
+        cluttering the session list with empty test sessions.
+
         Args:
             session: Session to save (defaults to current session)
         """
         session = session or self.current_session
         if not session:
+            return
+
+        # Only save sessions with at least one message
+        if len(session.messages) == 0:
             return
 
         session_file = self.session_dir / f"{session.id}.json"
@@ -98,6 +105,7 @@ class SessionManager:
 
         Returns:
             List of session metadata, sorted by update time (newest first)
+            Filters out empty sessions (sessions with no messages)
         """
         sessions = []
         for session_file in self.session_dir.glob("*.json"):
@@ -105,6 +113,16 @@ class SessionManager:
                 with open(session_file) as f:
                     data = json.load(f)
                 session = Session(**data)
+
+                # Skip empty sessions (no messages)
+                if len(session.messages) == 0:
+                    # Optionally clean up empty session files
+                    try:
+                        session_file.unlink()
+                    except Exception:
+                        pass
+                    continue
+
                 sessions.append(session.get_metadata())
             except Exception:
                 continue  # Skip corrupted files

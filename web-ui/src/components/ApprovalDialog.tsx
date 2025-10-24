@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useChatStore } from '../stores/chat';
 
 export function ApprovalDialog() {
@@ -8,12 +9,32 @@ export function ApprovalDialog() {
     return null;
   }
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === '1') {
+        handleApprove();
+      } else if (e.key === '2') {
+        handleApproveAll();
+      } else if (e.key === '3') {
+        handleDeny();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [pendingApproval]);
+
   const handleApprove = () => {
-    respondToApproval(pendingApproval.id, true);
+    respondToApproval(pendingApproval.id, true, false);
+  };
+
+  const handleApproveAll = () => {
+    respondToApproval(pendingApproval.id, true, true);
   };
 
   const handleDeny = () => {
-    respondToApproval(pendingApproval.id, false);
+    respondToApproval(pendingApproval.id, false, false);
   };
 
   return (
@@ -96,20 +117,52 @@ export function ApprovalDialog() {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="border-t border-gray-200 px-6 py-4 flex items-center justify-end gap-3">
-          <button
-            onClick={handleDeny}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            Deny
-          </button>
-          <button
-            onClick={handleApprove}
-            className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors shadow-sm"
-          >
-            Approve & Execute
-          </button>
+        {/* Footer - 3 Options */}
+        <div className="border-t border-gray-200 px-6 py-5 bg-gray-50">
+          <div className="space-y-2">
+            {/* Option 1: Yes, run this command */}
+            <button
+              onClick={handleApprove}
+              className="w-full px-4 py-3 text-sm font-medium text-left bg-white border-2 border-green-300 rounded-lg hover:bg-green-50 hover:border-green-400 transition-all flex items-center gap-3 group"
+            >
+              <div className="w-6 h-6 rounded-full bg-green-100 group-hover:bg-green-200 flex items-center justify-center text-green-700 font-semibold text-xs">
+                1
+              </div>
+              <span className="text-gray-900">Yes, run this command</span>
+            </button>
+
+            {/* Option 2: Yes, and auto-approve */}
+            <button
+              onClick={handleApproveAll}
+              className="w-full px-4 py-3 text-sm font-medium text-left bg-white border-2 border-blue-300 rounded-lg hover:bg-blue-50 hover:border-blue-400 transition-all flex items-center gap-3 group"
+            >
+              <div className="w-6 h-6 rounded-full bg-blue-100 group-hover:bg-blue-200 flex items-center justify-center text-blue-700 font-semibold text-xs">
+                2
+              </div>
+              <div className="flex-1">
+                <div className="text-gray-900">Yes, and auto-approve all <span className="font-semibold text-blue-700">{pendingApproval.tool_name}</span> commands</div>
+                <div className="text-xs text-gray-500 mt-0.5">Future similar commands will run automatically</div>
+              </div>
+            </button>
+
+            {/* Option 3: No, cancel */}
+            <button
+              onClick={handleDeny}
+              className="w-full px-4 py-3 text-sm font-medium text-left bg-white border-2 border-red-300 rounded-lg hover:bg-red-50 hover:border-red-400 transition-all flex items-center gap-3 group"
+            >
+              <div className="w-6 h-6 rounded-full bg-red-100 group-hover:bg-red-200 flex items-center justify-center text-red-700 font-semibold text-xs">
+                3
+              </div>
+              <span className="text-gray-900">No, cancel and provide feedback</span>
+            </button>
+          </div>
+
+          {/* Keyboard shortcuts hint */}
+          <div className="mt-4 pt-3 border-t border-gray-200 text-center">
+            <p className="text-xs text-gray-500">
+              Press <kbd className="px-1.5 py-0.5 bg-gray-200 border border-gray-300 rounded text-xs font-mono">1</kbd>, <kbd className="px-1.5 py-0.5 bg-gray-200 border border-gray-300 rounded text-xs font-mono">2</kbd>, or <kbd className="px-1.5 py-0.5 bg-gray-200 border border-gray-300 rounded text-xs font-mono">3</kbd> to select
+            </p>
+          </div>
         </div>
       </div>
     </div>

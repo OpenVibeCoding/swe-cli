@@ -322,7 +322,7 @@ export function SessionsSidebar() {
 
                       {/* Workspace Info */}
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-medium line-clamp-2 mb-1.5 text-gray-900">
+                        <h3 className="text-xs font-medium mb-1.5 text-gray-900 break-all" title={workspace.path}>
                           {formatWorkspacePath(workspace.path)}
                         </h3>
                         <div className="flex items-center justify-between text-xs">

@@ -49,9 +49,8 @@ async def create_session(request: CreateSessionRequest) -> Dict[str, Any]:
         state.session_manager.create_session(working_directory=request.workspace)
         print("[DEBUG] Session created")
 
-        # Save the session to disk
-        state.session_manager.save_session()
-        print("[DEBUG] Session saved to disk")
+        # Note: Session will be auto-saved when first message is added
+        # Don't save empty sessions to avoid cluttering the session list
 
         session = state.session_manager.get_current_session()
         print(f"[DEBUG] Got current session: {session.id}")
@@ -311,3 +310,74 @@ async def verify_path(path_data: Dict[str, str]) -> Dict[str, Any]:
             "is_directory": False,
             "error": f"Failed to verify path: {str(e)}"
         }
+
+
+@router.get("/files")
+async def list_files(query: str = "") -> Dict[str, Any]:
+    """List files in the current session's working directory.
+
+    Args:
+        query: Optional search query to filter files
+
+    Returns:
+        Dictionary with files array
+
+    Raises:
+        HTTPException: If listing fails
+    """
+    try:
+        state = get_state()
+        session = state.session_manager.get_current_session()
+
+        if not session or not session.working_directory:
+            return {"files": []}
+
+        working_dir = Path(session.working_directory)
+        if not working_dir.exists() or not working_dir.is_dir():
+            return {"files": []}
+
+        # Get all files recursively, excluding common ignore patterns
+        ignore_patterns = {'.git', '__pycache__', 'node_modules', '.venv', 'venv',
+                          '.idea', '.vscode', 'dist', 'build', '.DS_Store'}
+
+        files = []
+        try:
+            for item in working_dir.rglob('*'):
+                # Skip directories and ignored patterns
+                if item.is_dir():
+                    continue
+
+                # Check if any parent directory is in ignore patterns
+                if any(part in ignore_patterns for part in item.parts):
+                    continue
+
+                # Get relative path
+                try:
+                    rel_path = item.relative_to(working_dir)
+                    path_str = str(rel_path)
+
+                    # Filter by query if provided
+                    if query and query.lower() not in path_str.lower():
+                        continue
+
+                    files.append({
+                        'path': path_str,
+                        'name': item.name,
+                        'is_file': True
+                    })
+                except ValueError:
+                    continue
+
+        except PermissionError:
+            pass  # Skip directories we can't access
+
+        # Sort files by path
+        files.sort(key=lambda x: x['path'])
+
+        # Limit to 100 results for performance
+        files = files[:100]
+
+        return {"files": files}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to list files: {str(e)}")

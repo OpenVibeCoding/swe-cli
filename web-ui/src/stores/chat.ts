@@ -20,7 +20,7 @@ interface ChatState {
   addMessage: (message: Message) => void;
   setConnected: (connected: boolean) => void;
   setPendingApproval: (approval: ApprovalRequest | null) => void;
-  respondToApproval: (approvalId: string, approved: boolean) => void;
+  respondToApproval: (approvalId: string, approved: boolean, autoApprove?: boolean) => void;
   setHasWorkspace: (hasWorkspace: boolean) => void;
 }
 
@@ -176,13 +176,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({ pendingApproval: approval });
   },
 
-  respondToApproval: (approvalId: string, approved: boolean) => {
+  respondToApproval: (approvalId: string, approved: boolean, autoApprove: boolean = false) => {
     // Send approval response via WebSocket
     wsClient.send({
       type: 'approve',
       data: {
         approvalId,
         approved,
+        autoApprove,
       },
     });
     // Clear pending approval

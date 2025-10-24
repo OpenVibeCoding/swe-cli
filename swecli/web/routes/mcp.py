@@ -119,6 +119,17 @@ async def get_server(name: str) -> Dict[str, Any]:
         else:
             config_path = str(global_config)
 
+        # Transform tools to camelCase for frontend
+        transformed_tools = []
+        for tool in tools:
+            transformed_tool = {
+                "name": tool.get("mcp_tool_name", tool.get("name", "")),
+                "description": tool.get("description", ""),
+            }
+            if "input_schema" in tool:
+                transformed_tool["inputSchema"] = tool["input_schema"]
+            transformed_tools.append(transformed_tool)
+
         return {
             "name": name,
             "status": "connected" if is_connected else "disconnected",
@@ -129,7 +140,7 @@ async def get_server(name: str) -> Dict[str, Any]:
                 "enabled": config.enabled,
                 "auto_start": config.auto_start,
             },
-            "tools": tools,
+            "tools": transformed_tools,
             "capabilities": capabilities,
             "config_path": config_path,
         }

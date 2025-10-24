@@ -106,6 +106,14 @@ class APIClient {
     return response.json();
   }
 
+  // File listing
+  async listFiles(query?: string): Promise<{ files: Array<{ path: string; name: string; is_file: boolean }> }> {
+    const url = query ? `${API_BASE}/sessions/files?query=${encodeURIComponent(query)}` : `${API_BASE}/sessions/files`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+    return response.json();
+  }
+
   // Health check
   async health(): Promise<{ status: string; service: string }> {
     const response = await fetch(`${API_BASE}/health`);

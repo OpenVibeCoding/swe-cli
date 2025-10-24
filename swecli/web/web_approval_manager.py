@@ -119,9 +119,10 @@ class WebApprovalManager:
             if approval and approval["resolved"]:
                 # Clean up
                 approved = approval["approved"]
+                auto_approve = approval.get("auto_approve", False)
                 self.state.clear_approval(approval_id)
-                choice = "approve" if approved else "deny"
-                return ApprovalResult(approved=approved, choice=choice)
+                choice = "approve_all" if (approved and auto_approve) else ("approve" if approved else "deny")
+                return ApprovalResult(approved=approved, choice=choice, apply_to_all=auto_approve)
 
             # Sleep briefly to avoid busy waiting
             time.sleep(0.1)

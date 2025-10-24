@@ -24,6 +24,18 @@ export interface MCPServer {
 export interface MCPTool {
   name: string;
   description: string;
+  inputSchema?: {
+    type?: string;
+    properties?: Record<string, {
+      type?: string;
+      description?: string;
+      enum?: string[];
+      items?: any;
+      [key: string]: any;
+    }>;
+    required?: string[];
+    [key: string]: any;
+  };
 }
 
 export interface MCPServerDetailed extends MCPServer {
