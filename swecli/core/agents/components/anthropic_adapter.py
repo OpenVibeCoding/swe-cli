@@ -201,12 +201,13 @@ class AnthropicAdapter:
             # Convert OpenAI-style payload to Anthropic format
             anthropic_payload = self.convert_request(payload)
 
-            # Make request
+            # Make request with extended timeout for long LLM responses
+            # (connect_timeout=10s, read_timeout=300s)
             response = requests.post(
                 self.api_url,
                 headers=self.headers,
                 json=anthropic_payload,
-                timeout=60,
+                timeout=(10, 300),
             )
 
             if response.status_code != 200:

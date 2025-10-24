@@ -213,8 +213,8 @@ class AsyncQueryProcessor:
                         pass
                     return {"success": False, "error": "Interrupted by user"}
 
-                # Wait a short time before checking again (50ms for fast response)
-                await asyncio.sleep(0.05)
+                # Wait a short time before checking again (10ms for immediate response)
+                await asyncio.sleep(0.01)
 
             # Get the result
             response = await llm_task

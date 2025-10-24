@@ -13,7 +13,7 @@ class InputHandler:
             app: The chat application instance
         """
         self.app = app
-        self._paste_threshold = 500  # Chars threshold for paste detection
+        self._paste_threshold = 3000  # Chars threshold for paste detection
 
     def on_text_insert(self, buffer: Buffer) -> None:
         """Handle text insertion - detect large pastes and replace with placeholder."""

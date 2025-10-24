@@ -38,6 +38,12 @@ class KeyBindingManager:
 
     def _create_enter_key_bindings(self, kb: KeyBindings) -> None:
         """Create Enter key binding for message submission."""
+        @kb.add("s-enter")  # Shift+Enter inserts newline
+        def on_shift_enter(event):
+            """Insert newline when Shift+Enter is pressed."""
+            if event.app.layout.has_focus(self.app.input_buffer):
+                event.current_buffer.insert_text("\n")
+
         @kb.add("enter")
         def on_enter(event):
             """Handle Enter key - submit message or approval selection."""
@@ -108,26 +114,17 @@ class KeyBindingManager:
 
         @kb.add("c-c")
         def on_ctrl_c(event):
-            """Handle Ctrl+C - interrupt processing, clear input, or exit."""
+            """Handle Ctrl+C - interrupt processing or exit."""
             # If processing, interrupt the task with instant feedback
             if self.app._is_processing:
                 self.app._show_interrupted_message()
                 event.app.invalidate()
                 return
 
-            # If input buffer has focus and has content, clear it
-            if event.app.layout.has_focus(self.app.input_buffer) and self.app.input_buffer.text:
-                self.app.input_buffer.reset()
-                # Reset paste content if any
-                self.app._pasted_content = None
-                # Reset history position
-                self.app._history_position = -1
-                self.app._current_input = ""
-            else:
-                # Otherwise, exit application
-                if self.app.on_exit:
-                    self.app.on_exit()
-                event.app.exit()
+            # Otherwise, exit application
+            if self.app.on_exit:
+                self.app.on_exit()
+            event.app.exit()
 
     def _create_editing_key_bindings(self, kb: KeyBindings) -> None:
         """Create text editing key bindings (backspace, delete)."""

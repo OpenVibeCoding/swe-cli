@@ -28,13 +28,6 @@ def main() -> None:
     """Main entry point for SWE-CLI CLI."""
     import sys
 
-    # Clear terminal IMMEDIATELY at entry point before any other output
-    # This prevents shell prompt from bleeding into the TUI
-    sys.stdout.write("\033[3J")  # Clear scrollback buffer
-    sys.stdout.write("\033[2J")  # Clear screen
-    sys.stdout.write("\033[H")   # Move cursor to home
-    sys.stdout.flush()
-
     parser = argparse.ArgumentParser(
         prog="swecli",
         description="SWE-CLI - AI-powered command-line tool for accelerated development",
@@ -55,7 +48,7 @@ Examples:
         "--version",
         "-V",
         action="version",
-        version="SWE-CLI 0.1.0",
+        version="SWE-CLI 0.1.4",
     )
 
     parser.add_argument(
@@ -249,6 +242,13 @@ Examples:
         if not run_setup_wizard():
             console.print("[yellow]Setup cancelled. Exiting.[/yellow]")
             sys.exit(0)
+
+    # Clear terminal before starting interactive session
+    # This prevents shell prompt from bleeding into the TUI
+    sys.stdout.write("\033[3J")  # Clear scrollback buffer
+    sys.stdout.write("\033[2J")  # Clear screen
+    sys.stdout.write("\033[H")   # Move cursor to home
+    sys.stdout.flush()
 
     # Set working directory
     working_dir = Path(args.working_dir) if args.working_dir else Path.cwd()

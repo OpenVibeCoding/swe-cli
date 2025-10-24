@@ -75,7 +75,7 @@ class ChatApplication:
 
         # Create input buffer (where user types)
         self.input_buffer = Buffer(
-            multiline=False,
+            multiline=True,
             completer=completer,
             on_text_insert=self._on_text_insert,
             on_text_changed=self._on_buffer_text_changed,
@@ -150,6 +150,12 @@ class ChatApplication:
 
     def _get_status_text(self) -> StyleAndTextTuples:
         """Get status bar text."""
+        # Show exit confirmation message if in exit confirmation mode
+        if self._exit_confirmation_mode:
+            return [
+                ("class:exit-confirmation", "Press Ctrl+C again to exit"),
+            ]
+
         # TODO: Connect to actual mode and context info
         return [
             ("", "⏵⏵ normal mode  •  Context: 95%  •  Ctrl+C to exit"),
@@ -158,6 +164,11 @@ class ChatApplication:
     def _on_text_insert(self, buffer: Buffer) -> None:
         """Handle text insertion - detect large pastes and replace with placeholder."""
         # Note: No need to check approval mode here - keys are blocked at key binding level
+
+        # Cancel exit confirmation mode if user starts typing
+        if self._exit_confirmation_mode:
+            self._cancel_exit_confirmation()
+
         text = buffer.text
 
         # Detect large paste (content longer than threshold)

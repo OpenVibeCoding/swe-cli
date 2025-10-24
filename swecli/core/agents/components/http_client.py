@@ -22,6 +22,11 @@ class HttpResult:
 class AgentHttpClient:
     """Thin wrapper around requests with interrupt support."""
 
+    # Timeout configuration: (connect_timeout, read_timeout)
+    # connect_timeout: how long to wait to establish connection (10s)
+    # read_timeout: how long to wait for response (300s = 5 minutes for long LLM responses)
+    TIMEOUT = (10, 300)
+
     def __init__(self, api_url: str, headers: dict[str, str]) -> None:
         self._api_url = api_url
         self._headers = headers
@@ -35,7 +40,7 @@ class AgentHttpClient:
                     self._api_url,
                     headers=self._headers,
                     json=payload,
-                    timeout=60,
+                    timeout=self.TIMEOUT,
                 )
                 return HttpResult(success=True, response=response)
             except Exception as exc:  # pragma: no cover - propagation handled by caller
@@ -51,7 +56,7 @@ class AgentHttpClient:
                     self._api_url,
                     headers=self._headers,
                     json=payload,
-                    timeout=60,
+                    timeout=self.TIMEOUT,
                 )
             except Exception as exc:  # pragma: no cover - captured for caller
                 response_container["error"] = exc

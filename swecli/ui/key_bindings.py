@@ -51,9 +51,14 @@ class KeyBindingManager:
     def _add_system_bindings(self, kb: KeyBindings) -> None:
         """Add system control key bindings (ESC, Ctrl+C, etc.)."""
 
-        @kb.add("escape")
+        @kb.add("escape", eager=True)
         def on_escape(event):
             """Handle ESC - interrupt processing or close completion menu."""
+            # If processing, interrupt IMMEDIATELY (highest priority)
+            if self.chat_app._is_processing:
+                self._handle_interrupt(event)
+                return
+
             # Check if we're in approval mode
             if self.chat_app._handle_approval_key("escape"):
                 return
@@ -62,11 +67,6 @@ class KeyBindingManager:
             buf = event.app.current_buffer
             if buf.complete_state:
                 buf.complete_state = None
-                return
-
-            # If processing, interrupt the task with instant feedback
-            if self.chat_app._is_processing:
-                self._handle_interrupt(event)
                 return
 
             # If input buffer has focus and has content, clear it
@@ -80,8 +80,24 @@ class KeyBindingManager:
 
         @kb.add("c-c")
         def on_ctrl_c(event):
-            """Handle Ctrl+C - exit confirmation only."""
-            # Handle exit confirmation mode
+            """Handle Ctrl+C - clear input text, show exit confirmation, or exit."""
+            # If input buffer has content, clear it (first Ctrl+C)
+            if self.chat_app.input_buffer.text:
+                # Clear the input buffer
+                self.chat_app.input_buffer.text = ""
+                self.chat_app.input_buffer.cursor_position = 0
+                # Close completion menu if open
+                if self.chat_app.input_buffer.complete_state:
+                    self.chat_app.input_buffer.complete_state = None
+                # Reset paste content if any
+                self.chat_app._pasted_content = None
+                # Reset history position
+                self.chat_app._history_position = -1
+                self.chat_app._current_input = ""
+                event.app.invalidate()
+                return
+
+            # Handle exit confirmation mode (input is now empty)
             if hasattr(self.chat_app, '_exit_confirmation_mode') and self.chat_app._exit_confirmation_mode:
                 # Second Ctrl+C - exit the application
                 if self.chat_app.on_exit:
@@ -89,7 +105,7 @@ class KeyBindingManager:
                 event.app.exit()
                 return
 
-            # First Ctrl+C - start exit confirmation mode
+            # First Ctrl+C with empty input - start exit confirmation mode
             if hasattr(self.chat_app, '_start_exit_confirmation'):
                 self.chat_app._start_exit_confirmation()
 
@@ -472,13 +488,17 @@ class KeyBindingManager:
         if getattr(self.chat_app, "_interrupt_requested", False):
             return  # Already interrupted, don't show another message
 
+        # Set interrupt flags FIRST for immediate effect
+        self.chat_app._interrupt_requested = True
+        self.chat_app._interrupt_shown = True
+        self.chat_app._is_processing = False
+
         # Stop spinner immediately if available
         if hasattr(self.chat_app, "_stop_spinner"):
             self.chat_app._stop_spinner()
 
-        # Set interrupt flags immediately to prevent further processing
-        self.chat_app._interrupt_requested = True
-        self.chat_app._interrupt_shown = True
+        # Force immediate UI update
+        event.app.invalidate()
 
         # Show interrupted message immediately for instant UX feedback
         if hasattr(self.chat_app, "_execution_state") and self.chat_app._execution_state == "executing_tool":
@@ -504,17 +524,17 @@ class KeyBindingManager:
             # During thinking: show red interrupted message
             self.chat_app.add_assistant_message("\033[31m⏺ Interrupted by user (ESC)\033[0m")
 
-        # Cancel any running LLM task
+        # Cancel any running LLM task immediately
         if hasattr(self.chat_app, "_current_llm_task"):
             task = self.chat_app._current_llm_task
             if task and not task.done():
                 task.cancel()
 
-        # Reset processing state flags (but keep interrupt flags to prevent duplicates)
-        self.chat_app._is_processing = False
+        # Clear execution state (processing flag already cleared above)
         self.chat_app._execution_state = None
         self.chat_app._current_tool_display = None
 
+        # Force another UI update after showing the message
         event.app.invalidate()
 
     def _navigate_history_up(self, event) -> None:

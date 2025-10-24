@@ -22,7 +22,8 @@ class VLMTool:
         """
         self.config = config
         self.working_dir = working_dir
-        self.timeout = 60  # 60 second timeout for VLM requests (longer than web fetch)
+        # Extended timeout for VLM requests (connect=10s, read=300s for image analysis)
+        self.timeout = (10, 300)
 
     def is_available(self) -> bool:
         """Check if VLM functionality is available.
@@ -181,9 +182,11 @@ class VLMTool:
                 }
 
         except requests.exceptions.Timeout:
+            # Show read timeout (second value in tuple)
+            timeout_seconds = self.timeout[1] if isinstance(self.timeout, tuple) else self.timeout
             return {
                 "success": False,
-                "error": f"Request timeout after {self.timeout} seconds",
+                "error": f"Request timeout after {timeout_seconds} seconds",
                 "content": None,
             }
         except requests.exceptions.RequestException as e:

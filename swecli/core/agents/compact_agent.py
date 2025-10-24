@@ -48,11 +48,12 @@ class CompactAgent:
             "max_tokens": 2000,
         }
 
+        # Extended timeout for long LLM responses (connect_timeout=10s, read_timeout=300s)
         response = requests.post(
             self.api_url,
             headers=self.headers,
             json=payload,
-            timeout=60,
+            timeout=(10, 300),
         )
         if response.status_code != 200:
             raise Exception(f"API Error {response.status_code}: {response.text}")

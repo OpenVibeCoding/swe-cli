@@ -59,10 +59,10 @@ class ChatLayout:
     def _create_conversation_window(self) -> Window:
         """Create the conversation display window."""
         # Calculate max height for conversation window
-        # Must reserve space for: separator(1) + input(max=8) + status(1) + safety(2) = 12 lines
+        # Must reserve space for: separator(1) + input(max=10) + status(1) + safety(2) = 14 lines
         terminal_size = shutil.get_terminal_size(fallback=(80, 24))
         terminal_height = terminal_size.lines
-        conversation_max_height = terminal_height - 12
+        conversation_max_height = terminal_height - 14
 
         self._conversation_window = Window(
             content=self.conversation_control,
@@ -98,7 +98,7 @@ class ChatLayout:
         # Input window
         input_window = Window(
             content=self.input_control,
-            height=Dimension(min=3, max=8, preferred=3),
+            height=Dimension(min=1, max=10, preferred=3),
             wrap_lines=True,
             style="class:input-field",
             right_margins=[ScrollbarMargin(display_arrows=True)],
