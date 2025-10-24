@@ -15,6 +15,17 @@ from swecli.core.agents.components import (
 from swecli.models.config import AppConfig
 
 
+class WebInterruptMonitor:
+    """Monitor for checking web interrupt requests."""
+
+    def __init__(self, web_state: Any):
+        self.web_state = web_state
+
+    def should_interrupt(self) -> bool:
+        """Check if interrupt has been requested."""
+        return self.web_state.is_interrupt_requested()
+
+
 class SwecliAgent(BaseAgent):
     """Custom agent that coordinates LLM interactions via HTTP."""
 
@@ -95,6 +106,16 @@ class SwecliAgent(BaseAgent):
 
         max_iterations = 10
         for _ in range(max_iterations):
+            # Check for interrupt request (for web UI)
+            if hasattr(self, 'web_state') and self.web_state.is_interrupt_requested():
+                self.web_state.clear_interrupt()
+                return {
+                    "content": "Task interrupted by user",
+                    "messages": messages,
+                    "success": False,
+                    "interrupted": True,
+                }
+
             payload = {
                 "model": self.config.model,
                 "messages": messages,
@@ -104,7 +125,12 @@ class SwecliAgent(BaseAgent):
                 "max_tokens": self.config.max_tokens,
             }
 
-            result = self._http_client.post_json(payload)
+            # Create interrupt monitor if web_state is available
+            monitor = None
+            if hasattr(self, 'web_state'):
+                monitor = WebInterruptMonitor(self.web_state)
+
+            result = self._http_client.post_json(payload, task_monitor=monitor)
             if not result.success or result.response is None:
                 error_msg = result.error or "Unknown error"
                 return {

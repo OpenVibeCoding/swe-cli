@@ -5,6 +5,8 @@ import random
 import time
 from typing import TYPE_CHECKING
 
+from swecli.ui.utils.tool_display import format_tool_call
+
 if TYPE_CHECKING:
     from rich.console import Console
     from swecli.core.management import ModeManager, SessionManager, OperationMode
@@ -289,7 +291,7 @@ class QueryProcessor:
         tool_args = json.loads(tool_call["function"]["arguments"])
 
         # Format tool call display
-        tool_call_display = f"{tool_name}({', '.join(f'{k}={repr(v)[:50]}' for k, v in tool_args.items())})"
+        tool_call_display = format_tool_call(tool_name, tool_args)
 
         # Show progress in PLAN mode
         if self.mode_manager.current_mode == OperationMode.PLAN:

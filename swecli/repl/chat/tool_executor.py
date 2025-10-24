@@ -5,6 +5,8 @@ import json
 from typing import TYPE_CHECKING
 from datetime import datetime
 
+from swecli.ui.utils.tool_display import format_tool_call
+
 if TYPE_CHECKING:
     from swecli.repl.repl import REPL
     from swecli.repl.repl_chat import REPLChatApplication
@@ -223,40 +225,8 @@ class ToolExecutor:
                 self.chat_app.add_assistant_message(error_box)
 
     def _format_tool_call(self, tool_name: str, tool_args: dict) -> str:
-        """Format tool call display with arguments.
-
-        Args:
-            tool_name: Name of the tool
-            tool_args: Tool arguments
-
-        Returns:
-            Formatted tool call string
-        """
-        def format_arg_value(k, v):
-            """Format argument value elegantly."""
-            # For content parameters (long strings), show summary
-            if k in ("content", "new_string", "old_string", "text") and isinstance(v, str):
-                line_count = v.count("\n") + 1
-                char_count = len(v)
-                if char_count > 80:
-                    return f"<{char_count} chars, {line_count} lines>"
-                # For shorter content, show first line
-                first_line = v.split("\n")[0][:50]
-                if len(v) > 50:
-                    return f"'{first_line}...'"
-                return repr(v)
-
-            # For other values, use repr but truncate if too long
-            v_str = repr(v)
-            if len(v_str) > 100:
-                return v_str[:97] + "..."
-            return v_str
-
-        if tool_args:
-            args_str = ", ".join(f"{k}={format_arg_value(k, v)}" for k, v in tool_args.items())
-            return f"{tool_name}({args_str})"
-        else:
-            return f"{tool_name}()"
+        """Format tool call display with arguments using shared helper."""
+        return format_tool_call(tool_name, tool_args)
 
     def _show_interrupted_message(self, tool_call_display: str):
         """Show interrupted message for tool execution.

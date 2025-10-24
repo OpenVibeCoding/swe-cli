@@ -5,6 +5,7 @@ from rich.panel import Panel
 from rich.text import Text
 
 from .formatter_base import BaseFormatter, TOOL_ICONS
+from ..utils.tool_display import get_tool_display_name
 
 
 class PlanFormatter(BaseFormatter):
@@ -21,8 +22,10 @@ class PlanFormatter(BaseFormatter):
         summary = result.get("plan_summary") or result.get("output") or "Execution skipped in plan mode."
         arguments = result.get("arguments") or tool_args or {}
 
+        display_name = get_tool_display_name(tool_name)
+
         body = Text()
-        body.append(f"{icon} Plan({tool_name})\n", style="bold")
+        body.append(f"{icon} Plan({display_name})\n", style="bold")
 
         if result.get("success", True):
             body.append("  ⎿  Execution skipped (plan-only mode)\n", style="dim")

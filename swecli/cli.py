@@ -34,11 +34,10 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  swecli                          # Start interactive session (web server in background)
-  swecli run ui                   # Start web UI dev server and open browser
+  swecli                          # Start interactive CLI session
+  swecli run ui                   # Start web UI (backend + frontend) and open browser
   swecli -p "create hello.py"     # Non-interactive mode
   swecli -r abc123                # Resume session
-  swecli --ui-port 3000           # Web UI on custom port
   swecli mcp list                 # List MCP servers
   swecli mcp add myserver uvx mcp-server-example
         """
@@ -90,21 +89,6 @@ Examples:
         "--list-sessions",
         action="store_true",
         help="List saved sessions and exit",
-    )
-
-    parser.add_argument(
-        "--ui-port",
-        type=int,
-        default=8080,
-        metavar="PORT",
-        help="Port for web UI server (default: 8080)",
-    )
-
-    parser.add_argument(
-        "--ui-host",
-        default="127.0.0.1",
-        metavar="HOST",
-        help="Host for web UI server (default: 127.0.0.1)",
     )
 
     # Add subparsers for commands
@@ -213,9 +197,22 @@ Examples:
     run_subparsers = run_parser.add_subparsers(dest="run_command", help="Run operations")
 
     # run ui
-    run_subparsers.add_parser(
+    run_ui_parser = run_subparsers.add_parser(
         "ui",
-        help="Start the web UI development server (Vite) and open in browser"
+        help="Start the web UI (backend + frontend) and open in browser"
+    )
+    run_ui_parser.add_argument(
+        "--ui-port",
+        type=int,
+        default=8080,
+        metavar="PORT",
+        help="Port for backend API server (default: 8080)",
+    )
+    run_ui_parser.add_argument(
+        "--ui-host",
+        default="127.0.0.1",
+        metavar="HOST",
+        help="Host for backend API server (default: 127.0.0.1)",
     )
 
     args = parser.parse_args()
@@ -315,38 +312,7 @@ Examples:
             _run_non_interactive(config_manager, session_manager, args.prompt)
             return
 
-        # Start web UI automatically (silently in background)
-        web_server_thread = None
-        mode_manager = ModeManager()
-        approval_manager = ApprovalManager(console)
-        undo_manager = UndoManager(config.max_undo_history)
-
-        try:
-            from swecli.web import start_server
-
-            web_server_thread = start_server(
-                config_manager=config_manager,
-                session_manager=session_manager,
-                mode_manager=mode_manager,
-                approval_manager=approval_manager,
-                undo_manager=undo_manager,
-                host=args.ui_host,
-                port=args.ui_port,
-                open_browser=False,
-            )
-
-            # Small delay to ensure server is ready
-            import time
-            time.sleep(0.3)
-
-        except ImportError:
-            # Silently ignore if web dependencies not installed
-            pass
-        except Exception:
-            # Silently ignore web server startup errors
-            pass
-
-        # Interactive REPL mode with chat UI
+        # Interactive REPL mode with chat UI (web server NOT started automatically)
         # Check if continuing/resuming a session
         is_continuation = bool(args.resume or args.continue_session)
         chat_app = create_repl_chat(config_manager, session_manager, is_continuation=is_continuation)
@@ -615,6 +581,74 @@ def _handle_run_command(args) -> None:
 
     if args.run_command == "ui":
         try:
+            # Start the backend API server in the background
+            console.print("[cyan]🚀 Starting backend API server...[/cyan]")
+
+            # Initialize managers for backend
+            from swecli.core.management import ConfigManager, ModeManager, SessionManager, UndoManager
+            from swecli.core.approval import ApprovalManager
+
+            working_dir = Path.cwd()
+            config_manager = ConfigManager(working_dir)
+            config = config_manager.load_config()
+            session_manager = SessionManager(Path(config.session_dir).expanduser())
+            mode_manager = ModeManager()
+            approval_manager = ApprovalManager(console)
+            undo_manager = UndoManager(config.max_undo_history)
+
+            # Don't create session on startup - let user create via UI
+
+            # Get port and host from args
+            preferred_port = getattr(args, 'ui_port', 8080)
+            backend_host = getattr(args, 'ui_host', '127.0.0.1')
+
+            # Find an available port
+            from swecli.web.port_utils import find_available_port
+            backend_port = find_available_port(backend_host, preferred_port, max_attempts=10)
+
+            if backend_port is None:
+                console.print(f"[red]Error: Could not find available port starting from {preferred_port}[/red]")
+                console.print(f"[yellow]Try ports {preferred_port} to {preferred_port + 9} are all in use[/yellow]")
+                sys.exit(1)
+
+            if backend_port != preferred_port:
+                console.print(f"[yellow]⚠ Port {preferred_port} is in use, using port {backend_port} instead[/yellow]")
+
+            try:
+                from swecli.web import start_server
+
+                web_server_thread = start_server(
+                    config_manager=config_manager,
+                    session_manager=session_manager,
+                    mode_manager=mode_manager,
+                    approval_manager=approval_manager,
+                    undo_manager=undo_manager,
+                    host=backend_host,
+                    port=backend_port,
+                    open_browser=False,
+                )
+
+                # Wait for backend to be ready
+                time.sleep(1.0)
+
+                # Verify server is running by checking the thread
+                if web_server_thread.is_alive():
+                    console.print(f"[green]✓ Backend API server running at http://{backend_host}:{backend_port}[/green]")
+                    console.print(f"[dim]   API docs: http://{backend_host}:{backend_port}/docs[/dim]\n")
+                else:
+                    console.print("[red]Error: Backend server thread terminated unexpectedly[/red]")
+                    sys.exit(1)
+
+            except ImportError as e:
+                console.print("[red]Error: Web dependencies not installed[/red]")
+                console.print(f"[dim]{str(e)}[/dim]")
+                console.print("[yellow]Install with: pip install 'swe-cli[web]'[/yellow]")
+                sys.exit(1)
+            except Exception as e:
+                console.print(f"[red]Error starting backend server: {str(e)}[/red]")
+                import traceback
+                console.print(f"[dim]{traceback.format_exc()}[/dim]")
+                sys.exit(1)
             # Find the web-ui directory
             import swecli
             import os
@@ -682,14 +716,32 @@ def _handle_run_command(args) -> None:
 
                 console.print("[green]✓ Dependencies installed successfully[/green]\n")
 
+            # Find available port for Vite frontend
+            from swecli.web.port_utils import find_available_port
+            preferred_frontend_port = 5173
+            frontend_port = find_available_port("localhost", preferred_frontend_port, max_attempts=10)
+
+            if frontend_port is None:
+                console.print(f"[red]Error: Could not find available port for frontend starting from {preferred_frontend_port}[/red]")
+                sys.exit(1)
+
+            if frontend_port != preferred_frontend_port:
+                console.print(f"[yellow]⚠ Port {preferred_frontend_port} is in use, using port {frontend_port} for frontend[/yellow]")
+
             # Start the dev server
             console.print("[cyan]🚀 Starting Vite dev server...[/cyan]")
-            console.print("[dim]Press Ctrl+C to stop the server[/dim]\n")
+            console.print("[dim]Press Ctrl+C to stop both servers[/dim]\n")
+
+            # Prepare environment variables for Vite
+            import os
+            vite_env = os.environ.copy()
+            vite_env["VITE_API_URL"] = f"http://{backend_host}:{backend_port}"
+            vite_env["PORT"] = str(frontend_port)
 
             # Open browser after a short delay
             def open_browser_delayed():
                 time.sleep(2)  # Wait for Vite to start
-                url = "http://localhost:5173"
+                url = f"http://localhost:{frontend_port}"
                 console.print(f"[green]✓ Opening browser at {url}[/green]\n")
                 webbrowser.open(url)
 
@@ -697,10 +749,11 @@ def _handle_run_command(args) -> None:
             browser_thread = threading.Thread(target=open_browser_delayed, daemon=True)
             browser_thread.start()
 
-            # Run npm run dev (blocking)
+            # Run npm run dev (blocking) with environment variables
             subprocess.run(
-                ["npm", "run", "dev"],
+                ["npm", "run", "dev", "--", "--port", str(frontend_port), "--strictPort"],
                 cwd=web_ui_dir,
+                env=vite_env,
             )
 
         except KeyboardInterrupt:
