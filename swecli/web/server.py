@@ -6,7 +6,7 @@ import asyncio
 import webbrowser
 from pathlib import Path
 from threading import Thread
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import uvicorn
 from fastapi import FastAPI
@@ -24,6 +24,9 @@ from swecli.core.management import (
     UndoManager,
 )
 from swecli.core.approval import ApprovalManager
+
+if TYPE_CHECKING:
+    from swecli.mcp.manager import MCPManager
 
 
 def create_app() -> FastAPI:
@@ -212,6 +215,7 @@ def start_server(
     mode_manager: ModeManager,
     approval_manager: ApprovalManager,
     undo_manager: UndoManager,
+    mcp_manager: Optional["MCPManager"] = None,
     host: str = "127.0.0.1",
     port: int = 8080,
     open_browser: bool = True,
@@ -224,6 +228,7 @@ def start_server(
         mode_manager: Mode manager
         approval_manager: Approval manager
         undo_manager: Undo manager
+        mcp_manager: MCP manager (optional)
         host: Host to bind to
         port: Port to listen on
         open_browser: Whether to open browser automatically
@@ -238,6 +243,7 @@ def start_server(
         mode_manager,
         approval_manager,
         undo_manager,
+        mcp_manager,
     )
 
     # Create app

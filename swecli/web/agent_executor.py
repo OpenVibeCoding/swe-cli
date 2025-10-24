@@ -127,7 +127,7 @@ class AgentExecutor:
             web_fetch_tool=web_fetch_tool,
             open_browser_tool=open_browser_tool,
             web_screenshot_tool=web_screenshot_tool,
-            mcp_manager=None,
+            mcp_manager=self.state.mcp_manager,
         )
 
         # Wrap tool registry with WebSocket broadcaster

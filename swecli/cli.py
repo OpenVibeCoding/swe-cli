@@ -587,6 +587,7 @@ def _handle_run_command(args) -> None:
             # Initialize managers for backend
             from swecli.core.management import ConfigManager, ModeManager, SessionManager, UndoManager
             from swecli.core.approval import ApprovalManager
+            from swecli.mcp.manager import MCPManager
 
             working_dir = Path.cwd()
             config_manager = ConfigManager(working_dir)
@@ -595,6 +596,7 @@ def _handle_run_command(args) -> None:
             mode_manager = ModeManager()
             approval_manager = ApprovalManager(console)
             undo_manager = UndoManager(config.max_undo_history)
+            mcp_manager = MCPManager(working_dir)
 
             # Don't create session on startup - let user create via UI
 
@@ -623,6 +625,7 @@ def _handle_run_command(args) -> None:
                     mode_manager=mode_manager,
                     approval_manager=approval_manager,
                     undo_manager=undo_manager,
+                    mcp_manager=mcp_manager,
                     host=backend_host,
                     port=backend_port,
                     open_browser=False,
