@@ -51,6 +51,9 @@ class WebState:
         # Pending approval requests
         self._pending_approvals: Dict[str, Dict[str, Any]] = {}
 
+        # Interrupt flag for stopping ongoing tasks
+        self._interrupt_requested = False
+
     def add_ws_client(self, client: Any) -> None:
         """Add a WebSocket client."""
         with self._lock:
@@ -89,11 +92,11 @@ class WebState:
         return [
             {
                 "id": s.id,
-                "working_dir": s.working_dir,
+                "working_dir": s.working_directory or "",
                 "created_at": s.created_at.isoformat(),
                 "updated_at": s.updated_at.isoformat(),
-                "message_count": len(s.messages),
-                "token_usage": s.token_usage,
+                "message_count": s.message_count,
+                "total_tokens": s.total_tokens,
             }
             for s in self.session_manager.list_sessions()
         ]
@@ -140,6 +143,21 @@ class WebState:
         with self._lock:
             self._pending_approvals.pop(approval_id, None)
 
+    def request_interrupt(self) -> None:
+        """Request interruption of ongoing task."""
+        with self._lock:
+            self._interrupt_requested = True
+
+    def clear_interrupt(self) -> None:
+        """Clear the interrupt flag."""
+        with self._lock:
+            self._interrupt_requested = False
+
+    def is_interrupt_requested(self) -> bool:
+        """Check if interrupt has been requested."""
+        with self._lock:
+            return self._interrupt_requested
+
 
 # Global state instance (will be initialized when web server starts)
 _state: Optional[WebState] = None
@@ -182,9 +200,7 @@ def get_state() -> WebState:
         approval_manager = ApprovalManager(console)
         undo_manager = UndoManager(50)
 
-        # Create session if none exists
-        if not session_manager.get_current_session():
-            session_manager.create_session(working_directory=str(working_dir))
+        # Don't create session on startup - let user create via UI
 
         return init_state(
             config_manager,

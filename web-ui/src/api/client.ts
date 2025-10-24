@@ -28,6 +28,14 @@ class APIClient {
     return response.json();
   }
 
+  async interruptTask(): Promise<{ status: string; message: string }> {
+    const response = await fetch(`${API_BASE}/chat/interrupt`, {
+      method: 'POST',
+    });
+    if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+    return response.json();
+  }
+
   // Session endpoints
   async listSessions(): Promise<Session[]> {
     const response = await fetch(`${API_BASE}/sessions`);
@@ -55,14 +63,34 @@ class APIClient {
     return response.json();
   }
 
+  async verifyPath(path: string): Promise<{ exists: boolean; is_directory: boolean; path?: string; error?: string }> {
+    const response = await fetch(`${API_BASE}/sessions/verify-path`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path }),
+    });
+    if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+    return response.json();
+  }
+
+  async createSession(workspace: string): Promise<{ status: string; message: string; session: any }> {
+    const response = await fetch(`${API_BASE}/sessions/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workspace }),
+    });
+    if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+    return response.json();
+  }
+
   // Config endpoints
-  async getConfig(): Promise<Config> {
+  async getConfig(): Promise<any> {
     const response = await fetch(`${API_BASE}/config`);
     if (!response.ok) throw new Error(`API error: ${response.statusText}`);
     return response.json();
   }
 
-  async updateConfig(config: Partial<Config>): Promise<{ status: string; message: string }> {
+  async updateConfig(config: any): Promise<{ status: string; message: string }> {
     const response = await fetch(`${API_BASE}/config`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -72,7 +100,7 @@ class APIClient {
     return response.json();
   }
 
-  async listProviders(): Promise<Provider[]> {
+  async listProviders(): Promise<any[]> {
     const response = await fetch(`${API_BASE}/config/providers`);
     if (!response.ok) throw new Error(`API error: ${response.statusText}`);
     return response.json();

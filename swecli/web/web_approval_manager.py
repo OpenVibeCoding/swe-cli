@@ -74,19 +74,23 @@ class WebApprovalManager:
         approval_id = str(uuid.uuid4())
 
         # Create approval request with preview
+        # Operation has: type (enum), target (str), parameters (dict)
+        tool_name = operation.type.value  # e.g., "bash_execute", "file_write"
+        description = f"{tool_name}: {operation.target}"
+
         approval_request = {
             "id": approval_id,
-            "tool_name": operation.tool_name,
-            "arguments": operation.arguments,
-            "description": operation.description or f"{operation.tool_name}({operation.arguments})",
+            "tool_name": tool_name,
+            "arguments": operation.parameters,
+            "description": description,
             "preview": preview[:500] if preview else "",  # Truncate long previews
         }
 
         # Store pending approval in shared state
         self.state.add_pending_approval(
             approval_id,
-            operation.tool_name,
-            operation.arguments,
+            tool_name,
+            operation.parameters,
         )
 
         # Broadcast approval request via WebSocket

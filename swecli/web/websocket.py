@@ -83,6 +83,9 @@ class WebSocketManager:
         user_msg = ChatMessage(role=Role.USER, content=message)
         state.add_message(user_msg)
 
+        # Save session immediately to persist user message
+        state.session_manager.save_session()
+
         # Broadcast user message to all clients
         await self.broadcast({
             "type": "user_message",

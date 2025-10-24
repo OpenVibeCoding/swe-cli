@@ -60,6 +60,9 @@ class AgentExecutor:
                 assistant_msg = ChatMessage(role=Role.ASSISTANT, content=assistant_content)
                 self.state.add_message(assistant_msg)
 
+            # Save session to persist messages immediately
+            self.state.session_manager.save_session()
+
             # Broadcast message complete
             await ws_manager.broadcast({
                 "type": "message_complete",
@@ -91,8 +94,12 @@ class AgentExecutor:
         from swecli.tools.bash_tool import BashTool
         from swecli.tools.web_fetch_tool import WebFetchTool
         from swecli.tools.open_browser_tool import OpenBrowserTool
+        from swecli.tools.web_screenshot_tool import WebScreenshotTool
         from swecli.web.web_approval_manager import WebApprovalManager
         from swecli.web.ws_tool_broadcaster import WebSocketToolBroadcaster
+
+        # Clear any previous interrupt flags
+        self.state.clear_interrupt()
 
         # Get config and setup
         config = self.state.config_manager.get_config()
@@ -105,6 +112,7 @@ class AgentExecutor:
         bash_tool = BashTool(config, working_dir)
         web_fetch_tool = WebFetchTool(config, working_dir)
         open_browser_tool = OpenBrowserTool(config, working_dir)
+        web_screenshot_tool = WebScreenshotTool(config, working_dir)
 
         # Create web-based approval manager
         web_approval_manager = WebApprovalManager(ws_manager, loop)
@@ -118,6 +126,7 @@ class AgentExecutor:
             bash_tool=bash_tool,
             web_fetch_tool=web_fetch_tool,
             open_browser_tool=open_browser_tool,
+            web_screenshot_tool=web_screenshot_tool,
             mcp_manager=None,
         )
 
@@ -131,6 +140,8 @@ class AgentExecutor:
         # Get agent and replace its tool registry with wrapped version
         agent = runtime_suite.agents.normal
         agent.tool_registry = wrapped_registry
+        # Pass the state to the agent for interrupt checking
+        agent.web_state = self.state
 
         # Get session messages
         session = self.state.session_manager.get_current_session()

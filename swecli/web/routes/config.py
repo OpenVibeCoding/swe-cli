@@ -15,6 +15,10 @@ class ConfigUpdate(BaseModel):
     """Configuration update model."""
     model_provider: str | None = None
     model: str | None = None
+    model_thinking_provider: str | None = None
+    model_thinking: str | None = None
+    model_vlm_provider: str | None = None
+    model_vlm: str | None = None
     temperature: float | None = None
     max_tokens: int | None = None
 
@@ -45,11 +49,14 @@ async def get_config() -> Dict[str, Any]:
         return {
             "model_provider": config.model_provider,
             "model": config.model,
+            "model_thinking_provider": config.model_thinking_provider,
+            "model_thinking": config.model_thinking,
+            "model_vlm_provider": config.model_vlm_provider,
+            "model_vlm": config.model_vlm,
             "api_key": masked_key,
             "temperature": config.temperature,
             "max_tokens": config.max_tokens,
             "enable_bash": config.enable_bash,
-            "working_directory": config.working_directory,
         }
 
     except Exception as e:
@@ -78,13 +85,21 @@ async def update_config(update: ConfigUpdate) -> Dict[str, str]:
             config.model_provider = update.model_provider
         if update.model is not None:
             config.model = update.model
+        if update.model_thinking_provider is not None:
+            config.model_thinking_provider = update.model_thinking_provider
+        if update.model_thinking is not None:
+            config.model_thinking = update.model_thinking
+        if update.model_vlm_provider is not None:
+            config.model_vlm_provider = update.model_vlm_provider
+        if update.model_vlm is not None:
+            config.model_vlm = update.model_vlm
         if update.temperature is not None:
             config.temperature = update.temperature
         if update.max_tokens is not None:
             config.max_tokens = update.max_tokens
 
-        # Save configuration
-        state.config_manager.save_config()
+        # Save configuration with the updated config object
+        state.config_manager.save_config(config, global_config=True)
 
         return {"status": "success", "message": "Configuration updated"}
 

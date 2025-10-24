@@ -8,7 +8,17 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Light monochrome palette
+        // Claude-inspired warm monochrome palette
+        cream: '#F5F3EF',        // Main background
+        beige: {
+          50: '#FAF9F7',
+          100: '#F5F3EF',
+          200: '#EAE7E1',
+          300: '#DBD7CF',
+          400: '#C7C3BB',
+          500: '#A8A39A',
+          600: '#8A857C',
+        },
         background: '#FFFFFF',
         surface: '#F9FAFB',
         border: '#E5E7EB',

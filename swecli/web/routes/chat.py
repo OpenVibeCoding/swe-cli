@@ -1,6 +1,6 @@
 """Chat and query API endpoints."""
 
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -17,11 +17,22 @@ class QueryRequest(BaseModel):
     sessionId: str | None = None
 
 
+class ToolCallInfo(BaseModel):
+    """Tool call information."""
+    id: str
+    name: str
+    parameters: Dict
+    result: str | None = None
+    error: str | None = None
+    approved: bool | None = None
+
+
 class MessageResponse(BaseModel):
     """Response model for a chat message."""
     role: str
     content: str
     timestamp: str | None = None
+    tool_calls: List[ToolCallInfo] | None = None
 
 
 @router.post("/query")
@@ -69,29 +80,53 @@ async def get_messages() -> List[MessageResponse]:
     try:
         state = get_state()
 
-        # Ensure we have a session
-        if not state.session_manager.get_current_session():
-            from pathlib import Path
-            state.session_manager.create_session(working_directory=str(Path.cwd()))
+        # Return empty list if no session exists
+        session = state.session_manager.get_current_session()
+        if not session:
+            print("[DEBUG] No current session found")
+            return []
 
         messages = state.get_messages()
+        print(f"[DEBUG] Loaded {len(messages)} messages from session {session.id}")
 
         return [
             MessageResponse(
                 role=msg.role.value,
                 content=msg.content,
-                timestamp=msg.timestamp.isoformat() if hasattr(msg, 'timestamp') and msg.timestamp else None
+                timestamp=msg.timestamp.isoformat() if hasattr(msg, 'timestamp') and msg.timestamp else None,
+                tool_calls=[
+                    ToolCallInfo(
+                        id=tc.id,
+                        name=tc.name,
+                        parameters=tc.parameters,
+                        result=tc.result,
+                        error=tc.error,
+                        approved=tc.approved
+                    )
+                    for tc in msg.tool_calls
+                ] if msg.tool_calls else None
             )
             for msg in messages
         ]
 
     except Exception as e:
+        print(f"[ERROR] Failed to get messages: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
+class ClearChatRequest(BaseModel):
+    """Request model for clearing chat with optional workspace."""
+    workspace: str | None = None
+
+
 @router.delete("/clear")
-async def clear_chat() -> Dict[str, str]:
+async def clear_chat(request: ClearChatRequest | None = None) -> Dict[str, str]:
     """Clear the current chat session.
+
+    Args:
+        request: Optional request with workspace path
 
     Returns:
         Status response
@@ -102,9 +137,32 @@ async def clear_chat() -> Dict[str, str]:
     try:
         state = get_state()
         # Create a new session (effectively clearing current one)
-        state.session_manager.create_session()
+        if request and request.workspace:
+            state.session_manager.create_session(working_directory=request.workspace)
+        else:
+            state.session_manager.create_session()
 
         return {"status": "success", "message": "Chat cleared"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/interrupt")
+async def interrupt_task() -> Dict[str, str]:
+    """Interrupt the currently running task.
+
+    Returns:
+        Status response
+
+    Raises:
+        HTTPException: If interrupt fails
+    """
+    try:
+        state = get_state()
+        state.request_interrupt()
+
+        return {"status": "success", "message": "Interrupt requested"}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 
-from swecli.web.routes import chat_router, sessions_router, config_router
+from swecli.web.routes import chat_router, sessions_router, config_router, commands_router
 from swecli.web.websocket import websocket_endpoint
 from swecli.web.state import init_state
 from swecli.core.management import (
@@ -51,6 +51,7 @@ def create_app() -> FastAPI:
     app.include_router(chat_router)
     app.include_router(sessions_router)
     app.include_router(config_router)
+    app.include_router(commands_router)
 
     # WebSocket endpoint
     app.add_websocket_route("/ws", websocket_endpoint)
@@ -253,56 +254,64 @@ def start_server(
 
     # Run server in thread
     def run_server():
-        import logging
-        import warnings
-        import sys
+        try:
+            import logging
+            import warnings
+            import sys
 
-        # Suppress ALL warnings from websockets and runtime
-        warnings.filterwarnings("ignore", category=DeprecationWarning)
-        warnings.filterwarnings("ignore", category=RuntimeWarning)
-        warnings.filterwarnings("ignore", module="websockets")
+            # Suppress ALL warnings from websockets and runtime
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            warnings.filterwarnings("ignore", category=RuntimeWarning)
+            warnings.filterwarnings("ignore", module="websockets")
 
-        # Suppress all uvicorn/websockets logs to avoid polluting terminal
-        logging.getLogger("uvicorn").setLevel(logging.CRITICAL)
-        logging.getLogger("uvicorn.error").setLevel(logging.CRITICAL)
-        logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)
-        logging.getLogger("websockets").setLevel(logging.CRITICAL)
-        logging.getLogger("websockets.server").setLevel(logging.CRITICAL)
-        logging.getLogger("websockets.legacy.server").setLevel(logging.CRITICAL)
+            # Suppress all uvicorn/websockets logs to avoid polluting terminal
+            logging.getLogger("uvicorn").setLevel(logging.CRITICAL)
+            logging.getLogger("uvicorn.error").setLevel(logging.CRITICAL)
+            logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)
+            logging.getLogger("websockets").setLevel(logging.CRITICAL)
+            logging.getLogger("websockets.server").setLevel(logging.CRITICAL)
+            logging.getLogger("websockets.legacy.server").setLevel(logging.CRITICAL)
 
-        # Redirect stderr for this thread to suppress any remaining warnings
-        import io
-        sys.stderr = io.StringIO()  # Capture stderr to suppress warnings
+            # DON'T suppress stderr during startup - we need to see errors
+            # import io
+            # sys.stderr = io.StringIO()  # Capture stderr to suppress warnings
 
-        # Custom log config to disable all non-critical logs
-        log_config = {
-            "version": 1,
-            "disable_existing_loggers": False,
-            "formatters": {
-                "default": {
-                    "format": "%(message)s",
+            # Custom log config to disable all non-critical logs
+            log_config = {
+                "version": 1,
+                "disable_existing_loggers": False,
+                "formatters": {
+                    "default": {
+                        "format": "%(message)s",
+                    },
                 },
-            },
-            "handlers": {
-                "default": {
-                    "class": "logging.NullHandler",
+                "handlers": {
+                    "default": {
+                        "class": "logging.NullHandler",
+                    },
                 },
-            },
-            "loggers": {
-                "uvicorn": {"handlers": ["default"], "level": "CRITICAL"},
-                "uvicorn.error": {"handlers": ["default"], "level": "CRITICAL"},
-                "uvicorn.access": {"handlers": ["default"], "level": "CRITICAL"},
-            },
-        }
+                "loggers": {
+                    "uvicorn": {"handlers": ["default"], "level": "CRITICAL"},
+                    "uvicorn.error": {"handlers": ["default"], "level": "CRITICAL"},
+                    "uvicorn.access": {"handlers": ["default"], "level": "CRITICAL"},
+                },
+            }
 
-        uvicorn.run(
-            app,
-            host=host,
-            port=port,
-            log_level="critical",
-            access_log=False,
-            log_config=log_config,
-        )
+            uvicorn.run(
+                app,
+                host=host,
+                port=port,
+                log_level="critical",
+                access_log=False,
+                log_config=log_config,
+            )
+        except Exception as e:
+            # If there's an error starting the server, print it to stdout (not suppressed)
+            import sys
+            sys.stdout.write(f"\n❌ Backend server error: {e}\n")
+            import traceback
+            sys.stdout.write(traceback.format_exc())
+            sys.stdout.flush()
 
     server_thread = Thread(target=run_server, daemon=True)
     server_thread.start()

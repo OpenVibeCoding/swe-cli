@@ -9,15 +9,19 @@ interface ChatState {
   error: string | null;
   isConnected: boolean;
   pendingApproval: ApprovalRequest | null;
+  currentSessionId: string | null;
+  hasWorkspace: boolean;
 
   // Actions
   loadMessages: () => Promise<void>;
+  loadSession: (sessionId: string) => Promise<void>;
   sendMessage: (content: string) => Promise<void>;
   clearChat: () => Promise<void>;
   addMessage: (message: Message) => void;
   setConnected: (connected: boolean) => void;
   setPendingApproval: (approval: ApprovalRequest | null) => void;
   respondToApproval: (approvalId: string, approved: boolean) => void;
+  setHasWorkspace: (hasWorkspace: boolean) => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -26,6 +30,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
   error: null,
   isConnected: false,
   pendingApproval: null,
+  currentSessionId: null,
+  hasWorkspace: false,
 
   loadMessages: async () => {
     set({ isLoading: true, error: null });
@@ -35,6 +41,83 @@ export const useChatStore = create<ChatState>((set, get) => ({
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : 'Failed to load messages',
+        isLoading: false
+      });
+    }
+  },
+
+  loadSession: async (sessionId: string) => {
+    console.log(`[Frontend] Loading session ${sessionId}`);
+    set({ isLoading: true, error: null });
+    try {
+      // Resume the session first
+      console.log(`[Frontend] Resuming session ${sessionId}`);
+      await apiClient.resumeSession(sessionId);
+      console.log(`[Frontend] Session resumed successfully`);
+
+      // Then load its messages
+      console.log(`[Frontend] Fetching messages...`);
+      const rawMessages = await apiClient.getMessages();
+      console.log(`[Frontend] Received ${rawMessages.length} raw messages:`, rawMessages);
+
+      // Expand tool_calls into separate messages
+      const expandedMessages: Message[] = [];
+      for (const msg of rawMessages) {
+        // If message has tool calls, expand them
+        if (msg.tool_calls && msg.tool_calls.length > 0) {
+          // Add main message only if it has meaningful content
+          if (msg.content && msg.content.trim()) {
+            expandedMessages.push({
+              role: msg.role as any,
+              content: msg.content,
+              timestamp: msg.timestamp,
+            });
+          }
+
+          // Add each tool call and its result
+          for (const tc of msg.tool_calls) {
+            // Add tool call message
+            expandedMessages.push({
+              role: 'tool_call',
+              content: `Calling ${tc.name}`,
+              tool_name: tc.name,
+              tool_args: tc.parameters,
+              timestamp: msg.timestamp,
+            });
+
+            // Add tool result message
+            expandedMessages.push({
+              role: 'tool_result',
+              content: tc.error ? 'Failed' : 'Success',
+              tool_name: tc.name,
+              tool_result: tc.error || tc.result || '',
+              timestamp: msg.timestamp,
+            });
+          }
+        } else {
+          // No tool calls, add the message normally (but skip if empty)
+          if (msg.content && msg.content.trim()) {
+            expandedMessages.push({
+              role: msg.role as any,
+              content: msg.content,
+              timestamp: msg.timestamp,
+            });
+          }
+        }
+      }
+
+      console.log(`[Frontend] Expanded to ${expandedMessages.length} messages`);
+      set({
+        messages: expandedMessages,
+        isLoading: false,
+        currentSessionId: sessionId,
+        hasWorkspace: true,
+      });
+      console.log(`[Frontend] Session ${sessionId} loaded successfully`);
+    } catch (error) {
+      console.error(`[Frontend] Failed to load session:`, error);
+      set({
+        error: error instanceof Error ? error.message : 'Failed to load session',
         isLoading: false
       });
     }
@@ -104,6 +187,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
     });
     // Clear pending approval
     set({ pendingApproval: null });
+  },
+
+  setHasWorkspace: (hasWorkspace: boolean) => {
+    set({ hasWorkspace });
   },
 }));
 

@@ -11,35 +11,53 @@ class WebSocketClient {
   private reconnectDelay = 1000;
 
   connect() {
+    // Prevent multiple connections
+    if (this.ws && (this.ws.readyState === WebSocket.CONNECTING || this.ws.readyState === WebSocket.OPEN)) {
+      console.log('WebSocket already connecting or connected');
+      return;
+    }
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws`;
 
-    this.ws = new WebSocket(wsUrl);
+    console.log('Connecting to WebSocket:', wsUrl);
 
-    this.ws.onopen = () => {
-      console.log('WebSocket connected');
-      this.reconnectAttempts = 0;
-      this.emit({ type: 'connected', data: {} });
-    };
+    try {
+      this.ws = new WebSocket(wsUrl);
 
-    this.ws.onmessage = (event) => {
-      try {
-        const message: WSMessage = JSON.parse(event.data);
-        this.emit(message);
-      } catch (error) {
-        console.error('Failed to parse WebSocket message:', error);
-      }
-    };
+      this.ws.onopen = () => {
+        console.log('WebSocket connected successfully');
+        this.reconnectAttempts = 0;
+        this.emit({ type: 'connected', data: {} });
+      };
 
-    this.ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
+      this.ws.onmessage = (event) => {
+        try {
+          const message: WSMessage = JSON.parse(event.data);
+          this.emit(message);
+        } catch (error) {
+          console.error('Failed to parse WebSocket message:', error);
+        }
+      };
 
-    this.ws.onclose = () => {
-      console.log('WebSocket disconnected');
-      this.emit({ type: 'disconnected', data: {} });
+      this.ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+
+      this.ws.onclose = (event) => {
+        console.log('WebSocket disconnected:', event.code, event.reason);
+        this.ws = null;
+        this.emit({ type: 'disconnected', data: {} });
+
+        // Only reconnect if not a normal closure
+        if (event.code !== 1000) {
+          this.attemptReconnect();
+        }
+      };
+    } catch (error) {
+      console.error('Failed to create WebSocket:', error);
       this.attemptReconnect();
-    };
+    }
   }
 
   disconnect() {

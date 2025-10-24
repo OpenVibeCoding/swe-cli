@@ -1,3 +1,13 @@
+// Tool call information
+export interface ToolCallInfo {
+  id: string;
+  name: string;
+  parameters: Record<string, any>;
+  result?: string | null;
+  error?: string | null;
+  approved?: boolean | null;
+}
+
 // Message types
 export interface Message {
   role: 'user' | 'assistant' | 'system' | 'tool_call' | 'tool_result';
@@ -6,12 +16,13 @@ export interface Message {
   tool_name?: string;
   tool_args?: Record<string, any>;
   tool_result?: any;
+  tool_calls?: ToolCallInfo[];
 }
 
 // Session types
 export interface Session {
   id: string;
-  working_dir: string;
+  working_dir: string;  // Backend returns this key even though model has working_directory
   created_at: string;
   updated_at: string;
   message_count: number;

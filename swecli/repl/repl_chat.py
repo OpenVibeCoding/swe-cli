@@ -10,6 +10,7 @@ from swecli.core.agents.compact_agent import CompactAgent
 from swecli.core.context import ContextTokenMonitor
 from swecli.ui.chat_app import ChatApplication
 from swecli.ui.utils.rich_to_text import rich_to_text_box
+from swecli.ui.utils.tool_display import format_tool_call
 from swecli.models.message import ChatMessage, Role
 from swecli.repl.repl import REPL  # Import existing REPL for all the logic
 from swecli.repl.chat.spinner import ChatSpinner
@@ -454,22 +455,7 @@ class REPLChatApplication(ChatApplication):
                     from io import StringIO
                     from swecli.ui.utils.rich_to_text import rich_to_text_box
 
-                    # Format tool call arguments (same as tool_executor._format_tool_call)
-                    def format_arg_value(k, v):
-                        if k == "command" and isinstance(v, str):
-                            if len(v) > 100:
-                                first_line = v.split("\n")[0]
-                                if len(first_line) > 100:
-                                    return f"'{first_line[:97]}...'"
-                                return f"'{first_line}...'"
-                            return repr(v)
-                        v_str = repr(v)
-                        if len(v_str) > 100:
-                            return v_str[:97] + "..."
-                        return v_str
-
-                    args_str = ", ".join(f"{k}={format_arg_value(k, v)}" for k, v in tool_call.parameters.items())
-                    tool_call_display = f"{tool_call.name}({args_str})" if args_str else f"{tool_call.name}()"
+                    tool_call_display = format_tool_call(tool_call.name, tool_call.parameters)
 
                     # Show tool call with green ⏺ and cyan tool name (same as live)
                     string_io = StringIO()
@@ -497,11 +483,11 @@ class REPLChatApplication(ChatApplication):
                         self.conversation.add_assistant_message(error_box)
 
                 # Display assistant response (if any content)
-                # Only add ⏺ if there were tool calls - otherwise it's just a conversational response
+                # Always add ⏺ for assistant messages (consistent with live responses)
                 if msg.content:
                     content = msg.content
-                    # Only add green ⏺ if this message had tool calls
-                    if msg.tool_calls and not content.startswith("⏺") and not content.startswith("┌") and not content.startswith("\033["):
+                    # Add ⏺ if not already present
+                    if not content.startswith("⏺") and not content.startswith("┌") and not content.startswith("\033["):
                         # ANSI green color for ⏺
                         GREEN = "\033[32m"
                         RESET = "\033[0m"
