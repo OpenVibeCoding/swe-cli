@@ -57,6 +57,8 @@ class BaseModal(ABC):
         Returns:
             Modal result
         """
+        import asyncio
+
         self.result = None
 
         layout = self.create_layout()
@@ -71,7 +73,21 @@ class BaseModal(ABC):
             mouse_support=False,
         )
 
-        app.run()
+        # Check if we're already in a running event loop
+        try:
+            loop = asyncio.get_running_loop()
+            # We're in a running event loop - apply nest_asyncio to allow nested event loops
+            try:
+                import nest_asyncio
+                nest_asyncio.apply(loop)
+            except ImportError:
+                # nest_asyncio not available, try anyway
+                pass
+            app.run()
+        except RuntimeError:
+            # No running event loop, run normally
+            app.run()
+
         return self.result or self.get_default_result()
 
 

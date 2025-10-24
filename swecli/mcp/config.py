@@ -144,3 +144,64 @@ def prepare_server_config(server_config: MCPServerConfig) -> MCPServerConfig:
         auto_start=server_config.auto_start,
         transport=server_config.transport,
     )
+
+
+def save_server_config(
+    name: str,
+    config: MCPServerConfig,
+    project_config: bool = False,
+    working_dir: Optional[Path] = None
+) -> None:
+    """Save or update a single server configuration.
+
+    Args:
+        name: Server name
+        config: Server configuration
+        project_config: If True, save to project config, else global
+        working_dir: Working directory for project config
+    """
+    if project_config:
+        if working_dir is None:
+            working_dir = Path.cwd()
+        config_path = working_dir / ".mcp.json"
+    else:
+        config_path = get_config_path()
+
+    # Load existing config
+    existing_config = load_config(config_path)
+
+    # Update server
+    existing_config.mcp_servers[name] = config
+
+    # Save config
+    save_config(existing_config, config_path)
+
+
+def remove_server_config(
+    name: str,
+    project_config: bool = False,
+    working_dir: Optional[Path] = None
+) -> None:
+    """Remove a server configuration.
+
+    Args:
+        name: Server name to remove
+        project_config: If True, remove from project config, else global
+        working_dir: Working directory for project config
+    """
+    if project_config:
+        if working_dir is None:
+            working_dir = Path.cwd()
+        config_path = working_dir / ".mcp.json"
+    else:
+        config_path = get_config_path()
+
+    # Load existing config
+    existing_config = load_config(config_path)
+
+    # Remove server if it exists
+    if name in existing_config.mcp_servers:
+        del existing_config.mcp_servers[name]
+
+        # Save config
+        save_config(existing_config, config_path)

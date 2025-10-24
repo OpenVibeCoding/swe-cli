@@ -29,6 +29,7 @@ from swecli.ui.conversation import ConversationBuffer
 from swecli.ui.key_bindings import KeyBindingManager
 from swecli.ui.approval_modal import ApprovalModalManager
 from swecli.ui.model_selector_modal import ModelSelectorModalManager
+from swecli.ui.mcp_viewer_modal import MCPViewerModalManager
 from swecli.ui.layout_manager import LayoutManager
 
 
@@ -96,6 +97,9 @@ class ChatApplication:
 
         # Create model selector modal manager
         self.model_selector_modal_manager = ModelSelectorModalManager(self)
+
+        # Create MCP viewer modal manager
+        self.mcp_viewer_modal_manager = MCPViewerModalManager(self)
 
         # Create style
         self.style = self._create_style()
@@ -445,6 +449,27 @@ class ChatApplication:
     def _selector_mode(self) -> bool:
         """Check if selector mode is active."""
         return self.model_selector_modal_manager.is_in_selector_mode()
+
+    def _handle_viewer_up(self):
+        """Handle up arrow in MCP viewer mode."""
+        return self.mcp_viewer_modal_manager.handle_viewer_up()
+
+    def _handle_viewer_down(self):
+        """Handle down arrow in MCP viewer mode."""
+        return self.mcp_viewer_modal_manager.handle_viewer_down()
+
+    def _handle_viewer_enter(self):
+        """Handle enter in MCP viewer mode."""
+        return self.mcp_viewer_modal_manager.handle_viewer_enter()
+
+    def _handle_viewer_escape(self):
+        """Handle escape in MCP viewer mode."""
+        return self.mcp_viewer_modal_manager.handle_viewer_escape()
+
+    @property
+    def _viewer_mode(self) -> bool:
+        """Check if MCP viewer mode is active."""
+        return self.mcp_viewer_modal_manager.is_in_viewer_mode()
 
     def run(self) -> None:
         """Run the chat application."""

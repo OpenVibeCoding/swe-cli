@@ -530,6 +530,131 @@ class REPLChatApplication(ChatApplication):
             self.add_assistant_message(f"❌ Error showing model selector: {e}\n\n{error_details}")
             self.app.invalidate()
 
+    async def _handle_mcp_view_command(self, server_name: str) -> None:
+        """Handle /mcp view command asynchronously.
+
+        Args:
+            server_name: Name of the MCP server to view
+        """
+        try:
+            # Get server details (user message is not added by key binding for silent commands)
+            servers = self.repl.mcp_manager.list_servers()
+            if server_name not in servers:
+                self.conversation.add_system_message(f"❌ Server '{server_name}' not found")
+                self._update_conversation_buffer()
+                self.app.invalidate()
+                return
+
+            server_config = servers[server_name]
+            is_connected = self.repl.mcp_manager.is_connected(server_name)
+            tools = self.repl.mcp_manager.get_server_tools(server_name) if is_connected else []
+
+            # Get capabilities
+            capabilities = []
+            if is_connected and tools:
+                capabilities.append("tools")
+
+            # Get config location
+            from swecli.mcp.config import get_config_path, get_project_config_path
+            global_config = get_config_path()
+            project_config = get_project_config_path(self.repl.mcp_manager.working_dir)
+
+            if project_config and project_config.exists():
+                config_location = f"{project_config} [project]"
+            else:
+                config_location = str(global_config)
+
+            # Show the async MCP viewer
+            action_taken, action = await self.mcp_viewer_modal_manager.show_mcp_viewer(
+                server_name=server_name,
+                server_config=server_config.__dict__,
+                is_connected=is_connected,
+                tools=tools,
+                capabilities=capabilities,
+                config_location=config_location,
+            )
+
+            # Handle the action result
+            if action_taken and action:
+                if action == "reconnect" or action == "connect":
+                    result = self.repl.mcp_commands.connect(server_name)
+                    if result.success:
+                        self.conversation.add_system_message(f"✓ Connected to '{server_name}'")
+                    else:
+                        self.conversation.add_system_message(f"✗ Failed to connect to '{server_name}'")
+                elif action == "disable":
+                    result = self.repl.mcp_commands.disable(server_name)
+                    if result.success:
+                        self.conversation.add_system_message(f"✓ Disabled '{server_name}'")
+                    else:
+                        self.conversation.add_system_message(f"✗ Failed to disable '{server_name}'")
+                elif action == "enable":
+                    result = self.repl.mcp_commands.enable(server_name)
+                    if result.success:
+                        self.conversation.add_system_message(f"✓ Enabled '{server_name}'")
+                    else:
+                        self.conversation.add_system_message(f"✗ Failed to enable '{server_name}'")
+
+                self._update_conversation_buffer()
+
+            self.app.invalidate()
+
+        except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            self.conversation.add_system_message(f"❌ Error showing MCP viewer: {e}\n\n{error_details}")
+            self._update_conversation_buffer()
+            self.app.invalidate()
+
+    async def _handle_mcp_test_command(self, server_name: str) -> None:
+        """Handle /mcp test command asynchronously.
+
+        Args:
+            server_name: Name of the MCP server to test
+        """
+        try:
+            servers = self.repl.mcp_manager.list_servers()
+            if server_name not in servers:
+                self.conversation.add_system_message(f"❌ Server '{server_name}' not found")
+                self._update_conversation_buffer()
+                self.app.invalidate()
+                return
+
+            self.conversation.add_system_message(f"Testing connection to '{server_name}'...")
+            self._update_conversation_buffer()
+            self.app.invalidate()
+
+            # Try to connect asynchronously
+            success = await self.repl.mcp_manager.connect(server_name)
+
+            if success:
+                tools = self.repl.mcp_manager.get_server_tools(server_name)
+
+                # Build success message
+                message = f"✓ Connection successful\n  • Discovered {len(tools)} tools"
+
+                # List first few tools
+                if tools:
+                    message += "\n\n  Sample tools:"
+                    for tool in tools[:5]:
+                        message += f"\n    - {tool['name']}"
+                    if len(tools) > 5:
+                        message += f"\n    ... and {len(tools) - 5} more"
+
+                self.conversation.add_system_message(message)
+            else:
+                self.conversation.add_system_message("✗ Connection failed")
+
+            self._update_conversation_buffer()
+            self.app.invalidate()
+
+        except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            self.conversation.add_system_message(f"❌ Test failed: {e}\n\n{error_details}")
+            self._update_conversation_buffer()
+            self.app.invalidate()
+
     def _handle_command(self, command: str) -> None:
         """Handle slash commands.
 
@@ -556,6 +681,20 @@ class REPLChatApplication(ChatApplication):
             # Process as normal query so all tool calls are visible
             self._process_query(query)
             return
+
+        # Check if this is /mcp view or /mcp test command
+        cmd_parts = command.strip().split()
+        if len(cmd_parts) >= 3 and cmd_parts[0] == "/mcp":
+            if cmd_parts[1] == "view":
+                # Run async MCP viewer
+                server_name = " ".join(cmd_parts[2:])  # Support server names with spaces
+                asyncio.create_task(self._handle_mcp_view_command(server_name))
+                return
+            elif cmd_parts[1] == "test":
+                # Run async MCP test
+                server_name = " ".join(cmd_parts[2:])  # Support server names with spaces
+                asyncio.create_task(self._handle_mcp_test_command(server_name))
+                return
 
         # Delegate to REPL's command handler for other commands
         try:

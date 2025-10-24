@@ -162,8 +162,22 @@ class KeyBindingManager:
                     self.chat_app._history_position = -1
                     self.chat_app._current_input = ""
 
-                    # Add to conversation (show placeholder if it was pasted)
-                    self.chat_app.conversation.add_user_message(display_text)
+                    # Check if this is a silent command (like /models or /mcp view/test)
+                    # These commands should not show the user message in conversation
+                    is_silent_command = False
+                    if text.startswith("/"):
+                        cmd_parts = text.strip().split()
+                        cmd = cmd_parts[0].lower()
+                        if cmd == "/models":
+                            is_silent_command = True
+                        elif len(cmd_parts) >= 3 and cmd == "/mcp":
+                            # Silent MCP commands: view, test
+                            if cmd_parts[1] in ["view", "test"]:
+                                is_silent_command = True
+
+                    # Add to conversation (unless it's a silent command)
+                    if not is_silent_command:
+                        self.chat_app.conversation.add_user_message(display_text)
 
                     # Clear input
                     self.chat_app.input_buffer.reset()
@@ -264,8 +278,9 @@ class KeyBindingManager:
                         height = window.render_info.window_height
                     else:
                         height = 10  # Default fallback
-                    # Scroll up by viewport height
-                    control.scroll_page_up(height)
+                    # Scroll up by half viewport height for more controlled scrolling
+                    scroll_distance = max(5, height // 2)
+                    control.scroll_page_up(scroll_distance)
                     event.app.invalidate()
 
         @kb.add("pagedown")
@@ -280,8 +295,9 @@ class KeyBindingManager:
                         height = window.render_info.window_height
                     else:
                         height = 10  # Default fallback
-                    # Scroll down by viewport height
-                    control.scroll_page_down(height)
+                    # Scroll down by half viewport height for more controlled scrolling
+                    scroll_distance = max(5, height // 2)
+                    control.scroll_page_down(scroll_distance)
                     event.app.invalidate()
 
     def _add_completion_bindings(self, kb: KeyBindings) -> None:
@@ -444,6 +460,47 @@ class KeyBindingManager:
         def on_selector_ctrlc(event):
             """Handle Ctrl+C in selector mode - cancel selection."""
             self.chat_app._handle_selector_escape()
+
+        # MCP viewer mode bindings
+        @Condition
+        def in_viewer_mode():
+            return (hasattr(self.chat_app, '_viewer_mode') and
+                    self.chat_app._viewer_mode)
+
+        @kb.add("enter", filter=in_viewer_mode, eager=True)
+        def on_viewer_enter(event):
+            """Handle Enter key in MCP viewer mode - global binding."""
+            self.chat_app._handle_viewer_enter()
+
+        @kb.add("escape", filter=in_viewer_mode, eager=True)
+        def on_viewer_escape(event):
+            """Handle Escape key in MCP viewer mode - global binding."""
+            self.chat_app._handle_viewer_escape()
+
+        @kb.add("up", filter=in_viewer_mode, eager=True)
+        def on_viewer_up(event):
+            """Handle Up arrow in MCP viewer mode - global binding."""
+            self.chat_app._handle_viewer_up()
+
+        @kb.add("down", filter=in_viewer_mode, eager=True)
+        def on_viewer_down(event):
+            """Handle Down arrow in MCP viewer mode - global binding."""
+            self.chat_app._handle_viewer_down()
+
+        @kb.add("k", filter=in_viewer_mode, eager=True)
+        def on_viewer_k(event):
+            """Handle k key (vim up) in MCP viewer mode - global binding."""
+            self.chat_app._handle_viewer_up()
+
+        @kb.add("j", filter=in_viewer_mode, eager=True)
+        def on_viewer_j(event):
+            """Handle j key (vim down) in MCP viewer mode - global binding."""
+            self.chat_app._handle_viewer_down()
+
+        @kb.add("c-c", filter=in_viewer_mode, eager=True)
+        def on_viewer_ctrlc(event):
+            """Handle Ctrl+C in MCP viewer mode - cancel viewer."""
+            self.chat_app._handle_viewer_escape()
 
     def _add_history_bindings(self, kb: KeyBindings) -> None:
         """Add command history navigation key bindings."""

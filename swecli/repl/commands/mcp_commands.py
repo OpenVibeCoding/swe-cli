@@ -7,6 +7,7 @@ from rich.console import Console
 from rich.table import Table
 
 from swecli.repl.commands.base import CommandHandler, CommandResult
+from swecli.ui.modals_internal.mcp_viewer_modal import show_mcp_server
 
 if TYPE_CHECKING:
     from swecli.mcp.manager import MCPManager
@@ -56,6 +57,7 @@ class MCPCommands(CommandHandler):
         subcommand_map = {
             "list": self.list_servers,
             "status": self.status,
+            "view": lambda: self.view_server(subcmd_args.strip()) if subcmd_args else self._error_no_server_name(),
             "connect": lambda: self.connect(subcmd_args.strip()) if subcmd_args else self._error_no_server_name(),
             "disconnect": lambda: self.disconnect(subcmd_args.strip()) if subcmd_args else self._error_no_server_name(),
             "enable": lambda: self.enable(subcmd_args.strip()) if subcmd_args else self._error_no_server_name(),
@@ -78,6 +80,7 @@ class MCPCommands(CommandHandler):
         self.console.print("\nAvailable subcommands:")
         self.console.print("  list              - List configured MCP servers")
         self.console.print("  status            - Quick status overview")
+        self.console.print("  view <name>       - Interactive server viewer (detailed view)")
         self.console.print("  connect <name>    - Connect to a specific server")
         self.console.print("  disconnect <name> - Disconnect from a server")
         self.console.print("  enable <name>     - Enable auto-start for a server")
@@ -215,8 +218,8 @@ class MCPCommands(CommandHandler):
         self.console.print(f"Testing connection to '{server_name}'...")
 
         try:
-            # Try to connect
-            success = asyncio.run(self.mcp_manager.connect(server_name))
+            # Try to connect (use sync version to avoid event loop issues in chat UI)
+            success = self.mcp_manager.connect_sync(server_name)
             if success:
                 tools = self.mcp_manager.get_server_tools(server_name)
                 self.print_success("Connection successful")
@@ -362,6 +365,66 @@ class MCPCommands(CommandHandler):
         except Exception as e:
             self.print_error(f"Error disabling server: {e}")
             return CommandResult(success=False, message=str(e))
+
+    def view_server(self, server_name: str) -> CommandResult:
+        """Open interactive viewer for an MCP server.
+
+        Args:
+            server_name: Name of the server to view
+
+        Returns:
+            CommandResult from the interaction
+        """
+        servers = self.mcp_manager.list_servers()
+        if server_name not in servers:
+            self.print_error(f"Server '{server_name}' not found in configuration")
+            return CommandResult(success=False, message="Server not found")
+
+        # Get server details
+        server_config = servers[server_name]
+        is_connected = self.mcp_manager.is_connected(server_name)
+        tools = self.mcp_manager.get_server_tools(server_name) if is_connected else []
+
+        # Get capabilities
+        capabilities = []
+        if is_connected:
+            # Infer capabilities from available tools
+            if tools:
+                capabilities.append("tools")
+            # You can add more capability detection here
+            # For now, just show tools if they exist
+
+        # Get config location
+        from swecli.mcp.config import get_config_path, get_project_config_path
+        global_config = get_config_path()
+        project_config = get_project_config_path(self.mcp_manager.working_dir)
+
+        if project_config and project_config.exists():
+            # Check if server is in project config
+            config_location = f"{project_config} [project: {self.mcp_manager.working_dir}]"
+        else:
+            config_location = str(global_config)
+
+        # Show interactive modal
+        result = show_mcp_server(
+            server_name=server_name,
+            server_config=server_config.__dict__,
+            is_connected=is_connected,
+            tools=tools,
+            capabilities=capabilities,
+            config_location=config_location,
+            mcp_manager=self.mcp_manager,
+        )
+
+        # Handle result
+        if result == "reconnect" or result == "connect":
+            return self.connect(server_name)
+        elif result == "disable":
+            return self.disable(server_name)
+        elif result == "enable":
+            return self.enable(server_name)
+        else:
+            return CommandResult(success=True, message="Viewer closed")
 
     def reload(self) -> CommandResult:
         """Reload MCP configuration from files."""

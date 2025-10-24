@@ -16,6 +16,12 @@ from swecli.core.approval import ApprovalManager
 from swecli.models.message import ChatMessage
 
 
+# Type imports
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from swecli.mcp.manager import MCPManager
+
+
 class WebState:
     """Shared state between CLI and web UI.
 
@@ -35,12 +41,14 @@ class WebState:
         mode_manager: ModeManager,
         approval_manager: ApprovalManager,
         undo_manager: UndoManager,
+        mcp_manager: Optional["MCPManager"] = None,
     ):
         self.config_manager = config_manager
         self.session_manager = session_manager
         self.mode_manager = mode_manager
         self.approval_manager = approval_manager
         self.undo_manager = undo_manager
+        self.mcp_manager = mcp_manager
 
         # Thread safety
         self._lock = Lock()
@@ -169,6 +177,7 @@ def init_state(
     mode_manager: ModeManager,
     approval_manager: ApprovalManager,
     undo_manager: UndoManager,
+    mcp_manager: Optional["MCPManager"] = None,
 ) -> WebState:
     """Initialize the global state instance."""
     global _state
@@ -178,6 +187,7 @@ def init_state(
         mode_manager,
         approval_manager,
         undo_manager,
+        mcp_manager,
     )
     return _state
 
@@ -189,6 +199,7 @@ def get_state() -> WebState:
         from pathlib import Path
         from swecli.core.management import ConfigManager, SessionManager, ModeManager, UndoManager
         from swecli.core.approval import ApprovalManager
+        from swecli.mcp.manager import MCPManager
         from rich.console import Console
 
         console = Console()
@@ -200,6 +211,9 @@ def get_state() -> WebState:
         approval_manager = ApprovalManager(console)
         undo_manager = UndoManager(50)
 
+        # Initialize MCP manager
+        mcp_manager = MCPManager(working_dir)
+
         # Don't create session on startup - let user create via UI
 
         return init_state(
@@ -208,5 +222,25 @@ def get_state() -> WebState:
             mode_manager,
             approval_manager,
             undo_manager,
+            mcp_manager,
         )
     return _state
+
+
+async def broadcast_to_all_clients(message: Dict[str, Any]) -> None:
+    """Broadcast a message to all connected WebSocket clients.
+
+    Args:
+        message: Message to broadcast (will be JSON-serialized)
+    """
+    state = get_state()
+    clients = state.get_ws_clients()
+
+    import json
+
+    for client in clients:
+        try:
+            await client.send_text(json.dumps(message))
+        except Exception:
+            # Client disconnected, will be cleaned up by WebSocket handler
+            pass

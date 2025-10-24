@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 
-from swecli.web.routes import chat_router, sessions_router, config_router, commands_router
+from swecli.web.routes import chat_router, sessions_router, config_router, commands_router, mcp_router
 from swecli.web.websocket import websocket_endpoint
 from swecli.web.state import init_state
 from swecli.core.management import (
@@ -52,6 +52,7 @@ def create_app() -> FastAPI:
     app.include_router(sessions_router)
     app.include_router(config_router)
     app.include_router(commands_router)
+    app.include_router(mcp_router)
 
     # WebSocket endpoint
     app.add_websocket_route("/ws", websocket_endpoint)

@@ -8,6 +8,7 @@ export function MessageList() {
   const messages = useChatStore(state => state.messages);
   const isLoading = useChatStore(state => state.isLoading);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Spinner animation state
   const [spinnerIndex, setSpinnerIndex] = useState(0);
@@ -37,6 +38,32 @@ export function MessageList() {
     };
   }, [isLoading]);
 
+  // Custom Page Up/Page Down handling with shorter scroll distance
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!scrollContainerRef.current) return;
+
+      const scrollDistance = 300; // Shorter scroll distance (default is ~viewport height)
+
+      if (e.key === 'PageUp') {
+        e.preventDefault();
+        scrollContainerRef.current.scrollBy({
+          top: -scrollDistance,
+          behavior: 'smooth'
+        });
+      } else if (e.key === 'PageDown') {
+        e.preventDefault();
+        scrollContainerRef.current.scrollBy({
+          top: scrollDistance,
+          behavior: 'smooth'
+        });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   if (messages.length === 0) {
     return (
       <div className="flex items-center justify-center h-full px-6 bg-cream">
@@ -54,7 +81,7 @@ export function MessageList() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-white">
+    <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-white">
       <div className="max-w-4xl mx-auto py-8 space-y-5">
         {messages.map((message, index) => {
           // Render tool calls and tool results with special component
