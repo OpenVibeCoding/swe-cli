@@ -1,16 +1,41 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useChatStore } from '../../stores/chat';
 import { ToolCallMessage } from './ToolCallMessage';
+import { SPINNER_FRAMES, THINKING_VERBS, SPINNER_COLORS } from '../../constants/spinner';
 
 export function MessageList() {
   const messages = useChatStore(state => state.messages);
   const isLoading = useChatStore(state => state.isLoading);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Spinner animation state
+  const [spinnerIndex, setSpinnerIndex] = useState(0);
+  const [verbIndex, setVerbIndex] = useState(0);
+  const [colorIndex, setColorIndex] = useState(0);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Animate spinner when loading
+  useEffect(() => {
+    if (!isLoading) return;
+
+    const spinnerInterval = setInterval(() => {
+      setSpinnerIndex(prev => (prev + 1) % SPINNER_FRAMES.length);
+      setColorIndex(prev => (prev + 1) % SPINNER_COLORS.length);
+    }, 100); // Match terminal speed: 100ms
+
+    const verbInterval = setInterval(() => {
+      setVerbIndex(prev => (prev + 1) % THINKING_VERBS.length);
+    }, 2000); // Change verb every 2 seconds
+
+    return () => {
+      clearInterval(spinnerInterval);
+      clearInterval(verbInterval);
+    };
+  }, [isLoading]);
 
   if (messages.length === 0) {
     return (
@@ -97,14 +122,16 @@ export function MessageList() {
         })}
 
         {isLoading && (
-          <div className="flex justify-start px-4 animate-fade-in">
-            <div className="max-w-[85%] rounded-2xl px-5 py-3 bg-gray-100">
+          <div className="flex justify-start px-6 animate-fade-in">
+            <div className="max-w-[85%] bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl px-5 py-3 shadow-sm border border-gray-200">
               <div className="flex items-center gap-3">
-                {/* Terminal-style rotating spinner */}
-                <div className="relative w-4 h-4">
-                  <div className="absolute inset-0 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
-                </div>
-                <span className="text-sm text-gray-600 font-medium">Thinking...</span>
+                {/* Braille dots spinner matching terminal style */}
+                <span className={`text-lg font-medium ${SPINNER_COLORS[colorIndex]} transition-colors duration-100`}>
+                  {SPINNER_FRAMES[spinnerIndex]}
+                </span>
+                <span className="text-sm text-gray-700 font-medium">
+                  {THINKING_VERBS[verbIndex]}...
+                </span>
               </div>
             </div>
           </div>
