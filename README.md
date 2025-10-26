@@ -2,7 +2,7 @@
 
 <img src="logo/swe-cli-high-resolution-logo-grayscale-transparent.png" alt="SWE-CLI Logo" width="300"/>
 
-# SWE-CLI: One-Stop CLI-based Coding Agent for Modern Software Engineering
+# SWE-CLI: One-Stop, Cost Effective CLI-based Coding Agent for Modern Software Engineering
 
 <p>
   <a href="https://github.com/swe-cli/swe-cli/stargazers"><img src="https://img.shields.io/github/stars/swe-cli/swe-cli?style=for-the-badge&logo=star&logoColor=white&labelColor=1a1a2e&color=00d9ff" /></a>
