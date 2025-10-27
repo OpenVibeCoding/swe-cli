@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Union
 
 from swecli.core.factories import AgentFactory, AgentSuite, ToolDependencies, ToolFactory
 from swecli.core.interfaces import ConfigManagerInterface, ToolRegistryInterface
@@ -67,6 +67,7 @@ class RuntimeService:
             self._config_manager.get_config(),
             tool_registry,
             self._mode_manager,
+            self._config_manager.working_dir,
         )
         agents = agent_factory.create_agents()
 
@@ -90,6 +91,7 @@ class RuntimeService:
             self._config_manager.get_config(),
             registry,
             self._mode_manager,
+            self._config_manager.working_dir,
         )
         suite.agents = suite.agent_factory.create_agents()
         return registry

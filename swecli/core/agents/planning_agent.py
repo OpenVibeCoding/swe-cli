@@ -22,10 +22,12 @@ class PlanningAgent(BaseAgent):
         config: AppConfig,
         tool_registry: Any,
         mode_manager: Any,
+        working_dir: Any = None,
     ) -> None:
         self.api_url, self.headers = resolve_api_config(config)
         self._http_client = AgentHttpClient(self.api_url, self.headers)
         self._response_cleaner = ResponseCleaner()
+        self._working_dir = working_dir
         super().__init__(config, tool_registry, mode_manager)
 
     def build_system_prompt(self) -> str:

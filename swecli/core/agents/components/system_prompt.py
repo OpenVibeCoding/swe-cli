@@ -10,13 +10,18 @@ from swecli.prompts import load_prompt
 class SystemPromptBuilder:
     """Constructs the NORMAL mode system prompt with optional MCP tooling."""
 
-    def __init__(self, tool_registry: Union[Any, None]) -> None:
+    def __init__(self, tool_registry: Union[Any, None], working_dir: Union[Any, None] = None) -> None:
         self._tool_registry = tool_registry
+        self._working_dir = working_dir
 
     def build(self) -> str:
         """Return the formatted system prompt string."""
         # Load base prompt from file
         prompt = load_prompt("agent_normal")
+
+        # Add working directory context
+        if self._working_dir:
+            prompt += f"\n\n# Working Directory Context\n\nYou are currently working in the directory: `{self._working_dir}`\n\nWhen processing file paths without explicit directories (like `app.py` or `README.md`), assume they are located in the current working directory unless the user provides a specific path. Use relative paths from the working directory for file operations.\n"
 
         # Add MCP section if available
         mcp_prompt = self._build_mcp_section()

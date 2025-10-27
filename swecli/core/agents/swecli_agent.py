@@ -34,13 +34,15 @@ class SwecliAgent(BaseAgent):
         config: AppConfig,
         tool_registry: Any,
         mode_manager: Any,
+        working_dir: Any = None,
     ) -> None:
         self._http_client = create_http_client(config)
         self._response_cleaner = ResponseCleaner()
+        self._working_dir = working_dir
         super().__init__(config, tool_registry, mode_manager)
 
     def build_system_prompt(self) -> str:
-        return SystemPromptBuilder(self.tool_registry).build()
+        return SystemPromptBuilder(self.tool_registry, self._working_dir).build()
 
     def build_tool_schemas(self) -> list[dict[str, Any]]:
         return ToolSchemaBuilder(self.tool_registry).build()
