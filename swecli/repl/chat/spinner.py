@@ -101,7 +101,9 @@ class ChatSpinner:
         formatted_tip = f"{tip_color}  ⎿ Tip: {self._current_tip}{reset}"
 
         # Combine spinner line and tip (two lines)
-        spinner_with_tip = f"{color}{spinner_char}{reset} {text} (0s • esc to interrupt)\n{formatted_tip}"
+        # Use the same cyan color for thinking verb text to match function name highlighting
+        thinking_color = "\033[96m\033[1m"  # Bright cyan + bold (same as function names)
+        spinner_with_tip = f"{color}{spinner_char}{reset} {thinking_color}{text}{reset} (0s • esc to interrupt)\n{formatted_tip}"
         add_message_callback(spinner_with_tip)
 
         # Start NEW animation thread
@@ -177,7 +179,9 @@ class ChatSpinner:
                     formatted_tip = f"{tip_color}  ⎿ Tip: {self._current_tip}{reset}"
 
                     # Combine spinner line and tip (two lines)
-                    spinner_with_tip = f"{color}{spinner_char}{reset} {self._text} ({elapsed_seconds}s • esc to interrupt)\n{formatted_tip}"
+                    # Use the same cyan color for thinking verb text to match function name highlighting
+                    thinking_color = "\033[96m\033[1m"  # Bright cyan + bold (same as function names)
+                    spinner_with_tip = f"{color}{spinner_char}{reset} {thinking_color}{self._text}{reset} ({elapsed_seconds}s • esc to interrupt)\n{formatted_tip}"
 
                     # Replace with new spinner frame with tip below it
                     old_message = self.conversation.messages[-1]

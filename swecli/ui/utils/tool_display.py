@@ -75,8 +75,20 @@ def format_tool_call(tool_name: str, tool_args: Mapping[str, Any]) -> str:
         return value_repr
 
     display_name = get_tool_display_name(tool_name)
+    highlighted_name = _highlight_function_name(display_name)
 
     if tool_args:
         args_str = ", ".join(f"{key}={_summarize_arg(key, value)}" for key, value in tool_args.items())
-        return f"{display_name}({args_str})"
-    return display_name
+        return f"{highlighted_name}({args_str})"
+    return highlighted_name
+
+
+def _highlight_function_name(function_name: str) -> str:
+    """Add elegant color highlighting to function names."""
+    # ANSI color codes for elegant highlighting
+    # Using a nice cyan/blue color that's readable but distinctive
+    COLOR = "\033[96m"  # Bright cyan
+    BOLD = "\033[1m"
+    RESET = "\033[0m"
+
+    return f"{COLOR}{BOLD}{function_name}{RESET}"

@@ -46,6 +46,8 @@ class ClaudeStyleFormatter:
             result_lines = self._format_fetch_url_result(tool_args, result)
         elif tool_name == "analyze_image":
             result_lines = self._format_analyze_image_result(tool_args, result)
+        elif tool_name == "get_process_output":
+            result_lines = self._format_process_output_result(tool_args, result)
         else:
             result_lines = self._format_generic_result(tool_name, tool_args, result)
 
@@ -71,9 +73,19 @@ class ClaudeStyleFormatter:
                 arg_strs.append(f"{key}={arg_str}")
 
         if arg_strs:
-            return f"{display_name}({', '.join(arg_strs)})"
+            return f"{self._highlight_function_name(display_name)}({', '.join(arg_strs)})"
         else:
-            return display_name
+            return self._highlight_function_name(display_name)
+
+    def _highlight_function_name(self, function_name: str) -> str:
+        """Add elegant color highlighting to function names."""
+        # ANSI color codes for elegant highlighting
+        # Using a nice cyan/blue color that's readable but distinctive
+        COLOR = "\033[96m"  # Bright cyan
+        BOLD = "\033[1m"
+        RESET = "\033[0m"
+
+        return f"{COLOR}{BOLD}{function_name}{RESET}"
 
     def _format_argument(self, key: str, value: Any) -> str:
         """Format a single argument concisely."""
@@ -236,7 +248,12 @@ class ClaudeStyleFormatter:
         if match_count == 0:
             return ["No matches found"]
         elif match_count <= 3:
-            return [f"Found {match_count} file(s)"]
+            # Show actual matches when there are few
+            clean_matches = [m.strip() for m in matches if m.strip()]
+            if clean_matches:
+                return [f"Found in: {', '.join(clean_matches[:3])}"]
+            else:
+                return [f"Found {match_count} file(s)"]
         else:
             return [f"Found {match_count} files (ctrl+o to expand)"]
 
@@ -266,16 +283,23 @@ class ClaudeStyleFormatter:
             else:
                 return ["Git command completed"]
 
-        # For other commands, show first line or a summary
-        first_line = output.split("\n", 1)[0] if output else ""
-        if first_line and len(first_line) < 80:
-            return [first_line]
-        elif output:
-            # Show line count instead of full output
-            lines = output.count("\n") + 1
-            return [f"Command completed • {lines} lines output"]
+        # For other commands, show actual output content
+        if output:
+            lines = output.split('\n')
+            if len(lines) == 1 and len(lines[0]) < 80:
+                return [lines[0]]
+            elif len(lines) > 1:
+                # Show first line and line count for multi-line output
+                first_line = lines[0][:70]
+                if len(lines[0]) > 70:
+                    first_line += "..."
+                return [f"{first_line} ({len(lines)} lines)"]
+            elif len(output) > 80:
+                return [f"{output[:70]}..."]
+            else:
+                return [output]
         else:
-            return ["Command completed"]
+            return [f"Command completed with no output"]
 
     def _format_list_files_result(self, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
         """Format list_files result."""
@@ -344,17 +368,63 @@ class ClaudeStyleFormatter:
         else:
             return [f"Image analyzed ({provider}•{model})"]
 
+    def _format_process_output_result(self, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
+        """Format get_process_output result."""
+        if not result.get("success"):
+            error = result.get("error", "Unknown error")
+            return [f"❌ {error}"]
+
+        output = result.get("output", "")
+        pid = tool_args.get("pid", "")
+
+        if output:
+            # Show actual output content, but concise
+            lines = output.split('\n')
+            if len(lines) == 1 and len(lines[0]) < 80:
+                return [lines[0]]
+            elif len(lines) > 1:
+                # Show first line and line count
+                first_line = lines[0][:70]
+                if len(lines[0]) > 70:
+                    first_line += "..."
+                return [f"{first_line} ({len(lines)} lines)"]
+            elif len(output) > 80:
+                return [f"{output[:70]}..."]
+            else:
+                return [output]
+        else:
+            return [f"Process {pid} has no output"]
+
     def _format_generic_result(self, tool_name: str, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
         """Format generic tool result."""
         if result.get("success"):
             # Try to extract meaningful info
             output = result.get("output", "")
-            if output and isinstance(output, str) and len(output) < 100:
-                return [output]
+            if output and isinstance(output, str):
+                lines = output.split('\n')
+                if len(lines) == 1 and len(lines[0]) < 80:
+                    return [lines[0]]
+                elif len(lines) > 1:
+                    # Show first line and line count for multi-line output
+                    first_line = lines[0][:70]
+                    if len(lines[0]) > 70:
+                        first_line += "..."
+                    return [f"{first_line} ({len(lines)} lines)"]
+                elif len(output) > 80:
+                    return [f"{output[:70]}..."]
+                else:
+                    return [output]
             elif output:
-                return [f"{tool_name.replace('_', ' ').title()} completed"]
+                # For non-string outputs, show a meaningful representation
+                return [f"Output: {str(output)[:100]}"]
             else:
-                return [f"{tool_name.replace('_', ' ').title()} completed"]
+                # Try to get meaningful info from tool name and args
+                display_name = get_tool_display_name(tool_name)
+                if tool_args:
+                    main_arg = next(iter(tool_args.values()), None)
+                    if main_arg and isinstance(main_arg, str) and len(main_arg) < 50:
+                        return [f"{display_name} on {main_arg}"]
+                return [f"{display_name} completed"]
         else:
             error = result.get("error", "Unknown error")
             return [f"❌ {error}"]
