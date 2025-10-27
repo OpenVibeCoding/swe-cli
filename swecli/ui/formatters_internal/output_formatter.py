@@ -1,9 +1,10 @@
 """Main output formatter that delegates to specialized formatters."""
 
-from typing import Dict, Any
+from typing import Dict, Any, Union
 from rich.console import Console
 from rich.panel import Panel
 
+from .claude_style_formatter import ClaudeStyleFormatter
 from .formatter_base import TOOL_ICONS
 from .file_formatters import FileFormatter
 from .directory_formatter import DirectoryFormatter
@@ -13,30 +14,36 @@ from .generic_formatter import GenericFormatter
 
 
 class OutputFormatter:
-    """Formats tool outputs with rich styling."""
+    """Formats tool outputs with Claude Code styling."""
 
-    def __init__(self, console: Console):
+    def __init__(self, console: Console, use_claude_style: bool = True):
         """Initialize output formatter.
 
         Args:
             console: Rich console for output
+            use_claude_style: Whether to use Claude Code style (default: True)
         """
         self.console = console
+        self.use_claude_style = use_claude_style
 
-        # Initialize specialized formatters
-        self.file_formatter = FileFormatter(console)
-        self.directory_formatter = DirectoryFormatter(console)
-        self.plan_formatter = PlanFormatter(console)
-        self.bash_formatter = BashFormatter(console)
-        self.generic_formatter = GenericFormatter(console)
+        # Initialize Claude-style formatter (new style)
+        if self.use_claude_style:
+            self.claude_formatter = ClaudeStyleFormatter()
+        else:
+            # Initialize legacy formatters (old style)
+            self.file_formatter = FileFormatter(console)
+            self.directory_formatter = DirectoryFormatter(console)
+            self.plan_formatter = PlanFormatter(console)
+            self.bash_formatter = BashFormatter(console)
+            self.generic_formatter = GenericFormatter(console)
 
     def format_tool_result(
         self,
         tool_name: str,
         tool_args: Dict[str, Any],
         result: Dict[str, Any],
-    ) -> Panel:
-        """Format a tool result as a rich panel.
+    ) -> Union[str, Panel]:
+        """Format a tool result.
 
         Args:
             tool_name: Name of the tool
@@ -44,8 +51,13 @@ class OutputFormatter:
             result: Tool execution result
 
         Returns:
-            Formatted panel
+            Formatted string (Claude style) or Panel (legacy style)
         """
+        # Use new Claude Code style if enabled
+        if self.use_claude_style:
+            return self.claude_formatter.format_tool_result(tool_name, tool_args, result)
+
+        # Fall back to legacy panel style
         # Get tool icon
         icon = TOOL_ICONS.get(tool_name, "⏺")
 

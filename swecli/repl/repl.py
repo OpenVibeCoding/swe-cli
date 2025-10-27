@@ -41,14 +41,13 @@ from swecli.ui.components.animations import Spinner, FlashingSymbol, ProgressInd
 from swecli.ui.components.task_progress import TaskProgressDisplay
 from swecli.ui.components.status_line import StatusLine
 from swecli.ui.autocomplete import SwecliCompleter
-from swecli.ui.formatters import OutputFormatter
+from swecli.ui.formatters_internal.output_formatter import OutputFormatter
 from swecli.ui.components.notifications import NotificationCenter
 from swecli.ui.formatters_internal.markdown_formatter import markdown_to_plain_text
 
 # Command handlers
 from swecli.repl.commands import (
     SessionCommands,
-    FileCommands,
     ModeCommands,
     MCPCommands,
     HelpCommand,
@@ -150,7 +149,7 @@ class REPL:
         # UI Components
         self.spinner = Spinner(self.console)
         self.status_line = StatusLine(self.console)
-        self.output_formatter = OutputFormatter(self.console)
+        self.output_formatter = OutputFormatter(self.console, use_claude_style=True)
         self._notification_center = NotificationCenter(self.console)
 
         # UI state trackers
@@ -210,11 +209,6 @@ class REPL:
             self.console,
             self.session_manager,
             self.config_manager,
-        )
-
-        self.file_commands = FileCommands(
-            self.console,
-            self.file_ops,
         )
 
         self.mode_commands = ModeCommands(
@@ -392,9 +386,8 @@ class REPL:
                 self.console.print(f"[white]{line}[/white]")
             elif "Essential Commands:" in line:
                 self.console.print(f"[bold white]{line}[/bold white]")
-            elif "/help" in line or "/tree" in line or "/mode" in line:
+            elif "/help" in line or "/mode" in line:
                 styled = line.replace("/help", "[cyan]/help[/cyan]")
-                styled = styled.replace("/tree", "[cyan]/tree[/cyan]")
                 styled = styled.replace("/mode plan", "[cyan]/mode plan[/cyan]")
                 styled = styled.replace("/mode normal", "[cyan]/mode normal[/cyan]")
                 self.console.print(styled)
@@ -457,12 +450,6 @@ class REPL:
             self.session_commands.list_sessions()
         elif cmd == "/resume":
             self.session_commands.resume(args)
-        elif cmd == "/context":
-            self._context_sidebar_visible = not self._context_sidebar_visible
-            state = "visible" if self._context_sidebar_visible else "hidden"
-            self._notify(f"Context guide {state}.", level="info")
-        elif cmd == "/tree":
-            self.file_commands.show_tree(args)
         elif cmd == "/mode":
             result = self.mode_commands.switch_mode(args)
             # Sync agent after mode switch

@@ -10,21 +10,14 @@ This directory contains all system prompts used by SWE-CLI agents. Prompts are s
 **Description**: Defines the ReAct pattern, lists available tools, and sets the tone for interactive coding sessions.
 
 **Key sections**:
-- Interaction style (ReAct pattern)
-- Available built-in tools
-- Tool usage examples
+- Core principles and interaction patterns
+- Communication style and workflow behaviors
+- Code standards and quality verification
+- Available tools with usage guidelines
+- Advanced search strategies and workflows
+- MCP integration, security, and best practices
 
-### 2. `agent_normal_guidelines.txt`
-**Purpose**: Guidelines and best practices for the normal agent
-**Used by**: `SystemPromptBuilder` (appended to base prompt)
-**Description**: Provides operational guidelines, best practices, and behavioral rules.
-
-**Key sections**:
-- General guidelines (reasoning, observation, summarization)
-- Best practices (code conventions, project structure)
-- Special instructions (background processes, etc.)
-
-### 3. `agent_planning.txt`
+### 2. `agent_planning.txt`
 **Purpose**: System prompt for the planning/analysis agent
 **Used by**: `PlanningPromptBuilder` in plan mode
 **Description**: Defines the planning agent's role as a strategic advisor without execution capabilities.
@@ -35,7 +28,7 @@ This directory contains all system prompts used by SWE-CLI agents. Prompts are s
 - Output format template
 - Smart mode detection
 
-### 4. `agent_compact.txt`
+### 3. `agent_compact.txt`
 **Purpose**: Context compaction/summarization prompt
 **Used by**: `CompactAgent` for conversation summarization
 **Description**: Instructions for summarizing conversation history while preserving critical information.
@@ -93,9 +86,11 @@ SystemPromptBuilder.build()
   ↓
 load_prompt("agent_normal")
   ↓
-Read from agent_normal.txt
+Read from agent_normal.txt (consolidated prompt with all guidelines)
   ↓
-Return prompt string
+Add working directory context + MCP tools
+  ↓
+Return complete prompt string
 ```
 
 ### Components
@@ -126,7 +121,6 @@ class SystemPromptBuilder:
         # Add custom dynamic section
         prompt += self._build_custom_section()
 
-        prompt += load_prompt("agent_normal_guidelines")
         return prompt
 ```
 

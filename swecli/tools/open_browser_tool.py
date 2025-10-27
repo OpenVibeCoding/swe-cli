@@ -28,28 +28,41 @@ class OpenBrowserTool:
         self.working_dir = working_dir
 
     def execute(self, url: str, **kwargs) -> Dict[str, Any]:
-        """Open a URL in the default web browser.
+        """Open a URL or local file in the default web browser.
 
         Args:
-            url: The URL to open
+            url: The URL or file path to open
             **kwargs: Additional arguments (ignored)
 
         Returns:
             Result dictionary with success status and message
         """
         try:
-            # Normalize localhost URLs
-            if url.startswith("localhost:"):
-                url = f"http://{url}"
-            elif url.startswith(":"):
-                url = f"http://localhost{url}"
+            # Handle local file paths
+            if not (url.startswith("http://") or url.startswith("https://") or url.startswith("file://")):
+                # Check if it's a local file path
+                file_path = Path(url)
 
-            # Validate URL format
-            if not (url.startswith("http://") or url.startswith("https://")):
-                return {
-                    "success": False,
-                    "error": f"Invalid URL format: {url}. Must start with http:// or https://",
-                }
+                # If relative path, resolve it against working directory
+                if not file_path.is_absolute():
+                    file_path = self.working_dir / file_path
+
+                # Check if file exists
+                if file_path.exists() and file_path.is_file():
+                    # Convert to file:// URL
+                    url = file_path.as_uri()
+                else:
+                    # Handle localhost URLs
+                    if url.startswith("localhost:"):
+                        url = f"http://{url}"
+                    elif url.startswith(":"):
+                        url = f"http://localhost{url}"
+                    else:
+                        # Not a valid file path or recognizable URL format
+                        return {
+                            "success": False,
+                            "error": f"Invalid URL format: {url}. Must be a valid URL (http://, https://, file://) or existing file path",
+                        }
 
             # Open in browser
             webbrowser.open(url)

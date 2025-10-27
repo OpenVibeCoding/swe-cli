@@ -262,13 +262,13 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
         "type": "function",
         "function": {
             "name": "open_browser",
-            "description": "Opens a URL in the user's default web browser. Useful for showing web applications during development (e.g., 'open http://localhost:3000'). Automatically handles localhost URLs.",
+            "description": "Opens a URL or local file in the user's default web browser. Useful for showing web applications during development (e.g., 'open http://localhost:3000' or 'open index.html'). Automatically handles localhost URLs and converts local file paths to file:// URLs.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "url": {
                         "type": "string",
-                        "description": "The URL to open in the browser. Can be a full URL (http://example.com) or localhost address (localhost:3000)",
+                        "description": "The URL or file path to open in the browser. Supports: full URLs (http://example.com), localhost addresses (localhost:3000), and local file paths (index.html, ./app.html, /path/to/file.html). Local files are automatically converted to file:// URLs.",
                     },
                 },
                 "required": ["url"],

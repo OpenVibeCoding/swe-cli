@@ -266,21 +266,28 @@ class ToolExecutor:
         from io import StringIO
         from swecli.ui.utils.rich_to_text import rich_to_text_box
 
-        # Add tool call display with green ⏺ and cyan tool name
-        string_io = StringIO()
-        temp_console = Console(file=string_io, force_terminal=True, legacy_windows=False)
-        temp_console.print(f"[green]⏺[/green] [cyan]{tool_call_display}[/cyan]", end="")
-        colored_tool_call = string_io.getvalue()
-
-        # Format tool result using existing OutputFormatter
-        panel = self.repl.output_formatter.format_tool_result(
+        # Format tool result using OutputFormatter (returns string for Claude style, Panel for legacy)
+        formatted_result = self.repl.output_formatter.format_tool_result(
             tool_name=tool_name, tool_args=tool_args, result=result
         )
 
-        # Convert Rich Panel to plain text box for chat display
-        content_width = self.chat_app._get_content_width()
-        tool_text = rich_to_text_box(panel, width=content_width)
+        # Handle different result formats
+        if isinstance(formatted_result, str):
+            # Claude Code style - already formatted as string
+            combined_message = formatted_result
+        else:
+            # Legacy style - convert Rich Panel to text
+            # Add tool call display with green ⏺ and cyan tool name
+            string_io = StringIO()
+            temp_console = Console(file=string_io, force_terminal=True, legacy_windows=False)
+            temp_console.print(f"[green]⏺[/green] [cyan]{tool_call_display}[/cyan]", end="")
+            colored_tool_call = string_io.getvalue()
 
-        # Combine tool call and result
-        combined_message = f"{colored_tool_call}\n{tool_text}"
+            # Convert Rich Panel to plain text box for chat display
+            content_width = self.chat_app._get_content_width()
+            tool_text = rich_to_text_box(formatted_result, width=content_width)
+
+            # Combine tool call and result
+            combined_message = f"{colored_tool_call}\n{tool_text}"
+
         self.chat_app.add_assistant_message(combined_message)

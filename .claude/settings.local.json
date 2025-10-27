@@ -12,7 +12,15 @@
       "Bash(git commit:*)",
       "Bash(gtimeout 5 swecli:*)",
       "Bash(swecli:*)",
-      "Bash(python -m swecli.repl.chat.spinner:*)"
+      "Bash(python -m swecli.repl.chat.spinner:*)",
+      "Bash(npm run build:*)",
+      "Bash(pip show:*)",
+      "Read(//Users/quocnghi/codes/test_opencli/**)",
+      "Read(//Users/quocnghi/miniconda3/envs/general/lib/python3.13/site-packages/**)",
+      "Bash(python:*)",
+      "Bash(env PYTHONDONTWRITEBYTECODE=1 python:*)",
+      "Bash(pip uninstall:*)",
+      "Bash(pip:*)"
     ],
     "deny": [],
     "ask": []

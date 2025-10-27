@@ -28,8 +28,6 @@ class SystemPromptBuilder:
         if mcp_prompt:
             prompt += mcp_prompt
 
-        # Add guidelines
-        prompt += load_prompt("agent_normal_guidelines")
         return prompt
 
     def _build_mcp_section(self) -> str:

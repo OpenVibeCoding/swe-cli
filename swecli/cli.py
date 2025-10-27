@@ -652,99 +652,27 @@ def _handle_run_command(args) -> None:
                 import traceback
                 console.print(f"[dim]{traceback.format_exc()}[/dim]")
                 sys.exit(1)
-            # Find the web-ui directory
-            import swecli
-            import os
+            # Instead of looking for a development web-ui directory, we'll serve the built static files
+            # The backend server already serves the static frontend files
+            from swecli.web import find_static_directory
+            static_dir = find_static_directory()
 
-            package_dir = Path(swecli.__file__).parent
-
-            # Check environment variable first
-            env_path = os.getenv("SWECLI_WEB_UI_PATH")
-            if env_path:
-                web_ui_dir = Path(env_path)
-                if web_ui_dir.exists() and (web_ui_dir / "package.json").exists():
-                    console.print(f"[cyan]📦 Using web-ui from SWECLI_WEB_UI_PATH: {web_ui_dir}[/cyan]")
-                else:
-                    console.print(f"[yellow]⚠ SWECLI_WEB_UI_PATH is set but directory is invalid: {web_ui_dir}[/yellow]")
-                    web_ui_dir = None
-
-            if not env_path or not web_ui_dir:
-                # Check multiple locations
-                possible_locations = [
-                    # 1. Repository root (for development)
-                    package_dir.parent / "web-ui",
-                    # 2. Current directory (if user is in repo)
-                    Path.cwd() / "web-ui",
-                    # 3. Package installation directory
-                    package_dir / "web-ui",
-                    # 4. Check parent directories up to 3 levels
-                    package_dir.parent.parent / "web-ui",
-                ]
-
-                web_ui_dir = None
-                for location in possible_locations:
-                    if location.exists() and (location / "package.json").exists():
-                        web_ui_dir = location
-                        break
-
-                if not web_ui_dir:
-                    console.print("[red]Error: web-ui directory not found[/red]")
-                    console.print("\nChecked locations:")
-                    for loc in possible_locations:
-                        console.print(f"  • {loc}")
-                    console.print("\n[yellow]Tip:[/yellow] Run this command from the swe-cli repository root,")
-                    console.print("or set SWECLI_WEB_UI_PATH environment variable:")
-                    console.print("[dim]  export SWECLI_WEB_UI_PATH=/path/to/swe-cli/web-ui[/dim]")
-                    sys.exit(1)
-
-            console.print(f"[cyan]📦 Found web-ui directory: {web_ui_dir}[/cyan]")
-
-            # Check if node_modules exists
-            node_modules = web_ui_dir / "node_modules"
-            if not node_modules.exists():
-                console.print("[yellow]⚠ node_modules not found. Running npm install...[/yellow]")
-                console.print("[dim]This may take a few minutes on first run...[/dim]\n")
-
-                # Run npm install
-                install_process = subprocess.run(
-                    ["npm", "install"],
-                    cwd=web_ui_dir,
-                    capture_output=False,
-                    text=True
-                )
-
-                if install_process.returncode != 0:
-                    console.print("[red]Error: npm install failed[/red]")
-                    sys.exit(1)
-
-                console.print("[green]✓ Dependencies installed successfully[/green]\n")
-
-            # Find available port for Vite frontend
-            from swecli.web.port_utils import find_available_port
-            preferred_frontend_port = 5173
-            frontend_port = find_available_port("localhost", preferred_frontend_port, max_attempts=10)
-
-            if frontend_port is None:
-                console.print(f"[red]Error: Could not find available port for frontend starting from {preferred_frontend_port}[/red]")
+            if not static_dir or not static_dir.exists():
+                console.print("[red]Error: Built web UI static files not found[/red]")
+                console.print("\nThis could mean:")
+                console.print("• The package was not built with web UI assets")
+                console.print("• You're using a development version")
+                console.print("\nSolutions:")
+                console.print("• Install the full package: pip install swe-cli>=0.1.6")
+                console.print("• Or build from source with web UI included")
                 sys.exit(1)
 
-            if frontend_port != preferred_frontend_port:
-                console.print(f"[yellow]⚠ Port {preferred_frontend_port} is in use, using port {frontend_port} for frontend[/yellow]")
+            console.print(f"[cyan]✓ Using built web UI from: {static_dir}[/cyan]")
 
-            # Start the dev server
-            console.print("[cyan]🚀 Starting Vite dev server...[/cyan]")
-            console.print("[dim]Press Ctrl+C to stop both servers[/dim]\n")
-
-            # Prepare environment variables for Vite
-            import os
-            vite_env = os.environ.copy()
-            vite_env["VITE_API_URL"] = f"http://{backend_host}:{backend_port}"
-            vite_env["PORT"] = str(frontend_port)
-
-            # Open browser after a short delay
+            # Open browser to the backend URL (which serves the static frontend)
             def open_browser_delayed():
-                time.sleep(2)  # Wait for Vite to start
-                url = f"http://localhost:{frontend_port}"
+                time.sleep(1.5)  # Wait for backend to be ready
+                url = f"http://{backend_host}:{backend_port}"
                 console.print(f"[green]✓ Opening browser at {url}[/green]\n")
                 webbrowser.open(url)
 
@@ -752,12 +680,16 @@ def _handle_run_command(args) -> None:
             browser_thread = threading.Thread(target=open_browser_delayed, daemon=True)
             browser_thread.start()
 
-            # Run npm run dev (blocking) with environment variables
-            subprocess.run(
-                ["npm", "run", "dev", "--", "--port", str(frontend_port), "--strictPort"],
-                cwd=web_ui_dir,
-                env=vite_env,
-            )
+            console.print("[green]✓ Web UI is running![/green]")
+            console.print("[dim]Backend API and frontend are served from the same port[/dim]")
+            console.print("[dim]Press Ctrl+C to stop the server[/dim]\n")
+
+            # Keep the main thread alive and serve until interrupted
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                console.print("\n[yellow]Stopping server...[/yellow]")
 
         except KeyboardInterrupt:
             console.print("\n[yellow]Stopping dev server...[/yellow]")

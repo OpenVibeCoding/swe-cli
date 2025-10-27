@@ -30,15 +30,11 @@ class HelpCommand(CommandHandler):
         help_text = """
 # Available Commands
 
-## Operations
-- `/run <command>` - Execute a bash command safely
+## Mode & Operations
 - `/mode <name>` - Switch mode: normal or plan
 - `/undo` - Undo the last operation
-- `/init [path]` - Analyze codebase and generate AGENTS.md with repository guidelines
 - `/history` - Show operation history
-
-## File Operations
-- `/tree [path]` - Show directory tree
+- `/init [path]` - Analyze codebase and generate repository guidelines
 
 ## Session Management
 - `/clear` - Clear current session context
@@ -50,10 +46,16 @@ class HelpCommand(CommandHandler):
 
 ## MCP (Model Context Protocol)
 - `/mcp list` - List configured MCP servers
+- `/mcp status` - Quick status overview
+- `/mcp view <name>` - Interactive server viewer (detailed view)
 - `/mcp connect <name>` - Connect to an MCP server
 - `/mcp disconnect <name>` - Disconnect from a server
+- `/mcp enable <name>` - Enable auto-start for a server
+- `/mcp disable <name>` - Disable auto-start for a server
 - `/mcp tools [<name>]` - Show available tools from server(s)
 - `/mcp test <name>` - Test connection to a server
+- `/mcp reload` - Reload MCP configuration
+- `/mcp debug` - Show debug info (tools in agent)
 
 ## General
 - `/help` - Show this help message

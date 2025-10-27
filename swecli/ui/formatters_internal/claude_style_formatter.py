@@ -156,7 +156,7 @@ class ClaudeStyleFormatter:
         return [f"Created {Path(file_path).name} • {size_display} • {lines} lines"]
 
     def _format_edit_file_result(self, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
-        """Format edit_file result."""
+        """Format edit_file result with side-by-side diff style."""
         file_path = tool_args.get("file_path", "unknown")
         old_content = tool_args.get("old_content", "")
         new_content = tool_args.get("new_content", "")
@@ -169,29 +169,53 @@ class ClaudeStyleFormatter:
                 return [f"❌ {error}"]
             return [f"❌ {error}"]
 
-        # Show the diff format for successful edits
-        result_lines = [f"Updated {Path(file_path).name}"]
+        # Calculate changes
+        old_lines = old_content.splitlines() if old_content else []
+        new_lines = new_content.splitlines() if new_content else []
 
-        # Calculate approximate line numbers (simplified)
-        old_lines = old_content.split('\n') if old_content else ['']
-        new_lines = new_content.split('\n') if new_content else ['']
+        # Show summary
+        additions = len(new_lines) - len([line for line in new_lines if line in old_lines])
+        deletions = len(old_lines) - len([line for line in old_lines if line in new_lines])
+        result_lines = [f"Updated {Path(file_path).name} with {additions} additions and {deletions} removals"]
 
-        # Find the line where change occurred (simplified - assume first different line)
-        change_line = 1  # This would be more sophisticated in real implementation
+        # ANSI color codes
+        RED = "\033[91m"  # Bright red (lighter and more readable)
+        GREEN = "\033[32m"
+        RESET = "\033[0m"
+        CYAN = "\033[36m"
+        BOLD = "\033[1m"
 
-        # Show old line (removed) with red indicator
-        if old_lines and old_lines[0]:
-            result_lines.append(f"❌-{change_line}                {old_lines[0]}")
+        # Add border before diff
+        result_lines.append(f"{CYAN}┌─ {Path(file_path).name} diff ─{RESET}")
 
-        # Show new line (added) with green indicator
-        if new_lines and new_lines[0]:
-            result_lines.append(f"✅+{change_line}                {new_lines[0]}")
+        # Show actual diff with line numbers and +/- indicators
+        max_lines = min(15, max(len(old_lines), len(new_lines)))  # Limit to 15 lines max
 
-        # Show additional context lines if present
-        if len(new_lines) > 1:
-            for i, line in enumerate(new_lines[1:], 1):
-                if line.strip():  # Only show non-empty lines
-                    result_lines.append(f"✅+{change_line + i}                {line}")
+        for i in range(max_lines):
+            old_line = old_lines[i] if i < len(old_lines) else None
+            new_line = new_lines[i] if i < len(new_lines) else None
+
+            if old_line == new_line:
+                # No change - skip or show as context
+                if i < 3:  # Show first few lines as context
+                    result_lines.append(f"     {i+1:2d}    {old_line or ''}")
+                continue
+
+            if old_line is not None and new_line is None:
+                # Line was deleted
+                result_lines.append(f"{RED}{i+1:2d} -    {old_line}{RESET}")
+            elif old_line is None and new_line is not None:
+                # Line was added
+                result_lines.append(f"{GREEN}{i+1:2d} +    {new_line}{RESET}")
+            else:
+                # Line was changed
+                if old_line.strip():  # Show removed line
+                    result_lines.append(f"{RED}{i+1:2d} -    {old_line}{RESET}")
+                if new_line.strip():  # Show added line
+                    result_lines.append(f"{GREEN}{i+1:2d} +    {new_line}{RESET}")
+
+        # Add bottom border
+        result_lines.append(f"{CYAN}└────────────────────────────{RESET}")
 
         return result_lines
 
