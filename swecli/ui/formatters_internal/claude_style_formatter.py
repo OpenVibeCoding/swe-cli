@@ -44,6 +44,8 @@ class ClaudeStyleFormatter:
             result_lines = self._format_list_files_result(tool_args, result)
         elif tool_name == "fetch_url":
             result_lines = self._format_fetch_url_result(tool_args, result)
+        elif tool_name == "analyze_image":
+            result_lines = self._format_analyze_image_result(tool_args, result)
         else:
             result_lines = self._format_generic_result(tool_name, tool_args, result)
 
@@ -293,6 +295,30 @@ class ClaudeStyleFormatter:
             return [f"Fetched {content_size} from {Path(url).name}"]
         else:
             return [f"Fetched {Path(url).name}"]
+
+    def _format_analyze_image_result(self, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
+        """Format analyze_image result."""
+        if not result.get("success"):
+            error = result.get("error", "Unknown error")
+            return [f"❌ {error}"]
+
+        content = result.get("content", "")
+        model = result.get("model", "")
+        provider = result.get("provider", "")
+
+        if content:
+            # For image analysis, we want to show a meaningful summary
+            if len(content) > 100:
+                # Truncate long analyses but show they were substantial
+                first_sentence = content.split('.')[0] + '.'
+                if len(first_sentence) > 80:
+                    first_sentence = first_sentence[:77] + "..."
+                return [f"Image analyzed ({provider}•{model}): {first_sentence}"]
+            else:
+                # Show full content for shorter analyses
+                return [f"Image analyzed ({provider}•{model}): {content}"]
+        else:
+            return [f"Image analyzed ({provider}•{model})"]
 
     def _format_generic_result(self, tool_name: str, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
         """Format generic tool result."""
