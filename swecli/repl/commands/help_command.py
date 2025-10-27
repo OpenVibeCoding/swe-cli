@@ -32,7 +32,6 @@ class HelpCommand(CommandHandler):
 
 ## Mode & Operations
 - `/mode <name>` - Switch mode: normal or plan
-- `/undo` - Undo the last operation
 - `/history` - Show operation history
 - `/init [path]` - Analyze codebase and generate repository guidelines
 

@@ -728,7 +728,7 @@ class REPLChatApplication(ChatApplication):
             original_mcp_console = getattr(self.repl.mcp_commands, 'console', None)
             original_help_console = getattr(self.repl.help_command, 'console', None)
             original_session_console = getattr(self.repl.session_commands, 'console', None)
-            original_file_console = getattr(self.repl.file_commands, 'console', None)
+            original_file_console = None  # FileCommands removed
             original_mode_console = getattr(self.repl.mode_commands, 'console', None)
 
             try:
@@ -744,8 +744,7 @@ class REPLChatApplication(ChatApplication):
                     self.repl.help_command.console = temp_console
                 if hasattr(self.repl, 'session_commands') and hasattr(self.repl.session_commands, 'console'):
                     self.repl.session_commands.console = temp_console
-                if hasattr(self.repl, 'file_commands') and hasattr(self.repl.file_commands, 'console'):
-                    self.repl.file_commands.console = temp_console
+                # FileCommands removed - skip
                 if hasattr(self.repl, 'mode_commands') and hasattr(self.repl.mode_commands, 'console'):
                     self.repl.mode_commands.console = temp_console
 
@@ -785,8 +784,7 @@ class REPLChatApplication(ChatApplication):
                     self.repl.help_command.console = original_help_console
                 if hasattr(self.repl, 'session_commands') and original_session_console is not None:
                     self.repl.session_commands.console = original_session_console
-                if hasattr(self.repl, 'file_commands') and original_file_console is not None:
-                    self.repl.file_commands.console = original_file_console
+                # FileCommands removed - skip
                 if hasattr(self.repl, 'mode_commands') and original_mode_console is not None:
                     self.repl.mode_commands.console = original_mode_console
 

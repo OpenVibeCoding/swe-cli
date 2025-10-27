@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 class ModeCommands(CommandHandler):
-    """Handler for mode-related commands: /mode, /undo, /history."""
+    """Handler for mode-related commands: /mode, /history."""
 
     def __init__(
         self,
@@ -37,7 +37,7 @@ class ModeCommands(CommandHandler):
 
     def handle(self, args: str) -> CommandResult:
         """Handle mode command (not used, individual methods called directly)."""
-        raise NotImplementedError("Use specific methods: switch_mode(), undo(), show_history()")
+        raise NotImplementedError("Use specific methods: switch_mode(), show_history()")
 
     def switch_mode(self, mode_name: str) -> CommandResult:
         """Switch operation mode.
@@ -88,29 +88,7 @@ class ModeCommands(CommandHandler):
             self.print_error(f"Error switching mode: {e}")
             return CommandResult(success=False, message=str(e))
 
-    def undo(self) -> CommandResult:
-        """Undo the last operation.
-
-        Returns:
-            CommandResult indicating success or failure
-        """
-        try:
-            result = self.undo_manager.undo_last()
-
-            if result:
-                self.print_success("Operation undone successfully")
-                self.console.print(
-                    f"[dim]Undid: {result['operation'].type.value} on {result['operation'].target}[/dim]"
-                )
-                return CommandResult(success=True, data=result)
-            else:
-                self.print_warning("No operations to undo")
-                return CommandResult(success=False, message="No operations to undo")
-
-        except Exception as e:
-            self.print_error(f"Error during undo: {e}")
-            return CommandResult(success=False, message=str(e))
-
+  
     def show_history(self) -> CommandResult:
         """Show operation history.
 

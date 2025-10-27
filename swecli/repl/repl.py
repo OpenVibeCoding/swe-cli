@@ -459,8 +459,6 @@ class REPL:
                     self.agent = self.planning_agent
                 else:
                     self.agent = self.normal_agent
-        elif cmd == "/undo":
-            self.mode_commands.undo()
         elif cmd == "/history":
             self.mode_commands.show_history()
         elif cmd == "/models":

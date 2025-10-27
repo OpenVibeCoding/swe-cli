@@ -121,7 +121,7 @@ class WelcomeMessage:
         header = cls._header_line(f"SWE-CLI {version}")
         welcome_line = cls._two_column(
             "Welcome to your coding assistant",
-            "Launch commands: /help · /mode plan · /mode normal",
+            "Quick start: /help · /models · /mode plan",
             left_align="center",
         )
         footer = cls._footer_line()
@@ -131,9 +131,9 @@ class WelcomeMessage:
     def generate_commands_section() -> List[str]:
         """Provide quick command hints."""
         return [
-            "Quick Commands",
-            " • /help           Show available commands",
-            " • /tree           Explore the project tree",
+            "Essential Commands",
+            " • /help           Show all commands",
+            " • /models         Configure AI models",
             " • /mode normal    Run with approvals",
             " • /mode plan      Plan without execution",
         ]
@@ -146,7 +146,6 @@ class WelcomeMessage:
             " • Shift+Tab       Toggle plan/normal mode",
             " • @file           Mention a file for context",
             " • ↑ / ↓           Navigate command history",
-            " • esc + c         Open the context panel",
         ]
 
     @staticmethod
@@ -230,21 +229,23 @@ class WelcomeMessage:
 
         right_entries: List[Tuple[str, str]] = [
             ("", "left"),
-            (f"{BOLD}Quick Commands{RESET}", "left"),
-            (f" • {CYAN}/help{RESET}           Show available commands", "left"),
-            (f" • {CYAN}/tree{RESET}           Explore the project tree", "left"),
+            (f"{BOLD}Essential Commands{RESET}", "left"),
+            (f" • {CYAN}/help{RESET}           Show all commands", "left"),
+            (f" • {CYAN}/models{RESET}         Configure AI models", "left"),
             (f" • {CYAN}/mode normal{RESET}    Run with approvals", "left"),
             (f" • {CYAN}/mode plan{RESET}      Plan without execution", "left"),
+            (f" • {CYAN}/init{RESET}           Analyze codebase structure", "left"),
+            ("", "left"),
+            (f"{BOLD}MCP Integration{RESET}", "left"),
+            (f" • {CYAN}/mcp list{RESET}       List MCP servers", "left"),
+            (f" • {CYAN}/mcp status{RESET}     Check MCP status", "left"),
+            (f" • {CYAN}/mcp connect <name>{RESET}  Connect to server", "left"),
+            (f" • {CYAN}/mcp tools{RESET}      Show available tools", "left"),
             ("", "left"),
             (f"{BOLD}Keyboard Shortcuts{RESET}", "left"),
             (f" • {YELLOW}Shift+Tab{RESET}       Toggle plan/normal mode", "left"),
             (f" • {YELLOW}@file{RESET}           Mention a file for context", "left"),
             (f" • {YELLOW}↑ / ↓{RESET}           Navigate command history", "left"),
-            (f" • {YELLOW}esc + c{RESET}         Open the context panel", "left"),
-            ("", "left"),
-            (f"{BOLD}Pro Tips{RESET}", "left"),
-            (f" • {CYAN}/save session{RESET}   Capture the current transcript", "left"),
-            (f" • {YELLOW}esc + n{RESET}         Notification shortcuts", "left"),
         ]
 
         rows: List[str] = []
