@@ -7,7 +7,8 @@ from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Footer, Header, Input, RichLog, Static
+from textual.events import Key
+from textual.widgets import Footer, Header, Input, RichLog, Static, TextArea
 
 
 class ConversationLog(RichLog):
@@ -54,6 +55,17 @@ class ConversationLog(RichLog):
     def add_error(self, error: str) -> None:
         """Add error message to conversation."""
         self.write(Text(f"❌ {error}", style="bold red"))
+
+
+
+
+class ChatTextArea(TextArea):
+    """Custom TextArea with Enter to send, Shift+Enter for new lines."""
+
+    def on_key(self, event: Key) -> None:
+        """Handle key events at the widget level."""
+        # We'll handle this at the app level instead
+        pass
 
 
 class StatusBar(Static):
@@ -130,10 +142,11 @@ class SWECLIChatApp(App):
     }
 
     #input {
-        height: 3;
+        height: 5;
+        max-height: 15;
+        min-height: 3;
         border: solid $accent;
         background: $surface;
-        padding: 0 1;
     }
 
     #status-bar {
@@ -193,8 +206,8 @@ class SWECLIChatApp(App):
             with Vertical(id="input-container"):
                 yield Static("› Type your message (Enter to send):", id="input-label")
                 yield Input(
-                    placeholder="Ask me anything...",
                     id="input",
+                    placeholder="Type your message..."
                 )
 
             # Status bar
@@ -225,27 +238,50 @@ class SWECLIChatApp(App):
             "Hello! This is a proof-of-concept for the new Textual-based UI."
         )
         self.conversation.add_assistant_message(
-            "Try typing a message and pressing Enter. You can also test commands:"
+            "Try typing a message (multi-line supported!). Press Ctrl+Enter to send."
         )
         self.conversation.add_assistant_message("  • /help - Show available commands")
         self.conversation.add_assistant_message("  • /scroll - Generate messages to test scrolling")
         self.conversation.add_assistant_message("  • /demo - Show message types")
         self.conversation.add_system_message("")
-        self.conversation.add_system_message("💡 Trackpad scrolling: Press Ctrl+Up to focus, then scroll!")
+        self.conversation.add_system_message("✨ Multi-line input: Press Enter for new line, Ctrl+Enter to send")
+        self.conversation.add_system_message("💡 Scrolling: Press Ctrl+Up to focus conversation, then use arrow keys")
         self.conversation.add_system_message("")
 
         # Simulate some context
         self.status_bar.set_context(15)
 
     async def on_input_submitted(self, event: Input.Submitted) -> None:
-        """Handle message submission when user presses Enter."""
+        """Handle input submission when user presses Enter."""
         message = event.value.strip()
 
         if not message:
             return
 
         # Clear input field
-        self.input_field.value = ""
+        self.input_field.clear()
+
+        # Add to history
+        self._message_history.append(message)
+
+        # Display user message
+        self.conversation.add_user_message(message)
+
+        # Handle special commands
+        if message.startswith("/"):
+            await self.handle_command(message)
+        else:
+            await self.process_message(message)
+
+    async def action_send_message(self) -> None:
+        """Send message when user presses Enter."""
+        message = self.input_field.value.strip()
+
+        if not message:
+            return
+
+        # Clear input field
+        self.input_field.clear()
 
         # Add to history
         self._message_history.append(message)
@@ -271,13 +307,20 @@ class SWECLIChatApp(App):
             self.conversation.add_system_message("  /scroll - Generate many messages (test scrolling)")
             self.conversation.add_system_message("  /quit - Exit application")
             self.conversation.add_system_message("")
-            self.conversation.add_system_message("Scrolling (Trackpad/Mouse):")
-            self.conversation.add_system_message("  Ctrl+Up - Focus conversation area (then use trackpad/arrows)")
-            self.conversation.add_system_message("  Ctrl+Down - Focus input field (for typing)")
-            self.conversation.add_system_message("  Arrow Up/Down - Scroll line by line (when conversation focused)")
+            self.conversation.add_system_message("✨ Input:")
+            self.conversation.add_system_message("  Enter - Send message")
+            self.conversation.add_system_message("  Type your message and press Enter!")
+            self.conversation.add_system_message("")
+            self.conversation.add_system_message("📜 Scrolling:")
+            self.conversation.add_system_message("  Ctrl+Up - Focus conversation (then use arrow keys)")
+            self.conversation.add_system_message("  Ctrl+Down - Focus input (for typing)")
+            self.conversation.add_system_message("  Arrow Up/Down - Scroll line by line")
             self.conversation.add_system_message("  Page Up/Down - Scroll by page")
             self.conversation.add_system_message("")
-            self.conversation.add_system_message("💡 Tip: Press Ctrl+Up, then use trackpad or arrow keys to scroll!")
+            self.conversation.add_system_message("⌨️  Other Shortcuts:")
+            self.conversation.add_system_message("  Ctrl+L - Clear conversation")
+            self.conversation.add_system_message("  Ctrl+C - Quit application")
+            self.conversation.add_system_message("  ESC - Interrupt processing")
 
         elif cmd == "/clear":
             self.conversation.clear()
