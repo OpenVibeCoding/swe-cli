@@ -1,0 +1,137 @@
+/* SWE-CLI Chat Application Styles */
+
+/* Color scheme inspired by the current UI */
+Screen {
+    background: #0a0e14;
+}
+
+#main-container {
+    height: 100%;
+    layout: vertical;
+}
+
+/* Conversation area - main chat log */
+#conversation {
+    height: 1fr;
+    border: solid #00ffff;
+    background: #0a0e14;
+    padding: 0 1;
+    scrollbar-gutter: stable;
+}
+
+#conversation:focus {
+    border: solid #00ffff;
+}
+
+/* Input container */
+#input-container {
+    height: auto;
+    layout: vertical;
+    background: #0a0e14;
+}
+
+#input-label {
+    height: 1;
+    content-align: left middle;
+    color: #00ffff;
+    background: #0a0e14;
+    padding: 0 1;
+}
+
+/* Input field */
+#input {
+    height: 3;
+    max-height: 10;
+    min-height: 3;
+    border: solid #00ffff;
+    background: #0a0e14;
+    padding: 0 1;
+    color: #ffffff;
+}
+
+#input:focus {
+    border: solid #00ffff;
+    background: #0f1419;
+}
+
+/* Status bar */
+#status-bar {
+    height: 1;
+    background: #0a0e14;
+    color: #888888;
+    padding: 0 1;
+    content-align: left middle;
+}
+
+/* Input widget styling */
+Input {
+    background: #0a0e14;
+    color: #ffffff;
+    border: solid #00ffff;
+}
+
+Input:focus {
+    border: solid #00ffff;
+    background: #0f1419;
+}
+
+Input > .input--cursor {
+    color: #00ffff;
+    background: #00ffff;
+}
+
+Input > .input--placeholder {
+    color: #555555;
+    text-style: italic;
+}
+
+/* RichLog styling */
+RichLog {
+    background: #0a0e14;
+    color: #ffffff;
+    padding: 1;
+}
+
+RichLog:focus {
+    border: solid #00ffff;
+}
+
+/* Header and Footer */
+Header {
+    background: #0a0e14;
+    color: #00ffff;
+}
+
+Footer {
+    background: #0a0e14;
+    color: #888888;
+}
+
+Footer > .footer--key {
+    color: #00ffff;
+    background: transparent;
+}
+
+Footer > .footer--description {
+    color: #888888;
+}
+
+/* Scrollbar */
+Scrollbar {
+    background: #0a0e14;
+    color: #00ffff;
+}
+
+Scrollbar:hover {
+    background: #0f1419;
+}
+
+ScrollbarCorner {
+    background: #0a0e14;
+}
+
+/* Loading indicator */
+LoadingIndicator {
+    color: #00ffff;
+    background: transparent;
+}
