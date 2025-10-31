@@ -478,6 +478,40 @@ class QueryProcessor:
                         "content": tool_result,
                     })
 
+                # Persist assistant step with tool calls to session
+                from swecli.models.message import ToolCall as ToolCallModel
+                tool_call_objects = []
+                for tc in tool_calls:
+                    tool_result = None
+                    tool_error = None
+                    for msg in reversed(messages):
+                        if msg.get("role") == "tool" and msg.get("tool_call_id") == tc["id"]:
+                            content = msg.get("content", "")
+                            if content.startswith("Error:"):
+                                tool_error = content[6:].strip()
+                            else:
+                                tool_result = content
+                            break
+
+                    tool_call_objects.append(
+                        ToolCallModel(
+                            id=tc["id"],
+                            name=tc["function"]["name"],
+                            parameters=json.loads(tc["function"]["arguments"]),
+                            result=tool_result,
+                            error=tool_error,
+                            approved=True,
+                        )
+                    )
+
+                if llm_description or tool_call_objects:
+                    assistant_msg = ChatMessage(
+                        role=Role.ASSISTANT,
+                        content=llm_description or "",
+                        tool_calls=tool_call_objects,
+                    )
+                    self.session_manager.add_message(assistant_msg, self.config.auto_save_interval)
+
                 # Check if agent needs nudge
                 if self._should_nudge_agent(consecutive_reads, messages):
                     consecutive_reads = 0

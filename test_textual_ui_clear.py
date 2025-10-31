@@ -53,17 +53,22 @@ def main():
         app = create_chat_app(on_message=on_message)
         app.run()
 
+        # Textual handles screen restoration automatically
+        # Don't restore manually in finally block
+
     except KeyboardInterrupt:
+        # User pressed Ctrl+C - this is normal
         pass
     except Exception as e:
-        print(f"Error: {e}")
+        # Restore terminal first so we can see the error
+        restore_terminal()
+        print(f"\nError occurred: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
-    finally:
-        # Ensure we restore terminal on exit
-        restore_terminal()
-        print("Exited cleanly.")
+
+    # Normal exit - Textual already restored the screen
+    print("Exited cleanly.")
 
 
 if __name__ == "__main__":

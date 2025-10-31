@@ -1,137 +1,197 @@
-/* SWE-CLI Chat Application Styles */
+/* SWE-CLI Chat Application Styles - Redesigned for Elegance */
+/* Inspired by Claude Code: minimal, professional, clean */
 
-/* Color scheme inspired by the current UI */
+/* ============================================
+   COLOR PALETTE - Muted and Professional
+   ============================================ */
+
 Screen {
-    background: #0a0e14;
+    background: #1e1e1e;  /* Neutral dark gray (was harsh blue) */
 }
+
+/* ============================================
+   MAIN LAYOUT
+   ============================================ */
 
 #main-container {
     height: 100%;
     layout: vertical;
 }
 
-/* Conversation area - main chat log */
+/* ============================================
+   CONVERSATION AREA - Borderless and Clean
+   ============================================ */
+
 #conversation {
     height: 1fr;
-    border: solid #00ffff;
-    background: #0a0e14;
-    padding: 0 1;
+    border: none;                /* ✨ NO BORDER - Clean look! */
+    background: #1e1e1e;         /* Neutral background */
+    padding: 1 2;                /* More generous padding */
     scrollbar-gutter: stable;
 }
 
 #conversation:focus {
-    border: solid #00ffff;
+    background: #252526;         /* Subtle depth change on focus */
+    border: none;                /* Still no border */
 }
 
-/* Input container */
+/* ============================================
+   INPUT AREA - Minimal and Elegant
+   ============================================ */
+
 #input-container {
     height: auto;
     layout: vertical;
-    background: #0a0e14;
+    background: #1e1e1e;
 }
 
 #input-label {
     height: 1;
     content-align: left middle;
-    color: #00ffff;
-    background: #0a0e14;
-    padding: 0 1;
+    color: #808080;              /* Muted gray (was bright cyan) */
+    background: #1e1e1e;
+    padding: 0 2;
 }
 
-/* Input field */
+/* Input field - borderless with subtle focus */
 #input {
     height: 3;
     max-height: 10;
     min-height: 3;
-    border: solid #00ffff;
-    background: #0a0e14;
-    padding: 0 1;
-    color: #ffffff;
+    border: none;                /* ✨ NO BORDER by default */
+    background: #252526;         /* Subtle depth */
+    padding: 1 2;
+    color: #cccccc;              /* Softer white */
 }
 
 #input:focus {
-    border: solid #00ffff;
-    background: #0f1419;
+    background: #2d2d2d;         /* Elevated background on focus */
+    border-left: thick #007acc;  /* ✨ Subtle left accent only */
 }
 
-/* Status bar */
+/* ============================================
+   STATUS BAR - Clean and Professional
+   ============================================ */
+
 #status-bar {
     height: 1;
-    background: #0a0e14;
-    color: #888888;
-    padding: 0 1;
+    background: #252526;         /* Slightly elevated */
+    color: #808080;              /* Muted gray */
+    padding: 0 2;
     content-align: left middle;
 }
 
-/* Input widget styling */
-Input {
-    background: #0a0e14;
-    color: #ffffff;
-    border: solid #00ffff;
+/* ============================================
+   TEXT AREA WIDGETS
+   ============================================ */
+
+TextArea {
+    background: #252526;
+    color: #cccccc;              /* Softer white text */
+    border: none;
 }
 
-Input:focus {
-    border: solid #00ffff;
-    background: #0f1419;
+TextArea:focus {
+    border-left: thick #007acc;  /* Subtle left accent */
+    background: #2d2d2d;
 }
 
-Input > .input--cursor {
-    color: #00ffff;
-    background: #00ffff;
+TextArea .text-area--cursor {
+    color: #007acc;              /* Muted blue cursor */
+    background: #007acc;
 }
 
-Input > .input--placeholder {
-    color: #555555;
+TextArea .text-area--placeholder {
+    color: #6a6a6a;              /* Very subtle placeholder */
     text-style: italic;
 }
 
-/* RichLog styling */
+/* ============================================
+   RICH LOG (Conversation Display)
+   ============================================ */
+
 RichLog {
-    background: #0a0e14;
-    color: #ffffff;
-    padding: 1;
+    background: transparent;      /* Blend with parent */
+    color: #cccccc;              /* Soft white */
+    padding: 1 2;
 }
 
 RichLog:focus {
-    border: solid #00ffff;
+    background: #252526;         /* Subtle highlight */
+    border: none;                /* No harsh border */
 }
 
-/* Header and Footer */
+/* ============================================
+   HEADER AND FOOTER - Minimal Style
+   ============================================ */
+
 Header {
-    background: #0a0e14;
-    color: #00ffff;
+    background: #1e1e1e;
+    color: #808080;              /* Muted gray (was bright cyan) */
+    padding: 0 2;
 }
 
 Footer {
-    background: #0a0e14;
-    color: #888888;
+    background: #252526;
+    color: #6a6a6a;              /* Very subtle */
 }
 
 Footer > .footer--key {
-    color: #00ffff;
+    color: #007acc;              /* Muted blue (was bright cyan) */
     background: transparent;
 }
 
 Footer > .footer--description {
-    color: #888888;
+    color: #808080;
 }
 
-/* Scrollbar */
+/* ============================================
+   SCROLLBAR - Subtle and Unobtrusive
+   ============================================ */
+
 Scrollbar {
-    background: #0a0e14;
-    color: #00ffff;
+    background: #1e1e1e;
+    color: #3a3d41;              /* Barely visible */
 }
 
 Scrollbar:hover {
-    background: #0f1419;
+    background: #252526;
+    color: #007acc;              /* Muted blue on hover */
 }
 
 ScrollbarCorner {
-    background: #0a0e14;
+    background: #1e1e1e;
 }
 
-/* Loading indicator */
+/* ============================================
+   LOADING INDICATOR
+   ============================================ */
+
 LoadingIndicator {
-    color: #00ffff;
+    color: #007acc;              /* Muted blue (was bright cyan) */
     background: transparent;
 }
+
+/* ============================================
+   DESIGN NOTES
+   ============================================
+
+   Color Palette:
+   - Background Primary: #1e1e1e (neutral dark gray)
+   - Background Secondary: #252526 (subtle depth)
+   - Background Elevated: #2d2d2d (focus states)
+   - Text Primary: #cccccc (soft white)
+   - Text Secondary: #808080 (muted gray)
+   - Text Muted: #6a6a6a (very subtle)
+   - Accent Primary: #007acc (professional blue)
+   - Accent Subtle: #3a3d41 (barely visible)
+
+   Key Changes from Previous Design:
+   - ✨ Removed ALL bright cyan (#00ffff) borders
+   - ✨ Borderless conversation panel (user request!)
+   - ✨ Softer colors throughout (less eye strain)
+   - ✨ Subtle focus indicators (left accent bar)
+   - ✨ More generous padding and spacing
+   - ✨ Professional, minimal aesthetic
+
+   ============================================ */

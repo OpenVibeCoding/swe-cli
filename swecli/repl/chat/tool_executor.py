@@ -271,23 +271,31 @@ class ToolExecutor:
             tool_name=tool_name, tool_args=tool_args, result=result
         )
 
-        # Handle different result formats
-        if isinstance(formatted_result, str):
-            # Claude Code style - already formatted as string
-            combined_message = formatted_result
-        else:
-            # Legacy style - convert Rich Panel to text
-            # Add tool call display with green ⏺ and cyan tool name
-            string_io = StringIO()
-            temp_console = Console(file=string_io, force_terminal=True, legacy_windows=False)
-            temp_console.print(f"[green]⏺[/green] [cyan]{tool_call_display}[/cyan]", end="")
-            colored_tool_call = string_io.getvalue()
+        args_display = ", ".join(
+            f"{key}={value!r}" for key, value in sorted(tool_args.items())
+        )
+        self.chat_app.conversation.add_tool_call(tool_name, args_display)
 
-            # Convert Rich Panel to plain text box for chat display
+        if isinstance(formatted_result, str):
+            for line in formatted_result.splitlines():
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                if stripped.startswith("⎿"):
+                    self.chat_app.conversation.add_tool_result(stripped.lstrip("⎿ ").strip())
+                elif stripped.startswith("⏺"):
+                    # Already added tool call
+                    continue
+                else:
+                    self.chat_app.conversation.add_assistant_message(stripped)
+        else:
             content_width = self.chat_app._get_content_width()
             tool_text = rich_to_text_box(formatted_result, width=content_width)
-
-            # Combine tool call and result
-            combined_message = f"{colored_tool_call}\n{tool_text}"
-
-        self.chat_app.add_assistant_message(combined_message)
+            for line in tool_text.splitlines():
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                if stripped.startswith("⎿"):
+                    self.chat_app.conversation.add_tool_result(stripped.lstrip("⎿ ").strip())
+                else:
+                    self.chat_app.conversation.add_assistant_message(stripped)

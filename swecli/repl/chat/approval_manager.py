@@ -278,28 +278,16 @@ class ChatApprovalManager:
 
     async def request_approval(
         self,
-        operation: any,
+        operation,
         preview: str,
         allow_edit: bool = True,
-        timeout: any = None,
-        command: any = None,
-        working_dir: any = None,
+        timeout=None,
+        *,
+        command=None,
+        working_dir=None,
         force_prompt: bool = False,
     ):
-        """Request approval for an operation with interactive prompt.
-
-        Args:
-            operation: Operation to approve
-            preview: Preview text
-            allow_edit: Whether editing is allowed
-            timeout: Timeout for approval
-            command: Command string
-            working_dir: Working directory
-            force_prompt: Force showing prompt
-
-        Returns:
-            ApprovalResult
-        """
+        """Request approval for an operation with interactive prompt."""
         # Check auto-approval conditions
         auto_result = self._check_auto_approval(operation, command)
         if auto_result:
