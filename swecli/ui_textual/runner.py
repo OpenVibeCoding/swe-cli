@@ -58,7 +58,11 @@ class TextualRunner:
         # Get model display name from config
         model_display = f"{self.config.model_provider}/{self.config.model}"
 
-        self.app = create_chat_app(on_message=self.enqueue_message, model=model_display)
+        self.app = create_chat_app(
+            on_message=self.enqueue_message,
+            model=model_display,
+            on_cycle_mode=self._cycle_mode,
+        )
         if hasattr(self.repl.approval_manager, "chat_app"):
             self.repl.approval_manager.chat_app = self.app
 
@@ -90,7 +94,6 @@ class TextualRunner:
 
     def enqueue_message(self, text: str) -> None:
         """Queue a message from the UI for processing."""
-
         try:
             running_loop = asyncio.get_running_loop()
         except RuntimeError:
@@ -138,7 +141,6 @@ class TextualRunner:
 
         try:
             # Create UI callback for real-time tool display
-            # Try to get conversation widget using the same method as the app
             conversation_widget = None
             try:
                 # Use the same query method the app uses to get the conversation widget
@@ -205,8 +207,31 @@ class TextualRunner:
         if output.strip():
             self._enqueue_console_text(output)
 
+    def _cycle_mode(self) -> str:
+        """Toggle between NORMAL and PLAN modes and return the active mode."""
+
+        current = self.repl.mode_manager.current_mode
+        from swecli.core.management import OperationMode
+
+        new_mode = (
+            OperationMode.PLAN
+            if current == OperationMode.NORMAL
+            else OperationMode.NORMAL
+        )
+
+        self.repl.mode_manager.set_mode(new_mode)
+        if new_mode == OperationMode.PLAN:
+            self.repl.agent = self.repl.planning_agent
+        else:
+            self.repl.agent = self.repl.normal_agent
+
+        return new_mode.value
+
     def _render_responses(self, messages: list[ChatMessage]) -> None:
         """Render new session messages inside the Textual conversation log."""
+
+        buffer_started = False
+        assistant_text_rendered = False
 
         for msg in messages:
             if msg.role == Role.ASSISTANT:
@@ -215,6 +240,7 @@ class TextualRunner:
 
                 if hasattr(self.app, "start_console_buffer"):
                     self.app.start_console_buffer()
+                    buffer_started = True
 
                 content = msg.content.strip()
                 if hasattr(self.app, "_normalize_paragraph"):
@@ -224,7 +250,12 @@ class TextualRunner:
                         self._last_assistant_message_normalized = normalized
                 else:
                     self._last_assistant_message_normalized = content if content else None
-                if content:
+
+                # Only render assistant messages that DON'T have tool calls
+                # Messages with tool calls were already displayed in real-time by callbacks
+                has_tool_calls = getattr(msg, "tool_calls", None) and len(msg.tool_calls) > 0
+
+                if content and not has_tool_calls:
                     self.app.conversation.add_assistant_message(msg.content)
                     if hasattr(self.app, "record_assistant_message"):
                         self.app.record_assistant_message(msg.content)
@@ -232,55 +263,15 @@ class TextualRunner:
                         self.app._last_rendered_assistant = content
                     self._last_assistant_message = content
                     self._suppress_console_duplicate = True
+                    assistant_text_rendered = True
 
-                if getattr(msg, "tool_calls", None):
-                    for tool_call in msg.tool_calls:
-                        args_display = ", ".join(
-                            f"{key}={value!r}" for key, value in sorted(tool_call.parameters.items())
-                        )
-                        if hasattr(self.app.conversation, "add_tool_call"):
-                            self.app.conversation.add_tool_call(tool_call.name, args_display)
-                        result_payload: dict[str, str] = {}
-                        if tool_call.result is not None:
-                            result_payload = {"success": True, "output": str(tool_call.result)}
-                        elif tool_call.error:
-                            result_payload = {"success": False, "error": str(tool_call.error)}
-
-                        if result_payload:
-                            formatted = self.repl.output_formatter.format_tool_result(
-                                tool_name=tool_call.name,
-                                tool_args=tool_call.parameters,
-                                result=result_payload,
-                            )
-                            if isinstance(formatted, str):
-                                for line in formatted.splitlines():
-                                    stripped = line.strip()
-                                    if not stripped:
-                                        continue
-                                    if stripped.lstrip().startswith("⎿") and hasattr(self.app.conversation, "add_tool_result"):
-                                        self.app.conversation.add_tool_result(stripped.lstrip("⎿ ").strip())
-                                    elif hasattr(self.app.conversation, "add_assistant_message"):
-                                        self.app.conversation.add_assistant_message(stripped)
-                            else:
-                                content_width = getattr(self.app, "_get_content_width", lambda: 80)()
-                                from swecli.ui.utils.rich_to_text import rich_to_text_box
-
-                                tool_text = rich_to_text_box(formatted, width=content_width)
-                                for line in tool_text.splitlines():
-                                    stripped = line.strip()
-                                    if not stripped:
-                                        continue
-                                    if stripped.lstrip().startswith("⎿") and hasattr(self.app.conversation, "add_tool_result"):
-                                        self.app.conversation.add_tool_result(stripped.lstrip("⎿ ").strip())
-                                    elif hasattr(self.app.conversation, "add_assistant_message"):
-                                        self.app.conversation.add_assistant_message(stripped)
+                # Skip rendering messages with tool calls - already shown in real-time
             elif msg.role == Role.SYSTEM:
                 self.app.conversation.add_system_message(msg.content)
             # Skip USER messages - they're already displayed by the UI when user types them
-            # elif msg.role == Role.USER:
-            #     self.app.conversation.add_user_message(msg.content)
-            # else:
-            #     self.app.conversation.add_system_message(msg.content)
+
+        if buffer_started and hasattr(self.app, "stop_console_buffer"):
+            self.app.stop_console_buffer()
 
     def _render_console_output(self, text: str) -> None:
         """Render console output captured from REPL commands/processings."""
@@ -334,6 +325,22 @@ class TextualRunner:
             if "\r" in line:
                 lines[index] = line.split("\r")[-1]
         return "\n".join(lines)
+
+    @staticmethod
+    def _clean_tool_summary(summary: str) -> str:
+        """Normalize tool summary text for assistant follow-up."""
+
+        cleaned = summary.strip()
+        if not cleaned:
+            return ""
+
+        if cleaned.lower().startswith("found") and ":" in cleaned:
+            cleaned = cleaned.split(":", 1)[1].strip()
+
+        cleaned = cleaned.strip(". ")
+        if cleaned:
+            return cleaned
+        return summary.strip()
 
     @staticmethod
     def _is_spinner_text(plain: str) -> bool:

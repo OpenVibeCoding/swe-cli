@@ -1,10 +1,11 @@
 """Textual-based chat application for SWE-CLI - POC."""
 
-from dataclasses import dataclass
 import random
 import re
 import time
-from typing import Callable, Optional
+import threading
+from dataclasses import dataclass
+from typing import Any, Callable, Optional
 
 from rich.console import RenderableType
 from rich.markdown import Markdown
@@ -20,7 +21,7 @@ from textual.events import Key, Paste
 from textual.geometry import Size
 from textual.message import Message
 from textual.timer import Timer
-from textual.widgets import Footer, Header, RichLog, Static, TextArea
+from textual.widgets import Footer, Header, RichLog, Rule, Static, TextArea
 
 from swecli.ui_textual.approval_modal import ApprovalModal
 
@@ -44,10 +45,28 @@ class ConversationLog(RichLog):
         self._last_assistant_rendered: str | None = None
         self._spinner_start: int | None = None
         self._spinner_line_count = 0
+        self._tool_spinner_timer: Timer | None = None
+        self._tool_name = None
+        self._tool_args = None
+        self._spinner_active = False
+        self._spinner_chars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+        self._spinner_index = 0
+        self._tool_call_start: int | None = None
+
+    def on_mount(self) -> None:
+        """Placeholder to mirror base method (timer created lazily)."""
+        return
+
+    def on_unmount(self) -> None:
+        """Dispose of the spinner timer when the widget is removed."""
+        if self._tool_spinner_timer is not None:
+            self._tool_spinner_timer.stop()
+            self._tool_spinner_timer = None
 
     def add_user_message(self, message: str) -> None:
         """Add user message to conversation."""
-        self.write(Text(f"› {message}", style="bold cyan"))
+        self.write(Text(f"› {message}", style="bold white"))
+        self.write(Text(""))  # Add spacing after user message
 
     def add_assistant_message(self, message: str) -> None:
         """Add assistant message with lightweight markdown and code support."""
@@ -88,21 +107,118 @@ class ConversationLog(RichLog):
                         for line in clean_segments or [content]:
                             self.write(Text(line.rstrip()))
 
+        # Add spacing after assistant message
+        self.write(Text(""))
+
     def add_system_message(self, message: str) -> None:
         """Add system message to conversation."""
         self.write(Text(message, style="dim italic"))
 
     def add_tool_call(self, tool_name: str, args: str) -> None:
         """Add tool call to conversation."""
+        self._tool_name = tool_name
+        self._tool_args = args
+
+        # Store the starting index (like thinking spinner does)
+        self._tool_call_start = len(self.lines)
+
+        # Write initial line with ⏺
+        self._write_tool_call_line("⏺")
+
+    def start_tool_execution(self) -> None:
+        """Start animating the spinner on the tool call line."""
+        if self._tool_name is None:
+            return
+
+        self._spinner_active = True
+        self._spinner_index = 0
+        self._render_tool_spinner_frame()
+        self._schedule_tool_spinner()
+
+    def stop_tool_execution(self) -> None:
+        """Stop spinner and restore ⏺."""
+        self._spinner_active = False
+
+        # Restore the ⏺ by updating the line directly
+        if self._tool_call_start is not None and self._tool_name and self._tool_call_start < len(self.lines):
+            from rich.segment import Segment
+            from rich.style import Style
+            from textual.strip import Strip
+
+            segments = [
+                Segment("⏺ ", Style(color="green")),
+                Segment(self._tool_name, Style(color="bright_cyan", bold=True)),
+                Segment(f"({self._tool_args})", Style(color="bright_cyan")),
+            ]
+            self.lines[self._tool_call_start] = Strip(segments)
+            self.refresh_lines(self._tool_call_start, 1)
+
+        self._tool_name = None
+        self._tool_args = None
+        self._tool_call_start = None
+        self._spinner_index = 0
+        if self._tool_spinner_timer is not None:
+            self._tool_spinner_timer.stop()
+            self._tool_spinner_timer = None
+
+    def _animate_tool_spinner(self) -> None:
+        """Update spinner character - runs on UI thread via timer."""
+        if not self._spinner_active or self._tool_name is None or self._tool_call_start is None:
+            return
+
+        self._render_tool_spinner_frame()
+        # Move to next spinner frame
+        self._spinner_index = (self._spinner_index + 1) % len(self._spinner_chars)
+        self._schedule_tool_spinner()
+
+    def _schedule_tool_spinner(self) -> None:
+        """Schedule the next spinner frame if still active."""
+        if not self._spinner_active:
+            return
+        if self._tool_spinner_timer is not None:
+            self._tool_spinner_timer.stop()
+        self._tool_spinner_timer = self.set_timer(0.12, self._animate_tool_spinner)
+
+    def _render_tool_spinner_frame(self) -> None:
+        """Render the current spinner frame into the conversation log."""
+        if self._tool_call_start is None or self._tool_name is None:
+            return
+
+        spinner_char = self._spinner_chars[self._spinner_index]
+        self._replace_tool_call_line(spinner_char)
+
+    def _replace_tool_call_line(self, prefix: str) -> None:
+        """Replace the current tool call line with a new prefix (spinner frame)."""
+        if self._tool_call_start is not None and self._tool_call_start < len(self.lines):
+            del self.lines[self._tool_call_start]
+            self._line_cache.clear()
+            widths: list[int] = []
+            for strip in self.lines:
+                cell_length = getattr(strip, "cell_length", None)
+                widths.append(cell_length() if callable(cell_length) else cell_length or 0)
+            self._widest_line_width = max(widths, default=0)
+            self.virtual_size = Size(self._widest_line_width, len(self.lines))
+            if self.auto_scroll:
+                self.scroll_end(animate=False)
+        else:
+            self._tool_call_start = len(self.lines)
+
+        self._write_tool_call_line(prefix)
+        self._tool_call_start = len(self.lines) - 1
+
+    def _write_tool_call_line(self, prefix: str) -> None:
+        """Write a tool call line with the given prefix character."""
         formatted = Text()
-        formatted.append("⏺ ", style="white")
-        formatted.append(tool_name, style="bold bright_cyan")
-        formatted.append(f"({args})", style="bright_cyan")
-        self.write(formatted)
+        prefix_style = "green" if prefix == "⏺" else "bright_cyan"
+        formatted.append(f"{prefix} ", style=prefix_style)
+        formatted.append(self._tool_name, style="bold bright_cyan")
+        formatted.append(f"({self._tool_args})", style="bright_cyan")
+        self.write(formatted, scroll_end=False, animate=False)
 
     def add_tool_result(self, result: str) -> None:
         """Add tool result to conversation."""
         self.write(Text(f"  ⎿ {result}", style="green"))
+        self.write(Text(""))  # Add spacing after tool result
 
     def add_error(self, error: str) -> None:
         """Add error message to conversation."""
@@ -259,6 +375,13 @@ class ChatTextArea(TextArea):
                 self.app.action_history_down()
             return
 
+        if event.key == "shift+tab":
+            event.stop()
+            event.prevent_default()
+            if hasattr(self.app, "action_cycle_mode"):
+                self.app.action_cycle_mode()
+            return
+
         if event.key in {"enter", "return"} and "+" not in event.key:
             event.stop()
             event.prevent_default()
@@ -272,6 +395,7 @@ class ChatTextArea(TextArea):
 
         paste_text = event.text
         event.stop()
+        event.prevent_default()  # Prevent default paste behavior to avoid double paste
 
         if len(paste_text) > self._paste_threshold:
             token = self._register_large_paste(paste_text)
@@ -484,6 +608,13 @@ class SWECLIChatApp(App):
         overflow-y: scroll;
     }
 
+    Rule {
+        height: 1;
+        color: white 20%;            /* Elegant white separator with low opacity */
+        background: transparent;
+        margin: 0;
+    }
+
     #input-container {
         height: auto;
         layout: vertical;
@@ -536,12 +667,14 @@ class SWECLIChatApp(App):
         Binding("down", "scroll_down_line", "Scroll Down One Line", show=False),
         Binding("ctrl+up", "focus_conversation", "Focus Conversation", show=False),
         Binding("ctrl+down", "focus_input", "Focus Input", show=False),
+        Binding("shift+tab", "cycle_mode", "Switch Mode"),
     ]
 
     def __init__(
         self,
         on_message: Optional[Callable[[str], None]] = None,
         model: str = "claude-sonnet-4",
+        on_cycle_mode: Optional[Callable[[], str]] = None,
         **kwargs,
     ):
         """Initialize chat application.
@@ -552,12 +685,12 @@ class SWECLIChatApp(App):
         """
         super().__init__(**kwargs)
         self.on_message = on_message
+        self.on_cycle_mode = on_cycle_mode
         self.model = model
         self._is_processing = False
         self._message_history = []
         self._history_index = -1
         self._current_input = ""
-        self._status_mode_before_processing = "normal"
         self._spinner_frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
         self._spinner_timer: Timer | None = None
         self._spinner_frame_index = 0
@@ -570,6 +703,10 @@ class SWECLIChatApp(App):
         self._last_assistant_normalized: str | None = None
         self._buffer_console_output = False
         self._pending_assistant_normalized: str | None = None
+        self._pending_tool_summaries: list[str] = []
+        self._assistant_response_received = False
+        self._saw_tool_result = False
+        self._ui_thread: threading.Thread | None = None
 
     def compose(self) -> ComposeResult:
         """Create child widgets."""
@@ -578,6 +715,9 @@ class SWECLIChatApp(App):
         with Container(id="main-container"):
             # Conversation area
             yield ConversationLog(id="conversation")
+
+            # Separator line between conversation and input
+            yield Rule(line_style="solid")
 
             # Input area
             with Vertical(id="input-container"):
@@ -595,6 +735,8 @@ class SWECLIChatApp(App):
 
     def on_mount(self) -> None:
         """Initialize the app on mount."""
+
+        self._ui_thread = threading.current_thread()
 
         # Get widgets
         self.conversation = self.query_one("#conversation", ConversationLog)
@@ -617,24 +759,31 @@ class SWECLIChatApp(App):
             self.status_bar.set_context(15)
 
     def _render_welcome_panel(self, *, real_integration: bool) -> None:
-        """Render a polished welcome panel depending on backend availability."""
+        """Render a polished welcome panel with structured two-column layout."""
+        from pathlib import Path
+        from swecli.ui.components.welcome import WelcomeMessage
+        from swecli.core.management import OperationMode
+        import os
 
         if real_integration:
-            heading = Text("SWE-CLI", style="bold bright_cyan")
-            subheading = Text("AI-powered coding assistant", style="dim")
-            bullets = [
-                "List files in the current directory",
-                "Read or edit a specific file",
-                "Help debug a failing test",
-                "Explain what this repository does",
-            ]
-            body = Text()
-            for bullet in bullets:
-                body.append("• ", style="bright_cyan")
-                body.append(bullet)
-                body.append("\n")
-            body.append("\nType your request and press Enter to begin.")
+            # Get current session info
+            working_dir = Path.cwd()
+            username = os.getenv("USER", "Developer")
+            current_mode = OperationMode.NORMAL  # Default mode on startup
+
+            # Generate the full two-column welcome banner
+            welcome_lines = WelcomeMessage.generate_full_welcome(
+                current_mode=current_mode,
+                working_dir=working_dir,
+                username=username,
+            )
+
+            # Write each line to the conversation
+            for line in welcome_lines:
+                self.conversation.write(Text.from_ansi(line))
+
         else:
+            # POC mode - simple welcome
             heading = Text("SWE-CLI (Preview)", style="bold bright_cyan")
             subheading = Text("Textual POC interface", style="dim")
             body = Text(
@@ -642,35 +791,36 @@ class SWECLIChatApp(App):
                 "Core flows are stubbed; use /help, /demo, or /scroll to interact."
             )
 
-        shortcuts = Text()
-        shortcuts.append("Enter", style="bold green")
-        shortcuts.append(" send   •   ")
-        shortcuts.append("Shift+Enter", style="bold green")
-        shortcuts.append(" new line   •   ")
-        shortcuts.append("/help", style="bold cyan")
-        shortcuts.append(" commands")
+            shortcuts = Text()
+            shortcuts.append("Enter", style="bold green")
+            shortcuts.append(" send   •   ")
+            shortcuts.append("Shift+Enter", style="bold green")
+            shortcuts.append(" new line   •   ")
+            shortcuts.append("/help", style="bold cyan")
+            shortcuts.append(" commands")
 
-        content = Text.assemble(
-            heading,
-            "\n",
-            subheading,
-            "\n\n",
-            body,
-            "\n\n",
-            shortcuts,
-        )
+            content = Text.assemble(
+                heading,
+                "\n",
+                subheading,
+                "\n\n",
+                body,
+                "\n\n",
+                shortcuts,
+            )
 
-        panel = Panel(
-            Align.center(content, vertical="middle"),
-            border_style="bright_cyan",
-            padding=(1, 3),
-            title="Welcome",
-            subtitle="swecli-textual",
-            subtitle_align="left",
-            width=78,
-        )
+            panel = Panel(
+                Align.center(content, vertical="middle"),
+                border_style="bright_cyan",
+                padding=(1, 3),
+                title="Welcome",
+                subtitle="swecli-textual",
+                subtitle_align="left",
+                width=78,
+            )
 
-        self.conversation.write(panel)
+            self.conversation.write(panel)
+
         self.conversation.add_system_message("")
 
     def _start_local_spinner(self) -> None:
@@ -702,7 +852,6 @@ class SWECLIChatApp(App):
         if self._spinner_active and hasattr(self, "conversation"):
             self.conversation.stop_spinner()
         self._spinner_active = False
-        self.status_bar.clear_spinner()
         self._spinner_started_at = 0.0
         self._last_rendered_assistant = None
         self._last_assistant_normalized = None
@@ -802,7 +951,6 @@ class SWECLIChatApp(App):
             self.conversation.start_spinner(text)
         else:
             self.conversation.update_spinner(text)
-        self.status_bar.set_spinner(text)
 
     def _get_spinner_message(self) -> str:
         """Return a human-friendly spinner message."""
@@ -824,6 +972,111 @@ class SWECLIChatApp(App):
         suffix = f" ({elapsed}s)" if elapsed else " (0s)"
         return f"{frame} {self._spinner_message}{suffix}"
 
+    def _invoke_on_ui_thread(self, func: Callable[[], None]) -> None:
+        """Ensure func executes on the UI thread regardless of caller context."""
+        if self._ui_thread is not None and threading.current_thread() is self._ui_thread:
+            func()
+            return
+
+        if getattr(self, "is_running", False):
+            try:
+                self.call_from_thread(func)
+                return
+            except Exception:
+                pass
+
+        func()
+
+    def _reset_interaction_state(self) -> None:
+        """Clear per-request tracking for tool summaries and assistant follow-ups."""
+        self._pending_tool_summaries.clear()
+        self._assistant_response_received = False
+        self._saw_tool_result = False
+
+    def record_tool_summary(self, tool_name: str, tool_args: dict[str, Any], result_lines: list[str]) -> None:
+        """Record a tool result summary for fallback assistant messaging."""
+        if not result_lines:
+            return
+
+        summary = self._build_tool_summary(tool_name, tool_args, result_lines)
+        if not summary:
+            return
+
+        self._pending_tool_summaries.append(summary)
+        self._saw_tool_result = True
+
+    def _build_tool_summary(self, tool_name: str, tool_args: dict[str, Any], result_lines: list[str]) -> str:
+        """Create a human-friendly sentence summarizing a tool result."""
+        primary = (result_lines[0] or "").strip()
+        if not primary:
+            return ""
+
+        friendly_tool = tool_name.replace("_", " ")
+        args_display = self._format_tool_args_for_summary(tool_args)
+
+        if not primary.endswith((".", "!", "?")):
+            primary = f"{primary}."
+
+        # Capitalize the first letter for readability
+        if primary and primary[0].islower():
+            primary = primary[0].upper() + primary[1:]
+
+        if args_display:
+            prefix = f"{friendly_tool}({args_display})"
+        else:
+            prefix = friendly_tool
+
+        return f"{prefix}: {primary}"
+
+    def _format_tool_args_for_summary(self, tool_args: dict[str, Any]) -> str:
+        """Format tool arguments for a concise summary sentence."""
+        if not isinstance(tool_args, dict) or not tool_args:
+            return ""
+
+        parts: list[str] = []
+        for key in sorted(tool_args):
+            value = tool_args[key]
+            if value is None:
+                continue
+            if isinstance(value, str):
+                display = value.strip()
+                if len(display) > 30:
+                    display = f"{display[:27]}..."
+                display = display.replace("\n", " ")
+                parts.append(f"{key}='{display}'")
+            else:
+                parts.append(f"{key}={value!r}")
+
+        return ", ".join(parts)
+
+    def _emit_tool_follow_up_if_needed(self) -> None:
+        """Render a fallback assistant follow-up if tools finished without LLM wrap-up."""
+        if not hasattr(self, "conversation"):
+            self._pending_tool_summaries.clear()
+            self._saw_tool_result = False
+            return
+
+        if self._assistant_response_received or not self._saw_tool_result:
+            self._pending_tool_summaries.clear()
+            self._saw_tool_result = False
+            return
+
+        if not self._pending_tool_summaries:
+            self._saw_tool_result = False
+            return
+
+        if len(self._pending_tool_summaries) == 1:
+            message = self._pending_tool_summaries[0]
+        else:
+            lines = ["Summary of tool activity:"]
+            lines.extend(f"- {summary}" for summary in self._pending_tool_summaries)
+            message = "\n".join(lines)
+
+        self.conversation.add_assistant_message(message)
+        self.record_assistant_message(message)
+        self._pending_tool_summaries.clear()
+        self._saw_tool_result = False
+
     def record_assistant_message(self, message: str) -> None:
         """Track assistant lines to suppress duplicate console echoes."""
 
@@ -840,6 +1093,9 @@ class SWECLIChatApp(App):
         self._last_rendered_assistant = message.strip()
         self._last_assistant_normalized = self._normalize_paragraph(message)
         self._pending_assistant_normalized = None
+        self._assistant_response_received = True
+        self._pending_tool_summaries.clear()
+        self._saw_tool_result = False
 
     def render_console_output(self, renderable: RenderableType) -> None:
         """Render console output, buffering if spinner is active."""
@@ -870,6 +1126,8 @@ class SWECLIChatApp(App):
 
         message_with_placeholders = raw_text.rstrip("\n")
         message = self.input_field.resolve_large_pastes(message_with_placeholders)
+
+        self._reset_interaction_state()
 
         # Clear input field in preparation for the next message
         self.input_field.load_text("")
@@ -1021,24 +1279,28 @@ class SWECLIChatApp(App):
             return
 
         if active:
-            self._status_mode_before_processing = self.status_bar.mode
-            self.status_bar.set_mode("processing")
             self._start_local_spinner()
         else:
-            previous_mode = getattr(self, "_status_mode_before_processing", "normal")
-            self.status_bar.set_mode(previous_mode or "normal")
             self._stop_local_spinner()
 
     def notify_processing_complete(self) -> None:
         """Reset processing indicators once backend work completes."""
 
-        self._set_processing_state(False)
+        def finalize() -> None:
+            self._set_processing_state(False)
+            self._emit_tool_follow_up_if_needed()
+
+        self._invoke_on_ui_thread(finalize)
 
     def notify_processing_error(self, error: str) -> None:
         """Display an error message and reset processing indicators."""
 
-        self.conversation.add_error(error)
-        self._set_processing_state(False)
+        def finalize() -> None:
+            self.conversation.add_error(error)
+            self._set_processing_state(False)
+            self._reset_interaction_state()
+
+        self._invoke_on_ui_thread(finalize)
 
     def action_clear_conversation(self) -> None:
         """Clear the conversation (Ctrl+L)."""
@@ -1125,10 +1387,31 @@ class SWECLIChatApp(App):
         self.input_field.load_text(self._current_input)
         self.input_field.move_cursor_to_end()
 
+    def action_cycle_mode(self) -> None:
+        """Cycle between PLAN and NORMAL modes (Shift+Tab)."""
+
+        if not self.on_cycle_mode:
+            return
+
+        try:
+            new_mode = self.on_cycle_mode()
+        except Exception:  # pragma: no cover - defensive
+            return
+
+        if not new_mode:
+            return
+
+        mode_label = new_mode.lower()
+        self.status_bar.set_mode(mode_label)
+        self.conversation.add_system_message(
+            f"Mode switched to {new_mode.upper()} mode"
+        )
+
 
 def create_chat_app(
     on_message: Optional[Callable[[str], None]] = None,
-    model: str = "claude-sonnet-4"
+    model: str = "claude-sonnet-4",
+    on_cycle_mode: Optional[Callable[[], str]] = None,
 ) -> SWECLIChatApp:
     """Create and return a new chat application instance.
 
@@ -1139,7 +1422,7 @@ def create_chat_app(
     Returns:
         Configured SWECLIChatApp instance
     """
-    return SWECLIChatApp(on_message=on_message, model=model)
+    return SWECLIChatApp(on_message=on_message, model=model, on_cycle_mode=on_cycle_mode)
 
 
 if __name__ == "__main__":

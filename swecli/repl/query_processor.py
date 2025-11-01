@@ -607,6 +607,10 @@ class QueryProcessor:
                         self.console.print("\n[dim](Task completed)[/dim]")
                     break
 
+                # Display assistant's thinking text BEFORE tool execution
+                if llm_description and ui_callback and hasattr(ui_callback, 'on_assistant_message'):
+                    ui_callback.on_assistant_message(llm_description)
+
                 # Add assistant message with tool calls to history
                 messages.append({
                     "role": "assistant",
@@ -664,9 +668,10 @@ class QueryProcessor:
                         ToolCallModel(
                             id=tc["id"],
                             name=tc["function"]["name"],
-                            parameters=tc["function"]["arguments"],
+                            parameters=json.loads(tc["function"]["arguments"]),
                             result=tool_result,
                             error=tool_error,
+                            approved=True,
                         )
                     )
 
