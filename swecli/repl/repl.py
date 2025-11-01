@@ -429,6 +429,36 @@ class REPL:
         # Update state from query processor results
         self._last_operation_summary, self._last_error, self._last_latency_ms = result
 
+    def _process_query_with_callback(self, query: str, ui_callback) -> None:
+        """Process a user query with AI using ReAct pattern with UI callback for real-time updates.
+
+        Args:
+            query: User query
+            ui_callback: UI callback for real-time tool display
+        """
+        # Delegate to query processor with callback
+        if hasattr(self.query_processor, 'process_query_with_callback'):
+            result = self.query_processor.process_query_with_callback(
+                query,
+                self.agent,
+                self.tool_registry,
+                self.approval_manager,
+                self.undo_manager,
+                ui_callback,
+            )
+        else:
+            # Fallback to normal processing if callback method doesn't exist
+            result = self.query_processor.process_query(
+                query,
+                self.agent,
+                self.tool_registry,
+                self.approval_manager,
+                self.undo_manager,
+            )
+
+        # Update state from query processor results
+        self._last_operation_summary, self._last_error, self._last_latency_ms = result
+
     def _handle_command(self, command: str) -> None:
         """Handle slash commands.
 

@@ -526,3 +526,172 @@ class QueryProcessor:
             self._last_error = str(e)
 
         return (self._last_operation_summary, self._last_error, self._last_latency_ms)
+
+    def process_query_with_callback(
+        self,
+        query: str,
+        agent,
+        tool_registry,
+        approval_manager: "ApprovalManager",
+        undo_manager: "UndoManager",
+        ui_callback,
+    ) -> tuple:
+        """Process a user query with AI using ReAct pattern with UI callback for real-time updates.
+
+        Args:
+            query: User query
+            agent: Agent to use for LLM calls
+            tool_registry: Tool registry for executing tools
+            approval_manager: Approval manager for user confirmations
+            undo_manager: Undo manager for operation history
+            ui_callback: UI callback for real-time tool display
+
+        Returns:
+            Tuple of (last_operation_summary, last_error, last_latency_ms)
+        """
+        from swecli.models.message import ChatMessage, Role
+        from swecli.core.monitoring import TaskMonitor
+
+        # Notify UI that thinking is starting
+        if ui_callback and hasattr(ui_callback, 'on_thinking_start'):
+            ui_callback.on_thinking_start()
+
+        # Add user message to session
+        user_msg = ChatMessage(role=Role.USER, content=query)
+        self.session_manager.add_message(user_msg, self.config.auto_save_interval)
+
+        # Enhance query with file contents
+        enhanced_query = self.enhance_query(query)
+
+        # Prepare messages for API
+        messages = self._prepare_messages(query, enhanced_query, agent)
+
+        try:
+            # ReAct loop: Reasoning → Acting → Observing
+            consecutive_reads = 0
+            iteration = 0
+            SAFETY_LIMIT = 30
+            READ_OPERATIONS = {"read_file", "list_files", "search_code"}
+
+            while True:
+                iteration += 1
+
+                # Safety check
+                if iteration > SAFETY_LIMIT:
+                    self._handle_safety_limit(agent, messages)
+                    break
+
+                # Call LLM
+                task_monitor = TaskMonitor()
+                response, latency_ms = self._call_llm_with_progress(agent, messages, task_monitor)
+                self._last_latency_ms = latency_ms
+
+                if not response["success"]:
+                    self.console.print(f"[red]Error: {response.get('error', 'Unknown error')}[/red]")
+                    break
+
+                # Get LLM description and tool calls
+                llm_description = response.get("content", "")
+                tool_calls = response.get("tool_calls")
+
+                # Notify UI that thinking is complete
+                if ui_callback and hasattr(ui_callback, 'on_thinking_complete'):
+                    ui_callback.on_thinking_complete()
+
+                # If no tool calls, task is complete
+                if not tool_calls:
+                    if llm_description:
+                        assistant_msg = ChatMessage(role=Role.ASSISTANT, content=llm_description)
+                        self.session_manager.add_message(assistant_msg, self.config.auto_save_interval)
+                    else:
+                        self.console.print("\n[dim](Task completed)[/dim]")
+                    break
+
+                # Add assistant message with tool calls to history
+                messages.append({
+                    "role": "assistant",
+                    "content": llm_description,
+                    "tool_calls": tool_calls,
+                })
+
+                # Track read-only operations
+                all_reads = all(tc["function"]["name"] in READ_OPERATIONS for tc in tool_calls)
+                consecutive_reads = consecutive_reads + 1 if all_reads else 0
+
+                # Execute tool calls with real-time display
+                for tool_call in tool_calls:
+                    # Notify UI about tool call
+                    if ui_callback and hasattr(ui_callback, 'on_tool_call'):
+                        ui_callback.on_tool_call(
+                            tool_call["function"]["name"],
+                            tool_call["function"]["arguments"]
+                        )
+
+                    result = self._execute_tool_call(tool_call, tool_registry, approval_manager, undo_manager)
+
+                    # Notify UI about tool result
+                    if ui_callback and hasattr(ui_callback, 'on_tool_result'):
+                        ui_callback.on_tool_result(
+                            tool_call["function"]["name"],
+                            tool_call["function"]["arguments"],
+                            result
+                        )
+
+                    # Add tool result to messages
+                    tool_result = result.get("output", "") if result["success"] else f"Error: {result.get('error', 'Tool execution failed')}"
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call["id"],
+                        "content": tool_result,
+                    })
+
+                # Persist assistant step with tool calls to session
+                from swecli.models.message import ToolCall as ToolCallModel
+                tool_call_objects = []
+                for tc in tool_calls:
+                    tool_result = None
+                    tool_error = None
+                    for msg in reversed(messages):
+                        if msg.get("role") == "tool" and msg.get("tool_call_id") == tc["id"]:
+                            content = msg.get("content", "")
+                            if content.startswith("Error:"):
+                                tool_error = content[6:].strip()
+                            else:
+                                tool_result = content
+                            break
+
+                    tool_call_objects.append(
+                        ToolCallModel(
+                            id=tc["id"],
+                            name=tc["function"]["name"],
+                            parameters=tc["function"]["arguments"],
+                            result=tool_result,
+                            error=tool_error,
+                        )
+                    )
+
+                assistant_msg = ChatMessage(
+                    role=Role.ASSISTANT,
+                    content=llm_description,
+                    tool_calls=tool_call_objects,
+                )
+                self.session_manager.add_message(assistant_msg, self.config.auto_save_interval)
+
+                # Break on excessive consecutive reads
+                if consecutive_reads >= 5:
+                    warning = "[yellow]AI is performing multiple read operations. Consider improving the query or providing more specific instructions.[/yellow]"
+                    self.console.print(warning)
+                    assistant_msg = ChatMessage(role=Role.ASSISTANT, content=warning)
+                    self.session_manager.add_message(assistant_msg, self.config.auto_save_interval)
+                    break
+
+            # Update status line
+            self._render_status_line()
+
+        except Exception as e:
+            self.console.print(f"[red]Error: {str(e)}[/red]")
+            import traceback
+            traceback.print_exc()
+            self._last_error = str(e)
+
+        return (self._last_operation_summary, self._last_error, self._last_latency_ms)

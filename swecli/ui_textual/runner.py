@@ -137,6 +137,30 @@ class TextualRunner:
         previous_count = len(session.messages) if session else 0
 
         try:
+            # Create UI callback for real-time tool display
+            # Try to get conversation widget using the same method as the app
+            conversation_widget = None
+            try:
+                # Use the same query method the app uses to get the conversation widget
+                from swecli.ui_textual.chat_app import ConversationLog
+                conversation_widget = self.app.query_one("#conversation", ConversationLog)
+            except Exception:
+                # Fallback to direct attribute access
+                if hasattr(self.app, 'conversation') and self.app.conversation is not None:
+                    conversation_widget = self.app.conversation
+
+            if conversation_widget is not None:
+                from swecli.ui_textual.ui_callback import TextualUICallback
+                ui_callback = TextualUICallback(conversation_widget, self.app)
+            else:
+                # Create a mock callback for when app is not mounted (e.g., during testing)
+                class MockCallback:
+                    def on_thinking_start(self): pass
+                    def on_thinking_complete(self): pass
+                    def on_tool_call(self, tool_name, tool_args): pass
+                    def on_tool_result(self, tool_name, tool_args, result): pass
+                ui_callback = MockCallback()
+
             # Temporarily disable console bridge to prevent duplicate rendering
             # All relevant messages are already in session.messages
             console = self.repl.console
@@ -149,7 +173,12 @@ class TextualRunner:
                 console.log = self._original_console_log
 
             try:
-                self.repl._process_query(message)
+                # Process query with UI callback for real-time display
+                if hasattr(self.repl, '_process_query_with_callback'):
+                    self.repl._process_query_with_callback(message, ui_callback)
+                else:
+                    # Fallback to normal processing if callback method doesn't exist
+                    self.repl._process_query(message)
             finally:
                 # Restore bridge
                 console.print = original_print
@@ -415,10 +444,20 @@ class TextualRunner:
             return
 
 
-def launch_textual_cli(**kwargs) -> None:
-    """Public helper for launching the Textual UI from external callers."""
+def launch_textual_cli(message=None, **kwargs) -> None:
+    """Public helper for launching the Textual UI from external callers.
+
+    Args:
+        message: Optional message to process automatically
+        **kwargs: Additional arguments passed to TextualRunner
+    """
 
     runner = TextualRunner(**kwargs)
+
+    # If a message is provided, enqueue it for processing
+    if message:
+        runner.enqueue_message(message)
+
     runner.run()
 
 

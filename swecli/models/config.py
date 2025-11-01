@@ -69,7 +69,7 @@ class AppConfig(BaseModel):
     # AI Provider settings - Three model system
     # Normal model: For standard coding tasks
     model_provider: str = "fireworks"
-    model: str = "accounts/fireworks/models/qwen3-235b-a22b-instruct-2507"
+    model: str = "accounts/fireworks/models/kimi-k2-instruct-0905"
 
     # Thinking model: For complex reasoning tasks (optional, falls back to normal if not set)
     model_thinking: Optional[str] = None

@@ -46,28 +46,54 @@ class StatusLine:
         """
         return
 
-    def _truncate_model(self, model: str, max_len: int = 25) -> str:
-        """Truncate model name if too long.
+    def _truncate_model(self, model: str, max_len: int = 60) -> str:
+        """Smart model name truncation that preserves important parts.
 
         Args:
             model: Full model name
             max_len: Maximum length
 
         Returns:
-            Truncated model name
+            Truncated model name with important parts preserved
         """
+        # For fireworks models, always simplify to show provider + actual model name
+        if "accounts/fireworks/models/" in model:
+            try:
+                # Extract: "accounts/fireworks/models/actual-model-name" -> "fireworks/actual-model-name"
+                parts = model.split("accounts/fireworks/models/")
+                if len(parts) == 2:
+                    provider = "fireworks"
+                    model_name = parts[1]
+                    simplified = f"{provider}/{model_name}"
+                    if len(simplified) <= max_len:
+                        return simplified
+                    # If still too long, truncate the model name part
+                    available = max_len - len(provider) - 1  # -1 for "/"
+                    if available > 10:  # Ensure meaningful truncation
+                        return f"{provider}/{model_name[:available-3]}..."
+            except Exception:
+                pass
+                
+        # If no truncation needed and no special processing applied
         if len(model) <= max_len:
             return model
-
-        # Try to keep the important part
+        
+        # For other providers with slashes, try to keep provider/model format
         if "/" in model:
             parts = model.split("/")
-            model_name = parts[-1]
-            if len(model_name) <= max_len:
-                return model_name
-
-        # Truncate with ellipsis
-        return model[:max_len-1] + "…"
+            if len(parts) >= 2:
+                provider = parts[0]
+                model_name = parts[-1]  # Last part is usually the model name
+                simplified = f"{provider}/{model_name}"
+                if len(simplified) <= max_len:
+                    return simplified
+                # If still too long, truncate model name
+                available = max_len - len(provider) - 1
+                if available > 10:
+                    return f"{provider}/{model_name[:available-3]}..."
+        
+        # Fallback: simple truncation
+        return model[:max_len-3] + "..."
 
     def _smart_path(self, path: Path, max_len: int = 30) -> str:
         """Smart path display.

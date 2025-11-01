@@ -85,6 +85,7 @@ class PlanningAgent(BaseAgent):
         message: str,
         deps: Any,
         message_history: Optional[list[dict]] = None,
+        ui_callback: Optional[Any] = None,
     ) -> dict:
         del deps  # Planning agent does not execute tools.
 

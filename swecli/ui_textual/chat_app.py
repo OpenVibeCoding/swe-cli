@@ -10,6 +10,8 @@ from rich.console import RenderableType
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.syntax import Syntax
+from rich.align import Align
+from rich.panel import Panel
 from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -393,8 +395,8 @@ class StatusBar(Static):
         status.append(f"Context {self.context_pct}%", style="#808080")
         status.append("  │  ", style="#6a6a6a")
 
-        # Model (truncate if too long)
-        model_display = self.model if len(self.model) < 40 else self.model[:37] + "..."
+        # Model (smart truncation if too long)
+        model_display = self._smart_truncate_model(self.model, 60)
         status.append(model_display, style="#007acc")
 
         # Spinner status (if active)
@@ -410,6 +412,55 @@ class StatusBar(Static):
         status.append("^C quit", style="#6a6a6a")
 
         self.update(status)
+
+    def _smart_truncate_model(self, model: str, max_len: int) -> str:
+        """Smart model name truncation that preserves important parts.
+        
+        Args:
+            model: Full model name (e.g., "fireworks/accounts/fireworks/models/qwen2p5-coder-32b-instruct")
+            max_len: Maximum length allowed
+            
+        Returns:
+            Truncated model name with important parts preserved
+        """
+        # For fireworks models, always simplify to show provider + actual model name
+        if "accounts/fireworks/models/" in model:
+            try:
+                # Extract: "accounts/fireworks/models/actual-model-name" -> "fireworks/actual-model-name"
+                parts = model.split("accounts/fireworks/models/")
+                if len(parts) == 2:
+                    provider = "fireworks"
+                    model_name = parts[1]
+                    simplified = f"{provider}/{model_name}"
+                    if len(simplified) <= max_len:
+                        return simplified
+                    # If still too long, truncate the model name part
+                    available = max_len - len(provider) - 1  # -1 for "/"
+                    if available > 10:  # Ensure meaningful truncation
+                        return f"{provider}/{model_name[:available-3]}..."
+            except Exception:
+                pass
+                
+        # If no truncation needed and no special processing applied
+        if len(model) <= max_len:
+            return model
+        
+        # For other providers with slashes, try to keep provider/model format
+        if "/" in model:
+            parts = model.split("/")
+            if len(parts) >= 2:
+                provider = parts[0]
+                model_name = parts[-1]  # Last part is usually the model name
+                simplified = f"{provider}/{model_name}"
+                if len(simplified) <= max_len:
+                    return simplified
+                # If still too long, truncate model name
+                available = max_len - len(provider) - 1
+                if available > 10:
+                    return f"{provider}/{model_name[:available-3]}..."
+        
+        # Fallback: simple truncation
+        return model[:max_len-3] + "..."
 
 
 class SWECLIChatApp(App):
@@ -544,8 +595,6 @@ class SWECLIChatApp(App):
 
     def on_mount(self) -> None:
         """Initialize the app on mount."""
-        self.title = "SWE-CLI Chat (Textual POC)"
-        self.sub_title = "Full-screen terminal interface"
 
         # Get widgets
         self.conversation = self.query_one("#conversation", ConversationLog)
@@ -555,28 +604,74 @@ class SWECLIChatApp(App):
         # Focus input field
         self.input_field.focus()
 
-        # Add welcome message
-        self.conversation.add_system_message("╭──────────────────────────────────────────────╮")
-        self.conversation.add_system_message("│   Welcome to SWE-CLI (Textual POC)          │")
-        self.conversation.add_system_message("│   Full-screen terminal interface test       │")
-        self.conversation.add_system_message("╰──────────────────────────────────────────────╯")
-        self.conversation.add_system_message("")
-        self.conversation.add_assistant_message(
-            "Hello! This is a proof-of-concept for the new Textual-based UI."
-        )
-        self.conversation.add_assistant_message(
-            "Try typing a message (multi-line supported!). Press Enter to send."
-        )
-        self.conversation.add_assistant_message("  • /help - Show available commands")
-        self.conversation.add_assistant_message("  • /scroll - Generate messages to test scrolling")
-        self.conversation.add_assistant_message("  • /demo - Show message types")
-        self.conversation.add_system_message("")
-        self.conversation.add_system_message("✨ Multi-line input: Press Shift+Enter for new line, Enter to send")
-        self.conversation.add_system_message("💡 Scrolling: Press Ctrl+Up to focus conversation, then use arrow keys")
-        self.conversation.add_system_message("")
+        # Show different welcome message based on whether we have real backend integration
+        if self.on_message:
+            self.title = "SWE-CLI Chat"
+            self.sub_title = "AI-powered coding assistant"
+            self._render_welcome_panel(real_integration=True)
+            self.status_bar.set_context(15)
+        else:
+            self.title = "SWE-CLI Chat (Textual POC)"
+            self.sub_title = "Full-screen terminal interface"
+            self._render_welcome_panel(real_integration=False)
+            self.status_bar.set_context(15)
 
-        # Simulate some context
-        self.status_bar.set_context(15)
+    def _render_welcome_panel(self, *, real_integration: bool) -> None:
+        """Render a polished welcome panel depending on backend availability."""
+
+        if real_integration:
+            heading = Text("SWE-CLI", style="bold bright_cyan")
+            subheading = Text("AI-powered coding assistant", style="dim")
+            bullets = [
+                "List files in the current directory",
+                "Read or edit a specific file",
+                "Help debug a failing test",
+                "Explain what this repository does",
+            ]
+            body = Text()
+            for bullet in bullets:
+                body.append("• ", style="bright_cyan")
+                body.append(bullet)
+                body.append("\n")
+            body.append("\nType your request and press Enter to begin.")
+        else:
+            heading = Text("SWE-CLI (Preview)", style="bold bright_cyan")
+            subheading = Text("Textual POC interface", style="dim")
+            body = Text(
+                "Use this playground to explore the upcoming Textual UI.\n"
+                "Core flows are stubbed; use /help, /demo, or /scroll to interact."
+            )
+
+        shortcuts = Text()
+        shortcuts.append("Enter", style="bold green")
+        shortcuts.append(" send   •   ")
+        shortcuts.append("Shift+Enter", style="bold green")
+        shortcuts.append(" new line   •   ")
+        shortcuts.append("/help", style="bold cyan")
+        shortcuts.append(" commands")
+
+        content = Text.assemble(
+            heading,
+            "\n",
+            subheading,
+            "\n\n",
+            body,
+            "\n\n",
+            shortcuts,
+        )
+
+        panel = Panel(
+            Align.center(content, vertical="middle"),
+            border_style="bright_cyan",
+            padding=(1, 3),
+            title="Welcome",
+            subtitle="swecli-textual",
+            subtitle_align="left",
+            width=78,
+        )
+
+        self.conversation.write(panel)
+        self.conversation.add_system_message("")
 
     def _start_local_spinner(self) -> None:
         """Begin local spinner animation while backend processes."""
