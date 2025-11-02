@@ -25,6 +25,7 @@ from swecli.ui_textual.widgets.status_bar import ModelFooter, StatusBar
 from swecli.ui_textual.approval_prompt import ApprovalPromptController
 from swecli.ui_textual.model_picker import ModelPickerController
 from swecli.ui_textual.spinner import SpinnerController
+from swecli.ui_textual.console_buffer import ConsoleBufferManager
 from swecli.ui_textual.autocomplete_popup import AutocompletePopupController
 from swecli.ui_textual.welcome_panel import render_welcome_panel
 from swecli.ui.utils.tool_display import get_tool_display_parts, summarize_tool_arguments
@@ -252,7 +253,6 @@ class SWECLIChatApp(App):
         self._message_history = []
         self._history_index = -1
         self._current_input = ""
-        self._queued_console_renderables: list[RenderableType] = []
         self._last_assistant_lines: set[str] = set()
         self._last_rendered_assistant: str | None = None
         self._last_assistant_normalized: str | None = None
@@ -266,6 +266,8 @@ class SWECLIChatApp(App):
         self._model_picker: ModelPickerController = ModelPickerController(self)
         self._approval_controller = ApprovalPromptController(self)
         self._spinner = SpinnerController(self, self._tips_manager)
+        self._console_buffer = ConsoleBufferManager(self)
+        self._queued_console_renderables = self._console_buffer._queue
 
     def compose(self) -> ComposeResult:
         """Create child widgets."""
@@ -364,18 +366,17 @@ class SWECLIChatApp(App):
     def _start_local_spinner(self, message: str | None = None) -> None:
         """Begin local spinner animation while backend processes."""
 
-        if self._queued_console_renderables:
-            self._queued_console_renderables.clear()
-
+        if hasattr(self, "_console_buffer"):
+            self._console_buffer.clear()
         self._spinner.start(message)
 
     def _stop_local_spinner(self) -> None:
         """Stop spinner animation and clear indicators."""
 
         self._spinner.stop()
-        self._last_rendered_assistant = None
-        self._last_assistant_normalized = None
-
+        if hasattr(self, "_console_buffer"):
+            self._console_buffer.clear_assistant_history()
+            self._console_buffer.flush()
         self.flush_console_buffer()
 
     def resume_reasoning_spinner(self) -> None:
@@ -387,217 +388,54 @@ class SWECLIChatApp(App):
         self._stop_local_spinner()
         self._start_local_spinner()
 
-    def _should_suppress_renderable(self, renderable: RenderableType) -> bool:
-        """Return True if renderable duplicates the last assistant output."""
-
-        if not self._last_assistant_lines:
-            return False
-
-        if isinstance(renderable, str):
-            segments = [renderable]
-        elif isinstance(renderable, Text):
-            segments = [renderable.plain]
-        elif hasattr(renderable, "render") and hasattr(self, "app"):
-            try:
-                console = self.app.console
-                segments = [
-                    segment.text
-                    for segment in console.render(renderable)
-                    if getattr(segment, "text", "")
-                ]
-            except Exception:  # pragma: no cover - defensive
-                return False
-        else:
-            return False
-
-        combined = " ".join(segments)
-        normalized_combined = self._normalize_paragraph(combined)
-        targets = [
-            value
-            for value in (self._pending_assistant_normalized, self._last_assistant_normalized)
-            if value
-        ]
-        if normalized_combined and targets:
-            if any(normalized_combined == target for target in targets):
-                return True
-
-        normalized_segments = [self._normalize_assistant_line(seg) for seg in segments]
-        normalized_segments = [seg for seg in normalized_segments if seg]
-        if (
-            normalized_segments
-            and self._last_assistant_lines
-            and all(seg in self._last_assistant_lines for seg in normalized_segments)
-        ):
-            return True
-
-        return False
-
-    @staticmethod
-    def _normalize_assistant_line(line: str) -> str:
-        cleaned = re.sub(r"\x1b\[[0-9;]*m", "", line)
-        cleaned = cleaned.strip()
-        if not cleaned:
-            return ""
-        if cleaned.startswith("⏺"):
-            cleaned = cleaned.lstrip("⏺").strip()
-        cleaned = re.sub(r"\s+", " ", cleaned)
-        return cleaned
-
-    @staticmethod
-    def _normalize_paragraph(text: str) -> str:
-        cleaned = re.sub(r"\x1b\[[0-9;]*m", "", text)
-        cleaned = cleaned.replace("⏺", " ")
-        cleaned = cleaned.replace("\n", " ")
-        cleaned = re.sub(r"\s+", " ", cleaned)
-        return cleaned.strip()
-
     def flush_console_buffer(self) -> None:
         """Flush queued console renderables after assistant message is recorded."""
 
-        if self._spinner.active or self._buffer_console_output:
-            return
-
-        if not self._queued_console_renderables:
-            return
-
-        for renderable in self._queued_console_renderables:
-            if not self._should_suppress_renderable(renderable):
-                self.conversation.write(renderable)
-        self._queued_console_renderables.clear()
+        if hasattr(self, "_console_buffer"):
+            self._console_buffer.flush()
 
     def start_console_buffer(self) -> None:
+        """Begin buffering console output to avoid interleaving with spinner."""
+
         self._buffer_console_output = True
+        if hasattr(self, "_console_buffer"):
+            self._console_buffer.start()
 
     def stop_console_buffer(self) -> None:
+        """Stop buffering console output and flush any pending items."""
+
         self._buffer_console_output = False
-        self.flush_console_buffer()
+        if hasattr(self, "_console_buffer"):
+            self._console_buffer.stop()
 
-    def _invoke_on_ui_thread(self, func: Callable[[], None]) -> None:
-        """Ensure func executes on the UI thread regardless of caller context."""
-        if self._ui_thread is not None and threading.current_thread() is self._ui_thread:
-            func()
-            return
+    @staticmethod
+    def _normalize_assistant_line(line: str) -> str:
+        return ConsoleBufferManager._normalize_line(line)
 
-        if getattr(self, "is_running", False):
-            try:
-                self.call_from_thread(func)
-                return
-            except Exception:
-                pass
+    @staticmethod
+    def _normalize_paragraph(text: str) -> str:
+        return ConsoleBufferManager._normalize_paragraph(text)
 
-        func()
+    def _should_suppress_renderable(self, renderable: RenderableType) -> bool:
+        if hasattr(self, "_console_buffer"):
+            return self._console_buffer.should_suppress(renderable)
+        return False
 
-    def _reset_interaction_state(self) -> None:
-        """Clear per-request tracking for tool summaries and assistant follow-ups."""
-        self._pending_tool_summaries.clear()
-        self._assistant_response_received = False
-        self._saw_tool_result = False
-        if hasattr(self.input_field, "_clear_completions"):
-            self.input_field._clear_completions()
-
-    def record_tool_summary(
-        self, tool_name: str, tool_args: dict[str, Any], result_lines: list[str]
-    ) -> None:
-        """Record a tool result summary for fallback assistant messaging."""
-        if not result_lines:
-            return
-
-        summary = self._build_tool_summary(tool_name, tool_args, result_lines)
-        if not summary:
-            return
-
-        self._pending_tool_summaries.append(summary)
-        self._saw_tool_result = True
-
-    def _build_tool_summary(
-        self, tool_name: str, tool_args: dict[str, Any], result_lines: list[str]
-    ) -> str:
-        """Create a human-friendly sentence summarizing a tool result."""
-        primary = (result_lines[0] or "").strip()
-        if not primary:
-            return ""
-
-        verb, label = get_tool_display_parts(tool_name)
-        if label:
-            friendly_tool = f"{verb}({label})"
-        else:
-            friendly_tool = verb
-        summary = summarize_tool_arguments(tool_name, tool_args)
-
-        if not primary.endswith((".", "!", "?")):
-            primary = f"{primary}."
-
-        # Capitalize the first letter for readability
-        if primary and primary[0].islower():
-            primary = primary[0].upper() + primary[1:]
-
-        prefix = f"{friendly_tool} ({summary})" if summary else friendly_tool
-
-        if len(result_lines) > 1:
-            return f"Completed {prefix} — {primary}"
-
-        return f"Completed {prefix}."
-
-    def _emit_tool_follow_up_if_needed(self) -> None:
-        """Render a fallback assistant follow-up if tools finished without LLM wrap-up."""
-        if not hasattr(self, "conversation"):
-            self._pending_tool_summaries.clear()
-            self._saw_tool_result = False
-            return
-
-        if self._assistant_response_received or not self._saw_tool_result:
-            self._pending_tool_summaries.clear()
-            self._saw_tool_result = False
-            return
-
-        if not self._pending_tool_summaries:
-            self._saw_tool_result = False
-            return
-
-        if len(self._pending_tool_summaries) == 1:
-            message = self._pending_tool_summaries[0]
-        else:
-            lines = ["Summary of tool activity:"]
-            lines.extend(f"- {summary}" for summary in self._pending_tool_summaries)
-            message = "\n".join(lines)
-
-        self._stop_local_spinner()
-        self.conversation.add_assistant_message(message)
-        self.record_assistant_message(message)
-        self._pending_tool_summaries.clear()
-        self._saw_tool_result = False
-
-    def record_assistant_message(self, message: str) -> None:
-        """Track assistant lines to suppress duplicate console echoes."""
-
-        lines = []
-        for line in message.splitlines():
-            normalized = self._normalize_assistant_line(line)
-            if normalized:
-                lines.append(normalized)
-        if not lines:
-            normalized = self._normalize_assistant_line(message)
-            if normalized:
-                lines.append(normalized)
-        self._last_assistant_lines = set(lines)
-        self._last_rendered_assistant = message.strip()
-        self._last_assistant_normalized = self._normalize_paragraph(message)
-        self._pending_assistant_normalized = None
-        self._assistant_response_received = True
-        self._pending_tool_summaries.clear()
-        self._saw_tool_result = False
 
     def render_console_output(self, renderable: RenderableType) -> None:
         """Render console output, buffering if spinner is active."""
 
-        if self._spinner.active or self._buffer_console_output:
-            self._queued_console_renderables.append(renderable)
-            return
+        if hasattr(self, "_console_buffer"):
+            self._console_buffer.enqueue_or_write(renderable)
+        elif hasattr(self, "conversation"):
+            self.conversation.write(renderable)
 
-        if self._should_suppress_renderable(renderable):
-            return
 
-        self.conversation.write(renderable)
+    def record_assistant_message(self, message: str) -> None:
+        """Track assistant lines to suppress duplicate console echoes."""
+
+        if hasattr(self, "_console_buffer"):
+            self._console_buffer.record_assistant_message(message)
 
     async def action_send_message(self) -> None:
         """Send message when user presses Enter."""
