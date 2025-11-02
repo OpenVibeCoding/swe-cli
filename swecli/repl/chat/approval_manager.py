@@ -1,5 +1,7 @@
 """Approval manager for chat interface with interactive prompts."""
 
+import asyncio
+
 
 class ChatApprovalManager:
     """Approval manager for chat interface with interactive prompts."""
@@ -111,11 +113,43 @@ class ChatApprovalManager:
         """
         from swecli.core.approval import ApprovalResult, ApprovalChoice
 
+        if not self.chat_app:
+            return self._fallback_prompt(command, working_dir, RuntimeError("Chat app unavailable"))
+
+        # If the UI isn't running (e.g., during CLI tests) fall back to console prompt.
+        if not getattr(self.chat_app, "is_running", False):
+            return self._fallback_prompt(command, working_dir, RuntimeError("Chat app not running"))
+
+        origin_loop = asyncio.get_running_loop()
+        ui_loop_future: asyncio.Future[tuple[bool, str, str]]
+        ui_loop_future = origin_loop.create_future()
+
+        def invoke_modal() -> None:
+            async def run_modal() -> None:
+                try:
+                    result = await self.chat_app.show_approval_modal(command or "", working_dir or "")
+                except Exception as exc:  # pragma: no cover - defensive
+                    origin_loop.call_soon_threadsafe(ui_loop_future.set_exception, exc)
+                else:
+                    origin_loop.call_soon_threadsafe(ui_loop_future.set_result, result)
+
+            worker = self.chat_app.run_worker(
+                run_modal(),
+                name="approval-modal",
+                exclusive=True,
+                exit_on_error=False,
+            )
+            worker.wait()
+
         try:
-            return await self.chat_app.show_approval_modal(command or "", working_dir or "")
-        except Exception as e:
-            # Fallback to simple prompt
-            return self._fallback_prompt(command, working_dir, e)
+            self.chat_app.call_from_thread(invoke_modal)
+        except RuntimeError as exc:  # pragma: no cover - defensive
+            return self._fallback_prompt(command, working_dir, exc)
+
+        try:
+            return await ui_loop_future
+        except Exception as exc:
+            return self._fallback_prompt(command, working_dir, exc)
 
     def _fallback_prompt(self, command, working_dir, error):
         """Fallback to simple text prompt when modal fails.
@@ -288,15 +322,16 @@ class ChatApprovalManager:
         force_prompt: bool = False,
     ):
         """Request approval for an operation with interactive prompt."""
-        # Check auto-approval conditions
-        auto_result = self._check_auto_approval(operation, command)
-        if auto_result:
-            return auto_result
+        matched_rule = None
 
-        # Check approval rules
-        rule_result, matched_rule = self._check_approval_rules(command)
-        if rule_result:
-            return rule_result
+        if not force_prompt:
+            auto_result = self._check_auto_approval(operation, command)
+            if auto_result:
+                return auto_result
+
+            rule_result, matched_rule = self._check_approval_rules(command)
+            if rule_result:
+                return rule_result
 
         # Show approval modal
         approved, choice, edited_command = await self._show_approval_modal(command, working_dir)

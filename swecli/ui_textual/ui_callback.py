@@ -49,6 +49,8 @@ class TextualUICallback:
             # Stop spinner before showing assistant message
             if hasattr(self.conversation, 'stop_spinner'):
                 self._run_on_ui(self.conversation.stop_spinner)
+            if self.chat_app and hasattr(self.chat_app, "_stop_local_spinner"):
+                self._run_on_ui(self.chat_app._stop_local_spinner)
 
             # Display the assistant's thinking/message
             if hasattr(self.conversation, 'add_assistant_message'):
@@ -121,6 +123,9 @@ class TextualUICallback:
 
         if summary_lines and self.chat_app and hasattr(self.chat_app, "record_tool_summary"):
             self._run_on_ui(self.chat_app.record_tool_summary, tool_name, normalized_args, summary_lines.copy())
+
+        if self.chat_app and hasattr(self.chat_app, "resume_reasoning_spinner"):
+            self._run_on_ui(self.chat_app.resume_reasoning_spinner)
 
     def _normalize_arguments(self, tool_args: Any) -> Dict[str, Any]:
         """Ensure tool arguments are represented as a dictionary."""

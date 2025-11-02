@@ -43,11 +43,11 @@ class ApprovalModal(ModalScreen[Tuple[bool, str, str]]):
         margin-top: 1;
         height: 3;
         content-align: center middle;
-        column-gap: 1;
     }
 
     ApprovalModal Button {
         min-width: 16;
+        margin: 0 1;
     }
     """
 
@@ -63,7 +63,9 @@ class ApprovalModal(ModalScreen[Tuple[bool, str, str]]):
             yield Static("Confirm Bash Command", classes="title")
             yield Static(f"Working directory: [green]{self._working_dir or '.'}[/]", markup=True)
             yield Static(command_block, classes="command")
-            self._input = Input(value=self._command or "", placeholder="Edit command before running...")
+            self._input = Input(
+                value=self._command or "", placeholder="Edit command before running..."
+            )
             yield self._input
             with Horizontal():
                 yield Button("Run command", id="approve")

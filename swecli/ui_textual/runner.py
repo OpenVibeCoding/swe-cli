@@ -39,6 +39,10 @@ class TextualRunner:
             self.session_manager = session_manager or getattr(repl, "session_manager", None)
             if self.session_manager is None:
                 raise ValueError("SessionManager is required when providing a custom REPL")
+            if hasattr(self.repl.config, "permissions") and hasattr(self.repl.config.permissions, "bash"):
+                self.repl.config.permissions.bash.enabled = True
+            elif hasattr(self.repl.config, "enable_bash"):
+                self.repl.config.enable_bash = True
         else:
             self.config_manager = config_manager or ConfigManager(self.working_dir)
             self.config = self.config_manager.load_config()
@@ -51,20 +55,43 @@ class TextualRunner:
             self.repl = REPL(self.config_manager, self.session_manager)
             self.repl.mode_manager.set_mode(OperationMode.NORMAL)
             self.repl.approval_manager = ChatApprovalManager(self.repl.console)
+            if hasattr(self.repl.config, "permissions") and hasattr(self.repl.config.permissions, "bash"):
+                self.repl.config.permissions.bash.enabled = True
+            elif hasattr(self.repl.config, "enable_bash"):
+                self.repl.config.enable_bash = True
             connect = getattr(self.repl, "_connect_mcp_servers", None)
             if callable(connect):
                 connect()
 
-        # Get model display name from config
+        # Get model display name and slot summaries from config
         model_display = f"{self.config.model_provider}/{self.config.model}"
+        model_slots = self._build_model_slots()
 
-        self.app = create_chat_app(
-            on_message=self.enqueue_message,
-            model=model_display,
-            on_cycle_mode=self._cycle_mode,
-        )
+        create_kwargs = {
+            "on_message": self.enqueue_message,
+            "model": model_display,
+            "model_slots": model_slots,
+            "on_cycle_mode": self._cycle_mode,
+            "completer": getattr(self.repl, "completer", None),
+            "on_model_selected": self._apply_model_selection,
+            "get_model_config": self._get_model_config_snapshot,
+        }
+
+        try:
+            self.app = create_chat_app(**create_kwargs)
+        except TypeError:
+            legacy_kwargs = {
+                "on_message": self.enqueue_message,
+                "model": model_display,
+                "model_slots": model_slots,
+                "on_cycle_mode": self._cycle_mode,
+                "completer": getattr(self.repl, "completer", None),
+            }
+            self.app = create_chat_app(**legacy_kwargs)
         if hasattr(self.repl.approval_manager, "chat_app"):
             self.repl.approval_manager.chat_app = self.app
+        if hasattr(self.repl, "config_commands"):
+            self.repl.config_commands.chat_app = self.app
 
         self._pending: asyncio.Queue[str] = asyncio.Queue()
         self._console_queue: asyncio.Queue[str] = asyncio.Queue()
@@ -77,6 +104,115 @@ class TextualRunner:
         self._last_assistant_message: str | None = None
         self._suppress_console_duplicate = False
         self._last_assistant_message_normalized: str | None = None
+
+    def _build_model_slots(self) -> dict[str, tuple[str, str]]:
+        """Prepare formatted model slot information for the footer."""
+
+        def format_model(
+            provider: Optional[str],
+            model_id: Optional[str],
+        ) -> tuple[str, str] | None:
+            if not model_id:
+                return None
+            provider_display = provider.capitalize() if provider else "Unknown"
+            return provider_display, model_id
+
+        config = self.config
+        slots: dict[str, tuple[str, str]] = {}
+
+        normal = format_model(config.model_provider, config.model)
+        if normal:
+            slots["normal"] = normal
+
+        if config.model_thinking and config.model_thinking != config.model:
+            thinking = format_model(
+                config.model_thinking_provider,
+                config.model_thinking,
+            )
+            if thinking:
+                slots["thinking"] = thinking
+
+        if config.model_vlm and config.model_vlm != config.model:
+            vision = format_model(
+                config.model_vlm_provider,
+                config.model_vlm,
+            )
+            if vision:
+                slots["vision"] = vision
+
+        return slots
+
+    def _refresh_ui_config(self) -> None:
+        """Refresh cached config-driven UI indicators after config changes."""
+        # Refresh cached config instance (commands may mutate or reload it)
+        self.config = self.config_manager.get_config()
+        model_display = f"{self.config.model_provider}/{self.config.model}"
+        if hasattr(self.app, "update_primary_model"):
+            self.app.update_primary_model(model_display)
+        if hasattr(self.app, "update_model_slots"):
+            self.app.update_model_slots(self._build_model_slots())
+
+    def _get_model_config_snapshot(self) -> dict[str, dict[str, str]]:
+        """Return current model configuration details for the UI."""
+        config = self.config_manager.get_config()
+
+        try:
+            from swecli.config import get_model_registry
+
+            registry = get_model_registry()
+        except Exception:  # pragma: no cover - defensive
+            registry = None
+
+        def resolve(provider_id: Optional[str], model_id: Optional[str]) -> dict[str, str]:
+            if not provider_id or not model_id:
+                return {}
+
+            provider_display = provider_id.capitalize()
+            model_display = model_id
+
+            if registry is not None:
+                provider_info = registry.get_provider(provider_id)
+                if provider_info:
+                    provider_display = provider_info.name
+                found = registry.find_model_by_id(model_id)
+                if found:
+                    _, _, model_info = found
+                    model_display = model_info.name
+            else:
+                if "/" in model_id:
+                    model_display = model_id.split("/")[-1]
+
+            return {
+                "provider": provider_id,
+                "provider_display": provider_display,
+                "model": model_id,
+                "model_display": model_display,
+            }
+
+        snapshot: dict[str, dict[str, str]] = {}
+        snapshot["normal"] = resolve(config.model_provider, config.model)
+
+        thinking_entry = resolve(config.model_thinking_provider, config.model_thinking)
+        if thinking_entry:
+            snapshot["thinking"] = thinking_entry
+
+        vision_entry = resolve(config.model_vlm_provider, config.model_vlm)
+        if vision_entry:
+            snapshot["vision"] = vision_entry
+
+        return snapshot
+
+    async def _apply_model_selection(self, slot: str, provider_id: str, model_id: str):
+        """Apply a model selection coming from the Textual UI."""
+        result = await asyncio.to_thread(
+            self.repl.config_commands._switch_to_model,
+            provider_id,
+            model_id,
+            slot,
+        )
+        if result.success:
+            self._refresh_ui_config()
+        return result
 
     def _configure_session(self, resume: Optional[str], continue_session: bool) -> None:
         """Prepare session state mirroring CLI semantics."""
@@ -201,11 +337,158 @@ class TextualRunner:
     def _run_command(self, command: str) -> None:
         """Execute a slash command and capture console output."""
 
+        # Special handling for /mcp view command - use Textual modal instead of prompt_toolkit
+        if command.strip().startswith("/mcp view "):
+            self._handle_mcp_view_command(command)
+            return
+
         with self.repl.console.capture() as capture:
             self.repl._handle_command(command)
         output = capture.get()
         if output.strip():
             self._enqueue_console_text(output)
+        self._refresh_ui_config()
+
+    def _handle_mcp_view_command(self, command: str) -> None:
+        """Handle /mcp view command with Textual-native modal.
+
+        Args:
+            command: The full command (e.g., "/mcp view server_name")
+        """
+        from io import StringIO
+        from rich.console import Console as RichConsole
+
+        # Extract server name
+        parts = command.split()
+        if len(parts) < 3:
+            # Render error with Rich to get ANSI codes
+            string_io = StringIO()
+            temp_console = RichConsole(file=string_io, force_terminal=True)
+            temp_console.print("[red]Error: Server name required for /mcp view[/red]")
+            self._enqueue_console_text(string_io.getvalue())
+            return
+
+        server_name = parts[2]
+
+        # Get server details from MCP manager
+        servers = self.repl.mcp_manager.list_servers()
+        if server_name not in servers:
+            # Render error with Rich to get ANSI codes
+            string_io = StringIO()
+            temp_console = RichConsole(file=string_io, force_terminal=True)
+            temp_console.print(f"[red]Error: Server '{server_name}' not found in configuration[/red]")
+            self._enqueue_console_text(string_io.getvalue())
+            return
+
+        server_config = servers[server_name]
+        is_connected = self.repl.mcp_manager.is_connected(server_name)
+        tools = self.repl.mcp_manager.get_server_tools(server_name) if is_connected else []
+
+        # Build elegant panel content for the conversation log
+        from rich.panel import Panel
+        from rich.table import Table
+        from rich.text import Text
+        from rich import box
+
+        # Create main info table
+        info_table = Table(show_header=False, box=None, padding=(0, 1))
+        info_table.add_column("Property", style="cyan", no_wrap=True)
+        info_table.add_column("Value")
+
+        # Status with color
+        status_text = Text()
+        if is_connected:
+            status_text.append("Connected", style="bold green")
+        else:
+            status_text.append("Disconnected", style="dim")
+        info_table.add_row("Status", status_text)
+
+        # Command
+        cmd_text = f"{server_config.command} {' '.join(server_config.args)}" if server_config.args else server_config.command
+        info_table.add_row("Command", cmd_text)
+
+        # Enabled/Auto-start
+        enabled_text = Text("Yes", style="green") if server_config.enabled else Text("No", style="red")
+        info_table.add_row("Enabled", enabled_text)
+
+        auto_start_text = Text("Yes", style="green") if server_config.auto_start else Text("No", style="dim")
+        info_table.add_row("Auto-start", auto_start_text)
+
+        # Environment variables
+        if server_config.env:
+            env_str = "\n".join(f"{k}={v}" for k, v in server_config.env.items())
+            info_table.add_row("Environment", env_str)
+
+        # Tools count
+        if is_connected:
+            info_table.add_row("Tools", f"{len(tools)} available")
+
+        # Create tools table if connected
+        tools_content = None
+        if is_connected and tools:
+            tools_table = Table(show_header=True, box=box.SIMPLE, padding=(0, 1))
+            tools_table.add_column("Tool Name", style="cyan")
+            tools_table.add_column("Description", style="white")
+
+            for tool in tools[:10]:  # Show first 10 tools
+                tool_name = tool.get('name', 'unknown')
+                tool_desc = tool.get('description', '')
+                # Truncate long descriptions
+                if len(tool_desc) > 60:
+                    tool_desc = tool_desc[:57] + "..."
+                tools_table.add_row(tool_name, tool_desc)
+
+            if len(tools) > 10:
+                tools_table.add_row(f"... and {len(tools) - 10} more", "", style="dim")
+
+            tools_content = tools_table
+
+        # Create main panel
+        title = f"MCP Server: {server_name}"
+        main_panel = Panel(
+            info_table,
+            title=title,
+            title_align="left",
+            border_style="bright_cyan",
+            box=box.ROUNDED,
+            padding=(1, 2)
+        )
+
+        # Render to conversation log
+        self._enqueue_console_text("\n")  # Add spacing
+
+        # Reuse the temp console from earlier
+        string_io = StringIO()
+        temp_console = RichConsole(file=string_io, force_terminal=True, width=100)
+        temp_console.print(main_panel)
+
+        if tools_content:
+            temp_console.print("\n")
+            tools_panel = Panel(
+                tools_content,
+                title="Available Tools",
+                title_align="left",
+                border_style="green",
+                box=box.ROUNDED,
+                padding=(1, 2)
+            )
+            temp_console.print(tools_panel)
+
+        # Show actions hint
+        temp_console.print("\n[dim]Available actions:[/dim]")
+        if is_connected:
+            temp_console.print("  [cyan]/mcp disconnect " + server_name + "[/cyan] - Disconnect from server")
+            temp_console.print("  [cyan]/mcp tools " + server_name + "[/cyan] - List all tools")
+        else:
+            temp_console.print("  [cyan]/mcp connect " + server_name + "[/cyan] - Connect to server")
+
+        if server_config.enabled:
+            temp_console.print("  [cyan]/mcp disable " + server_name + "[/cyan] - Disable auto-start")
+        else:
+            temp_console.print("  [cyan]/mcp enable " + server_name + "[/cyan] - Enable auto-start")
+
+        output = string_io.getvalue()
+        self._enqueue_console_text(output)
 
     def _cycle_mode(self) -> str:
         """Toggle between NORMAL and PLAN modes and return the active mode."""

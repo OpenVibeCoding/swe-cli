@@ -83,25 +83,20 @@ class ToolExecutor:
                     force_prompt=True,
                 )
 
-                # Store approval decision
-                bash_approvals[tool_call["id"]] = approval_result.approved
+                if not approval_result.approved:
+                    continue
 
-                # Store edited command if user edited it
+                final_command = approval_result.edited_content or command
+
+                bash_approvals[tool_call["id"]] = {
+                    "approved": True,
+                    "command": final_command,
+                    "apply_to_all": approval_result.apply_to_all,
+                }
                 if approval_result.edited_content:
                     bash_edited_commands[tool_call["id"]] = approval_result.edited_content
-                    final_command = approval_result.edited_content
-                else:
-                    final_command = command
 
-                # If user cancelled, stop processing
-                if not approval_result.approved:
-                    self.chat_app.add_assistant_message("\033[31m⏺ Interrupted by user (ESC)\033[0m")
-                    # Set interrupt flag to stop the main loop
-                    self.chat_app._interrupt_requested = True
-                    self.chat_app._interrupt_shown = True  # We already showed the interrupted message
-                    return
-                else:
-                    # Add to pre-approved set so execution doesn't prompt again
+                if approval_result.apply_to_all and final_command:
                     self.repl.approval_manager.pre_approved_commands.add(final_command)
 
         # Phase 2: Execute all tools
@@ -121,8 +116,11 @@ class ToolExecutor:
             tool_args = json.loads(tool_call["function"]["arguments"])
 
             # Override command with edited version if user edited it
+            approval_info = bash_approvals.get(tool_call["id"]) or {}
             if tool_call["id"] in bash_edited_commands:
                 tool_args["command"] = bash_edited_commands[tool_call["id"]]
+            elif approval_info.get("command"):
+                tool_args["command"] = approval_info["command"]
 
             # Format tool call display
             tool_call_display = self._format_tool_call(tool_name, tool_args)
