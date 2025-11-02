@@ -53,7 +53,10 @@ class ApprovalModal(ModalScreen[Tuple[bool, str, str]]):
 
     def __init__(self, command: str, working_dir: str) -> None:
         super().__init__()
-        self._command = command
+        try:
+            self._command = Text.from_markup(command or "").plain
+        except Exception:
+            self._command = command or ""
         self._working_dir = working_dir
         self._input: Input | None = None
 

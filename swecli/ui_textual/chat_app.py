@@ -228,7 +228,13 @@ class ConversationLog(RichLog):
 
     def add_tool_result(self, result: str) -> None:
         """Add tool result to conversation."""
-        self.write(Text(f"  ⎿ {result}", style="green"))
+        try:
+            result_plain = Text.from_markup(result).plain
+        except Exception:
+            result_plain = result
+        line = Text("  ⎿ ", style="green")
+        line.append(result_plain, style="green")
+        self.write(line)
         self.write(Text(""))  # Add spacing after tool result
 
     def render_approval_prompt(self, lines: list[Text]) -> None:
@@ -2394,8 +2400,8 @@ class SWECLIChatApp(App):
 
         loop = asyncio.get_running_loop()
         self._approval_future = loop.create_future()
-        self.input_field.load_text(self._approval_command)
-        self.input_field.move_cursor_to_end()
+        # Don't load command into input field - keep it empty during approval
+        self.input_field.load_text("")
 
         if getattr(self.conversation, "_tool_call_start", None) is not None:
             if getattr(self.conversation, "_tool_spinner_timer", None) is not None:
@@ -2431,10 +2437,14 @@ class SWECLIChatApp(App):
         from rich.panel import Panel
         from rich.table import Table
 
-        cmd_display = self.input_field.text.strip() or self._approval_command or "(empty command)"
+        cmd_display = self._approval_command or "(empty command)"
+
+        # Build command text with proper styling (not markup)
+        command_text = Text("Command: ", style="white")
+        command_text.append(cmd_display, style="bold white")
 
         description_group = Group(
-            Text(f"Command: [bold]{cmd_display}[/]", style="white"),
+            command_text,
             Text(f"Directory: {self._approval_working_dir}", style="dim"),
             Text(""),
             Text(
