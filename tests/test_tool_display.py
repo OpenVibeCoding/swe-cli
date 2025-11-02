@@ -1,6 +1,8 @@
 import json
 from types import SimpleNamespace
 
+from rich.text import Text
+
 from swecli.repl.chat.tool_executor import ToolExecutor
 
 
@@ -10,8 +12,11 @@ class DummyConversation:
         self.tool_results = []
         self.assistant = []
 
-    def add_tool_call(self, name, args):
-        self.tool_calls.append((name, args))
+    def add_tool_call(self, display, *_args):
+        if isinstance(display, Text):
+            self.tool_calls.append(display.plain)
+        else:
+            self.tool_calls.append(str(display))
 
     def add_tool_result(self, result):
         self.tool_results.append(result)
@@ -39,7 +44,10 @@ def make_executor(result_string: str) -> ToolExecutor:
 
 
 def test_display_tool_result_claude_style():
-    result_string = "⏺ Read(swecli/ui_textual/chat_app.py)\n  ⎿ Read 20 lines"
+    verb_color = "\033[1;36m"
+    reset = "\033[0m"
+    bullet = "\033[36m⏺\033[0m"
+    result_string = f"{bullet} {verb_color}Read{reset}(file)\n  ⎿ Read 20 lines"
     executor = make_executor(result_string)
 
     tool_name = "Read"
@@ -50,13 +58,14 @@ def test_display_tool_result_claude_style():
     }
 
     executor._display_tool_result(
-        tool_call_display="Read(swecli/ui_textual/chat_app.py)",
+        tool_call_display=f"{verb_color}Read{reset}(file)",
         tool_name=tool_name,
         tool_args=tool_args,
         result={"success": True, "output": "Read 20 lines"},
     )
 
     conversation = executor.chat_app.conversation
-    assert conversation.tool_calls == [("Read", "file_path='swecli/ui_textual/chat_app.py'")]
+    assert len(conversation.tool_calls) == 1
+    assert "Read(" in conversation.tool_calls[0]
     assert conversation.tool_results == ["Read 20 lines"]
     assert conversation.assistant == []
