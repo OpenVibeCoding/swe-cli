@@ -6,6 +6,7 @@ import json
 from typing import Any, Dict
 
 from swecli.ui.formatters_internal.claude_style_formatter import ClaudeStyleFormatter
+from swecli.ui.utils.tool_display import build_tool_call_text
 
 
 class TextualUICallback:
@@ -72,14 +73,11 @@ class TextualUICallback:
             self._run_on_ui(self.chat_app._stop_local_spinner)
 
         normalized_args = self._normalize_arguments(tool_args)
-        args_display = ", ".join(
-            f"{key}={self._format_arg_for_display(value)}"
-            for key, value in sorted(normalized_args.items())
-        )
 
         # Display tool call (BLOCKING - ensure line is added)
         if hasattr(self.conversation, 'add_tool_call'):
-            self._run_on_ui(self.conversation.add_tool_call, tool_name, args_display)
+            display_text = build_tool_call_text(tool_name, normalized_args)
+            self._run_on_ui(self.conversation.add_tool_call, display_text)
 
         # Start spinner animation (BLOCKING - ensure timer is created before tool executes)
         if hasattr(self.conversation, 'start_tool_execution'):
@@ -143,30 +141,6 @@ class TextualUICallback:
                 return {"value": tool_args}
 
         return {"value": tool_args}
-
-    def _format_arg_for_display(self, value: Any) -> str:
-        """Format a single argument for display in tool call.
-        
-        Args:
-            value: The argument value
-            
-        Returns:
-            Formatted string representation
-        """
-        if value is None:
-            return "None"
-        
-        if isinstance(value, str):
-            # For strings, show a preview if long
-            if len(value) > 50:
-                return f'"{value[:47]}..."'
-            return repr(value)
-        
-        # For other types, use standard repr but limit length
-        value_repr = repr(value)
-        if len(value_repr) > 80:
-            return value_repr[:77] + "..."
-        return value_repr
 
     def _run_on_ui(self, func, *args, **kwargs) -> None:
         """Execute a function on the Textual UI thread and WAIT for completion."""

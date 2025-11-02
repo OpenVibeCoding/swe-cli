@@ -29,11 +29,17 @@ from textual.message import Message
 from textual.timer import Timer
 from textual.widgets import Footer, Header, RichLog, Rule, Static, TextArea
 
+from swecli.ui.components.tips import TipsManager
+from swecli.ui.utils.tool_display import get_tool_display_parts, summarize_tool_arguments
+
 class ConversationLog(RichLog):
     """Enhanced RichLog for conversation display with scrolling support."""
 
-    # Make it focusable so it can receive mouse/keyboard events
+    # Make it focusable so it can receive mouse/keyboard events for scrolling
     can_focus = True
+
+    # Disable text selection to prevent content from spreading to input field
+    ALLOW_SELECT = False
 
     def __init__(self, **kwargs):
         super().__init__(
@@ -49,8 +55,7 @@ class ConversationLog(RichLog):
         self._spinner_start: int | None = None
         self._spinner_line_count = 0
         self._tool_spinner_timer: Timer | None = None
-        self._tool_name = None
-        self._tool_args = None
+        self._tool_display: Text | None = None
         self._spinner_active = False
         self._spinner_chars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
         self._spinner_index = 0
@@ -82,6 +87,7 @@ class ConversationLog(RichLog):
         self._last_assistant_rendered = normalized
 
         segments = self._split_code_blocks(message)
+        text_output = False
         for index, segment in enumerate(segments):
             if segment["type"] == "code":
                 code = segment["content"].strip("\n")
@@ -95,23 +101,15 @@ class ConversationLog(RichLog):
                 panel = Panel(syntax, title=title, border_style="bright_blue")
                 self.write(panel)
             else:
-                content = segment["content"].strip()
+                content = segment["content"]
                 if not content:
                     continue
-                # Only prefix first paragraph with bullet; subsequent lines keep indentation
-                clean_segments = content.splitlines()
-                if index == 0 and clean_segments:
-                    first, *rest = clean_segments
-                    bullet_line = f"⏺ {first.strip()}"
-                    self.write(Text(bullet_line, style="white"))
-                    for line in rest:
-                        self.write(Text(line.rstrip()))
-                else:
-                    if self._looks_like_markdown(content):
-                        self.write(Markdown(content, code_theme="monokai"))
-                    else:
-                        for line in clean_segments or [content]:
-                            self.write(Text(line.rstrip()))
+                wrote = self._render_markdown_text_segment(
+                    content,
+                    leading=not text_output,
+                )
+                if wrote:
+                    text_output = True
 
         # Add spacing after assistant message
         self.write(Text(""))
@@ -120,10 +118,12 @@ class ConversationLog(RichLog):
         """Add system message to conversation."""
         self.write(Text(message, style="dim italic"))
 
-    def add_tool_call(self, tool_name: str, args: str) -> None:
+    def add_tool_call(self, display: Text | str, *_: Any) -> None:
         """Add tool call to conversation."""
-        self._tool_name = tool_name
-        self._tool_args = args
+        if isinstance(display, Text):
+            self._tool_display = display.copy()
+        else:
+            self._tool_display = Text(str(display), style="white")
 
         # Store the starting index (like thinking spinner does)
         self._tool_call_start = len(self.lines)
@@ -134,7 +134,7 @@ class ConversationLog(RichLog):
     def start_tool_execution(self) -> None:
         """Start animating the spinner on the tool call line."""
 
-        if self._tool_name is None:
+        if self._tool_display is None:
             return
 
         self._spinner_active = True
@@ -147,25 +147,10 @@ class ConversationLog(RichLog):
         self._spinner_active = False
 
         # Restore the ⏺ by updating the line directly
-        if (
-            self._tool_call_start is not None
-            and self._tool_name
-            and self._tool_call_start < len(self.lines)
-        ):
-            from rich.segment import Segment
-            from rich.style import Style
-            from textual.strip import Strip
+        if self._tool_call_start is not None and self._tool_display is not None:
+            self._replace_tool_call_line("⏺")
 
-            segments = [
-                Segment("⏺ ", Style(color="green")),
-                Segment(self._tool_name, Style(color="bright_cyan", bold=True)),
-                Segment(f"({self._tool_args})", Style(color="bright_cyan")),
-            ]
-            self.lines[self._tool_call_start] = Strip(segments)
-            self.refresh_lines(self._tool_call_start, 1)
-
-        self._tool_name = None
-        self._tool_args = None
+        self._tool_display = None
         self._tool_call_start = None
         self._spinner_index = 0
         if self._tool_spinner_timer is not None:
@@ -174,7 +159,7 @@ class ConversationLog(RichLog):
 
     def _animate_tool_spinner(self) -> None:
         """Update spinner character - runs on UI thread via timer."""
-        if not self._spinner_active or self._tool_name is None or self._tool_call_start is None:
+        if not self._spinner_active or self._tool_display is None or self._tool_call_start is None:
             return
 
         self._render_tool_spinner_frame()
@@ -192,7 +177,7 @@ class ConversationLog(RichLog):
 
     def _render_tool_spinner_frame(self) -> None:
         """Render the current spinner frame into the conversation log."""
-        if self._tool_call_start is None or self._tool_name is None:
+        if self._tool_call_start is None or self._tool_display is None:
             return
 
         spinner_char = self._spinner_chars[self._spinner_index]
@@ -220,10 +205,10 @@ class ConversationLog(RichLog):
     def _write_tool_call_line(self, prefix: str) -> None:
         """Write a tool call line with the given prefix character."""
         formatted = Text()
-        prefix_style = "green" if prefix == "⏺" else "bright_cyan"
+        prefix_style = "cyan"
         formatted.append(f"{prefix} ", style=prefix_style)
-        formatted.append(self._tool_name, style="bold bright_cyan")
-        formatted.append(f"({self._tool_args})", style="bright_cyan")
+        if self._tool_display is not None:
+            formatted += self._tool_display.copy()
         self.write(formatted, scroll_end=False, animate=False)
 
     def add_tool_result(self, result: str) -> None:
@@ -232,11 +217,89 @@ class ConversationLog(RichLog):
             result_plain = Text.from_markup(result).plain
         except Exception:
             result_plain = result
-        line = Text("  ⎿ ", style="green")
-        line.append(result_plain, style="green")
-        self.write(line)
+
+        header, diff_lines = self._extract_edit_payload(result_plain)
+        if header:
+            self._write_edit_result(header, diff_lines)
+        else:
+            self._write_generic_tool_result(result_plain)
+
         self.write(Text(""))  # Add spacing after tool result
 
+    def _write_generic_tool_result(self, text: str) -> None:
+        """Render a plain tool result with the standard ⎿ prefix."""
+        lines = text.rstrip("\n").splitlines()
+        if not lines:
+            lines = [text]
+        for raw_line in lines:
+            line = Text("  ⎿ ", style="#7a8691")
+            line.append(raw_line, style="#d0d0d0")
+            self.write(line)
+
+    def _write_edit_result(self, header: str, diff_lines: list[str]) -> None:
+        """Render an edit result using a diff-friendly layout."""
+        if not diff_lines:
+            return
+
+        self.write(Text(header, style="bold #d0d0d0"))
+
+        match = re.search(r"Edit(?:ed)?\s+[\"']?([^\s\"']+)", header)
+        title = match.group(1) if match else "diff"
+
+        rendered_lines: list[Text] = []
+        for raw_line in diff_lines:
+            display = raw_line.rstrip("\n")
+            if not display.strip():
+                rendered_lines.append(Text(""))
+                continue
+
+            stripped = display.lstrip()
+            style = "#d0d0d0"
+            if stripped.startswith("+"):
+                style = "green"
+            elif stripped.startswith("-"):
+                style = "red"
+            elif stripped.startswith(("@@", "diff ", "index ", "---", "+++")):
+                style = "cyan"
+            rendered_lines.append(Text(display, style=style))
+
+        panel = Panel(
+            Group(*rendered_lines),
+            border_style="#5a5a5a",
+            padding=(0, 2),
+            title=title,
+            title_align="left",
+        )
+        self.write(panel)
+
+    @staticmethod
+    def _extract_edit_payload(text: str) -> tuple[str | None, list[str]]:
+        """Extract edit header and diff lines if present."""
+
+        lines = text.splitlines()
+        if not lines:
+            return None, []
+
+        header = None
+        payload_start = 0
+
+        for idx, line in enumerate(lines):
+            cleaned = re.sub(r"^\s*[⎿⏺•]\s+", "", line).strip()
+            if not cleaned:
+                continue
+            if cleaned.startswith("Edit(") or cleaned.startswith("Edited "):
+                header = cleaned
+                payload_start = idx + 1
+            break
+
+        if not header:
+            return None, []
+
+        diff_lines = [
+            re.sub(r"^\s*[⎿⏺•]\s+", "", ln.rstrip("\n"))
+            for ln in lines[payload_start:]
+        ]
+        return header, diff_lines
     def render_approval_prompt(self, lines: list[Text]) -> None:
         """Render or update the inline approval prompt."""
 
@@ -287,13 +350,13 @@ class ConversationLog(RichLog):
         self.write(bullet + message)
         self.stop_spinner()
 
-    def start_spinner(self, message: str) -> None:
+    def start_spinner(self, message: Text | str) -> None:
         """Append spinner message at the end of the log."""
 
         self._spinner_start = len(self.lines)
         self._append_spinner(message)
 
-    def update_spinner(self, message: str) -> None:
+    def update_spinner(self, message: Text | str) -> None:
         """Update the spinner message without growing the log."""
 
         if self._spinner_start is None:
@@ -313,8 +376,11 @@ class ConversationLog(RichLog):
         self._spinner_start = None
         self._spinner_line_count = 0
 
-    def _append_spinner(self, message: str) -> None:
-        text = Text(message, style="bright_cyan")
+    def _append_spinner(self, message: Text | str) -> None:
+        if isinstance(message, Text):
+            text = message
+        else:
+            text = Text(message, style="bright_cyan")
         self.write(text, scroll_end=True, animate=False)
         if self._spinner_start is not None:
             self._spinner_line_count = len(self.lines) - self._spinner_start
@@ -344,18 +410,6 @@ class ConversationLog(RichLog):
             self._spinner_start = None
             self._spinner_line_count = 0
 
-    def _looks_like_markdown(self, content: str) -> bool:
-        """Heuristic to decide if content should use Markdown rendering."""
-
-        markdown_patterns = (
-            r"\*\*.+\*\*",
-            r"_.+_",
-            r"^\s*[-*+]\s+",
-            r"^\s*\d+\.\s+",
-            r"`.+?`",
-        )
-        return any(re.search(pattern, content, flags=re.MULTILINE) for pattern in markdown_patterns)
-
     def _split_code_blocks(self, message: str) -> list[dict[str, str]]:
         """Split message into text and fenced code segments."""
 
@@ -380,6 +434,168 @@ class ConversationLog(RichLog):
             segments.append({"type": "text", "content": message})
 
         return segments
+
+    def _render_markdown_text_segment(self, content: str, *, leading: bool = False) -> bool:
+        """Render a markdown text segment with CLI-friendly styling.
+
+        Returns:
+            True if any visible text was written.
+        """
+
+        lines = content.splitlines()
+        total_lines = len(lines)
+        index = 0
+        wrote_any = False
+        leading_consumed = not leading
+
+        def emit(text: Text | str, allow_leading: bool = True) -> None:
+            nonlocal wrote_any, leading_consumed
+            renderable = text if isinstance(text, Text) else Text(text)
+            if leading and not leading_consumed and allow_leading and renderable.plain.strip():
+                bullet = Text("⏺ ")
+                bullet.append_text(renderable)
+                self.write(bullet)
+                leading_consumed = True
+            else:
+                self.write(renderable)
+                if leading and allow_leading and not leading_consumed and renderable.plain.strip():
+                    leading_consumed = True
+            wrote_any = True
+
+        def blank_line() -> None:
+            if wrote_any:
+                emit(Text(""), allow_leading=False)
+
+        while index < total_lines:
+            raw_line = lines[index]
+            stripped = raw_line.strip()
+
+            if not stripped:
+                blank_line()
+                index += 1
+                continue
+
+            heading_match = re.match(r"^(#{1,6})\s+(.*)", stripped)
+            if heading_match:
+                level = len(heading_match.group(1))
+                title = heading_match.group(2).strip()
+                style = "bold underline" if level == 1 else "bold"
+                emit(Text(title, style=style))
+                index += 1
+                continue
+
+            if stripped.startswith(">"):
+                quote_lines: list[str] = []
+                while index < total_lines and lines[index].strip().startswith(">"):
+                    quote_lines.append(lines[index].lstrip("> ").rstrip())
+                    index += 1
+                quote_text = " ".join(quote_lines).strip()
+                if quote_text:
+                    rendered = self._render_inline_markdown(quote_text)
+                    rendered.stylize("dim italic")
+                    emit(rendered)
+                continue
+
+            bullet_match = re.match(r"^(\s*)[-*+]\s+(.*)", raw_line)
+            if bullet_match:
+                indent = bullet_match.group(1) or ""
+                bullet_text = bullet_match.group(2).strip()
+                rendered = self._render_inline_markdown(bullet_text)
+                indent_level = max(0, len(indent) // 2)
+                bullet_line = Text()
+                bullet_line.append("  " * indent_level + "• ")
+                bullet_line.append_text(rendered)
+                emit(bullet_line, allow_leading=False)
+                index += 1
+                continue
+
+            ordered_match = re.match(r"^(\s*)(\d+)\.\s+(.*)", raw_line)
+            if ordered_match:
+                indent = ordered_match.group(1) or ""
+                number = ordered_match.group(2)
+                item_text = ordered_match.group(3).strip()
+                rendered = self._render_inline_markdown(item_text)
+                indent_level = max(0, len(indent) // 2)
+                ordered_line = Text()
+                ordered_line.append("  " * indent_level + f"{number}. ")
+                ordered_line.append_text(rendered)
+                emit(ordered_line, allow_leading=False)
+                index += 1
+                continue
+
+            # Gather paragraph
+            paragraph_lines = [stripped]
+            index += 1
+            while index < total_lines:
+                probe = lines[index]
+                probe_stripped = probe.strip()
+                if not probe_stripped:
+                    break
+                if (
+                    re.match(r"^(#{1,6})\s+", probe_stripped)
+                    or re.match(r"^[-*+]\s+", probe_stripped)
+                    or re.match(r"^\d+\.\s+", probe_stripped)
+                    or probe_stripped.startswith(">")
+                ):
+                    break
+                paragraph_lines.append(probe_stripped)
+                index += 1
+
+            paragraph = " ".join(paragraph_lines).strip()
+            if paragraph:
+                rendered = self._render_inline_markdown(paragraph)
+                emit(rendered)
+
+            while index < total_lines and not lines[index].strip():
+                blank_line()
+                index += 1
+
+        return wrote_any
+
+    def _render_inline_markdown(self, text: str) -> Text:
+        """Render inline markdown formatting markers into a Text object."""
+
+        result = Text()
+        link_pattern = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
+        inline_pattern = re.compile(r"(\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*|_[^_]+_|`[^`]+`)")
+
+        def append_with_style(fragment: str) -> None:
+            cursor = 0
+            for token_match in inline_pattern.finditer(fragment):
+                if token_match.start() > cursor:
+                    result.append(fragment[cursor : token_match.start()])
+                token = token_match.group(0)
+                inner = token.strip("*`_")
+                if token.startswith(("**", "__")):
+                    result.append(inner, style="bold")
+                elif token.startswith(("*", "_")):
+                    result.append(inner, style="italic")
+                elif token.startswith("`"):
+                    result.append(inner, style="green")
+                else:
+                    result.append(inner)
+                cursor = token_match.end()
+            if cursor < len(fragment):
+                result.append(fragment[cursor:])
+
+        cursor = 0
+        for match in link_pattern.finditer(text):
+            if match.start() > cursor:
+                append_with_style(text[cursor : match.start()])
+
+            label, url = match.group(1), match.group(2)
+            result.append(label, style="bold cyan")
+            if url:
+                result.append(f" ({url})", style="dim")
+            cursor = match.end()
+
+        if cursor < len(text):
+            append_with_style(text[cursor:])
+
+        if not result:
+            append_with_style(text)
+
+        return result
 
     @staticmethod
     def _normalize_text(message: str) -> str:
@@ -1242,6 +1458,8 @@ class SWECLIChatApp(App):
         self._assistant_response_received = False
         self._saw_tool_result = False
         self._ui_thread: threading.Thread | None = None
+        self._tips_manager = TipsManager()
+        self._current_tip: str = ""
         self._model_picker_state: dict[str, Any] | None = None
         self._approval_active = False
         self._approval_future: asyncio.Future[tuple[bool, str, str]] | None = None
@@ -1412,22 +1630,32 @@ class SWECLIChatApp(App):
             self._last_autocomplete_state = None
             return
 
-        limit = min(len(entries), 5)
+        total = len(entries)
+        limit = min(total, 5)
+        active = selected_index if selected_index is not None else 0
+        active = max(0, min(active, total - 1))
+
+        window_start = 0
+        if total > limit:
+            window_start = max(0, active - limit + 1)
+            window_start = min(window_start, total - limit)
+        window_end = window_start + limit
+
         rows = [
             (label or "", meta or "")
-            for label, meta in entries[:limit]
+            for label, meta in entries[window_start:window_end]
         ]
-        active = selected_index if selected_index is not None else 0
-        active = max(0, min(active, len(rows) - 1))
 
-        state = (tuple(rows), active)
+        window_active = active - window_start
+
+        state = (tuple(rows), window_active)
         if state == self._last_autocomplete_state:
             self.autocomplete_popup.styles.display = "block"
             return
 
         text = Text()
         for index, (label, meta) in enumerate(rows):
-            is_active = index == active
+            is_active = index == window_active
             pointer = "▸ " if is_active else "  "
             pointer_style = "bold bright_cyan" if is_active else "dim"
             text.append(pointer, style=pointer_style)
@@ -1461,6 +1689,7 @@ class SWECLIChatApp(App):
         self._spinner_frame_index = 0
         self._spinner_started_at = time.monotonic()
         self._spinner_active = True
+        self._current_tip = self._tips_manager.get_next_tip()
         self._update_spinner_output(initial=True)
         self._spinner_timer = self.set_interval(0.12, self._update_spinner_frame)
 
@@ -1477,6 +1706,7 @@ class SWECLIChatApp(App):
         self._spinner_started_at = 0.0
         self._last_rendered_assistant = None
         self._last_assistant_normalized = None
+        self._current_tip = ""
 
         self.flush_console_buffer()
 
@@ -1608,15 +1838,25 @@ class SWECLIChatApp(App):
             verb = "Thinking"
         return f"{verb}…"
 
-    def _format_spinner_text(self) -> str:
-        """Create spinner text with elapsed time."""
+    def _format_spinner_text(self) -> Text:
+        """Create spinner text with elapsed time and optional tip."""
 
         frame = self._spinner_frames[self._spinner_frame_index]
         elapsed = 0
         if self._spinner_started_at:
             elapsed = int(time.monotonic() - self._spinner_started_at)
         suffix = f" ({elapsed}s)" if elapsed else " (0s)"
-        return f"{frame} {self._spinner_message}{suffix}"
+
+        renderable = Text()
+        renderable.append(frame, style="bright_cyan")
+        renderable.append(f" {self._spinner_message}{suffix}", style="bright_cyan")
+
+        if self._current_tip:
+            renderable.append("\n")
+            renderable.append("  ⎿ Tip: ", style="dim")
+            renderable.append(self._current_tip, style="dim")
+
+        return renderable
 
     def _invoke_on_ui_thread(self, func: Callable[[], None]) -> None:
         """Ensure func executes on the UI thread regardless of caller context."""
@@ -1663,8 +1903,12 @@ class SWECLIChatApp(App):
         if not primary:
             return ""
 
-        friendly_tool = tool_name.replace("_", " ")
-        args_display = self._format_tool_args_for_summary(tool_args)
+        verb, label = get_tool_display_parts(tool_name)
+        if label:
+            friendly_tool = f"{verb}({label})"
+        else:
+            friendly_tool = verb
+        summary = summarize_tool_arguments(tool_name, tool_args)
 
         if not primary.endswith((".", "!", "?")):
             primary = f"{primary}."
@@ -1673,36 +1917,12 @@ class SWECLIChatApp(App):
         if primary and primary[0].islower():
             primary = primary[0].upper() + primary[1:]
 
-        if args_display:
-            prefix = f"{friendly_tool}({args_display})"
-        else:
-            prefix = friendly_tool
+        prefix = f"{friendly_tool} ({summary})" if summary else friendly_tool
 
         if len(result_lines) > 1:
             return f"Completed {prefix} — {primary}"
 
         return f"Completed {prefix}."
-
-    def _format_tool_args_for_summary(self, tool_args: dict[str, Any]) -> str:
-        """Format tool arguments for a concise summary sentence."""
-        if not isinstance(tool_args, dict) or not tool_args:
-            return ""
-
-        parts: list[str] = []
-        for key in sorted(tool_args):
-            value = tool_args[key]
-            if value is None:
-                continue
-            if isinstance(value, str):
-                display = value.strip()
-                if len(display) > 30:
-                    display = f"{display[:27]}..."
-                display = display.replace("\n", " ")
-                parts.append(f"{key}='{display}'")
-            else:
-                parts.append(f"{key}={value!r}")
-
-        return ", ".join(parts)
 
     def _emit_tool_follow_up_if_needed(self) -> None:
         """Render a fallback assistant follow-up if tools finished without LLM wrap-up."""
@@ -1955,6 +2175,7 @@ class SWECLIChatApp(App):
             "slot_items": [],
             "slot_index": 0,
             "panel_start": None,
+            "pending": {},
         }
 
         self.input_field.load_text("")
@@ -2056,20 +2277,26 @@ class SWECLIChatApp(App):
 
         config_snapshot = self._get_model_config_snapshot()
         labels = self._model_slot_labels()
+        state = self._model_picker_state
+        pending: dict[str, dict[str, Any]] = state.get("pending", {})
 
         items: list[dict[str, str]] = []
         order = [("normal", "1"), ("thinking", "2"), ("vision", "3")]
         for slot, option in order:
             slot_label = labels.get(slot, slot.title())
-            current = config_snapshot.get(slot, {})
-            provider_display = current.get("provider_display") or current.get("provider") or ""
-            model_display = current.get("model_display") or current.get("model") or ""
-            if provider_display and model_display:
-                summary = f"{provider_display}/{model_display}"
-            elif provider_display:
-                summary = provider_display
+            summary = "Not set"
+            if slot in pending:
+                provider_info = pending[slot]["provider"]
+                model_info = pending[slot]["model"]
+                summary = f"{provider_info.name}/{model_info.name} (pending)"
             else:
-                summary = "Not set"
+                current = config_snapshot.get(slot, {})
+                provider_display = current.get("provider_display") or current.get("provider") or ""
+                model_display = current.get("model_display") or current.get("model") or ""
+                if provider_display and model_display:
+                    summary = f"{provider_display}/{model_display}"
+                elif provider_display:
+                    summary = provider_display
             items.append(
                 {
                     "value": slot,
@@ -2081,10 +2308,10 @@ class SWECLIChatApp(App):
 
         items.append(
             {
-                "value": "finish",
-                "label": "Finish & summary",
-                "summary": "Show current configuration",
-                "option": "F",
+                "value": "save",
+                "label": "Save models",
+                "summary": "Validate staged changes and persist configuration",
+                "option": "S",
             }
         )
         items.append(
@@ -2096,7 +2323,6 @@ class SWECLIChatApp(App):
             }
         )
 
-        state = self._model_picker_state
         state["slot_items"] = items
         index = state.get("slot_index", 0)
         if not 0 <= index < len(items):
@@ -2126,10 +2352,13 @@ class SWECLIChatApp(App):
             )
 
         instructions = Text(
-            "Use ↑/↓ or 1-3 to choose a slot, Enter to select, F to finish, X to cancel.",
+            "Use ↑/↓ or 1-3 to choose a slot, Enter to select, S to save staged models, X to cancel.",
             style="italic #7a8691",
         )
-        header = Text("Select which model slot you’d like to configure.", style="#9ccffd")
+        pending_hint = ""
+        if pending:
+            pending_hint = " • Pending selections are only applied when you save."
+        header = Text(f"Select which model slot you’d like to configure.{pending_hint}", style="#9ccffd")
         panel = Panel(
             Group(header, table, instructions),
             title="[bold]Model Configuration[/bold]",
@@ -2168,13 +2397,37 @@ class SWECLIChatApp(App):
         labels = self._model_slot_labels()
         description = self._model_slot_description(slot or "")
 
+        max_rows = 7
+
+        total = len(providers)
+        index = state.get("provider_index", 0)
+        index = max(0, min(index, total - 1))
+        state["provider_index"] = index
+
+        half_window = max_rows // 2
+        start = max(0, index - half_window)
+        end = start + max_rows
+        if end > total:
+            end = total
+            start = max(0, end - max_rows)
+
+        visible = providers[start:end]
+        before_hidden = start > 0
+        after_hidden = end < total
+
         table = Table.grid(expand=False, padding=(0, 1))
         table.add_column(width=2, justify="center")
         table.add_column(width=7, justify="center")
         table.add_column(ratio=1)
         table.add_column(ratio=1)
 
-        for row_index, entry in enumerate(providers):
+        if before_hidden:
+            more_above = Text("…", style="dim")
+            summary_text = Text(f"{start} more above", style="dim")
+            table.add_row(Text(" ", style="dim"), more_above, summary_text, Text("", style="dim"))
+
+        for offset, entry in enumerate(visible):
+            row_index = start + offset
             provider = entry["provider"]
             models = entry["models"]
             total_models = len(models)
@@ -2200,6 +2453,12 @@ class SWECLIChatApp(App):
                 Text(summary_text, style=summary_style),
                 style=row_style,
             )
+
+        if after_hidden:
+            remaining = total - end
+            more_below = Text("…", style="dim")
+            summary_text = Text(f"{remaining} more below", style="dim")
+            table.add_row(Text(" ", style="dim"), more_below, summary_text, Text("", style="dim"))
 
         instructions = Text(
             "Use ↑/↓ or number keys, Enter to view models, B to go back, Esc to cancel.",
@@ -2250,8 +2509,6 @@ class SWECLIChatApp(App):
 
         for row_index, model in enumerate(models):
             model_name = model.name
-            if model.recommended:
-                model_name = f"★ {model_name}"
             context_k = f"{model.context_length // 1000}k context"
 
             is_active = row_index == index
@@ -2424,9 +2681,8 @@ class SWECLIChatApp(App):
             index = max(0, min(index, len(items) - 1))
             item = items[index]
             value = item.get("value")
-            if value == "finish":
-                self._render_model_summary()
-                self._end_model_picker(None)
+            if value == "save":
+                await self._commit_model_selections()
                 return
             if value in {"cancel", None}:
                 self._model_picker_cancel()
@@ -2471,15 +2727,13 @@ class SWECLIChatApp(App):
             index = state.get("model_index", 0)
             index = max(0, min(index, len(models) - 1))
             model_info = models[index]
-            selection_success = await self._apply_model_selection(slot, provider_info, model_info)
-            if selection_success:
-                state["stage"] = "slot"
-                state["provider"] = None
-                state["models"] = []
-                state["provider_index"] = 0
-                self._render_model_slot_panel()
-            else:
-                self.refresh()
+            self._stage_model_selection(slot, provider_info, model_info)
+            state["stage"] = "slot"
+            state["provider"] = None
+            state["providers"] = []
+            state["models"] = []
+            state["provider_index"] = 0
+            self._render_model_slot_panel()
 
     def _model_picker_cancel(self) -> None:
         """Abort the picker and remove the active panel."""
@@ -2533,7 +2787,7 @@ class SWECLIChatApp(App):
 
             if match_index is None:
                 self.conversation.add_system_message(
-                    "Type 1-3 to select a slot, F to finish, or X to cancel."
+                    "Type 1-3 to select a slot, S to save staged models, or X to cancel."
                 )
                 self.refresh()
                 return True
@@ -2626,39 +2880,86 @@ class SWECLIChatApp(App):
         self._end_model_picker("Model selector reset.", clear_panel=True)
         return True
 
-    async def _apply_model_selection(self, slot: str, provider_info, model_info) -> bool:
-        """Invoke callback to save model selection."""
+    def _stage_model_selection(self, slot: str, provider_info, model_info) -> None:
+        """Store a pending selection to be validated on save."""
+        if not self._model_picker_state:
+            return
+
+        state = self._model_picker_state
+        pending = state.setdefault("pending", {})
+        pending[slot] = {"provider": provider_info, "model": model_info}
+
+        labels = self._model_slot_labels()
+        display_name = f"{provider_info.name}/{model_info.name}"
+        self.conversation.add_system_message(
+            f"Staged {labels.get(slot, slot.title())} → {display_name}. Select Save models to apply."
+        )
+        self.refresh()
+
+    async def _commit_model_selections(self) -> None:
+        """Validate and persist staged selections."""
+        if not self._model_picker_state:
+            return
+
+        state = self._model_picker_state
+        pending = state.get("pending") or {}
+        if not pending:
+            self.conversation.add_system_message("No pending model changes to save.")
+            self._render_model_summary()
+            self._end_model_picker(None)
+            return
+
         if not self.on_model_selected:
             self.conversation.add_system_message("No handler available to update models.")
-            return False
+            return
 
-        try:
-            result = self.on_model_selected(slot, provider_info.id, model_info.id)
-            if inspect.isawaitable(result):
-                result = await result
-        except Exception as exc:  # pragma: no cover - defensive
-            self.conversation.add_system_message(f"❌ Failed to update model: {exc}")
-            return False
+        failures: list[tuple[str, str]] = []
+        successes: list[tuple[str, Any, Any, str]] = []
 
-        success = getattr(result, "success", None)
-        message = getattr(result, "message", None)
+        for slot, selection in list(pending.items()):
+            provider_info = selection["provider"]
+            model_info = selection["model"]
+            try:
+                result = self.on_model_selected(slot, provider_info.id, model_info.id)
+                if inspect.isawaitable(result):
+                    result = await result
+            except Exception as exc:  # pragma: no cover - defensive
+                failures.append((slot, f"Exception while saving: {exc}"))
+                continue
 
-        if success:
-            if message:
-                self.conversation.add_system_message(f"✓ {message}")
+            if getattr(result, "success", None):
+                message = getattr(result, "message", "") or ""
+                successes.append((slot, provider_info, model_info, message))
+                pending.pop(slot, None)
             else:
-                labels = self._model_slot_labels()
-                display_name = f"{provider_info.name}/{model_info.name}"
-                self.conversation.add_system_message(
-                    f"✓ {labels.get(slot, slot.title())} model set to {display_name}"
-                )
-            self.refresh()
-            return True
+                message = getattr(result, "message", None) or "Model update failed."
+                failures.append((slot, message))
 
-        error_message = message or "Model update failed."
-        self.conversation.add_error(error_message)
-        self.refresh()
-        return False
+        labels = self._model_slot_labels()
+
+        for slot, provider_info, model_info, message in successes:
+            summary = f"{provider_info.name}/{model_info.name}"
+            if message:
+                summary = f"{summary} — {message}"
+            self.conversation.add_system_message(
+                f"✓ {labels.get(slot, slot.title())} model saved: {summary}"
+            )
+
+        if failures:
+            for slot, message in failures:
+                self.conversation.add_error(
+                    f"{labels.get(slot, slot.title())} model not saved: {message}"
+                )
+            state["stage"] = "slot"
+            state["slot_index"] = 0
+            self._render_model_slot_panel()
+            return
+
+        state["pending"] = {}
+        state["stage"] = "slot"
+        state["slot_index"] = 0
+        self._render_model_summary()
+        self._end_model_picker(None)
 
     def _end_model_picker(self, message: str | None, *, clear_panel: bool = False) -> None:
         """Reset model picker state and optionally display a message."""
@@ -2804,14 +3105,13 @@ class SWECLIChatApp(App):
         edited_command = self.input_field.text.strip() or self._approval_command
         result = (option.get("approved", True), option["choice"], edited_command)
 
-        call_name = getattr(self.conversation, "_tool_name", None)
-        call_args = getattr(self.conversation, "_tool_args", None)
+        call_display = getattr(self.conversation, "_tool_display", None)
         call_start = getattr(self.conversation, "_tool_call_start", None)
 
         self.conversation.clear_approval_prompt()
 
         if option.get("approved", True):
-            if call_name and call_args:
+            if call_display is not None:
                 self.conversation.start_tool_execution()
         else:
             if call_start is not None:
@@ -2820,28 +3120,19 @@ class SWECLIChatApp(App):
                     self.conversation._tool_spinner_timer.stop()
                     self.conversation._tool_spinner_timer = None
                 self.conversation._spinner_active = False
-                display_text = call_name or "Command"
-                if call_name and call_name.lower().startswith("run command") and call_args:
-                    extracted = call_args
-                    if "command=" in extracted:
-                        extracted = extracted.split("command=", 1)[1].strip()
-                        if extracted.startswith("'") and extracted.endswith("'"):
-                            extracted = extracted[1:-1]
-                        elif extracted.startswith('"') and extracted.endswith('"'):
-                            extracted = extracted[1:-1]
-                    display_text = f"Bash({extracted})"
-                elif call_args:
-                    display_text = f"{display_text}({call_args})"
-
-                call_line = Text(display_text, style="bright_cyan")
+                if isinstance(call_display, Text):
+                    call_line = call_display.copy()
+                elif call_display is not None:
+                    call_line = Text(str(call_display), style="white")
+                else:
+                    call_line = Text("Command", style="white")
                 self.conversation.write(call_line, scroll_end=True, animate=False)
                 result_line = Text("  ⎿ Interrupted · What should we do instead?", style="yellow")
                 self.conversation.write(result_line, scroll_end=True, animate=False)
                 self.conversation.write(Text(""))
             else:
                 self.conversation.add_system_message("Command cancelled.")
-            self.conversation._tool_name = None
-            self.conversation._tool_args = None
+            self.conversation._tool_display = None
             self.conversation._tool_call_start = None
 
 

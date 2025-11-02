@@ -21,18 +21,20 @@ class FileFinder:
             "dist", "build", ".eggs", "*.egg-info",
         }
 
-    def find_files(self, query: str, max_results: int = 50) -> List[Path]:
+    def find_files(self, query: str, max_results: int = 50, include_dirs: bool = False) -> List[Path]:
         """Find files matching query.
 
         Args:
             query: Search query
             max_results: Maximum number of results
+            include_dirs: Whether to include directories in results
 
         Returns:
             List of matching file paths
         """
-        matches = []
+        matches: list[Path] = []
         query_lower = query.lower()
+        seen: set[Path] = set()
 
         try:
             for root, dirs, files in os.walk(self.working_dir):
@@ -44,8 +46,29 @@ class FileFinder:
 
                 root_path = Path(root)
 
+                if include_dirs:
+                    for dirname in dirs:
+                        dir_path = root_path / dirname
+                        if dir_path in seen:
+                            continue
+                        try:
+                            rel_dir = dir_path.relative_to(self.working_dir)
+                            rel_dir_str = str(rel_dir).lower()
+                        except ValueError:
+                            continue
+
+                        if not query_lower or query_lower in rel_dir_str:
+                            matches.append(dir_path)
+                            seen.add(dir_path)
+                            if len(matches) >= max_results:
+                                break
+                    if len(matches) >= max_results:
+                        break
+
                 for file in files:
                     file_path = root_path / file
+                    if file_path in seen:
+                        continue
 
                     try:
                         rel_path = file_path.relative_to(self.working_dir)
@@ -55,6 +78,7 @@ class FileFinder:
 
                     if not query_lower or query_lower in rel_path_str:
                         matches.append(file_path)
+                        seen.add(file_path)
 
                         if len(matches) >= max_results:
                             break

@@ -5,7 +5,7 @@ from typing import Dict, Any, List
 import time
 
 from .formatter_base import STATUS_ICONS
-from swecli.ui.utils.tool_display import get_tool_display_name
+from swecli.ui.utils.tool_display import get_tool_display_parts
 
 
 class ClaudeStyleFormatter:
@@ -60,7 +60,8 @@ class ClaudeStyleFormatter:
     def _format_tool_call(self, tool_name: str, tool_args: Dict[str, Any]) -> str:
         """Format tool call in Claude Code style."""
         # Use centralized tool display name mapping for consistency
-        display_name = get_tool_display_name(tool_name)
+        verb, label = get_tool_display_parts(tool_name)
+        display_name = f"{verb}({label})" if label else verb
 
         if not tool_args:
             return display_name
@@ -319,10 +320,7 @@ class ClaudeStyleFormatter:
 
         if file_count == 0:
             return ["No files found"]
-        elif file_count <= 5:
-            return [f"Found {file_count} file(s): {', '.join(files[:3])}" + ("..." if file_count > 3 else "")]
-        else:
-            return [f"Found {file_count} files"]
+        return [f"Found {file_count} file(s)"]
 
     def _format_fetch_url_result(self, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
         """Format fetch_url result."""
@@ -419,7 +417,8 @@ class ClaudeStyleFormatter:
                 return [f"Output: {str(output)[:100]}"]
             else:
                 # Try to get meaningful info from tool name and args
-                display_name = get_tool_display_name(tool_name)
+                verb, label = get_tool_display_parts(tool_name)
+                display_name = f"{verb}({label})" if label else verb
                 if tool_args:
                     main_arg = next(iter(tool_args.values()), None)
                     if main_arg and isinstance(main_arg, str) and len(main_arg) < 50:

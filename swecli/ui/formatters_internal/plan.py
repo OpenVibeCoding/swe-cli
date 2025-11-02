@@ -8,7 +8,7 @@ from rich.text import Text
 
 from .base import BaseToolFormatter
 from .utils import ValueSummarizer
-from ..utils.tool_display import get_tool_display_name
+from ..utils.tool_display import get_tool_display_parts, summarize_tool_arguments
 
 
 # Tool icons
@@ -33,7 +33,14 @@ class PlanFormatter(BaseToolFormatter):
         summary = result.get("plan_summary") or result.get("output") or "Execution skipped in plan mode."
         arguments = result.get("arguments") or tool_args or {}
 
-        display_name = get_tool_display_name(tool_name)
+        verb, label = get_tool_display_parts(tool_name)
+        summary = summarize_tool_arguments(tool_name, tool_args)
+        if summary:
+            display_name = f"{verb}({summary})"
+        elif label:
+            display_name = f"{verb}({label})"
+        else:
+            display_name = verb
 
         body = Text()
         body.append(f"{icon} Plan({display_name})\n", style="bold")

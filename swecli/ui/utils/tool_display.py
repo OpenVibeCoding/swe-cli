@@ -2,93 +2,255 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping
+from pathlib import PurePath
+from typing import Any, Mapping, Tuple
 
-# Central mapping from internal tool identifiers to user-facing labels
-_TOOL_DISPLAY_NAMES: dict[str, str] = {
-    "write_file": "Write",
-    "edit_file": "Edit",
-    "read_file": "Read",
-    "list_files": "List",
-    "list_directory": "Directory",
-    "delete_file": "Delete",
-    "search": "Search",
-    "run_command": "Shell",
-    "bash_execute": "Shell",
-    "list_processes": "Processes",
-    "get_process_output": "Process_Output",
-    "kill_process": "Stop_Process",
-    "fetch_url": "Fetch",
-    "open_browser": "Browser",
-    "capture_screenshot": "Screenshot",
-    "list_screenshots": "Screenshot_List",
-    "clear_screenshots": "Screenshot_Clear",
-    "capture_web_screenshot": "Web_Screenshot",
-    "list_web_screenshots": "Web_Screenshot_List",
-    "clear_web_screenshots": "Web_Screenshot_Clear",
-    "analyze_image": "Analyze_Image",
-    "git_commit": "Commit",
-    "git_branch": "Branch",
+from rich.text import Text
+
+# Mapping from tool identifiers to (verb, default label)
+_TOOL_DISPLAY_PARTS: dict[str, tuple[str, str]] = {
+    "read_file": ("Read", "file"),
+    "write_file": ("Write", "file"),
+    "edit_file": ("Edit", "file"),
+    "delete_file": ("Delete", "file"),
+    "list_files": ("List", "files"),
+    "list_directory": ("List", "directory"),
+    "search_code": ("Search", "code"),
+    "search": ("Search", "project"),
+    "run_command": ("Run", "command"),
+    "bash_execute": ("Run", "command"),
+    "get_process_output": ("Output", "process"),
+    "list_processes": ("List", "processes"),
+    "kill_process": ("Stop", "process"),
+    "fetch_url": ("Fetch", "url"),
+    "open_browser": ("Open", "browser"),
+    "capture_screenshot": ("Capture", "screenshot"),
+    "list_screenshots": ("List", "screenshots"),
+    "clear_screenshots": ("Clear", "screenshots"),
+    "capture_web_screenshot": ("Capture", "page"),
+    "list_web_screenshots": ("List", "pages"),
+    "clear_web_screenshots": ("Clear", "pages"),
+    "analyze_image": ("Analyze", "image"),
+    "git_commit": ("Commit", "changes"),
+    "git_branch": ("Branch", "git"),
 }
 
+# Keys whose values should be treated as paths/locations
+_PATH_HINT_KEYS = {
+    "file_path",
+    "path",
+    "directory",
+    "dir",
+    "image_path",
+    "working_dir",
+    "target",
+}
 
-def get_tool_display_name(tool_name: str) -> str:
-    """Return a user-friendly display name for a tool."""
+# Preferred argument keys to summarize for each tool
+_PRIMARY_ARG_MAP: dict[str, tuple[str, ...]] = {
+    "read_file": ("file_path",),
+    "write_file": ("file_path", "path"),
+    "edit_file": ("file_path", "path"),
+    "delete_file": ("file_path", "path"),
+    "list_files": ("path", "directory"),
+    "list_directory": ("path", "directory"),
+    "search_code": ("pattern", "query"),
+    "search": ("query",),
+    "run_command": ("command",),
+    "bash_execute": ("command",),
+    "get_process_output": ("pid", "command"),
+    "kill_process": ("pid",),
+    "fetch_url": ("url",),
+    "open_browser": ("url",),
+    "capture_screenshot": ("target", "path"),
+    "capture_web_screenshot": ("url",),
+    "analyze_image": ("image_path", "file_path"),
+    "git_commit": ("message",),
+}
+
+_MAX_SUMMARY_LEN = 60
+_NESTED_KEY_PRIORITY: tuple[str, ...] = (
+    "command",
+    "file_path",
+    "path",
+    "target",
+    "url",
+    "pid",
+    "process_id",
+    "query",
+    "pattern",
+    "directory",
+    "name",
+    "title",
+    "description",
+)
+
+
+def _fallback_parts(tool_name: str) -> tuple[str, str]:
+    cleaned = tool_name.replace("-", "_")
+    tokens = [token for token in cleaned.split("_") if token]
+    if not tokens:
+        return ("Call", "tool")
+    verb = tokens[0].capitalize()
+    if len(tokens) == 1:
+        return (verb, "item")
+    label = " ".join(tokens[1:])
+    return (verb, label)
+
+
+def get_tool_display_parts(tool_name: str) -> Tuple[str, str]:
+    """Return the (verb, label) pair for a tool."""
     if tool_name.startswith("mcp__"):
-        # mcp__server__tool_name → MCP Tool: server/tool_name
         parts = tool_name.split("__", 2)
         if len(parts) == 3:
-            return f"MCP • {parts[1]}/{parts[2]}".strip()
+            return ("MCP", f"{parts[1]}/{parts[2]}")
         if len(parts) == 2:
-            return f"MCP • {parts[1]}"
-        return "MCP Tool"
+            return ("MCP", parts[1])
+        return ("MCP", "tool")
 
-    if tool_name in _TOOL_DISPLAY_NAMES:
-        return _TOOL_DISPLAY_NAMES[tool_name]
+    if tool_name in _TOOL_DISPLAY_PARTS:
+        return _TOOL_DISPLAY_PARTS[tool_name]
 
-    # Fallback: transform snake_case into underscored title casing
-    cleaned = tool_name.replace("-", "_")
-    parts = [part for part in cleaned.split("_") if part]
-    if not parts:
-        return tool_name
-    capitalized = [part.capitalize() for part in parts]
-    return "_".join(capitalized) if len(capitalized) > 1 else capitalized[0]
+    return _fallback_parts(tool_name)
+
+
+def _shorten_path(value: str) -> str:
+    try:
+        path = PurePath(value)
+    except Exception:
+        return value
+
+    parts = path.parts
+    if len(parts) <= 2:
+        return str(path)
+    return f".../{'/'.join(parts[-2:])}"
+
+
+def _format_summary_value(value: Any, key: str | None = None) -> str:
+    if value is None:
+        return ""
+
+    if isinstance(value, (int, float)):
+        return f"{key}={value}" if key else str(value)
+
+    if isinstance(value, str):
+        display = value.strip()
+        if not display:
+            return ""
+        if key in {"pid", "process_id"} and display.isdigit():
+            return f"{key}={display}"
+        display = display.replace("\n", " ")
+        if key in _PATH_HINT_KEYS or "/" in display or "\\" in display:
+            display = _shorten_path(display)
+        if len(display) > _MAX_SUMMARY_LEN:
+            display = display[: _MAX_SUMMARY_LEN - 3] + "..."
+        return f'"{display}"'
+
+    display = str(value)
+    if len(display) > _MAX_SUMMARY_LEN:
+        display = display[: _MAX_SUMMARY_LEN - 3] + "..."
+    return f"{key}={display}" if key else display
+
+
+def _summarize_nested_value(value: Any, key: str | None, seen: set[int] | None = None) -> str:
+    """Render a nested mapping/list structure into a concise summary string."""
+    if seen is None:
+        seen = set()
+
+    identity = id(value)
+    if identity in seen:
+        return ""
+
+    seen.add(identity)
+
+    if isinstance(value, Mapping):
+        for preferred_key in _NESTED_KEY_PRIORITY:
+            if preferred_key in value:
+                nested_summary = _summarize_nested_value(value[preferred_key], preferred_key, seen)
+                if nested_summary:
+                    return nested_summary
+        for nested_key, nested_value in value.items():
+            nested_summary = _summarize_nested_value(nested_value, nested_key, seen)
+            if nested_summary:
+                return nested_summary
+        return ""
+
+    if isinstance(value, (list, tuple, set)):
+        for item in value:
+            nested_summary = _summarize_nested_value(item, key, seen)
+            if nested_summary:
+                return nested_summary
+        return ""
+
+    return _format_summary_value(value, key)
+
+
+def summarize_tool_arguments(tool_name: str, tool_args: Mapping[str, Any]) -> str:
+    """Return a concise summary payload for a tool based on its arguments."""
+    if not isinstance(tool_args, Mapping) or not tool_args:
+        return ""
+
+    primary_keys = _PRIMARY_ARG_MAP.get(tool_name, ())
+    for key in primary_keys:
+        if key in tool_args:
+            summary = _summarize_nested_value(tool_args[key], key)
+            if summary:
+                return summary
+
+    # Fall back to first string argument
+    for key, value in tool_args.items():
+        if isinstance(value, str) and value:
+            summary = _summarize_nested_value(value, key)
+            if summary:
+                return summary
+
+    # Finally, use the first available value
+    fallback_parts: list[str] = []
+    for key, value in tool_args.items():
+        summary = _summarize_nested_value(value, key)
+        if summary:
+            fallback_parts.append(summary)
+        if len(fallback_parts) >= 2:
+            break
+
+    if fallback_parts:
+        # Deduplicate while preserving order
+        seen: set[str] = set()
+        ordered_unique = []
+        for part in fallback_parts:
+            if part not in seen:
+                seen.add(part)
+                ordered_unique.append(part)
+        return ", ".join(ordered_unique)
+
+    return ""
 
 
 def format_tool_call(tool_name: str, tool_args: Mapping[str, Any]) -> str:
-    """Format a tool call using the friendly display name and summarized arguments."""
+    """Format a tool call for CLI output with ANSI styling."""
+    verb, label = get_tool_display_parts(tool_name)
+    summary = summarize_tool_arguments(tool_name, tool_args)
 
-    def _summarize_arg(key: str, value: Any) -> str:
-        if isinstance(value, str) and key in {"content", "new_string", "old_string", "text"}:
-            line_count = value.count("\n") + 1
-            char_count = len(value)
-            if char_count > 80:
-                return f"<{char_count} chars, {line_count} lines>"
-            first_line = value.split("\n", 1)[0][:50]
-            if len(value) > 50:
-                return f"'{first_line}...'"
-            return repr(value)
-
-        value_repr = repr(value)
-        if len(value_repr) > 100:
-            return value_repr[:97] + "..."
-        return value_repr
-
-    display_name = get_tool_display_name(tool_name)
-    highlighted_name = _highlight_function_name(display_name)
-
-    if tool_args:
-        args_str = ", ".join(f"{key}={_summarize_arg(key, value)}" for key, value in tool_args.items())
-        return f"{highlighted_name}({args_str})"
-    return highlighted_name
+    bold_cyan = "\033[1;36m"
+    reset = "\033[0m"
+    if summary:
+        return f"{bold_cyan}{verb}{reset}({summary})"
+    if label:
+        return f"{bold_cyan}{verb}{reset}({label})"
+    return f"{bold_cyan}{verb}{reset}"
 
 
-def _highlight_function_name(function_name: str) -> str:
-    """Add elegant color highlighting to function names."""
-    # ANSI color codes for elegant highlighting
-    # Using a nice cyan/blue color that's readable but distinctive
-    COLOR = "\033[96m"  # Bright cyan
-    BOLD = "\033[1m"
-    RESET = "\033[0m"
+def build_tool_call_text(tool_name: str, tool_args: Mapping[str, Any]) -> Text:
+    """Return a Rich ``Text`` renderable for the tool call line."""
+    verb, label = get_tool_display_parts(tool_name)
+    summary = summarize_tool_arguments(tool_name, tool_args)
 
-    return f"{COLOR}{BOLD}{function_name}{RESET}"
+    text = Text()
+    text.append(verb, style="bold cyan")
+    if summary:
+        text.append("(", style="white")
+        text.append(summary, style="white")
+        text.append(")", style="white")
+    elif label:
+        text.append(f"({label})", style="white")
+    return text

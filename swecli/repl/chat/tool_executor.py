@@ -2,10 +2,11 @@
 
 import asyncio
 import json
-from typing import TYPE_CHECKING
+import re
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from swecli.ui.utils.tool_display import format_tool_call
+from swecli.ui.utils.tool_display import build_tool_call_text, format_tool_call
 
 if TYPE_CHECKING:
     from swecli.repl.repl import REPL
@@ -127,8 +128,9 @@ class ToolExecutor:
 
             # Show animated spinner during tool execution
             self.chat_app._execution_state = "executing_tool"
-            self.chat_app._current_tool_display = tool_call_display
-            self.chat_app._start_spinner(tool_call_display)
+            plain_tool_line = build_tool_call_text(tool_name, tool_args).plain
+            self.chat_app._current_tool_display = plain_tool_line
+            self.chat_app._start_spinner(plain_tool_line)
 
             # Execute tool (in thread to not block UI) with interrupt checking
             try:
@@ -269,19 +271,19 @@ class ToolExecutor:
             tool_name=tool_name, tool_args=tool_args, result=result
         )
 
-        args_display = ", ".join(
-            f"{key}={value!r}" for key, value in sorted(tool_args.items())
-        )
-        self.chat_app.conversation.add_tool_call(tool_name, args_display)
+        display_text = build_tool_call_text(tool_name, tool_args)
+        self.chat_app.conversation.add_tool_call(display_text)
 
         if isinstance(formatted_result, str):
             for line in formatted_result.splitlines():
                 stripped = line.strip()
                 if not stripped:
                     continue
-                if stripped.startswith("⎿"):
-                    self.chat_app.conversation.add_tool_result(stripped.lstrip("⎿ ").strip())
-                elif stripped.startswith("⏺"):
+                clean = re.sub(r"\x1b\[[0-9;]*m", "", stripped)
+                if clean.startswith("⎿"):
+                    result_text = clean.lstrip("⎿ ").strip()
+                    self.chat_app.conversation.add_tool_result(result_text)
+                elif clean.startswith("⏺"):
                     # Already added tool call
                     continue
                 else:

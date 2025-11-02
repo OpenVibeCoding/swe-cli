@@ -225,9 +225,9 @@ class FileMentionStrategy(CompletionStrategy):
         """
         query = word[1:]  # Remove leading @
 
-        files = self.file_finder.find_files(query)
+        paths = self.file_finder.find_files(query, include_dirs=True)
 
-        for file_path in files:
+        for file_path in paths:
             start_position = -len(word)
 
             # Display relative path
@@ -236,6 +236,9 @@ class FileMentionStrategy(CompletionStrategy):
             except ValueError:
                 rel_path = file_path
 
+            is_dir = file_path.is_dir()
+            rel_display = f"{rel_path}{'/' if is_dir else ''}"
+
             # Get file icon and color
             icon_text, icon_color = get_file_icon(file_path)
 
@@ -243,25 +246,25 @@ class FileMentionStrategy(CompletionStrategy):
             icon_display = f"[{icon_text:>4}]"
 
             # Get file size for display
-            size_str = FileSizeFormatter.get_file_size(file_path)
+            size_str = "" if is_dir else FileSizeFormatter.get_file_size(file_path)
 
             # Elegant formatted display with professional icon
             if size_str:
                 display = FormattedText([
                     (icon_color, icon_display),
                     ("", " "),
-                    ("", f"{str(rel_path):<46}"),
+                    ("", f"{str(rel_display):<46}"),
                     ("class:completion-menu.meta", f"{size_str:>10}"),
                 ])
             else:
                 display = FormattedText([
                     (icon_color, icon_display),
                     ("", " "),
-                    ("", str(rel_path)),
+                    ("", str(rel_display)),
                 ])
 
             yield Completion(
-                text=f"@{rel_path}",
+                text=f"@{rel_display}",
                 start_position=start_position,
                 display=display,
             )

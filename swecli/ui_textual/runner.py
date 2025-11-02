@@ -686,7 +686,9 @@ class TextualRunner:
         self._message_task = asyncio.create_task(self._process_messages())
         self._console_task = asyncio.create_task(self._drain_console_queue())
         try:
-            await self.app.run_async()
+            # Use alternate screen mode (inline=False) for clean TUI with no terminal noise
+            # This ensures scrolling up shows a clean screen, not previous terminal output
+            await self.app.run_async(inline=False)
         finally:
             tasks = [task for task in (self._message_task, self._console_task) if task]
             for task in tasks:
