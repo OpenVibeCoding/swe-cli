@@ -85,6 +85,14 @@ class ConversationLog(RichLog):
     def add_system_message(self, message: str) -> None:
         self.write(Text(message, style="dim italic"))
 
+    def add_error(self, message: str) -> None:
+        """Render an error message with a red bullet and clear any active spinner."""
+        self.stop_spinner()
+        bullet = Text("⦿ ", style="bold red")
+        bullet.append(message, style="red")
+        self.write(bullet)
+        self.write(Text(""))
+
     def add_tool_call(self, display: Text | str, *_: Any) -> None:
         if isinstance(display, Text):
             self._tool_display = display.copy()
