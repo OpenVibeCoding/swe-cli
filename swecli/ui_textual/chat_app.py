@@ -1909,11 +1909,18 @@ class SWECLIChatApp(App):
             "registry": registry,
             "slot": None,
             "providers": [],
-            "provider_index": None,
+            "provider_index": 0,
             "provider": None,
             "models": [],
+            "model_index": 0,
+            "slot_items": [],
+            "slot_index": 0,
+            "panel_start": None,
         }
 
+        self.input_field.load_text("")
+        self.input_field.cursor_position = 0
+        self.input_field.focus()
         self._render_model_slot_panel()
 
     @staticmethod
@@ -2011,34 +2018,64 @@ class SWECLIChatApp(App):
         config_snapshot = self._get_model_config_snapshot()
         labels = self._model_slot_labels()
 
-        table = Table(
-            show_header=True,
-            header_style="bold #8cc8ff",
-            box=box.ROUNDED,
-            expand=True,
-        )
-        table.add_column("Option", justify="center", style="bold cyan", width=7)
-        table.add_column("Model Slot", style="bold white")
-        table.add_column("Currently Configured", style="dim")
-
-        for index, slot in enumerate(["normal", "thinking", "vision"], start=1):
+        items: list[dict[str, str]] = []
+        order = ["normal", "thinking", "vision"]
+        for slot in order:
             slot_label = labels.get(slot, slot.title())
             current = config_snapshot.get(slot, {})
             provider_display = current.get("provider_display") or current.get("provider") or ""
             model_display = current.get("model_display") or current.get("model") or ""
             if provider_display and model_display:
-                current_value = f"{provider_display}/{model_display}"
+                summary = f"{provider_display}/{model_display}"
             elif provider_display:
-                current_value = provider_display
+                summary = provider_display
             else:
-                current_value = "Not set"
-            table.add_row(str(index), slot_label, current_value)
+                summary = "Not set"
+            items.append({
+                "value": slot,
+                "label": slot_label,
+                "summary": summary,
+            })
 
-        table.add_row("F", "Finish & summary", "Show current configuration")
-        table.add_row("X", "Cancel", "Close the selector")
+        items.append({
+            "value": "finish",
+            "label": "Finish & summary",
+            "summary": "Show current configuration",
+        })
+        items.append({
+            "value": "cancel",
+            "label": "Cancel",
+            "summary": "Close the selector",
+        })
+
+        state = self._model_picker_state
+        state["slot_items"] = items
+        index = state.get("slot_index", 0)
+        if not 0 <= index < len(items):
+            index = 0
+        state["slot_index"] = index
+
+        table = Table.grid(expand=False, padding=(0, 1))
+        table.add_column(width=2, justify="center")
+        table.add_column(ratio=1)
+        table.add_column(ratio=1)
+
+        for row_index, item in enumerate(items):
+            is_active = row_index == index
+            pointer = "❯" if is_active else " "
+            row_style = "on #1f2d3a" if is_active else ""
+            pointer_style = "bold bright_cyan" if is_active else "dim"
+            label_style = "bold white" if is_active else "white"
+            summary_style = "dim white" if is_active else "dim"
+            table.add_row(
+                Text(pointer, style=pointer_style),
+                Text(item["label"], style=label_style),
+                Text(item["summary"], style=summary_style),
+                style=row_style,
+            )
 
         instructions = Text(
-            "Enter 1-3 to configure a slot, F to finish, or X to cancel.",
+            "Use ↑/↓ to highlight a slot, Enter to select (1-3 also work), Esc to cancel.",
             style="italic #7a8691",
         )
         header = Text("Select which model slot you’d like to configure.", style="#9ccffd")
@@ -2070,39 +2107,52 @@ class SWECLIChatApp(App):
             self._render_model_slot_panel()
             return
 
-        self._model_picker_state["providers"] = providers
+        state = self._model_picker_state
+        state["providers"] = providers
+        index = state.get("provider_index", 0)
+        if not 0 <= index < len(providers):
+            index = 0
+        state["provider_index"] = index
 
         labels = self._model_slot_labels()
         description = self._model_slot_description(slot or "")
 
-        table = Table(
-            show_header=True,
-            header_style="bold #8cc8ff",
-            box=box.ROUNDED,
-            expand=True,
-        )
-        table.add_column("No.", justify="center", style="bold cyan", width=6)
-        table.add_column("Provider", style="bold white")
-        table.add_column("Highlights", style="dim")
+        table = Table.grid(expand=False, padding=(0, 1))
+        table.add_column(width=2, justify="center")
+        table.add_column(ratio=1)
+        table.add_column(ratio=1)
 
-        for index, entry in enumerate(providers, start=1):
+        for row_index, entry in enumerate(providers):
             provider = entry["provider"]
             models = entry["models"]
+            total_models = len(models)
             capabilities = sorted({cap for model in models for cap in model.capabilities})
             caps_display = ", ".join(capabilities[:3])
             if len(capabilities) > 3:
                 caps_display += ", …"
-            summary_parts = [f"{len(models)} models"]
-            if caps_display:
-                summary_parts.append(caps_display)
-            highlight = " • ".join(summary_parts)
-            if provider.description:
-                highlight = f"{highlight}\n{provider.description}"
 
-            table.add_row(str(index), provider.name, highlight)
+            summary = Text(style="dim")
+            summary.append(f"{total_models} models", style="dim")
+            if caps_display:
+                summary.append(f" • {caps_display}", style="dim")
+            if provider.description:
+                summary.append(f"\n{provider.description}", style="dim")
+
+            is_active = row_index == index
+            pointer = "❯" if is_active else " "
+            row_style = "on #1f2d3a" if is_active else ""
+            pointer_style = "bold bright_cyan" if is_active else "dim"
+            label_style = "bold white" if is_active else "white"
+
+            table.add_row(
+                Text(pointer, style=pointer_style),
+                Text(provider.name, style=label_style),
+                summary,
+                style=row_style,
+            )
 
         instructions = Text(
-            "Enter a provider number, B to go back, or X to cancel.",
+            "Use ↑/↓ to choose a provider, Enter to view models (numbers work too), B to go back, Esc to cancel.",
             style="italic #7a8691",
         )
         subtitle = Text(
@@ -2135,31 +2185,40 @@ class SWECLIChatApp(App):
 
         labels = self._model_slot_labels()
 
-        table = Table(
-            show_header=True,
-            header_style="bold #8cc8ff",
-            box=box.ROUNDED,
-            expand=True,
-        )
-        table.add_column("No.", justify="center", style="bold cyan", width=6)
-        table.add_column("Model", style="bold white")
-        table.add_column("Context", justify="right", style="#9ccffd", width=10)
-        table.add_column("Capabilities", style="dim")
-        table.add_column("Pricing", style="#9ccffd")
+        state = self._model_picker_state
+        state["models"] = models
+        index = state.get("model_index", 0)
+        if not 0 <= index < len(models):
+            index = 0
+        state["model_index"] = index
 
-        for index, model in enumerate(models, start=1):
+        table = Table.grid(expand=False, padding=(0, 1))
+        table.add_column(width=2, justify="center")
+        table.add_column(ratio=1)
+        table.add_column(width=14, justify="right")
+
+        for row_index, model in enumerate(models):
             model_name = model.name
             if model.recommended:
                 model_name = f"★ {model_name}"
-            context_k = f"{model.context_length // 1000}k"
-            caps_display = ", ".join(model.capabilities[:4])
-            if len(model.capabilities) > 4:
-                caps_display += ", …"
-            pricing = model.format_pricing()
-            table.add_row(str(index), model_name, context_k, caps_display, pricing)
+            context_k = f"{model.context_length // 1000}k context"
+
+            is_active = row_index == index
+            pointer = "❯" if is_active else " "
+            row_style = "on #1f2d3a" if is_active else ""
+            pointer_style = "bold bright_cyan" if is_active else "dim"
+            label_style = "bold white" if is_active else "white"
+            info_style = "dim white" if is_active else "dim"
+
+            table.add_row(
+                Text(pointer, style=pointer_style),
+                Text(model_name, style=label_style),
+                Text(context_k, style=info_style),
+                style=row_style,
+            )
 
         instructions = Text(
-            "Enter a model number to apply it, B to go back, or X to cancel.",
+            "Use ↑/↓ to highlight a model, Enter to apply, B to go back, Esc to cancel.",
             style="italic #7a8691",
         )
         subtitle = Text(
