@@ -232,8 +232,8 @@ class ConversationLog(RichLog):
         if not lines:
             lines = [text]
         for raw_line in lines:
-            line = Text("  ⎿ ", style="#7a8691")
-            line.append(raw_line, style="#d0d0d0")
+            line = Text("  ⎿ ", style="dim")
+            line.append(raw_line, style="dim")
             self.write(line)
 
     def _write_edit_result(self, header: str, diff_lines: list[str]) -> None:
