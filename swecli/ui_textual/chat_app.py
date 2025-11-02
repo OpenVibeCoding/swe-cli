@@ -11,8 +11,6 @@ from prompt_toolkit.completion import Completer
 
 from rich import box
 from rich.console import Group, RenderableType
-from rich.align import Align
-from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.table import Table
 from rich.text import Text
@@ -27,8 +25,9 @@ from swecli.ui.components.tips import TipsManager
 from swecli.ui_textual.widgets import ConversationLog
 from swecli.ui_textual.widgets.chat_text_area import ChatTextArea
 from swecli.ui_textual.widgets.status_bar import ModelFooter, StatusBar
-from swecli.ui_textual.model_picker import ModelPickerController
 from swecli.ui_textual.approval_prompt import ApprovalPromptController
+from swecli.ui_textual.model_picker import ModelPickerController
+from swecli.ui_textual.welcome_panel import render_welcome_panel
 from swecli.ui.utils.tool_display import get_tool_display_parts, summarize_tool_arguments
 
 
@@ -330,12 +329,12 @@ class SWECLIChatApp(App):
         if self.on_message:
             self.title = "SWE-CLI Chat"
             self.sub_title = "AI-powered coding assistant"
-            self._render_welcome_panel(real_integration=True)
+            render_welcome_panel(self.conversation, real_integration=True)
             self.status_bar.set_context(15)
         else:
             self.title = "SWE-CLI Chat (Textual POC)"
             self.sub_title = "Full-screen terminal interface"
-            self._render_welcome_panel(real_integration=False)
+            render_welcome_panel(self.conversation, real_integration=False)
             self.status_bar.set_context(15)
 
     def update_model_slots(self, model_slots: Mapping[str, tuple[str, str]] | None) -> None:
@@ -349,71 +348,6 @@ class SWECLIChatApp(App):
         self.model = model
         if hasattr(self, "status_bar"):
             self.status_bar.set_model_name(model)
-
-    def _render_welcome_panel(self, *, real_integration: bool) -> None:
-        """Render a polished welcome panel with structured two-column layout."""
-        from pathlib import Path
-        from swecli.ui.components.welcome import WelcomeMessage
-        from swecli.core.management import OperationMode
-        import os
-
-        if real_integration:
-            # Get current session info
-            working_dir = Path.cwd()
-            username = os.getenv("USER", "Developer")
-            current_mode = OperationMode.NORMAL  # Default mode on startup
-
-            # Generate the full two-column welcome banner
-            welcome_lines = WelcomeMessage.generate_full_welcome(
-                current_mode=current_mode,
-                working_dir=working_dir,
-                username=username,
-            )
-
-            # Write each line to the conversation
-            for line in welcome_lines:
-                self.conversation.write(Text.from_ansi(line))
-
-        else:
-            # POC mode - simple welcome
-            heading = Text("SWE-CLI (Preview)", style="bold bright_cyan")
-            subheading = Text("Textual POC interface", style="dim")
-            body = Text(
-                "Use this playground to explore the upcoming Textual UI.\n"
-                "Core flows are stubbed; use /help, /demo, or /scroll to interact."
-            )
-
-            shortcuts = Text()
-            shortcuts.append("Enter", style="bold green")
-            shortcuts.append(" send   •   ")
-            shortcuts.append("Shift+Enter", style="bold green")
-            shortcuts.append(" new line   •   ")
-            shortcuts.append("/help", style="bold cyan")
-            shortcuts.append(" commands")
-
-            content = Text.assemble(
-                heading,
-                "\n",
-                subheading,
-                "\n\n",
-                body,
-                "\n\n",
-                shortcuts,
-            )
-
-            panel = Panel(
-                Align.center(content, vertical="middle"),
-                border_style="bright_cyan",
-                padding=(1, 3),
-                title="Welcome",
-                subtitle="swecli-textual",
-                subtitle_align="left",
-                width=78,
-            )
-
-            self.conversation.write(panel)
-
-        self.conversation.add_system_message("")
 
     def update_autocomplete(
         self,
