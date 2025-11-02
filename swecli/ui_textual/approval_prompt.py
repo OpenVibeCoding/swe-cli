@@ -73,6 +73,10 @@ class ApprovalPromptController:
 
         self.app.input_field.load_text("")
 
+        controller = getattr(self.app, "_autocomplete_controller", None)
+        if controller is not None:
+            controller.reset()
+
         conversation = self.app.conversation
         if getattr(conversation, "_tool_call_start", None) is not None:
             timer = getattr(conversation, "_tool_spinner_timer", None)
@@ -162,7 +166,9 @@ class ApprovalPromptController:
         self._active = False
         self._options = []
         self._selected_index = 0
-        self.app._last_autocomplete_state = None  # type: ignore[attr-defined]
+        controller = getattr(self.app, "_autocomplete_controller", None)
+        if controller is not None:
+            controller.reset()
         self.app.input_field.focus()
         self.app.input_field.load_text("")
 

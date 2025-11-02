@@ -25,6 +25,7 @@ from swecli.ui_textual.widgets.status_bar import ModelFooter, StatusBar
 from swecli.ui_textual.approval_prompt import ApprovalPromptController
 from swecli.ui_textual.model_picker import ModelPickerController
 from swecli.ui_textual.spinner import SpinnerController
+from swecli.ui_textual.autocomplete_popup import AutocompletePopupController
 from swecli.ui_textual.welcome_panel import render_welcome_panel
 from swecli.ui.utils.tool_display import get_tool_display_parts, summarize_tool_arguments
 
@@ -245,7 +246,7 @@ class SWECLIChatApp(App):
         self.on_model_selected = on_model_selected
         self.get_model_config = get_model_config
         self.autocomplete_popup: Static | None = None
-        self._last_autocomplete_state: tuple[tuple[tuple[str, str], ...], int] | None = None
+        self._autocomplete_controller: AutocompletePopupController | None = None
         self.footer: ModelFooter | None = None
         self._is_processing = False
         self._message_history = []
@@ -311,7 +312,7 @@ class SWECLIChatApp(App):
         self.autocomplete_popup.can_focus = False
         self.autocomplete_popup.styles.display = "none"
         input_container.mount(self.autocomplete_popup)
-        self._last_autocomplete_state = None
+        self._autocomplete_controller = AutocompletePopupController(self.autocomplete_popup)
         self.update_autocomplete([], None)
 
         # Focus input field
@@ -341,6 +342,7 @@ class SWECLIChatApp(App):
         if hasattr(self, "status_bar"):
             self.status_bar.set_model_name(model)
 
+
     def update_autocomplete(
         self,
         entries: list[tuple[str, str]],
@@ -348,60 +350,16 @@ class SWECLIChatApp(App):
     ) -> None:
         """Render autocomplete options directly beneath the input field."""
 
-        if not self.autocomplete_popup:
+        controller = self._autocomplete_controller
+        if controller is None:
             return
 
         if self._approval_controller.active:
-            self.autocomplete_popup.update("")
-            self.autocomplete_popup.styles.display = "none"
-            self._last_autocomplete_state = None
+            controller.reset()
             return
 
-        if not entries:
-            self.autocomplete_popup.update("")
-            self.autocomplete_popup.styles.display = "none"
-            self._last_autocomplete_state = None
-            return
+        controller.render(entries, selected_index)
 
-        total = len(entries)
-        limit = min(total, 5)
-        active = selected_index if selected_index is not None else 0
-        active = max(0, min(active, total - 1))
-
-        window_start = 0
-        if total > limit:
-            window_start = max(0, active - limit + 1)
-            window_start = min(window_start, total - limit)
-        window_end = window_start + limit
-
-        rows = [
-            (label or "", meta or "")
-            for label, meta in entries[window_start:window_end]
-        ]
-
-        window_active = active - window_start
-
-        state = (tuple(rows), window_active)
-        if state == self._last_autocomplete_state:
-            self.autocomplete_popup.styles.display = "block"
-            return
-
-        text = Text()
-        for index, (label, meta) in enumerate(rows):
-            is_active = index == window_active
-            pointer = "▸ " if is_active else "  "
-            pointer_style = "bold bright_cyan" if is_active else "dim"
-            text.append(pointer, style=pointer_style)
-            text.append(label, style="bold white" if is_active else "bright_cyan")
-            if meta:
-                text.append("  ", style="")
-                text.append(meta, style="dim white" if is_active else "dim")
-            if index < len(rows) - 1:
-                text.append("\n")
-
-        self.autocomplete_popup.update(text)
-        self.autocomplete_popup.styles.display = "block"
-        self._last_autocomplete_state = state
 
     def _start_local_spinner(self, message: str | None = None) -> None:
         """Begin local spinner animation while backend processes."""
