@@ -1,10 +1,13 @@
 """Query processing for REPL."""
 
 import json
+import os
 import random
 import time
-from typing import TYPE_CHECKING
+from datetime import datetime
+from typing import TYPE_CHECKING, Iterable
 
+from swecli.core.context_management import ExecutionReflector, SessionPlaybook, Strategy
 from swecli.ui.utils.tool_display import format_tool_call
 
 if TYPE_CHECKING:
@@ -18,6 +21,7 @@ if TYPE_CHECKING:
     from swecli.ui.components.status_line import StatusLine
     from swecli.models.config import Config
     from swecli.core.management import ConfigManager
+    from swecli.models.message import ToolCall
 
 
 class QueryProcessor:
@@ -129,6 +133,10 @@ class QueryProcessor:
         "Adjusting",
     ]
 
+    REFLECTION_WINDOW_SIZE = 5
+    MAX_PLAYBOOK_STRATEGIES = 30
+    PLAYBOOK_DEBUG_PATH = "/tmp/swecli_debug/playbook_evolution.log"
+
     def __init__(
         self,
         console: "Console",
@@ -169,6 +177,7 @@ class QueryProcessor:
         self._last_operation_summary = "—"
         self._last_error = None
         self._notification_center = None
+        self.reflector = ExecutionReflector(min_tool_calls=2, min_confidence=0.65)
 
     def set_notification_center(self, notification_center):
         """Set notification center for status line rendering.
@@ -220,14 +229,33 @@ class QueryProcessor:
         Returns:
             List of API messages
         """
-        # Get messages for API
-        messages = self.session_manager.current_session.to_api_messages() if self.session_manager.current_session else []
-        if enhanced_query != query:
-            messages[-1]["content"] = enhanced_query
+        session = self.session_manager.current_session
+        messages: list[dict] = []
 
-        # Add system prompt if not present
+        if session:
+            messages = session.to_api_messages(window_size=self.REFLECTION_WINDOW_SIZE)
+            if enhanced_query != query:
+                for entry in reversed(messages):
+                    if entry.get("role") == "user":
+                        entry["content"] = enhanced_query
+                        break
+        else:
+            messages = []
+
+        system_content = agent.system_prompt
+        if session:
+            try:
+                playbook = session.get_playbook()
+                playbook_context = playbook.as_context(max_strategies=self.MAX_PLAYBOOK_STRATEGIES)
+                if playbook_context:
+                    system_content = f"{system_content.rstrip()}\n\n{playbook_context}"
+            except Exception:  # pragma: no cover
+                pass
+
         if not messages or messages[0].get("role") != "system":
-            messages.insert(0, {"role": "system", "content": agent.system_prompt})
+            messages.insert(0, {"role": "system", "content": system_content})
+        else:
+            messages[0]["content"] = system_content
 
         return messages
 
@@ -269,6 +297,53 @@ class QueryProcessor:
         progress.print_final_status(replacement_message=llm_description)
 
         return response, latency_ms
+
+    def _record_tool_learnings(
+        self,
+        query: str,
+        tool_call_objects: Iterable["ToolCall"],
+        outcome: str,
+    ) -> None:
+        """Use the reflector to learn strategies from executed tool calls."""
+        session = self.session_manager.current_session
+        if not session or not self.reflector:
+            return
+
+        tool_calls = list(tool_call_objects)
+        if not tool_calls:
+            return
+
+        try:
+            result = self.reflector.reflect(query=query, tool_calls=tool_calls, outcome=outcome)
+        except Exception:  # pragma: no cover
+            return
+
+        if not result:
+            return
+
+        try:
+            playbook: SessionPlaybook = session.get_playbook()
+            before = len(playbook.strategies)
+            strategy: Strategy = playbook.add_strategy(result.category, result.content)
+            session.update_playbook(playbook)
+
+            debug_dir = os.path.dirname(self.PLAYBOOK_DEBUG_PATH)
+            os.makedirs(debug_dir, exist_ok=True)
+            with open(self.PLAYBOOK_DEBUG_PATH, "a", encoding="utf-8") as log:
+                timestamp = datetime.now().isoformat()
+                log.write(f"\n{'=' * 60}\n")
+                log.write(f"🧠 PLAYBOOK EVOLUTION - {timestamp}\n")
+                log.write(f"{'=' * 60}\n")
+                log.write(f"Query: {query}\n")
+                log.write(f"Outcome: {outcome}\n")
+                log.write(f"Strategy Count: {before} -> {len(playbook.strategies)}\n")
+                log.write(f"New Strategy ID: {strategy.id}\n")
+                log.write(f"Category: {result.category}\n")
+                log.write(f"Content: {result.content}\n")
+                log.write(f"Confidence: {result.confidence}\n")
+                log.write(f"Reasoning: {result.reasoning}\n")
+        except Exception:  # pragma: no cover
+            return
 
     def _execute_tool_call(self, tool_call: dict, tool_registry, approval_manager, undo_manager) -> dict:
         """Execute a single tool call.
@@ -439,20 +514,26 @@ class QueryProcessor:
                 self._last_latency_ms = latency_ms
 
                 if not response["success"]:
-                    self.console.print(f"[red]Error: {response.get('error', 'Unknown error')}[/red]")
+                    error_text = response.get("error", "Unknown error")
+                    self.console.print(f"[red]Error: {error_text}[/red]")
+                    self._last_error = error_text
+                    fallback = ChatMessage(role=Role.ASSISTANT, content=f"❌ {error_text}")
+                    self.session_manager.add_message(fallback, self.config.auto_save_interval)
                     break
 
                 # Get LLM description and tool calls
                 llm_description = response.get("content", "")
                 tool_calls = response.get("tool_calls")
+                has_tool_calls = bool(tool_calls)
+                normalized_description = (llm_description or "").strip()
 
                 # If no tool calls, task is complete
-                if not tool_calls:
-                    if llm_description:
-                        assistant_msg = ChatMessage(role=Role.ASSISTANT, content=llm_description)
-                        self.session_manager.add_message(assistant_msg, self.config.auto_save_interval)
-                    else:
-                        self.console.print("\n[dim](Task completed)[/dim]")
+                if not has_tool_calls:
+                    if not normalized_description:
+                        normalized_description = "Warning: model returned no reply."
+                    self.console.print(f"\n[dim]{normalized_description}[/dim]")
+                    assistant_msg = ChatMessage(role=Role.ASSISTANT, content=normalized_description)
+                    self.session_manager.add_message(assistant_msg, self.config.auto_save_interval)
                     break
 
                 # Add assistant message with tool calls to history
@@ -504,13 +585,17 @@ class QueryProcessor:
                         )
                     )
 
-                if llm_description or tool_call_objects:
+                if normalized_description or tool_call_objects:
                     assistant_msg = ChatMessage(
                         role=Role.ASSISTANT,
-                        content=llm_description or "",
+                        content=normalized_description or "",
                         tool_calls=tool_call_objects,
                     )
                     self.session_manager.add_message(assistant_msg, self.config.auto_save_interval)
+
+                if tool_call_objects:
+                    outcome = "error" if any(tc.error for tc in tool_call_objects) else "success"
+                    self._record_tool_learnings(query, tool_call_objects, outcome)
 
                 # Check if agent needs nudge
                 if self._should_nudge_agent(consecutive_reads, messages):
@@ -587,24 +672,33 @@ class QueryProcessor:
                 self._last_latency_ms = latency_ms
 
                 if not response["success"]:
-                    self.console.print(f"[red]Error: {response.get('error', 'Unknown error')}[/red]")
+                    error_text = response.get("error", "Unknown error")
+                    self.console.print(f"[red]Error: {error_text}[/red]")
+                    self._last_error = error_text
+                    fallback = ChatMessage(role=Role.ASSISTANT, content=f"❌ {error_text}")
+                    self.session_manager.add_message(fallback, self.config.auto_save_interval)
+                    if ui_callback and hasattr(ui_callback, 'on_assistant_message'):
+                        ui_callback.on_assistant_message(fallback.content)
                     break
 
                 # Get LLM description and tool calls
                 llm_description = response.get("content", "")
                 tool_calls = response.get("tool_calls")
+                has_tool_calls = bool(tool_calls)
+                normalized_description = (llm_description or "").strip()
 
                 # Notify UI that thinking is complete
                 if ui_callback and hasattr(ui_callback, 'on_thinking_complete'):
                     ui_callback.on_thinking_complete()
 
                 # If no tool calls, task is complete
-                if not tool_calls:
-                    if llm_description:
-                        assistant_msg = ChatMessage(role=Role.ASSISTANT, content=llm_description)
-                        self.session_manager.add_message(assistant_msg, self.config.auto_save_interval)
-                    else:
-                        self.console.print("\n[dim](Task completed)[/dim]")
+                if not has_tool_calls:
+                    if not normalized_description:
+                        normalized_description = "Warning: model returned no reply."
+                    if ui_callback and hasattr(ui_callback, 'on_assistant_message'):
+                        ui_callback.on_assistant_message(normalized_description)
+                    assistant_msg = ChatMessage(role=Role.ASSISTANT, content=normalized_description)
+                    self.session_manager.add_message(assistant_msg, self.config.auto_save_interval)
                     break
 
                 # Display assistant's thinking text BEFORE tool execution
@@ -677,10 +771,14 @@ class QueryProcessor:
 
                 assistant_msg = ChatMessage(
                     role=Role.ASSISTANT,
-                    content=llm_description,
+                    content=normalized_description or "",
                     tool_calls=tool_call_objects,
                 )
                 self.session_manager.add_message(assistant_msg, self.config.auto_save_interval)
+
+                if tool_call_objects:
+                    outcome = "error" if any(tc.error for tc in tool_call_objects) else "success"
+                    self._record_tool_learnings(query, tool_call_objects, outcome)
 
                 # Break on excessive consecutive reads
                 if consecutive_reads >= 5:

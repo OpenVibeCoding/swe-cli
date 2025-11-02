@@ -39,6 +39,8 @@ class TextualRunner:
             self.session_manager = session_manager or getattr(repl, "session_manager", None)
             if self.session_manager is None:
                 raise ValueError("SessionManager is required when providing a custom REPL")
+            if not hasattr(self.repl, "config"):
+                self.repl.config = self.config
             if hasattr(self.repl.config, "permissions") and hasattr(self.repl.config.permissions, "bash"):
                 self.repl.config.permissions.bash.enabled = True
             elif hasattr(self.repl.config, "enable_bash"):
