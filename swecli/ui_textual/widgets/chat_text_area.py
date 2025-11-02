@@ -215,7 +215,8 @@ class ChatTextArea(TextArea):
         """Intercept Enter to submit while preserving Shift+Enter for new lines."""
 
         app = getattr(self, "app", None)
-        approval_mode = getattr(app, "_approval_active", False)
+        approval_controller = getattr(app, "_approval_controller", None)
+        approval_mode = bool(approval_controller and getattr(approval_controller, "active", False))
 
         if approval_mode:
             if event.key == "up":

@@ -28,6 +28,7 @@ from swecli.ui_textual.widgets import ConversationLog
 from swecli.ui_textual.widgets.chat_text_area import ChatTextArea
 from swecli.ui_textual.widgets.status_bar import ModelFooter, StatusBar
 from swecli.ui_textual.model_picker import ModelPickerController
+from swecli.ui_textual.approval_prompt import ApprovalPromptController
 from swecli.ui.utils.tool_display import get_tool_display_parts, summarize_tool_arguments
 
 
@@ -272,12 +273,7 @@ class SWECLIChatApp(App):
         self._tips_manager = TipsManager()
         self._current_tip: str = ""
         self._model_picker: ModelPickerController = ModelPickerController(self)
-        self._approval_active = False
-        self._approval_future: asyncio.Future[tuple[bool, str, str]] | None = None
-        self._approval_options: list[tuple[str, str, str]] = []
-        self._approval_selected_index = 0
-        self._approval_command: str = ""
-        self._approval_working_dir: str = ""
+        self._approval_controller = ApprovalPromptController(self)
 
     def compose(self) -> ComposeResult:
         """Create child widgets."""
@@ -429,7 +425,7 @@ class SWECLIChatApp(App):
         if not self.autocomplete_popup:
             return
 
-        if self._approval_active:
+        if self._approval_controller.active:
             self.autocomplete_popup.update("")
             self.autocomplete_popup.styles.display = "none"
             self._last_autocomplete_state = None
@@ -977,175 +973,19 @@ class SWECLIChatApp(App):
 
     async def show_approval_modal(self, command: str, working_dir: str) -> tuple[bool, str, str]:
         """Display an inline approval prompt inside the conversation log."""
-
-        if self._approval_future is not None:
-            raise RuntimeError("Approval prompt already active")
-
-        self._approval_command = command or ""
-        self._approval_working_dir = working_dir or "."
-        base_prefix = ""
-        if self._approval_command.strip():
-            base_prefix = self._approval_command.strip().split()[0]
-        auto_desc = (
-            f"Automatically approve commands starting with '{base_prefix}' in {self._approval_working_dir}."
-            if base_prefix
-            else f"Automatically approve future commands in {self._approval_working_dir}."
-        )
-        self._approval_options = [
-            {"choice": "1", "label": "Yes", "description": "Run this command now.", "approved": True},
-            {
-                "choice": "2",
-                "label": "Yes, and don't ask again",
-                "description": auto_desc,
-                "approved": True,
-            },
-            {
-                "choice": "3",
-                "label": "No",
-                "description": "Cancel and adjust your request.",
-                "approved": False,
-            },
-        ]
-        self._approval_selected_index = 0
-        self._approval_active = True
-
-        loop = asyncio.get_running_loop()
-        self._approval_future = loop.create_future()
-        # Don't load command into input field - keep it empty during approval
-        self.input_field.load_text("")
-
-        if getattr(self.conversation, "_tool_call_start", None) is not None:
-            if getattr(self.conversation, "_tool_spinner_timer", None) is not None:
-                self.conversation._tool_spinner_timer.stop()
-                self.conversation._tool_spinner_timer = None
-            self.conversation._spinner_active = False
-            self.conversation._replace_tool_call_line("⏺")
-
-        self._render_approval_prompt()
-        self.input_field.focus()
-
-        try:
-            result = await self._approval_future
-        finally:
-            self.conversation.clear_approval_prompt()
-            self._approval_future = None
-            self._approval_active = False
-            self._approval_options = []
-            self._approval_selected_index = 0
-            self._last_autocomplete_state = None
-            self.input_field.focus()
-            self.input_field.load_text("")
-
-        return result
+        return await self._approval_controller.start(command, working_dir)
 
     def _render_approval_prompt(self) -> None:
-        """Compose and display the approval prompt within the conversation log."""
-
-        if not self._approval_active:
-            return
-
-        from rich.console import Group
-        from rich.panel import Panel
-        from rich.table import Table
-
-        cmd_display = self._approval_command or "(empty command)"
-
-        # Build command text with proper styling (not markup)
-        command_text = Text("Command: ", style="white")
-        command_text.append(cmd_display, style="bold white")
-
-        description_group = Group(
-            command_text,
-            Text(f"Directory: {self._approval_working_dir}", style="dim"),
-            Text(""),
-            Text(
-                "Use ↑/↓ to choose, Enter to confirm, Esc to cancel.",
-                style="dim",
-            ),
-            Text(""),
-        )
-
-        table = Table.grid(padding=(0, 1))
-        table.add_column(width=2)
-        table.add_column(no_wrap=True)
-        table.add_column(ratio=1)
-
-        for index, option in enumerate(self._approval_options):
-            is_active = index == self._approval_selected_index
-            pointer = "❯" if is_active else " "
-            pointer_style = "bold bright_cyan" if is_active else "dim"
-            label_style = "bold white" if is_active else "bright_cyan"
-            desc_style = "dim white" if is_active else "dim"
-
-            table.add_row(
-                Text(pointer, style=pointer_style),
-                Text(f"{option['choice']}. {option['label']}", style=label_style),
-                Text(option.get("description", ""), style=desc_style),
-            )
-
-        panel = Panel(
-            Group(description_group, table),
-            title="Approval Required",
-            border_style="bright_cyan",
-            padding=(1, 2),
-        )
-
-        self.conversation.render_approval_prompt([panel])
-        self.conversation.scroll_end(animate=False)
+        self._approval_controller.render()
 
     def _approval_move(self, delta: int) -> None:
-        if not self._approval_active or not self._approval_options:
-            return
-        self._approval_selected_index = (self._approval_selected_index + delta) % len(self._approval_options)
-        self._render_approval_prompt()
+        self._approval_controller.move(delta)
 
     def _approval_confirm(self) -> None:
-        if not self._approval_active or not self._approval_future or self._approval_future.done():
-            return
-
-        option = self._approval_options[self._approval_selected_index]
-        edited_command = self.input_field.text.strip() or self._approval_command
-        result = (option.get("approved", True), option["choice"], edited_command)
-
-        call_display = getattr(self.conversation, "_tool_display", None)
-        call_start = getattr(self.conversation, "_tool_call_start", None)
-
-        self.conversation.clear_approval_prompt()
-
-        if option.get("approved", True):
-            if call_display is not None:
-                self.conversation.start_tool_execution()
-        else:
-            if call_start is not None:
-                self.conversation._truncate_from(call_start)
-                if self.conversation._tool_spinner_timer is not None:
-                    self.conversation._tool_spinner_timer.stop()
-                    self.conversation._tool_spinner_timer = None
-                self.conversation._spinner_active = False
-                if isinstance(call_display, Text):
-                    call_line = call_display.copy()
-                elif call_display is not None:
-                    call_line = Text(str(call_display), style="white")
-                else:
-                    call_line = Text("Command", style="white")
-                self.conversation.write(call_line, scroll_end=True, animate=False)
-                result_line = Text("  ⎿ Interrupted · What should we do instead?", style="yellow")
-                self.conversation.write(result_line, scroll_end=True, animate=False)
-                self.conversation.write(Text(""))
-            else:
-                self.conversation.add_system_message("Command cancelled.")
-            self.conversation._tool_display = None
-            self.conversation._tool_call_start = None
-
-
-        self._approval_future.set_result(result)
+        self._approval_controller.confirm()
 
     def _approval_cancel(self) -> None:
-        if not self._approval_active or not self._approval_options:
-            return
-        self._approval_selected_index = len(self._approval_options) - 1
-        self._render_approval_prompt()
-        self._approval_confirm()
+        self._approval_controller.cancel()
 
     async def process_message(self, message: str) -> None:
         """Send the user message to the backend for processing."""
