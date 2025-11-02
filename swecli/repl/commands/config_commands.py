@@ -232,8 +232,10 @@ class ConfigCommands(CommandHandler):
                 self.chat_app.context_monitor.context_limit = config.max_context_tokens
 
             # Refresh the UI (footer will show new model)
-            if self.chat_app and hasattr(self.chat_app, 'app'):
-                self.chat_app.app.invalidate()
+            if self.chat_app:
+                refresher = getattr(self.chat_app, "refresh", None)
+                if callable(refresher):
+                    refresher()
 
             mode_name = mode_names.get(mode, mode)
             return CommandResult(

@@ -274,6 +274,22 @@ class TextualRunner:
         """Execute a user query via the REPL and return new session messages."""
         import traceback
 
+        try:
+            config = self.config_manager.get_config()
+            self.config = config
+            model_info = config.get_model_info()
+        except Exception as exc:  # pragma: no cover - defensive guard
+            self.app.notify_processing_error(
+                f"Send failed: unable to validate active model ({exc})."
+            )
+            return []
+
+        if model_info is None:
+            self.app.notify_processing_error(
+                "Send failed: configured Normal model is missing. Run /models to choose a valid model."
+            )
+            return []
+
         session = self.session_manager.get_current_session()
         previous_count = len(session.messages) if session else 0
 

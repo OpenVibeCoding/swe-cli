@@ -282,7 +282,9 @@ class ConversationLog(RichLog):
 
     def add_error(self, error: str) -> None:
         """Add error message to conversation."""
-        self.write(Text(f"❌ {error}", style="bold red"))
+        bullet = Text("⦿ ", style="bold red")
+        message = Text(error, style="bold red")
+        self.write(bullet + message)
         self.stop_spinner()
 
     def start_spinner(self, message: str) -> None:
@@ -616,6 +618,43 @@ class ChatTextArea(TextArea):
                 event.prevent_default()
                 if hasattr(app, "_approval_confirm"):
                     app._approval_confirm()
+                return
+
+        picker_active = bool(app and getattr(app, "_model_picker_state", None))
+
+        if picker_active:
+            if event.key == "up":
+                event.stop()
+                event.prevent_default()
+                if hasattr(app, "_model_picker_move"):
+                    app._model_picker_move(-1)
+                return
+            if event.key == "down":
+                event.stop()
+                event.prevent_default()
+                if hasattr(app, "_model_picker_move"):
+                    app._model_picker_move(1)
+                return
+            if event.key in {"enter", "return"} and "+" not in event.key:
+                event.stop()
+                event.prevent_default()
+                confirm = getattr(app, "_model_picker_confirm", None)
+                if confirm is not None:
+                    result = confirm()
+                    if inspect.isawaitable(result):
+                        await result
+                return
+            if event.key in {"escape", "ctrl+c"}:
+                event.stop()
+                event.prevent_default()
+                if hasattr(app, "_model_picker_cancel"):
+                    app._model_picker_cancel()
+                return
+            if event.character and event.character.lower() == "b":
+                event.stop()
+                event.prevent_default()
+                if hasattr(app, "_model_picker_back"):
+                    app._model_picker_back()
                 return
 
         if event.key in {"pageup", "pagedown"}:
@@ -2019,8 +2058,8 @@ class SWECLIChatApp(App):
         labels = self._model_slot_labels()
 
         items: list[dict[str, str]] = []
-        order = ["normal", "thinking", "vision"]
-        for slot in order:
+        order = [("normal", "1"), ("thinking", "2"), ("vision", "3")]
+        for slot, option in order:
             slot_label = labels.get(slot, slot.title())
             current = config_snapshot.get(slot, {})
             provider_display = current.get("provider_display") or current.get("provider") or ""
@@ -2031,22 +2070,31 @@ class SWECLIChatApp(App):
                 summary = provider_display
             else:
                 summary = "Not set"
-            items.append({
-                "value": slot,
-                "label": slot_label,
-                "summary": summary,
-            })
+            items.append(
+                {
+                    "value": slot,
+                    "label": slot_label,
+                    "summary": summary,
+                    "option": option,
+                }
+            )
 
-        items.append({
-            "value": "finish",
-            "label": "Finish & summary",
-            "summary": "Show current configuration",
-        })
-        items.append({
-            "value": "cancel",
-            "label": "Cancel",
-            "summary": "Close the selector",
-        })
+        items.append(
+            {
+                "value": "finish",
+                "label": "Finish & summary",
+                "summary": "Show current configuration",
+                "option": "F",
+            }
+        )
+        items.append(
+            {
+                "value": "cancel",
+                "label": "Cancel",
+                "summary": "Close the selector",
+                "option": "X",
+            }
+        )
 
         state = self._model_picker_state
         state["slot_items"] = items
@@ -2057,6 +2105,7 @@ class SWECLIChatApp(App):
 
         table = Table.grid(expand=False, padding=(0, 1))
         table.add_column(width=2, justify="center")
+        table.add_column(width=7, justify="center")
         table.add_column(ratio=1)
         table.add_column(ratio=1)
 
@@ -2067,15 +2116,17 @@ class SWECLIChatApp(App):
             pointer_style = "bold bright_cyan" if is_active else "dim"
             label_style = "bold white" if is_active else "white"
             summary_style = "dim white" if is_active else "dim"
+            option_style = "bold bright_cyan" if is_active else "dim"
             table.add_row(
                 Text(pointer, style=pointer_style),
+                Text(item["option"], style=option_style),
                 Text(item["label"], style=label_style),
                 Text(item["summary"], style=summary_style),
                 style=row_style,
             )
 
         instructions = Text(
-            "Use ↑/↓ to highlight a slot, Enter to select (1-3 also work), Esc to cancel.",
+            "Use ↑/↓ or 1-3 to choose a slot, Enter to select, F to finish, X to cancel.",
             style="italic #7a8691",
         )
         header = Text("Select which model slot you’d like to configure.", style="#9ccffd")
@@ -2119,6 +2170,7 @@ class SWECLIChatApp(App):
 
         table = Table.grid(expand=False, padding=(0, 1))
         table.add_column(width=2, justify="center")
+        table.add_column(width=7, justify="center")
         table.add_column(ratio=1)
         table.add_column(ratio=1)
 
@@ -2126,33 +2178,31 @@ class SWECLIChatApp(App):
             provider = entry["provider"]
             models = entry["models"]
             total_models = len(models)
-            capabilities = sorted({cap for model in models for cap in model.capabilities})
-            caps_display = ", ".join(capabilities[:3])
-            if len(capabilities) > 3:
-                caps_display += ", …"
-
-            summary = Text(style="dim")
-            summary.append(f"{total_models} models", style="dim")
-            if caps_display:
-                summary.append(f" • {caps_display}", style="dim")
-            if provider.description:
-                summary.append(f"\n{provider.description}", style="dim")
+            max_context = max((model.context_length for model in models), default=0)
+            if max_context >= 1000:
+                context_display = f"{max_context // 1000}k context"
+            else:
+                context_display = f"{max_context} context"
+            summary_text = f"{total_models} models · {context_display}"
 
             is_active = row_index == index
             pointer = "❯" if is_active else " "
             row_style = "on #1f2d3a" if is_active else ""
             pointer_style = "bold bright_cyan" if is_active else "dim"
             label_style = "bold white" if is_active else "white"
+            option_style = "bold bright_cyan" if is_active else "dim"
+            summary_style = "dim white" if is_active else "dim"
 
             table.add_row(
                 Text(pointer, style=pointer_style),
+                Text(str(row_index + 1), style=option_style),
                 Text(provider.name, style=label_style),
-                summary,
+                Text(summary_text, style=summary_style),
                 style=row_style,
             )
 
         instructions = Text(
-            "Use ↑/↓ to choose a provider, Enter to view models (numbers work too), B to go back, Esc to cancel.",
+            "Use ↑/↓ or number keys, Enter to view models, B to go back, Esc to cancel.",
             style="italic #7a8691",
         )
         subtitle = Text(
@@ -2194,6 +2244,7 @@ class SWECLIChatApp(App):
 
         table = Table.grid(expand=False, padding=(0, 1))
         table.add_column(width=2, justify="center")
+        table.add_column(width=7, justify="center")
         table.add_column(ratio=1)
         table.add_column(width=14, justify="right")
 
@@ -2209,16 +2260,18 @@ class SWECLIChatApp(App):
             pointer_style = "bold bright_cyan" if is_active else "dim"
             label_style = "bold white" if is_active else "white"
             info_style = "dim white" if is_active else "dim"
+            option_style = "bold bright_cyan" if is_active else "dim"
 
             table.add_row(
                 Text(pointer, style=pointer_style),
+                Text(str(row_index + 1), style=option_style),
                 Text(model_name, style=label_style),
                 Text(context_k, style=info_style),
                 style=row_style,
             )
 
         instructions = Text(
-            "Use ↑/↓ to highlight a model, Enter to apply, B to go back, Esc to cancel.",
+            "Use ↑/↓ or number keys, Enter to apply, B to go back, Esc to cancel.",
             style="italic #7a8691",
         )
         subtitle = Text(
@@ -2267,10 +2320,185 @@ class SWECLIChatApp(App):
         )
         self._post_model_panel(panel)
 
+    def _model_picker_move(self, delta: int) -> None:
+        """Move the active selection by delta within the current stage."""
+        if not self._model_picker_state:
+            return
+
+        state = self._model_picker_state
+        stage = state.get("stage")
+
+        if stage == "slot":
+            items = state.get("slot_items") or []
+            if not items:
+                return
+            index = (state.get("slot_index", 0) + delta) % len(items)
+            state["slot_index"] = index
+            self._render_model_slot_panel()
+            return
+
+        if stage == "provider":
+            providers = state.get("providers") or []
+            if not providers:
+                return
+            index = (state.get("provider_index", 0) + delta) % len(providers)
+            state["provider_index"] = index
+            self._render_provider_panel()
+            return
+
+        if stage == "model":
+            models = state.get("models") or []
+            if not models:
+                return
+            index = (state.get("model_index", 0) + delta) % len(models)
+            state["model_index"] = index
+            self._render_model_list_panel()
+
+    def _model_picker_jump_to(self, index: int) -> None:
+        """Jump to a specific row in the current stage."""
+        if not self._model_picker_state:
+            return
+
+        state = self._model_picker_state
+        stage = state.get("stage")
+
+        if stage == "slot":
+            items = state.get("slot_items") or []
+            if not items:
+                return
+            clamped = max(0, min(index, len(items) - 1))
+            state["slot_index"] = clamped
+            self._render_model_slot_panel()
+            return
+
+        if stage == "provider":
+            providers = state.get("providers") or []
+            if not providers:
+                return
+            clamped = max(0, min(index, len(providers) - 1))
+            state["provider_index"] = clamped
+            self._render_provider_panel()
+            return
+
+        if stage == "model":
+            models = state.get("models") or []
+            if not models:
+                return
+            clamped = max(0, min(index, len(models) - 1))
+            state["model_index"] = clamped
+            self._render_model_list_panel()
+
+    def _model_picker_back(self) -> None:
+        """Move back one stage in the picker."""
+        if not self._model_picker_state:
+            return
+
+        state = self._model_picker_state
+        stage = state.get("stage")
+
+        if stage == "model":
+            state["stage"] = "provider"
+            self._render_provider_panel()
+            return
+
+        if stage == "provider":
+            state["stage"] = "slot"
+            self._render_model_slot_panel()
+            return
+
+        self._model_picker_cancel()
+
+    async def _model_picker_confirm(self) -> None:
+        """Confirm the currently highlighted entry in the picker."""
+        if not self._model_picker_state:
+            return
+
+        state = self._model_picker_state
+        stage = state.get("stage")
+
+        if stage == "slot":
+            items = state.get("slot_items") or []
+            if not items:
+                return
+            index = state.get("slot_index", 0)
+            index = max(0, min(index, len(items) - 1))
+            item = items[index]
+            value = item.get("value")
+            if value == "finish":
+                self._render_model_summary()
+                self._end_model_picker(None)
+                return
+            if value in {"cancel", None}:
+                self._model_picker_cancel()
+                return
+            state["slot"] = value
+            state["stage"] = "provider"
+            state["provider_index"] = 0
+            state["provider"] = None
+            state["models"] = []
+            self._render_provider_panel()
+            return
+
+        if stage == "provider":
+            providers = state.get("providers") or []
+            if not providers:
+                self.conversation.add_system_message("No providers available — press X to cancel.")
+                self.refresh()
+                return
+            index = state.get("provider_index", 0)
+            index = max(0, min(index, len(providers) - 1))
+            entry = providers[index]
+            state["provider_index"] = index
+            state["provider"] = entry["provider"]
+            state["models"] = entry["models"]
+            state["model_index"] = 0
+            state["stage"] = "model"
+            self._render_model_list_panel()
+            return
+
+        if stage == "model":
+            models = state.get("models") or []
+            provider_info = state.get("provider")
+            slot = state.get("slot")
+            if not models:
+                self.conversation.add_system_message("No models to select — press B to go back.")
+                self.refresh()
+                return
+            if not provider_info or not slot:
+                self.conversation.add_system_message("Internal model selector state invalid.")
+                self.refresh()
+                return
+            index = state.get("model_index", 0)
+            index = max(0, min(index, len(models) - 1))
+            model_info = models[index]
+            selection_success = await self._apply_model_selection(slot, provider_info, model_info)
+            if selection_success:
+                state["stage"] = "slot"
+                state["provider"] = None
+                state["models"] = []
+                state["provider_index"] = 0
+                self._render_model_slot_panel()
+            else:
+                self.refresh()
+
+    def _model_picker_cancel(self) -> None:
+        """Abort the picker and remove the active panel."""
+        if not self._model_picker_state:
+            return
+        self._end_model_picker("Model selector closed.", clear_panel=True)
+
     def _post_model_panel(self, panel: RenderableType) -> None:
         """Write a panel to the conversation with spacing."""
+        state = self._model_picker_state
+        if state is not None:
+            start = state.get("panel_start")
+            if start is None or start > len(self.conversation.lines):
+                state["panel_start"] = len(self.conversation.lines)
+            else:
+                self.conversation._truncate_from(start)
         self.conversation.write(panel)
         self.conversation.write(Text(""))
+        self.conversation.scroll_end(animate=False)
         self.refresh()
 
     async def _handle_model_picker_input(self, raw_value: str) -> bool:
@@ -2282,104 +2510,120 @@ class SWECLIChatApp(App):
         if not value:
             return True
 
-        normalized = value.lower().strip()
-        normalized = normalized.lstrip("/")
+        normalized = value.lower().strip().lstrip("/")
         state = self._model_picker_state
         stage = state.get("stage")
 
         if stage == "slot":
-            if normalized in {"x", "cancel", "quit"}:
-                self._end_model_picker("Model selector closed.")
-                return True
-            if normalized in {"f", "finish", "4"}:
-                self._render_model_summary()
-                self._end_model_picker(None)
+            if normalized in {"quit"}:
+                self._model_picker_cancel()
                 return True
 
-            slot_map = {"1": "normal", "2": "thinking", "3": "vision"}
-            slot = slot_map.get(normalized)
-            if not slot:
-                self.conversation.add_system_message("Enter 1-3 to select a slot, F to finish, or X to cancel.")
+            items = state.get("slot_items") or []
+            match_index: int | None = None
+            for index, item in enumerate(items):
+                tokens = {
+                    str(item.get("option", "")).lower(),
+                    str(item.get("value", "")).lower(),
+                    str(item.get("label", "")).lower(),
+                }
+                if normalized in tokens:
+                    match_index = index
+                    break
+
+            if match_index is None:
+                self.conversation.add_system_message(
+                    "Type 1-3 to select a slot, F to finish, or X to cancel."
+                )
                 self.refresh()
                 return True
 
-            state["slot"] = slot
-            state["stage"] = "provider"
-            state["provider"] = None
-            state["providers"] = self._compute_providers_for_slot(slot, state.get("registry"))
-            self._render_provider_panel()
+            self._model_picker_jump_to(match_index)
+            await self._model_picker_confirm()
             return True
 
         if stage == "provider":
             if normalized in {"x", "cancel", "quit"}:
-                self._end_model_picker("Model selector closed.")
+                self._model_picker_cancel()
                 return True
             if normalized in {"b", "back"}:
-                state["stage"] = "slot"
-                self._render_model_slot_panel()
+                self._model_picker_back()
                 return True
 
             providers = state.get("providers") or []
-            try:
-                index = int(normalized) - 1
-            except ValueError:
-                self.conversation.add_system_message("Enter a provider number, B to go back, or X to cancel.")
+            if not providers:
+                self.conversation.add_system_message("No providers available — press X to cancel.")
                 self.refresh()
                 return True
 
-            if 0 <= index < len(providers):
-                entry = providers[index]
-                state["provider_index"] = index
-                state["provider"] = entry["provider"]
-                state["models"] = entry["models"]
-                state["stage"] = "model"
-                self._render_model_list_panel()
+            match_index: int | None = None
+            if normalized.isdigit():
+                candidate = int(normalized) - 1
+                if 0 <= candidate < len(providers):
+                    match_index = candidate
             else:
-                self.conversation.add_system_message("That provider number is out of range.")
+                for index, entry in enumerate(providers):
+                    provider = entry.get("provider")
+                    tokens = {
+                        str(getattr(provider, "name", "")).lower(),
+                        str(getattr(provider, "id", "")).lower(),
+                    }
+                    if normalized in tokens:
+                        match_index = index
+                        break
+
+            if match_index is None:
+                self.conversation.add_system_message(
+                    "Enter a provider number, B to go back, or X to cancel."
+                )
                 self.refresh()
+                return True
+
+            self._model_picker_jump_to(match_index)
+            await self._model_picker_confirm()
             return True
 
         if stage == "model":
             if normalized in {"x", "cancel", "quit"}:
-                self._end_model_picker("Model selector closed.")
+                self._model_picker_cancel()
                 return True
             if normalized in {"b", "back"}:
-                state["stage"] = "provider"
-                self._render_provider_panel()
+                self._model_picker_back()
                 return True
 
             models = state.get("models") or []
-            try:
-                index = int(normalized) - 1
-            except ValueError:
-                self.conversation.add_system_message("Enter a model number, B to go back, or X to cancel.")
+            if not models:
+                self.conversation.add_system_message("No models to select — press B to go back.")
                 self.refresh()
                 return True
 
-            if 0 <= index < len(models):
-                provider_info = state.get("provider")
-                slot = state.get("slot")
-                if not provider_info or not slot:
-                    self.conversation.add_system_message("Internal model selector state invalid.")
-                    self.refresh()
-                    return True
-
-                model_info = models[index]
-                selection_success = await self._apply_model_selection(slot, provider_info, model_info)
-                if selection_success:
-                    state["stage"] = "slot"
-                    state["providers"] = []
-                    state["provider"] = None
-                    state["models"] = []
-                    self._render_model_slot_panel()
-                else:
-                    self.refresh()
+            match_index: int | None = None
+            if normalized.isdigit():
+                candidate = int(normalized) - 1
+                if 0 <= candidate < len(models):
+                    match_index = candidate
             else:
-                self.conversation.add_system_message("That model number is out of range.")
+                for index, model in enumerate(models):
+                    tokens = {
+                        str(getattr(model, "name", "")).lower(),
+                        str(getattr(model, "id", "")).lower(),
+                    }
+                    if normalized in tokens:
+                        match_index = index
+                        break
+
+            if match_index is None:
+                self.conversation.add_system_message(
+                    "Enter a model number, B to go back, or X to cancel."
+                )
                 self.refresh()
+                return True
+
+            self._model_picker_jump_to(match_index)
+            await self._model_picker_confirm()
             return True
 
-        self._end_model_picker("Model selector reset.")
+        self._end_model_picker("Model selector reset.", clear_panel=True)
         return True
 
     async def _apply_model_selection(self, slot: str, provider_info, model_info) -> bool:
@@ -2412,12 +2656,17 @@ class SWECLIChatApp(App):
             return True
 
         error_message = message or "Model update failed."
-        self.conversation.add_system_message(f"❌ {error_message}")
+        self.conversation.add_error(error_message)
         self.refresh()
         return False
 
-    def _end_model_picker(self, message: str | None) -> None:
+    def _end_model_picker(self, message: str | None, *, clear_panel: bool = False) -> None:
         """Reset model picker state and optionally display a message."""
+        state = self._model_picker_state
+        if clear_panel and state:
+            start = state.get("panel_start")
+            if start is not None:
+                self.conversation._truncate_from(start)
         self._model_picker_state = None
         if message:
             self.conversation.add_system_message(message)
