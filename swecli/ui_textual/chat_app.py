@@ -444,6 +444,16 @@ class SWECLIChatApp(App):
     async def on_chat_text_area_submitted(self, event: ChatTextArea.Submitted) -> None:
         """Handle chat submissions from the custom text area."""
         await self._submit_message(event.value)
+    def _reset_interaction_state(self) -> None:
+        """Clear per-request tracking for tool summaries and assistant follow-ups."""
+        self._pending_tool_summaries.clear()
+        self._assistant_response_received = False
+        self._saw_tool_result = False
+        if hasattr(self, "_console_buffer"):
+            self._console_buffer.clear_assistant_history()
+        if hasattr(self.input_field, "_clear_completions"):
+            self.input_field._clear_completions()
+
 
     async def _submit_message(self, raw_text: str) -> None:
         """Normalize, display, and process submitted chat text."""
