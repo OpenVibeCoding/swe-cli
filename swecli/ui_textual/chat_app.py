@@ -1,9 +1,7 @@
 """Textual-based chat application for SWE-CLI - POC."""
 
 import asyncio
-import random
 import re
-import time
 import threading
 from typing import Any, Callable, Mapping, Optional
 
@@ -18,7 +16,6 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Container, Vertical
 from textual.geometry import Size
-from textual.timer import Timer
 from textual.widgets import Header, Rule, Static
 
 from swecli.ui.components.tips import TipsManager
@@ -27,6 +24,7 @@ from swecli.ui_textual.widgets.chat_text_area import ChatTextArea
 from swecli.ui_textual.widgets.status_bar import ModelFooter, StatusBar
 from swecli.ui_textual.approval_prompt import ApprovalPromptController
 from swecli.ui_textual.model_picker import ModelPickerController
+from swecli.ui_textual.spinner import SpinnerController
 from swecli.ui_textual.welcome_panel import render_welcome_panel
 from swecli.ui.utils.tool_display import get_tool_display_parts, summarize_tool_arguments
 
@@ -253,12 +251,6 @@ class SWECLIChatApp(App):
         self._message_history = []
         self._history_index = -1
         self._current_input = ""
-        self._spinner_frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-        self._spinner_timer: Timer | None = None
-        self._spinner_frame_index = 0
-        self._spinner_message = "Thinking…"
-        self._spinner_started_at = 0.0
-        self._spinner_active = False
         self._queued_console_renderables: list[RenderableType] = []
         self._last_assistant_lines: set[str] = set()
         self._last_rendered_assistant: str | None = None
@@ -270,9 +262,9 @@ class SWECLIChatApp(App):
         self._saw_tool_result = False
         self._ui_thread: threading.Thread | None = None
         self._tips_manager = TipsManager()
-        self._current_tip: str = ""
         self._model_picker: ModelPickerController = ModelPickerController(self)
         self._approval_controller = ApprovalPromptController(self)
+        self._spinner = SpinnerController(self, self._tips_manager)
 
     def compose(self) -> ComposeResult:
         """Create child widgets."""
@@ -414,40 +406,17 @@ class SWECLIChatApp(App):
     def _start_local_spinner(self, message: str | None = None) -> None:
         """Begin local spinner animation while backend processes."""
 
-        if self._spinner_timer is not None:
-            return
-
-        if not hasattr(self, "conversation") or not hasattr(self, "status_bar"):
-            return
-
         if self._queued_console_renderables:
             self._queued_console_renderables.clear()
 
-        if message is not None:
-            self._spinner_message = message
-        else:
-            self._spinner_message = self._get_spinner_message()
-        self._spinner_frame_index = 0
-        self._spinner_started_at = time.monotonic()
-        self._spinner_active = True
-        self._current_tip = self._tips_manager.get_next_tip()
-        self._update_spinner_output(initial=True)
-        self._spinner_timer = self.set_interval(0.12, self._update_spinner_frame)
+        self._spinner.start(message)
 
     def _stop_local_spinner(self) -> None:
         """Stop spinner animation and clear indicators."""
 
-        if self._spinner_timer is not None:
-            self._spinner_timer.stop()
-            self._spinner_timer = None
-
-        if self._spinner_active and hasattr(self, "conversation"):
-            self.conversation.stop_spinner()
-        self._spinner_active = False
-        self._spinner_started_at = 0.0
+        self._spinner.stop()
         self._last_rendered_assistant = None
         self._last_assistant_normalized = None
-        self._current_tip = ""
 
         self.flush_console_buffer()
 
@@ -457,10 +426,8 @@ class SWECLIChatApp(App):
         if not self._is_processing:
             return
 
-        if self._spinner_timer is not None:
-            self._stop_local_spinner()
-
-        self._start_local_spinner(self._get_spinner_message())
+        self._stop_local_spinner()
+        self._start_local_spinner()
 
     def _should_suppress_renderable(self, renderable: RenderableType) -> bool:
         """Return True if renderable duplicates the last assistant output."""
@@ -529,7 +496,7 @@ class SWECLIChatApp(App):
     def flush_console_buffer(self) -> None:
         """Flush queued console renderables after assistant message is recorded."""
 
-        if self._spinner_active or self._buffer_console_output:
+        if self._spinner.active or self._buffer_console_output:
             return
 
         if not self._queued_console_renderables:
@@ -546,58 +513,6 @@ class SWECLIChatApp(App):
     def stop_console_buffer(self) -> None:
         self._buffer_console_output = False
         self.flush_console_buffer()
-
-    def _update_spinner_frame(self) -> None:
-        """Advance spinner frame."""
-
-        self._spinner_frame_index = (self._spinner_frame_index + 1) % len(self._spinner_frames)
-        self._update_spinner_output()
-
-    def _update_spinner_output(self, *, initial: bool = False) -> None:
-        """Render spinner frame to UI."""
-
-        if not self._spinner_active:
-            return
-
-        if not hasattr(self, "status_bar") or not hasattr(self, "conversation"):
-            return
-
-        text = self._format_spinner_text()
-        if initial:
-            self.conversation.start_spinner(text)
-        else:
-            self.conversation.update_spinner(text)
-
-    def _get_spinner_message(self) -> str:
-        """Return a human-friendly spinner message."""
-
-        try:
-            from swecli.repl.query_processor import QueryProcessor
-
-            verb = random.choice(QueryProcessor.THINKING_VERBS)
-        except Exception:
-            verb = "Thinking"
-        return f"{verb}…"
-
-    def _format_spinner_text(self) -> Text:
-        """Create spinner text with elapsed time and optional tip."""
-
-        frame = self._spinner_frames[self._spinner_frame_index]
-        elapsed = 0
-        if self._spinner_started_at:
-            elapsed = int(time.monotonic() - self._spinner_started_at)
-        suffix = f" ({elapsed}s)" if elapsed else " (0s)"
-
-        renderable = Text()
-        renderable.append(frame, style="bright_cyan")
-        renderable.append(f" {self._spinner_message}{suffix}", style="bright_cyan")
-
-        if self._current_tip:
-            renderable.append("\n")
-            renderable.append("  ⎿ Tip: ", style="dim")
-            renderable.append(self._current_tip, style="dim")
-
-        return renderable
 
     def _invoke_on_ui_thread(self, func: Callable[[], None]) -> None:
         """Ensure func executes on the UI thread regardless of caller context."""
@@ -717,7 +632,7 @@ class SWECLIChatApp(App):
     def render_console_output(self, renderable: RenderableType) -> None:
         """Render console output, buffering if spinner is active."""
 
-        if self._spinner_active or self._buffer_console_output:
+        if self._spinner.active or self._buffer_console_output:
             self._queued_console_renderables.append(renderable)
             return
 
