@@ -172,9 +172,10 @@ class ConversationLog(RichLog):
 
     def _write_generic_tool_result(self, text: str) -> None:
         lines = text.rstrip("\n").splitlines() or [text]
+        grey = "#a0a4ad"
         for raw_line in lines:
-            line = Text("  ⎿ ", style="#7a8691")
-            line.append(raw_line, style="#d0d0d0")
+            line = Text("  ⎿ ", style=grey)
+            line.append(raw_line, style=grey)
             self.write(line)
 
     def _write_edit_result(self, header: str, diff_lines: list[str]) -> None:

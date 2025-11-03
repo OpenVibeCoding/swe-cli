@@ -105,8 +105,9 @@ class SpinnerController:
 
         if self._current_tip:
             renderable.append("\n")
-            renderable.append("  ⎿ Tip: ", style="dim")
-            renderable.append(self._current_tip, style="dim")
+            grey = "#a0a4ad"
+            renderable.append("  ⎿ Tip: ", style=grey)
+            renderable.append(self._current_tip, style=grey)
 
         return renderable
 
