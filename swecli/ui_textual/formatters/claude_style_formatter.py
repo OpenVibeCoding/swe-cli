@@ -157,10 +157,12 @@ class ClaudeStyleFormatter:
         normalized_stdout = stdout.lower()
 
         if exit_code not in (None, 0):
+            red = "[91m"
+            reset = "[0m"
             if stderr:
                 first_err = stderr.splitlines()[0].strip()
-                return [f"Exit {exit_code}: {first_err}"]
-            return [f"Command exited with code {exit_code}"]
+                return [f"{red}Error: {first_err}{reset}"]
+            return [f"{red}Error: Exit code {exit_code}{reset}"]
 
         if normalized_cmd.startswith("git ") or " git " in normalized_cmd:
             if "push" in normalized_cmd:
@@ -216,18 +218,17 @@ class ClaudeStyleFormatter:
         if not result.get("success"):
             return [f"❌ {result.get('error', 'Unknown error')}"]
 
-        pid = tool_args.get("pid")
         lines = (result.get("output") or "").splitlines()
         lines = [line.strip() for line in lines if line.strip()]
         if not lines:
-            return [f"Process {pid} produced no output"]
+            return ["Process completed with no output"]
 
         first_line = lines[0]
         if len(lines) == 1 and len(first_line) < 80:
             return [first_line]
 
         preview = first_line[:70] + ("..." if len(first_line) > 70 else "")
-        return [f"Process {pid}: {preview} ({len(lines)} lines)"]
+        return [f"{preview} ({len(lines)} lines)"]
 
     def _format_generic_result(self, tool_name: str, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
         if not result.get("success"):
