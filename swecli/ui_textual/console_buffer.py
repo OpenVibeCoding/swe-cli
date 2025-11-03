@@ -35,7 +35,15 @@ class ConsoleBufferManager:
         self.app._last_rendered_assistant = None
         self.app._last_assistant_normalized = None
         self.app._pending_assistant_normalized = None
-        self.app._assistant_response_received = False
+        if hasattr(self.app, "_tool_summary"):
+            self.app._tool_summary.reset()
+        else:
+            if hasattr(self.app, "_assistant_response_received"):
+                self.app._assistant_response_received = False
+            if hasattr(self.app, "_pending_tool_summaries"):
+                self.app._pending_tool_summaries.clear()
+            if hasattr(self.app, "_saw_tool_result"):
+                self.app._saw_tool_result = False
 
     def last_assistant_message(self) -> Optional[str]:
         return getattr(self.app, "_pending_assistant_normalized", None)
@@ -74,9 +82,15 @@ class ConsoleBufferManager:
         self.app._last_rendered_assistant = message.strip()
         self.app._last_assistant_normalized = self._normalize_paragraph(message)
         self.app._pending_assistant_normalized = None
-        self.app._assistant_response_received = True
-        self.app._pending_tool_summaries.clear()
-        self.app._saw_tool_result = False
+        if hasattr(self.app, "_tool_summary"):
+            self.app._tool_summary.on_assistant_message(message)
+        else:
+            if hasattr(self.app, "_assistant_response_received"):
+                self.app._assistant_response_received = True
+            if hasattr(self.app, "_pending_tool_summaries"):
+                self.app._pending_tool_summaries.clear()
+            if hasattr(self.app, "_saw_tool_result"):
+                self.app._saw_tool_result = False
 
     def enqueue_or_write(self, renderable) -> None:
         if self.app._spinner.active or self._buffering:

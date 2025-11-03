@@ -26,9 +26,9 @@ from swecli.ui_textual.approval_prompt import ApprovalPromptController
 from swecli.ui_textual.model_picker import ModelPickerController
 from swecli.ui_textual.spinner import SpinnerController
 from swecli.ui_textual.console_buffer import ConsoleBufferManager
+from swecli.ui_textual.tool_summary import ToolSummaryManager
 from swecli.ui_textual.autocomplete_popup import AutocompletePopupController
 from swecli.ui_textual.welcome_panel import render_welcome_panel
-from swecli.ui.utils.tool_display import get_tool_display_parts, summarize_tool_arguments
 
 
 
@@ -258,9 +258,6 @@ class SWECLIChatApp(App):
         self._last_assistant_normalized: str | None = None
         self._buffer_console_output = False
         self._pending_assistant_normalized: str | None = None
-        self._pending_tool_summaries: list[str] = []
-        self._assistant_response_received = False
-        self._saw_tool_result = False
         self._ui_thread: threading.Thread | None = None
         self._tips_manager = TipsManager()
         self._model_picker: ModelPickerController = ModelPickerController(self)
@@ -268,6 +265,7 @@ class SWECLIChatApp(App):
         self._spinner = SpinnerController(self, self._tips_manager)
         self._console_buffer = ConsoleBufferManager(self)
         self._queued_console_renderables = self._console_buffer._queue
+        self._tool_summary = ToolSummaryManager(self)
 
     def compose(self) -> ComposeResult:
         """Create child widgets."""
@@ -436,6 +434,8 @@ class SWECLIChatApp(App):
 
         if hasattr(self, "_console_buffer"):
             self._console_buffer.record_assistant_message(message)
+        if hasattr(self, "_tool_summary"):
+            self._tool_summary.on_assistant_message(message)
 
     async def action_send_message(self) -> None:
         """Send message when user presses Enter."""
@@ -444,16 +444,15 @@ class SWECLIChatApp(App):
     async def on_chat_text_area_submitted(self, event: ChatTextArea.Submitted) -> None:
         """Handle chat submissions from the custom text area."""
         await self._submit_message(event.value)
+
     def _reset_interaction_state(self) -> None:
         """Clear per-request tracking for tool summaries and assistant follow-ups."""
-        self._pending_tool_summaries.clear()
-        self._assistant_response_received = False
-        self._saw_tool_result = False
+        if hasattr(self, "_tool_summary"):
+            self._tool_summary.reset()
         if hasattr(self, "_console_buffer"):
             self._console_buffer.clear_assistant_history()
         if hasattr(self.input_field, "_clear_completions"):
             self.input_field._clear_completions()
-
 
     async def _submit_message(self, raw_text: str) -> None:
         """Normalize, display, and process submitted chat text."""
@@ -671,6 +670,51 @@ class SWECLIChatApp(App):
             self._start_local_spinner()
         else:
             self._stop_local_spinner()
+
+    def record_tool_summary(
+        self, tool_name: str, tool_args: dict[str, Any], result_lines: list[str]
+    ) -> None:
+        """Record a tool result summary for fallback assistant messaging."""
+        if hasattr(self, "_tool_summary"):
+            self._tool_summary.record_summary(tool_name, tool_args, result_lines)
+
+    def _emit_tool_follow_up_if_needed(self) -> None:
+        """Render a fallback assistant follow-up if tools finished without LLM wrap-up."""
+        if hasattr(self, "_tool_summary"):
+            self._tool_summary.emit_follow_up_if_needed()
+
+    @property
+    def _pending_tool_summaries(self) -> list[str]:
+        if hasattr(self, "_tool_summary"):
+            return self._tool_summary._pending
+        return []
+
+    @_pending_tool_summaries.setter
+    def _pending_tool_summaries(self, value: list[str]) -> None:
+        if hasattr(self, "_tool_summary"):
+            self._tool_summary._pending = list(value)
+
+    @property
+    def _assistant_response_received(self) -> bool:
+        if hasattr(self, "_tool_summary"):
+            return self._tool_summary._assistant_response_received
+        return False
+
+    @_assistant_response_received.setter
+    def _assistant_response_received(self, value: bool) -> None:
+        if hasattr(self, "_tool_summary"):
+            self._tool_summary._assistant_response_received = value
+
+    @property
+    def _saw_tool_result(self) -> bool:
+        if hasattr(self, "_tool_summary"):
+            return self._tool_summary._saw_tool_result
+        return False
+
+    @_saw_tool_result.setter
+    def _saw_tool_result(self, value: bool) -> None:
+        if hasattr(self, "_tool_summary"):
+            self._tool_summary._saw_tool_result = value
 
     def notify_processing_complete(self) -> None:
         """Reset processing indicators once backend work completes."""
