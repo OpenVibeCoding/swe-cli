@@ -56,6 +56,7 @@ class SWECLIChatApp(App):
         completer: Optional[Completer] = None,
         on_model_selected: Optional[Callable[[str, str, str], Any]] = None,
         get_model_config: Optional[Callable[[], Mapping[str, Any]]] = None,
+        on_ready: Optional[Callable[[], None]] = None,
         **kwargs,
     ):
         """Initialize chat application.
@@ -67,6 +68,7 @@ class SWECLIChatApp(App):
             completer: Autocomplete provider for slash commands and @ mentions
             on_model_selected: Callback invoked after a model is selected
             get_model_config: Callback returning current model configuration details
+            on_ready: Callback invoked once the UI finishes its first layout pass
         """
         # Set color system to inherit from terminal
         kwargs.setdefault("ansi_color", "auto")
@@ -78,6 +80,7 @@ class SWECLIChatApp(App):
         self.model_slots = dict(model_slots or {})
         self.on_model_selected = on_model_selected
         self.get_model_config = get_model_config
+        self._on_ready = on_ready
         self.autocomplete_popup: Static | None = None
         self._autocomplete_controller: AutocompletePopupController | None = None
         self.footer: ModelFooter | None = None
@@ -161,6 +164,9 @@ class SWECLIChatApp(App):
             self.sub_title = "Full-screen terminal interface"
             render_welcome_panel(self.conversation, real_integration=False)
             self.status_bar.set_context(15)
+
+        if self._on_ready is not None:
+            self.call_after_refresh(self._on_ready)
 
     def update_model_slots(self, model_slots: Mapping[str, tuple[str, str]] | None) -> None:
         """Update footer model display with new slot information."""
@@ -499,6 +505,7 @@ def create_chat_app(
     completer: Optional[Completer] = None,
     on_model_selected: Optional[Callable[[str, str, str], Any]] = None,
     get_model_config: Optional[Callable[[], Mapping[str, Any]]] = None,
+    on_ready: Optional[Callable[[], None]] = None,
 ) -> SWECLIChatApp:
     """Create and return a new chat application instance.
 
@@ -509,6 +516,7 @@ def create_chat_app(
         completer: Autocomplete provider for @ mentions and slash commands
         on_model_selected: Callback invoked after a model is selected
         get_model_config: Callback returning current model configuration details
+        on_ready: Callback invoked once the UI completes its first render pass
 
     Returns:
         Configured SWECLIChatApp instance
@@ -521,6 +529,7 @@ def create_chat_app(
         completer=completer,
         on_model_selected=on_model_selected,
         get_model_config=get_model_config,
+        on_ready=on_ready,
     )
 
 

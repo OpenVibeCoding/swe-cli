@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -29,6 +30,7 @@ class TextualRunner:
         repl: Optional[REPL] = None,
         config_manager: Optional[ConfigManager] = None,
         session_manager: Optional[SessionManager] = None,
+        auto_connect_mcp: bool = False,
     ) -> None:
         self.working_dir = Path(working_dir or Path.cwd()).resolve()
 
@@ -45,6 +47,7 @@ class TextualRunner:
                 self.repl.config.permissions.bash.enabled = True
             elif hasattr(self.repl.config, "enable_bash"):
                 self.repl.config.enable_bash = True
+            self._auto_connect_mcp = auto_connect_mcp and hasattr(self.repl, "mcp_manager")
         else:
             self.config_manager = config_manager or ConfigManager(self.working_dir)
             self.config = self.config_manager.load_config()
@@ -61,9 +64,7 @@ class TextualRunner:
                 self.repl.config.permissions.bash.enabled = True
             elif hasattr(self.repl.config, "enable_bash"):
                 self.repl.config.enable_bash = True
-            connect = getattr(self.repl, "_connect_mcp_servers", None)
-            if callable(connect):
-                connect()
+            self._auto_connect_mcp = auto_connect_mcp and hasattr(self.repl, "mcp_manager")
 
         # Get model display name and slot summaries from config
         model_display = f"{self.config.model_provider}/{self.config.model}"
@@ -78,6 +79,10 @@ class TextualRunner:
             "on_model_selected": self._apply_model_selection,
             "get_model_config": self._get_model_config_snapshot,
         }
+        if self._auto_connect_mcp:
+            create_kwargs["on_ready"] = self._start_mcp_connect_thread
+        else:
+            create_kwargs["on_ready"] = self._notify_manual_mcp_connect
 
         try:
             self.app = create_chat_app(**create_kwargs)
@@ -102,6 +107,7 @@ class TextualRunner:
         self._loop = asyncio.new_event_loop()
         self._message_task: asyncio.Task[None] | None = None
         self._console_task: asyncio.Task[None] | None = None
+        self._connect_inflight = False
         self._last_console_line: str | None = None
         self._last_assistant_message: str | None = None
         self._suppress_console_duplicate = False
@@ -355,8 +361,24 @@ class TextualRunner:
     def _run_command(self, command: str) -> None:
         """Execute a slash command and capture console output."""
 
+        stripped = command.strip()
+        lowered = stripped.lower()
+
+        # Background auto-connect trigger
+        if lowered.startswith("/mcp autoconnect"):
+            if self._connect_inflight:
+                self._enqueue_console_text(
+                    "[dim]MCP auto-connect already running...[/dim]"
+                )
+            else:
+                self._enqueue_console_text(
+                    "[cyan]Starting MCP auto-connect in the background...[/cyan]"
+                )
+                self._start_mcp_connect_thread(force=True)
+            return
+
         # Special handling for /mcp view command - use Textual modal instead of prompt_toolkit
-        if command.strip().startswith("/mcp view "):
+        if lowered.startswith("/mcp view "):
             self._handle_mcp_view_command(command)
             return
 
@@ -373,85 +395,133 @@ class TextualRunner:
         Args:
             command: The full command (e.g., "/mcp view server_name")
         """
+        import shlex
         from io import StringIO
         from rich.console import Console as RichConsole
 
-        # Extract server name
-        parts = command.split()
-        if len(parts) < 3:
-            # Render error with Rich to get ANSI codes
+        def _emit_error(message: str) -> None:
+            """Render a Rich-styled error message into the conversation."""
             string_io = StringIO()
             temp_console = RichConsole(file=string_io, force_terminal=True)
-            temp_console.print("[red]Error: Server name required for /mcp view[/red]")
+            temp_console.print(message)
             self._enqueue_console_text(string_io.getvalue())
+
+        try:
+            raw_parts = shlex.split(command)
+        except ValueError:
+            raw_parts = command.strip().split()
+
+        if len(raw_parts) < 3:
+            _emit_error("[red]Error: Server name required for /mcp view[/red]")
             return
 
-        server_name = parts[2]
+        server_name = " ".join(raw_parts[2:]).strip()
+        if not server_name:
+            _emit_error("[red]Error: Server name required for /mcp view[/red]")
+            return
 
-        # Get server details from MCP manager
-        servers = self.repl.mcp_manager.list_servers()
+        mcp_manager = getattr(self.repl, "mcp_manager", None)
+        if mcp_manager is None:
+            _emit_error("[red]Error: MCP manager is not available in this session[/red]")
+            return
+
+        try:
+            servers = mcp_manager.list_servers()
+        except Exception as exc:  # pragma: no cover - defensive
+            _emit_error(f"[red]Error: Unable to load MCP servers ({exc})[/red]")
+            return
+
         if server_name not in servers:
-            # Render error with Rich to get ANSI codes
-            string_io = StringIO()
-            temp_console = RichConsole(file=string_io, force_terminal=True)
-            temp_console.print(f"[red]Error: Server '{server_name}' not found in configuration[/red]")
-            self._enqueue_console_text(string_io.getvalue())
+            _emit_error(f"[red]Error: Server '{server_name}' not found in configuration[/red]")
             return
 
         server_config = servers[server_name]
-        is_connected = self.repl.mcp_manager.is_connected(server_name)
-        tools = self.repl.mcp_manager.get_server_tools(server_name) if is_connected else []
+        is_connected = mcp_manager.is_connected(server_name)
+        tools = mcp_manager.get_server_tools(server_name) if is_connected else []
 
         # Build elegant panel content for the conversation log
+        from rich import box
         from rich.panel import Panel
         from rich.table import Table
         from rich.text import Text
-        from rich import box
 
-        # Create main info table
         info_table = Table(show_header=False, box=None, padding=(0, 1))
         info_table.add_column("Property", style="cyan", no_wrap=True)
         info_table.add_column("Value")
 
-        # Status with color
-        status_text = Text()
-        if is_connected:
-            status_text.append("Connected", style="bold green")
-        else:
-            status_text.append("Disconnected", style="dim")
+        status_text = (
+            Text("Connected", style="bold green")
+            if is_connected
+            else Text("Disconnected", style="dim")
+        )
         info_table.add_row("Status", status_text)
 
-        # Command
-        cmd_text = f"{server_config.command} {' '.join(server_config.args)}" if server_config.args else server_config.command
+        cmd_text = server_config.command or "unknown"
         info_table.add_row("Command", cmd_text)
 
-        # Enabled/Auto-start
-        enabled_text = Text("Yes", style="green") if server_config.enabled else Text("No", style="red")
+        if server_config.args:
+            args_text = " ".join(server_config.args)
+            if len(args_text) > 80:
+                args_text = args_text[:77] + "..."
+            info_table.add_row("Args", args_text)
+
+        transport_text = server_config.transport or "stdio"
+        info_table.add_row("Transport", transport_text)
+
+        from swecli.mcp.config import get_config_path, get_project_config_path
+
+        config_location = ""
+        try:
+            project_config = get_project_config_path(getattr(mcp_manager, "working_dir", None))
+        except Exception:
+            project_config = None
+
+        if project_config:
+            config_location = f"{project_config} [project]"
+        else:
+            try:
+                config_location = str(get_config_path())
+            except Exception:
+                config_location = "Unknown"
+
+        info_table.add_row("Config", Text(config_location, style="dim"))
+
+        capabilities: list[str] = []
+        if is_connected and tools:
+            capabilities.append("tools")
+        if capabilities:
+            info_table.add_row("Capabilities", " · ".join(capabilities))
+
+        enabled_text = (
+            Text("Yes", style="green")
+            if server_config.enabled
+            else Text("No", style="red")
+        )
         info_table.add_row("Enabled", enabled_text)
 
-        auto_start_text = Text("Yes", style="green") if server_config.auto_start else Text("No", style="dim")
+        auto_start_text = (
+            Text("Yes", style="green")
+            if server_config.auto_start
+            else Text("No", style="dim")
+        )
         info_table.add_row("Auto-start", auto_start_text)
 
-        # Environment variables
         if server_config.env:
-            env_str = "\n".join(f"{k}={v}" for k, v in server_config.env.items())
-            info_table.add_row("Environment", env_str)
+            env_lines = "\n".join(f"{key}={value}" for key, value in server_config.env.items())
+            info_table.add_row("Environment", env_lines)
 
-        # Tools count
         if is_connected:
             info_table.add_row("Tools", f"{len(tools)} available")
 
-        # Create tools table if connected
         tools_content = None
         if is_connected and tools:
             tools_table = Table(show_header=True, box=box.SIMPLE, padding=(0, 1))
             tools_table.add_column("Tool Name", style="cyan")
             tools_table.add_column("Description", style="white")
 
-            for tool in tools[:10]:  # Show first 10 tools
-                tool_name = tool.get('name', 'unknown')
-                tool_desc = tool.get('description', '')
-                # Truncate long descriptions
+            for tool in tools[:10]:
+                tool_name = tool.get("name", "unknown")
+                tool_desc = tool.get("description", "")
                 if len(tool_desc) > 60:
                     tool_desc = tool_desc[:57] + "..."
                 tools_table.add_row(tool_name, tool_desc)
@@ -461,7 +531,6 @@ class TextualRunner:
 
             tools_content = tools_table
 
-        # Create main panel
         title = f"MCP Server: {server_name}"
         main_panel = Panel(
             info_table,
@@ -469,13 +538,11 @@ class TextualRunner:
             title_align="left",
             border_style="bright_cyan",
             box=box.ROUNDED,
-            padding=(1, 2)
+            padding=(1, 2),
         )
 
-        # Render to conversation log
-        self._enqueue_console_text("\n")  # Add spacing
+        self._enqueue_console_text("\n")
 
-        # Reuse the temp console from earlier
         string_io = StringIO()
         temp_console = RichConsole(file=string_io, force_terminal=True, width=100)
         temp_console.print(main_panel)
@@ -488,22 +555,21 @@ class TextualRunner:
                 title_align="left",
                 border_style="green",
                 box=box.ROUNDED,
-                padding=(1, 2)
+                padding=(1, 2),
             )
             temp_console.print(tools_panel)
 
-        # Show actions hint
         temp_console.print("\n[dim]Available actions:[/dim]")
         if is_connected:
-            temp_console.print("  [cyan]/mcp disconnect " + server_name + "[/cyan] - Disconnect from server")
-            temp_console.print("  [cyan]/mcp tools " + server_name + "[/cyan] - List all tools")
+            temp_console.print(f"  [cyan]/mcp disconnect {server_name}[/cyan] - Disconnect from server")
+            temp_console.print(f"  [cyan]/mcp tools {server_name}[/cyan] - List all tools")
         else:
-            temp_console.print("  [cyan]/mcp connect " + server_name + "[/cyan] - Connect to server")
+            temp_console.print(f"  [cyan]/mcp connect {server_name}[/cyan] - Connect to server")
 
         if server_config.enabled:
-            temp_console.print("  [cyan]/mcp disable " + server_name + "[/cyan] - Disable auto-start")
+            temp_console.print(f"  [cyan]/mcp disable {server_name}[/cyan] - Disable auto-start")
         else:
-            temp_console.print("  [cyan]/mcp enable " + server_name + "[/cyan] - Enable auto-start")
+            temp_console.print(f"  [cyan]/mcp enable {server_name}[/cyan] - Enable auto-start")
 
         output = string_io.getvalue()
         self._enqueue_console_text(output)
@@ -696,6 +762,94 @@ class TextualRunner:
             if tasks:
                 await asyncio.gather(*tasks, return_exceptions=True)
 
+    def _notify_manual_mcp_connect(self) -> None:
+        """Inform users how to connect MCP servers when auto-connect is disabled."""
+        manager = getattr(self.repl, "mcp_manager", None)
+        has_servers = False
+        if manager is not None:
+            try:
+                has_servers = bool(manager.list_servers())
+            except Exception:
+                has_servers = False
+        if not has_servers:
+            return
+
+        message = (
+            "Tip: MCP servers are not auto-connected. "
+            "Run /mcp autoconnect to connect in the background "
+            "or /mcp connect <name> for a specific server."
+        )
+        self._enqueue_console_text(message)
+
+    def _start_mcp_connect_thread(self, force: bool = False) -> None:
+        """Queue MCP auto-connect after the UI has rendered."""
+        if (not self._auto_connect_mcp and not force) or self._connect_inflight:
+            return
+
+        self._connect_inflight = True
+
+        delay = 0.5 if not force else 0.0
+        try:
+            if delay > 0:
+                self._loop.call_later(delay, self._launch_mcp_autoconnect)
+            else:
+                self._loop.call_soon(self._launch_mcp_autoconnect)
+        except RuntimeError:
+            self._launch_mcp_autoconnect()
+
+    def _launch_mcp_autoconnect(self) -> None:
+        """Trigger MCP auto-connect using the manager's background loop."""
+        manager = getattr(self.repl, "mcp_manager", None)
+        if manager is None:
+            self._connect_inflight = False
+            return
+
+        def handle_completion(result: Optional[dict[str, bool]]) -> None:
+            def finalize() -> None:
+                self._connect_inflight = False
+                if result is None:
+                    self._enqueue_console_text(
+                        "[yellow]Warning: MCP auto-connect failed.[/yellow]"
+                    )
+                    return
+                if not result:
+                    self._enqueue_console_text(
+                        "[dim]MCP auto-connect completed; no enabled servers were found.[/dim]"
+                    )
+                    return
+
+                if result:
+                    successes = [name for name, ok in result.items() if ok]
+                    failures = [name for name, ok in result.items() if not ok]
+                    lines: list[str] = []
+                    if successes:
+                        lines.append(
+                            "[green]✓ Connected MCP servers:[/green] "
+                            + ", ".join(successes)
+                        )
+                    if failures:
+                        lines.append(
+                            "[red]✗ Failed MCP servers:[/red] "
+                            + ", ".join(failures)
+                        )
+                    if lines:
+                        self._enqueue_console_text("\n".join(lines))
+
+                    refresh_cb = getattr(self.repl, "_refresh_runtime_tooling", None)
+                    if callable(refresh_cb):
+                        refresh_cb()
+                    self._refresh_ui_config()
+
+            self._loop.call_soon_threadsafe(finalize)
+
+        try:
+            manager.connect_enabled_servers_background(on_complete=handle_completion)
+        except Exception as exc:  # pragma: no cover - defensive
+            self._connect_inflight = False
+            self._enqueue_console_text(
+                f"[yellow]Warning: MCP auto-connect could not start ({exc}).[/yellow]"
+            )
+
     def _install_console_bridge(self) -> None:
         """Mirror console prints/logs into the Textual conversation."""
 
@@ -761,6 +915,11 @@ def launch_textual_cli(message=None, **kwargs) -> None:
         message: Optional message to process automatically
         **kwargs: Additional arguments passed to TextualRunner
     """
+
+    if "auto_connect_mcp" not in kwargs:
+        auto_env = os.getenv("SWECLI_MCP_AUTOCONNECT", "").strip().lower()
+        if auto_env in {"1", "true", "yes", "on"}:
+            kwargs["auto_connect_mcp"] = True
 
     runner = TextualRunner(**kwargs)
 

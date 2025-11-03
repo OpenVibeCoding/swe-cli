@@ -5,7 +5,7 @@ import os
 import sys
 import threading
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 from fastmcp import Client
 from fastmcp.client.transports import (
@@ -187,15 +187,8 @@ class MCPManager:
             self._config = self.load_configuration()
         return self._config
 
-    async def connect(self, server_name: str) -> bool:
-        """Connect to an MCP server.
-
-        Args:
-            server_name: Name of the server to connect to
-
-        Returns:
-            True if connection successful, False otherwise
-        """
+    async def _connect_internal(self, server_name: str) -> bool:
+        """Internal coroutine that performs MCP server connection."""
         config = self.get_config()
 
         if server_name not in config.mcp_servers:
@@ -237,12 +230,8 @@ class MCPManager:
             print(f"Error connecting to MCP server '{server_name}': {e}")
             return False
 
-    async def disconnect(self, server_name: str) -> None:
-        """Disconnect from an MCP server.
-
-        Args:
-            server_name: Name of the server to disconnect from
-        """
+    async def _disconnect_internal(self, server_name: str) -> None:
+        """Internal coroutine that disconnects an MCP server."""
         if server_name in self.clients:
             client = self.clients[server_name]
             try:
@@ -256,11 +245,11 @@ class MCPManager:
                 if server_name in self.server_tools:
                     del self.server_tools[server_name]
 
-    async def disconnect_all(self) -> None:
-        """Disconnect from all MCP servers."""
+    async def _disconnect_all_internal(self) -> None:
+        """Internal coroutine that disconnects all MCP servers."""
         server_names = list(self.clients.keys())
         for server_name in server_names:
-            await self.disconnect(server_name)
+            await self._disconnect_internal(server_name)
 
     async def _discover_tools(self, server_name: str) -> None:
         """Discover tools from an MCP server.
@@ -295,18 +284,14 @@ class MCPManager:
             print(f"Error discovering tools from '{server_name}': {e}")
             self.server_tools[server_name] = []
 
-    async def connect_enabled_servers(self) -> Dict[str, bool]:
-        """Connect to all enabled servers with auto_start=True.
-
-        Returns:
-            Dict mapping server names to connection success status
-        """
+    async def _connect_enabled_servers_internal(self) -> Dict[str, bool]:
+        """Internal coroutine that connects to all enabled servers."""
         config = self.get_config()
         results = {}
 
         for server_name, server_config in config.mcp_servers.items():
             if server_config.enabled and server_config.auto_start:
-                success = await self.connect(server_name)
+                success = await self._connect_internal(server_name)
                 results[server_name] = success
 
         return results
@@ -322,7 +307,7 @@ class MCPManager:
         Returns:
             True if connection successful, False otherwise
         """
-        return self._run_coroutine_threadsafe(self.connect(server_name))
+        return self._run_coroutine_threadsafe(self._connect_internal(server_name))
 
     def disconnect_sync(self, server_name: str) -> None:
         """Disconnect from an MCP server (synchronous wrapper).
@@ -330,11 +315,11 @@ class MCPManager:
         Args:
             server_name: Name of the server to disconnect from
         """
-        self._run_coroutine_threadsafe(self.disconnect(server_name))
+        self._run_coroutine_threadsafe(self._disconnect_internal(server_name))
 
     def disconnect_all_sync(self) -> None:
         """Disconnect from all MCP servers (synchronous wrapper)."""
-        self._run_coroutine_threadsafe(self.disconnect_all())
+        self._run_coroutine_threadsafe(self._disconnect_all_internal())
 
     def connect_enabled_servers_sync(self) -> Dict[str, bool]:
         """Connect to all enabled servers (synchronous wrapper).
@@ -342,7 +327,40 @@ class MCPManager:
         Returns:
             Dict mapping server names to connection success status
         """
-        return self._run_coroutine_threadsafe(self.connect_enabled_servers())
+        return self._run_coroutine_threadsafe(self._connect_enabled_servers_internal())
+
+    def connect_enabled_servers_background(
+        self,
+        on_complete: Optional[Callable[[Dict[str, bool]], None]] = None,
+    ):
+        """Schedule enabled server connections without blocking.
+
+        Args:
+            on_complete: Optional callback invoked with results dict when done.
+                Receives `None` if the connection attempt fails.
+
+        Returns:
+            Future representing the in-flight connection task.
+        """
+        self._ensure_event_loop()
+        future = asyncio.run_coroutine_threadsafe(
+            self._connect_enabled_servers_internal(),
+            self._event_loop,
+        )
+
+        if on_complete is not None:
+
+            def _callback(done_future):
+                try:
+                    result = done_future.result()
+                except Exception:  # pragma: no cover - defensive
+                    on_complete(None)
+                else:
+                    on_complete(result)
+
+            future.add_done_callback(_callback)
+
+        return future
 
     def call_tool_sync(self, server_name: str, tool_name: str, arguments: Dict) -> Dict:
         """Execute an MCP tool (synchronous wrapper).
@@ -355,7 +373,9 @@ class MCPManager:
         Returns:
             Tool execution result
         """
-        return self._run_coroutine_threadsafe(self.call_tool(server_name, tool_name, arguments))
+        return self._run_coroutine_threadsafe(
+            self._call_tool_internal(server_name, tool_name, arguments)
+        )
 
     def get_all_tools(self) -> List[Dict]:
         """Get all tools from all connected servers.
@@ -379,17 +399,8 @@ class MCPManager:
         """
         return self.server_tools.get(server_name, [])
 
-    async def call_tool(self, server_name: str, tool_name: str, arguments: Dict) -> Dict:
-        """Execute an MCP tool.
-
-        Args:
-            server_name: Name of the MCP server
-            tool_name: Name of the tool (without mcp__server__ prefix)
-            arguments: Tool arguments
-
-        Returns:
-            Tool execution result
-        """
+    async def _call_tool_internal(self, server_name: str, tool_name: str, arguments: Dict) -> Dict:
+        """Internal coroutine that executes an MCP tool."""
         if server_name not in self.clients:
             return {
                 "success": False,
@@ -417,6 +428,60 @@ class MCPManager:
                 "success": False,
                 "error": f"Tool execution failed: {str(e)}",
             }
+
+    async def connect(self, server_name: str) -> bool:
+        """Connect to an MCP server, delegating to the manager event loop if needed."""
+        loop = asyncio.get_running_loop()
+        if self._event_loop and loop is self._event_loop:
+            return await self._connect_internal(server_name)
+        if threading.current_thread() is self._loop_thread:
+            return await self._connect_internal(server_name)
+        return await asyncio.to_thread(self.connect_sync, server_name)
+
+    async def disconnect(self, server_name: str) -> None:
+        """Disconnect from an MCP server, delegating to the manager event loop if needed."""
+        loop = asyncio.get_running_loop()
+        if self._event_loop and loop is self._event_loop:
+            await self._disconnect_internal(server_name)
+            return
+        if threading.current_thread() is self._loop_thread:
+            await self._disconnect_internal(server_name)
+            return
+        await asyncio.to_thread(self.disconnect_sync, server_name)
+
+    async def disconnect_all(self) -> None:
+        """Disconnect all MCP servers, delegating to the manager event loop if needed."""
+        loop = asyncio.get_running_loop()
+        if self._event_loop and loop is self._event_loop:
+            await self._disconnect_all_internal()
+            return
+        if threading.current_thread() is self._loop_thread:
+            await self._disconnect_all_internal()
+            return
+        await asyncio.to_thread(self.disconnect_all_sync)
+
+    async def connect_enabled_servers(self) -> Dict[str, bool]:
+        """Connect enabled MCP servers, delegating to the manager event loop if needed."""
+        loop = asyncio.get_running_loop()
+        if self._event_loop and loop is self._event_loop:
+            return await self._connect_enabled_servers_internal()
+        if threading.current_thread() is self._loop_thread:
+            return await self._connect_enabled_servers_internal()
+        return await asyncio.to_thread(self.connect_enabled_servers_sync)
+
+    async def call_tool(self, server_name: str, tool_name: str, arguments: Dict) -> Dict:
+        """Execute an MCP tool, delegating to the manager event loop if needed."""
+        loop = asyncio.get_running_loop()
+        if self._event_loop and loop is self._event_loop:
+            return await self._call_tool_internal(server_name, tool_name, arguments)
+        if threading.current_thread() is self._loop_thread:
+            return await self._call_tool_internal(server_name, tool_name, arguments)
+        return await asyncio.to_thread(
+            self.call_tool_sync,
+            server_name,
+            tool_name,
+            arguments,
+        )
 
     def add_server(self, name: str, command: str, args: List[str], env: Optional[Dict[str, str]] = None) -> None:
         """Add a new MCP server to configuration.

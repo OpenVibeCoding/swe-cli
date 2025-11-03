@@ -103,7 +103,7 @@ class MCPCommands(CommandHandler):
             self.print_warning("No MCP servers configured")
             return CommandResult(success=True, message="No servers")
 
-        table = Table(title="MCP Servers", show_header=True, header_style="bold cyan")
+        table = Table(title=None, show_header=True, header_style="bold cyan")
         table.add_column("Name", style="cyan")
         table.add_column("Status", justify="center")
         table.add_column("Command")

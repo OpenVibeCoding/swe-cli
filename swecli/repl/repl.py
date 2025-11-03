@@ -645,10 +645,9 @@ class REPL:
 
     def _cleanup(self) -> None:
         """Cleanup resources."""
-        # Disconnect from MCP servers
-        import asyncio
+        # Disconnect from MCP servers using manager's shared loop
         try:
-            asyncio.run(self.mcp_manager.disconnect_all())
+            self.mcp_manager.disconnect_all_sync()
         except Exception as e:
             self.console.print(f"[yellow]Warning: Error disconnecting MCP servers: {e}[/yellow]")
 
