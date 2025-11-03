@@ -28,6 +28,7 @@ from swecli.ui_textual.spinner import SpinnerController
 from swecli.ui_textual.console_buffer import ConsoleBufferManager
 from swecli.ui_textual.tool_summary import ToolSummaryManager
 from swecli.ui_textual.autocomplete_popup import AutocompletePopupController
+from swecli.ui_textual.command_router import CommandRouter
 from swecli.ui_textual.welcome_panel import render_welcome_panel
 
 
@@ -266,6 +267,7 @@ class SWECLIChatApp(App):
         self._console_buffer = ConsoleBufferManager(self)
         self._queued_console_renderables = self._console_buffer._queue
         self._tool_summary = ToolSummaryManager(self)
+        self._command_router = CommandRouter(self)
 
     def compose(self) -> ComposeResult:
         """Create child widgets."""
@@ -510,101 +512,11 @@ class SWECLIChatApp(App):
         Returns True if the command was handled locally, False to allow higher-level
         handlers (e.g., REPL runner) to process it.
         """
-        cmd = command.lower().split()[0]
-
-        if cmd == "/help":
-            self.conversation.add_system_message("Available commands:")
-            self.conversation.add_system_message("  /help - Show this help")
-            self.conversation.add_system_message("  /clear - Clear conversation")
-            self.conversation.add_system_message("  /demo - Show demo messages")
-            self.conversation.add_system_message(
-                "  /scroll - Generate many messages (test scrolling)"
-            )
-            self.conversation.add_system_message("  /quit - Exit application")
-            self.conversation.add_system_message("")
-            self.conversation.add_system_message("✨ Multi-line Input:")
-            self.conversation.add_system_message("  Enter - Send message")
-            self.conversation.add_system_message("  Shift+Enter - New line in message")
-            self.conversation.add_system_message("  Type multiple lines, then press Enter to send!")
-            self.conversation.add_system_message("")
-            self.conversation.add_system_message("📜 Scrolling:")
-            self.conversation.add_system_message(
-                "  Ctrl+Up - Focus conversation (then use arrow keys)"
-            )
-            self.conversation.add_system_message("  Ctrl+Down - Focus input (for typing)")
-            self.conversation.add_system_message("  Arrow Up/Down - Scroll line by line")
-            self.conversation.add_system_message("  Page Up/Down - Scroll by page")
-            self.conversation.add_system_message("")
-            self.conversation.add_system_message("⌨️  Other Shortcuts:")
-            self.conversation.add_system_message("  Ctrl+L - Clear conversation")
-            self.conversation.add_system_message("  Ctrl+C - Quit application")
-            self.conversation.add_system_message("  ESC - Interrupt processing")
-            return True
-
-        elif cmd == "/clear":
-            self.conversation.clear()
-            self.conversation.add_system_message("Conversation cleared.")
-            return True
-
-        elif cmd == "/demo":
-            # Demonstrate different message types
-            self.conversation.add_assistant_message("Here's a demo of different message types:")
-            self.conversation.add_system_message("")
-
-            # Tool call example
-            self.conversation.add_tool_call("Shell", "command='ls -la'")
-            self.conversation.add_tool_result(
-                "total 64\ndrwxr-xr-x  10 user  staff   320 Jan 27 10:00 ."
-            )
-
-            self.conversation.add_system_message("")
-            self.conversation.add_tool_call("Read", "file_path='swecli/cli.py'")
-            self.conversation.add_tool_result("File read successfully (250 lines)")
-
-            self.conversation.add_system_message("")
-            self.conversation.add_tool_call("Write", "file_path='test.py', content='...'")
-            self.conversation.add_tool_result("File written successfully")
-
-            self.conversation.add_system_message("")
-            self.conversation.add_error("Example error: File not found")
-            return True
-
-        elif cmd == "/models":
-            await self._start_model_picker()
-            return True
-
-        elif cmd == "/scroll":
-            # Generate many messages to test scrolling
-            self.conversation.add_assistant_message("Generating 50 messages to test scrolling...")
-            self.conversation.add_system_message("")
-            for i in range(1, 51):
-                if i % 10 == 0:
-                    self.conversation.add_system_message(f"--- Message {i} ---")
-                elif i % 5 == 0:
-                    self.conversation.add_tool_call("TestTool", f"iteration={i}")
-                    self.conversation.add_tool_result(f"Result for iteration {i}")
-                elif i % 3 == 0:
-                    self.conversation.add_user_message(f"Test user message {i}")
-                else:
-                    self.conversation.add_assistant_message(
-                        f"Test assistant message {i}: Lorem ipsum dolor sit amet, consectetur adipiscing elit."
-                    )
-            self.conversation.add_system_message("")
-            self.conversation.add_assistant_message(
-                "✓ Done! Try scrolling up with mouse wheel or Page Up."
-            )
-            return True
-
-        elif cmd == "/quit":
-            self.exit()
-            return True
-
-        else:
-            if not self.on_message:
-                self.conversation.add_error(f"Unknown command: {cmd}")
-            return False
-
-        return True
+        handled = await self._command_router.handle(command)
+        if not handled and not self.on_message:
+            cmd = command.lower().split()[0]
+            self.conversation.add_error(f"Unknown command: {cmd}")
+        return handled
 
     async def _start_model_picker(self) -> None:
         """Launch the in-conversation model picker flow."""
