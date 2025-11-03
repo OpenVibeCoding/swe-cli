@@ -32,14 +32,38 @@ The existing prompt_toolkit UI has issues with full-screen terminal display. Tex
 ```
 swecli/ui_textual/
 ├── __init__.py
-├── README.md (this file)
-├── chat_app.py           # Main Textual application
-├── styles/
-│   └── chat.tcss         # CSS-like styling
-├── widgets/              # Custom widgets (future)
-│   └── __init__.py
-└── screens/              # Modal screens (future)
-    └── __init__.py
+├── README.md                 # This file
+├── chat_app.py               # Main Textual application
+├── controllers/              # Interactive controllers (model picker, spinner, etc.)
+│   ├── __init__.py
+│   ├── approval_prompt_controller.py
+│   ├── autocomplete_popup_controller.py
+│   ├── command_router.py
+│   ├── message_controller.py
+│   ├── model_picker_controller.py
+│   └── spinner_controller.py
+├── managers/                 # State/data managers used by the app
+│   ├── __init__.py
+│   ├── console_buffer_manager.py
+│   ├── message_history.py
+│   └── tool_summary_manager.py
+├── renderers/                # Rich/Textual rendering helpers
+│   ├── __init__.py
+│   ├── markdown.py
+│   └── welcome_panel.py
+├── screens/                  # Modal screens and overlays
+│   ├── __init__.py
+│   └── command_approval_modal.py
+├── styles/                   # Textual CSS
+│   └── chat.tcss
+├── widgets/                  # Custom Textual widgets
+│   ├── __init__.py
+│   ├── chat_text_area.py
+│   ├── conversation_log.py
+│   └── status_bar.py
+├── runner.py                 # Entry point used by `swecli-textual`
+├── ui_callback.py            # Real-time tool display callback
+└── welcome_panel.py          # Rich welcome panel renderer
 ```
 
 ## Testing the POC

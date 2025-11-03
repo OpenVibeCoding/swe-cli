@@ -1,209 +1,38 @@
 """Textual-based chat application for SWE-CLI - POC."""
 
-import asyncio
-import re
 import threading
 from typing import Any, Callable, Mapping, Optional
 
 from prompt_toolkit.completion import Completer
 
-from rich import box
-from rich.console import Group, RenderableType
-from rich.syntax import Syntax
-from rich.table import Table
-from rich.text import Text
+from rich.console import RenderableType
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Container, Vertical
-from textual.geometry import Size
 from textual.widgets import Header, Rule, Static
 
 from swecli.ui.components.tips import TipsManager
 from swecli.ui_textual.widgets import ConversationLog
 from swecli.ui_textual.widgets.chat_text_area import ChatTextArea
 from swecli.ui_textual.widgets.status_bar import ModelFooter, StatusBar
-from swecli.ui_textual.approval_prompt import ApprovalPromptController
-from swecli.ui_textual.model_picker import ModelPickerController
-from swecli.ui_textual.spinner import SpinnerController
-from swecli.ui_textual.console_buffer import ConsoleBufferManager
-from swecli.ui_textual.tool_summary import ToolSummaryManager
-from swecli.ui_textual.autocomplete_popup import AutocompletePopupController
-from swecli.ui_textual.command_router import CommandRouter
-from swecli.ui_textual.history import MessageHistory
-from swecli.ui_textual.message_controller import MessageController
-from swecli.ui_textual.welcome_panel import render_welcome_panel
+from swecli.ui_textual.controllers.approval_prompt_controller import ApprovalPromptController
+from swecli.ui_textual.controllers.autocomplete_popup_controller import AutocompletePopupController
+from swecli.ui_textual.controllers.command_router import CommandRouter
+from swecli.ui_textual.controllers.message_controller import MessageController
+from swecli.ui_textual.controllers.model_picker_controller import ModelPickerController
+from swecli.ui_textual.controllers.spinner_controller import SpinnerController
+from swecli.ui_textual.managers.console_buffer_manager import ConsoleBufferManager
+from swecli.ui_textual.managers.message_history import MessageHistory
+from swecli.ui_textual.managers.tool_summary_manager import ToolSummaryManager
+from swecli.ui_textual.renderers.welcome_panel import render_welcome_panel
 
 
 
 class SWECLIChatApp(App):
     """SWE-CLI Chat Application using Textual."""
 
-    CSS = """
-    Screen {
-        background: $background;
-    }
+    CSS_PATH = "styles/chat.tcss"
 
-    #main-container {
-        height: 100%;
-        layout: vertical;
-        background: $background;
-    }
-
-    #conversation {
-        height: 1fr;
-        border: none;
-        background: $background;
-        padding: 1 2;
-        overflow-y: scroll;
-    }
-
-    Rule {
-        height: 1;
-        color: $text 30%;            /* Text color with 30% opacity for separator */
-        background: transparent;
-        margin: 0;
-    }
-
-    #input-container {
-        height: auto;
-        layout: vertical;
-        background: $background;
-    }
-
-    #input-label {
-        height: 1;
-        content-align: left middle;
-        color: $text-muted;          /* Subtle label text */
-        background: $background;
-        padding: 0 2;
-    }
-
-    #input {
-        height: 5;
-        max-height: 15;
-        min-height: 3;
-        border: none;                /* No border by default */
-        background: $background;
-        padding: 1 2;
-    }
-
-    #autocomplete-popup {
-        display: none;
-        background: $surface-darken-2;
-        color: $text;
-        border: tall $surface;
-        padding: 0 1;
-        overflow-y: auto;
-        margin: 1 2 0 2;
-        max-height: 8;
-    }
-
-    #status-bar {
-        height: 1;
-        background: $background;
-        color: $text-muted;
-        padding: 0 2;
-        content-align: left middle;
-    }
-
-    TextArea {
-        background: $background;
-        color: $text;
-        border: none;
-        min-width: 0;
-        content-align: left top;
-    }
-
-    TextArea:focus {
-        border-left: thick $accent;  /* Subtle left accent on focus */
-        background: $background;     /* Keep same background on focus */
-    }
-
-
-    Footer {
-        background: $background;
-        color: $text;
-    }
-
-    Footer > .footer--links {
-        color: $text-muted;
-    }
-
-    Footer > .footer--models {
-        color: $text-muted;
-        padding: 0 2;
-        width: 1fr;
-        min-width: 0;
-    }
-
-    Footer > .footer--keys {
-        background: transparent;
-    }
-
-    FooterKey {
-        background: $background;
-        color: $text;
-        border: none;
-    }
-
-    FooterKey .footer-key--key {
-        background: $background;
-        color: $text;
-    }
-
-    FooterKey .footer-key--description {
-        background: $background;
-        color: $text-muted;
-    }
-
-    FooterKey.-command-palette {
-        border-left: none;
-    }
-
-    FooterKey:hover {
-        background: $surface;
-        color: $accent;
-        .footer-key--key {
-            background: $surface;
-            color: $accent;
-        }
-        .footer-key--description {
-            background: $surface;
-            color: $accent;
-        }
-    }
-
-    Footer:ansi {
-        background: $background;
-        .footer-key--key {
-            background: $background;
-            color: $text;
-        }
-        .footer-key--description {
-            background: $background;
-            color: $text-muted;
-        }
-        FooterKey.-command-palette {
-            border-left: none;
-        }
-    }
-
-    Footer > .footer--text {
-        color: $text;
-    }
-
-    Footer > .footer--keys .key {
-        background: $surface-darken-1;
-        color: $text;
-        border: none;
-    }
-
-    Footer > .footer--keys .key:hover {
-        background: $surface;
-        color: $accent;
-    }
-
-    """
 
     BINDINGS = [
         Binding("ctrl+c", "quit", "Quit", priority=True),
@@ -421,7 +250,6 @@ class SWECLIChatApp(App):
         if hasattr(self, "_console_buffer"):
             return self._console_buffer.should_suppress(renderable)
         return False
-
 
     def render_console_output(self, renderable: RenderableType) -> None:
         """Render console output, buffering if spinner is active."""

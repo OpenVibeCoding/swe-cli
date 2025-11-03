@@ -11,41 +11,41 @@ from textual.screen import ModalScreen
 from textual.widgets import Button, Input, Static
 
 
-class ApprovalModal(ModalScreen[Tuple[bool, str, str]]):
+class CommandApprovalModal(ModalScreen[Tuple[bool, str, str]]):
     """Modal dialog to approve or edit shell commands."""
 
     DEFAULT_CSS = """
-    ApprovalModal > Container {
+    CommandApprovalModal > Container {
         width: 60;
         border: round $accent;
         background: $surface;
         padding: 1 2;
     }
 
-    ApprovalModal .title {
+    CommandApprovalModal .title {
         content-align: center middle;
         height: 1;
         color: $accent;
     }
 
-    ApprovalModal .command {
+    CommandApprovalModal .command {
         background: $boost;
         color: $text;
         padding: 1;
         border: round $accent;
     }
 
-    ApprovalModal Input {
+    CommandApprovalModal Input {
         margin-top: 1;
     }
 
-    ApprovalModal Horizontal {
+    CommandApprovalModal Horizontal {
         margin-top: 1;
         height: 3;
         content-align: center middle;
     }
 
-    ApprovalModal Button {
+    CommandApprovalModal Button {
         min-width: 16;
         margin: 0 1;
     }

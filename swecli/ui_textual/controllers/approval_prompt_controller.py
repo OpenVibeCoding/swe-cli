@@ -7,7 +7,6 @@ from typing import Any, TYPE_CHECKING
 
 from rich.console import Group
 from rich.panel import Panel
-from rich.table import Table
 from rich.text import Text
 
 
@@ -178,41 +177,41 @@ class ApprovalPromptController:
 
         cmd_display = self._command or "(empty command)"
 
-        command_text = Text("Command: ", style="white")
-        command_text.append(cmd_display, style="bold white")
-
-        description_group = Group(
-            command_text,
-            Text(f"Directory: {self._working_dir}", style="dim"),
-            Text(""),
-            Text(
-                "Use ↑/↓ to choose, Enter to confirm, Esc to cancel.",
-                style="dim",
-            ),
-            Text(""),
+        header = Text.assemble(
+            ("Command", "dim"),
+            (" · ", "dim"),
+            (cmd_display, "bold bright_cyan"),
         )
+        location = Text.assemble(
+            ("Directory", "dim"),
+            (" · ", "dim"),
+            (self._working_dir, "dim"),
+        )
+        hint = Text("↑/↓ choose · Enter confirm · Esc cancel", style="dim")
 
-        table = Table.grid(padding=(0, 1))
-        table.add_column(width=2)
-        table.add_column(no_wrap=True)
-        table.add_column(ratio=1)
-
+        option_lines: list[Text] = []
         for index, option in enumerate(self._options):
             is_active = index == self._selected_index
-            pointer = "❯" if is_active else " "
-            pointer_style = "bold bright_cyan" if is_active else "dim"
-            label_style = "bold white" if is_active else "bright_cyan"
-            desc_style = "dim white" if is_active else "dim"
+            pointer = "▸" if is_active else " "
+            pointer_style = "bright_cyan" if is_active else "dim"
+            label_style = "bold white" if is_active else "white"
+            desc_style = "dim"
 
-            table.add_row(
-                Text(pointer, style=pointer_style),
-                Text(f"{option['choice']}. {option['label']}", style=label_style),
-                Text(option.get("description", ""), style=desc_style),
-            )
+            line = Text()
+            line.append(pointer, style=pointer_style)
+            line.append(f" {option['choice']}. ", style="dim")
+            line.append(option["label"], style=label_style)
+            description = option.get("description", "")
+            if description:
+                line.append(" — ", style="dim")
+                line.append(description, style=desc_style)
+            option_lines.append(line)
+
+        body = Group(header, location, hint, Text(""), *option_lines)
 
         panel = Panel(
-            Group(description_group, table),
-            title="Approval Required",
+            body,
+            title="Approval",
             border_style="bright_cyan",
             padding=(1, 2),
         )

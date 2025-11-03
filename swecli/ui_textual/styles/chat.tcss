@@ -1,162 +1,164 @@
-/* SWE-CLI Chat Application Styles - Redesigned for Elegance */
-/* Inspired by Claude Code: minimal, professional, clean */
-
-/* ============================================
-   COLOR PALETTE - Muted and Professional
-   ============================================ */
-
 Screen {
-    background: #1e1e1e;  /* Neutral dark gray (was harsh blue) */
+    background: $background;
 }
-
-/* ============================================
-   MAIN LAYOUT
-   ============================================ */
 
 #main-container {
     height: 100%;
     layout: vertical;
+    background: $background;
 }
-
-/* ============================================
-   CONVERSATION AREA - Borderless and Clean
-   ============================================ */
 
 #conversation {
     height: 1fr;
-    border: none;                /* ✨ NO BORDER - Clean look! */
-    background: #1e1e1e;         /* Neutral background */
-    padding: 1 2;                /* More generous padding */
-    scrollbar-gutter: stable;
+    border: none;
+    background: $background;
+    padding: 1 2;
+    overflow-y: scroll;
 }
 
-#conversation:focus {
-    background: #252526;         /* Subtle depth change on focus */
-    border: none;                /* Still no border */
+Rule {
+    height: 1;
+    color: $text 30%;
+    background: transparent;
+    margin: 0;
 }
-
-/* ============================================
-   INPUT AREA - Minimal and Elegant
-   ============================================ */
 
 #input-container {
     height: auto;
     layout: vertical;
-    background: #1e1e1e;
+    background: $background;
 }
 
 #input-label {
     height: 1;
     content-align: left middle;
-    color: #808080;              /* Muted gray (was bright cyan) */
-    background: #1e1e1e;
+    color: $text-muted;
+    background: $background;
     padding: 0 2;
 }
 
-/* Input field - borderless with subtle focus */
 #input {
-    height: 3;
-    max-height: 10;
+    height: 5;
+    max-height: 15;
     min-height: 3;
-    border: none;                /* ✨ NO BORDER by default */
-    background: #252526;         /* Subtle depth */
+    border: none;
+    background: $background;
     padding: 1 2;
-    color: #cccccc;              /* Softer white */
 }
 
-#input:focus {
-    background: #2d2d2d;         /* Elevated background on focus */
-    border-left: thick #007acc;  /* ✨ Subtle left accent only */
+#autocomplete-popup {
+    display: none;
+    background: $surface-darken-2;
+    color: $text;
+    border: tall $surface;
+    padding: 0 1;
+    overflow-y: auto;
+    margin: 1 2 0 2;
+    max-height: 8;
 }
-
-/* ============================================
-   STATUS BAR - Clean and Professional
-   ============================================ */
 
 #status-bar {
     height: 1;
-    background: #252526;         /* Slightly elevated */
-    color: #808080;              /* Muted gray */
+    background: $background;
+    color: $text-muted;
     padding: 0 2;
     content-align: left middle;
 }
 
-/* ============================================
-   TEXT AREA WIDGETS
-   ============================================ */
-
 TextArea {
-    background: #252526;
-    color: #cccccc;              /* Softer white text */
+    background: $background;
+    color: $text;
     border: none;
+    min-width: 0;
+    content-align: left top;
 }
 
 TextArea:focus {
-    border-left: thick #007acc;  /* Subtle left accent */
-    background: #2d2d2d;
-}
-
-TextArea .text-area--cursor {
-    color: #007acc;              /* Muted blue cursor */
-    background: #007acc;
-}
-
-TextArea .text-area--placeholder {
-    color: #6a6a6a;              /* Very subtle placeholder */
-    text-style: italic;
-}
-
-/* ============================================
-   RICH LOG (Conversation Display)
-   ============================================ */
-
-RichLog {
-    background: transparent;      /* Blend with parent */
-    color: #cccccc;              /* Soft white */
-    padding: 1 2;
-}
-
-RichLog:focus {
-    background: #252526;         /* Subtle highlight */
-    border: none;                /* No harsh border */
-}
-
-/* ============================================
-   HEADER AND FOOTER - Minimal Style
-   ============================================ */
-
-Header {
-    background: #1e1e1e;
-    color: #808080;              /* Muted gray (was bright cyan) */
-    padding: 0 2;
+    border-left: thick $accent;
+    background: $background;
 }
 
 Footer {
-    background: #252526;
-    color: #6a6a6a;              /* Very subtle */
+    background: $background;
+    color: $text;
 }
 
-Footer > .footer--key {
-    color: #007acc;              /* Muted blue (was bright cyan) */
+Footer > .footer--links {
+    color: $text-muted;
+}
+
+Footer > .footer--models {
+    color: $text-muted;
+    padding: 0 2;
+    width: 1fr;
+    min-width: 0;
+}
+
+Footer > .footer--keys {
     background: transparent;
 }
 
-Footer > .footer--description {
-    color: #808080;
+FooterKey {
+    background: $background;
+    color: $text;
+    border: none;
 }
 
-/* ============================================
-   SCROLLBAR - Subtle and Unobtrusive
-   ============================================ */
-
-Scrollbar {
-    background: #1e1e1e;
-    color: #3a3d41;              /* Barely visible */
+FooterKey .footer-key--key {
+    background: $background;
+    color: $text;
 }
 
-Scrollbar:hover {
-    background: #252526;
-    color: #007acc;              /* Muted blue on hover */
+FooterKey .footer-key--description {
+    background: $background;
+    color: $text-muted;
+}
+
+FooterKey.-command-palette {
+    border-left: none;
+}
+
+FooterKey:hover {
+    background: $surface;
+    color: $accent;
+    .footer-key--key {
+        background: $surface;
+        color: $accent;
+    }
+    .footer-key--description {
+        background: $surface;
+        color: $accent;
+    }
+}
+
+Footer:ansi {
+    background: $background;
+    .footer-key--key {
+        background: $background;
+        color: $text;
+    }
+    .footer-key--description {
+        background: $background;
+        color: $text-muted;
+    }
+    FooterKey.-command-palette {
+        border-left: none;
+    }
+}
+
+Footer > .footer--text {
+    color: $text;
+}
+
+Footer > .footer--keys .key {
+    background: $surface-darken-1;
+    color: $text;
+    border: none;
+}
+
+Footer > .footer--keys .key:hover {
+    background: $surface;
+    color: $accent;
 }
 
 ScrollbarCorner {
