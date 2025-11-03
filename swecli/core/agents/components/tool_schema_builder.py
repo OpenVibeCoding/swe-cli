@@ -366,7 +366,7 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
         "type": "function",
         "function": {
             "name": "capture_web_screenshot",
-            "description": "Capture a full-page screenshot of a web page using Playwright. Better than capture_screenshot for web pages as it waits for page load, handles dynamic content, and captures full scrollable pages. Automatically clips to actual content height to avoid excessive whitespace. Use this when user wants to screenshot a website or web application.",
+            "description": "Capture a full-page screenshot (and optionally PDF) of a web page using Crawl4AI. Uses advanced web crawling with Playwright under the hood. Waits for page load, handles dynamic content, and captures full scrollable pages reliably. More robust than Playwright alone for complex pages. Use this when user wants to screenshot a website or web application.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -376,23 +376,17 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
                     },
                     "output_path": {
                         "type": "string",
-                        "description": "Optional path to save screenshot (relative to working directory or absolute). If not provided, auto-generates filename in temp directory.",
+                        "description": "Optional path to save screenshot (relative to working directory or absolute). If not provided, auto-generates filename in temp directory. For PDF, the .pdf extension will be automatically used.",
                     },
-                    "wait_until": {
-                        "type": "string",
-                        "description": "When to consider page loaded: 'load' (load event), 'domcontentloaded' (DOM ready), or 'networkidle' (no requests for 500ms, recommended). Default: 'networkidle'",
-                        "enum": ["load", "domcontentloaded", "networkidle"],
-                        "default": "networkidle",
+                    "capture_pdf": {
+                        "type": "boolean",
+                        "description": "If true, also capture a PDF version of the page. PDF is more reliable for very long pages. Both screenshot and PDF will be saved if enabled. Default: false",
+                        "default": False,
                     },
                     "timeout_ms": {
                         "type": "integer",
-                        "description": "Maximum time to wait for page load in milliseconds. Default: 30000 (30 seconds)",
-                        "default": 30000,
-                    },
-                    "full_page": {
-                        "type": "boolean",
-                        "description": "Whether to capture full scrollable page (true) or just viewport (false). Default: true",
-                        "default": True,
+                        "description": "Maximum time to wait for page load in milliseconds. Default: 90000 (90 seconds). Complex sites with heavy JavaScript (like SaaS platforms, dashboards) may need 120000-180000ms.",
+                        "default": 90000,
                     },
                     "viewport_width": {
                         "type": "integer",
@@ -403,15 +397,6 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
                         "type": "integer",
                         "description": "Browser viewport height in pixels. Default: 1080",
                         "default": 1080,
-                    },
-                    "clip_to_content": {
-                        "type": "boolean",
-                        "description": "If true, automatically detect actual content height and clip to avoid excessive whitespace. Only works with full_page=true. Default: true. Set to false if you need the full scrollable area including whitespace.",
-                        "default": True,
-                    },
-                    "max_height": {
-                        "type": "integer",
-                        "description": "Optional maximum screenshot height in pixels. Prevents extremely tall screenshots. If content height exceeds this, screenshot will be clipped to this height.",
                     },
                 },
                 "required": ["url"],

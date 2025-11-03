@@ -201,13 +201,21 @@ class ToolRegistry:
                 f"Screenshot captured: {result.get('screenshot_path')}",
                 f"URL: {result.get('url')}",
             ]
+            if result.get("pdf_path"):
+                output_lines.append(f"PDF captured: {result.get('pdf_path')}")
             if result.get("warning"):
                 output_lines.append(f"Warning: {result['warning']}")
-            return {
+            if result.get("pdf_warning"):
+                output_lines.append(f"PDF Warning: {result['pdf_warning']}")
+
+            response = {
                 "success": True,
                 "output": "\n".join(output_lines),
                 "screenshot_path": result.get("screenshot_path"),
             }
+            if result.get("pdf_path"):
+                response["pdf_path"] = result.get("pdf_path")
+            return response
         else:
             return {
                 "success": False,

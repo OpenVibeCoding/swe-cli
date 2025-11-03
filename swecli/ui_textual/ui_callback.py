@@ -126,21 +126,35 @@ class TextualUICallback:
             self._run_on_ui(self.chat_app.resume_reasoning_spinner)
 
     def _normalize_arguments(self, tool_args: Any) -> Dict[str, Any]:
-        """Ensure tool arguments are represented as a dictionary."""
+        """Ensure tool arguments are represented as a dictionary and normalize URLs for display."""
 
         if isinstance(tool_args, dict):
-            return tool_args
-
-        if isinstance(tool_args, str):
+            result = tool_args
+        elif isinstance(tool_args, str):
             try:
                 parsed = json.loads(tool_args)
                 if isinstance(parsed, dict):
-                    return parsed
-                return {"value": parsed}
+                    result = parsed
+                else:
+                    result = {"value": parsed}
             except json.JSONDecodeError:
-                return {"value": tool_args}
+                result = {"value": tool_args}
+        else:
+            result = {"value": tool_args}
 
-        return {"value": tool_args}
+        # Normalize URLs for display (fix common malformations)
+        if "url" in result and isinstance(result["url"], str):
+            url = result["url"].strip()
+            # Fix: https:/domain.com → https://domain.com
+            if url.startswith("https:/") and not url.startswith("https://"):
+                result["url"] = url.replace("https:/", "https://", 1)
+            elif url.startswith("http:/") and not url.startswith("http://"):
+                result["url"] = url.replace("http:/", "http://", 1)
+            # Add protocol if missing
+            elif not url.startswith(("http://", "https://")):
+                result["url"] = f"https://{url}"
+
+        return result
 
     def _run_on_ui(self, func, *args, **kwargs) -> None:
         """Execute a function on the Textual UI thread and WAIT for completion."""

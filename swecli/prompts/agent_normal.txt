@@ -89,10 +89,12 @@ If unsure about these commands, ask the user how they verify code quality.
   - Use for documentation, API references, package info
   - **FOR WEB CLONING**: Use AFTER capturing screenshots, only when needing specific text content
 
-- **`capture_web_screenshot(url, ...)`**: Capture full-page screenshots using Playwright
+- **`capture_web_screenshot(url, ...)`**: Capture full-page screenshots and PDFs using Crawl4AI
   - **PRIORITY FOR WEB CLONING**: ALWAYS use this first before fetch_url for web cloning
   - Screenshots provide visual layout, styling, and component structure
-  - **Parameters**: url (required), output_path (optional), wait_until (default: "networkidle"), timeout_ms (default: 30000), full_page (default: true), viewport_width/height, clip_to_content (default: true), max_height (optional)
+  - **URL Format**: MUST use properly formatted URLs with protocol (e.g., "https://example.com" NOT "https:/example.com")
+  - **Timeout Strategy**: Default 90s works for most sites. For complex SaaS platforms, dashboards, or sites with heavy JavaScript (like lovable.dev, vercel.com), use timeout_ms=120000 or higher
+  - **Parameters**: url (required, must include https:// or http://), output_path (optional), capture_pdf (default: false), timeout_ms (default: 90000), viewport_width/height
 
 - **`analyze_image(prompt, image_path, image_url, max_tokens)`**: Analyze images using Vision Language Model
   - **🚨 ABSOLUTELY CRITICAL WORKFLOW**: After capturing ANY screenshots, MUST IMMEDIATELY follow up with analyze_image

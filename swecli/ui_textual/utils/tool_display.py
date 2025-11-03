@@ -143,8 +143,12 @@ def _format_summary_value(value: Any, key: str | None = None) -> str:
         if key in {"pid", "process_id"} and display.isdigit():
             return f"{key}={display}"
         display = display.replace("\n", " ")
-        if key in _PATH_HINT_KEYS or "/" in display or "\\" in display:
+
+        # Don't shorten URLs (they contain :// which PurePath mangles)
+        is_url = display.startswith(("http://", "https://", "ftp://", "file://"))
+        if not is_url and (key in _PATH_HINT_KEYS or "/" in display or "\\" in display):
             display = _shorten_path(display)
+
         if len(display) > _MAX_SUMMARY_LEN:
             display = display[: _MAX_SUMMARY_LEN - 3] + "..."
         return f'"{display}"'
