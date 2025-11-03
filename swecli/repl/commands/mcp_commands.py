@@ -1,6 +1,5 @@
 """MCP (Model Context Protocol) commands for REPL."""
 
-import asyncio
 from typing import TYPE_CHECKING, Optional, Callable
 
 from rich.console import Console

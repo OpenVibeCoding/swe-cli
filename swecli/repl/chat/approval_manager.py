@@ -111,7 +111,6 @@ class ChatApprovalManager:
         Returns:
             Tuple of (approved, choice, edited_command)
         """
-        from swecli.core.approval import ApprovalResult, ApprovalChoice
 
         if not self.chat_app:
             return self._fallback_prompt(command, working_dir, RuntimeError("Chat app unavailable"))

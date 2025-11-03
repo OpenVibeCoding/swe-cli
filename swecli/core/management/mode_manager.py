@@ -1,7 +1,6 @@
 """Mode management for controlling operation behavior."""
 
 from enum import Enum
-from typing import Optional
 
 from swecli.models.operation import OperationType
 

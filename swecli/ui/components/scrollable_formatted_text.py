@@ -2,8 +2,7 @@
 
 from typing import Callable
 from prompt_toolkit.layout.controls import UIControl, UIContent
-from prompt_toolkit.formatted_text import FormattedText, ANSI, StyleAndTextTuples
-from prompt_toolkit.layout.screen import WritePosition
+from prompt_toolkit.formatted_text import ANSI
 from prompt_toolkit.mouse_events import MouseEvent
 
 

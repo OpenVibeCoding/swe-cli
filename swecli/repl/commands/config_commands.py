@@ -55,7 +55,6 @@ class ConfigCommands(CommandHandler):
             return CommandResult(success=False, message="Chat app not available")
 
         # Import here to avoid circular imports
-        from swecli.ui.components.category_selector_message import create_category_selector_message
 
         # Loop to allow configuring multiple models
         while True:
@@ -197,7 +196,6 @@ class ConfigCommands(CommandHandler):
 
         # Check API key for new provider (silently - user will get error when they try to use it)
         if provider_id != config.model_provider:
-            import os
             provider_info = registry.get_provider(provider_id)
             env_var = provider_info.api_key_env
             # Skip warning - let them discover missing API key when they try to use it

@@ -1,28 +1,12 @@
 """Chat application with fixed bottom input and scrollable conversation."""
 
 import asyncio
-import shutil
 from typing import Callable, Optional, List
-from datetime import datetime
 
 from prompt_toolkit.application import Application
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.document import Document
-from prompt_toolkit.filters import Condition
-from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.layout.containers import (
-    HSplit,
-    VSplit,
-    Window,
-    WindowAlign,
-    Float,
-    FloatContainer,
-)
-from prompt_toolkit.layout.controls import BufferControl, FormattedTextControl
-from prompt_toolkit.layout.layout import Layout
-from prompt_toolkit.layout.margins import ScrollbarMargin
-from prompt_toolkit.layout.menus import CompletionsMenu
-from prompt_toolkit.formatted_text import FormattedText, StyleAndTextTuples
+from prompt_toolkit.formatted_text import StyleAndTextTuples
 from prompt_toolkit.styles import Style
 
 from swecli.ui.conversation import ConversationBuffer
@@ -479,7 +463,6 @@ class ChatApplication:
 
 
 # Fix import error - VSplit should be imported
-from prompt_toolkit.layout.containers import VSplit
 
 
 # Example usage / testing

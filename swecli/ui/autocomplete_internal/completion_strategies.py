@@ -2,13 +2,13 @@
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Iterable, List
+from typing import Iterable
 
-from prompt_toolkit.completion import Completer, Completion
+from prompt_toolkit.completion import Completion
 from prompt_toolkit.document import Document
 from prompt_toolkit.formatted_text import FormattedText
 
-from .commands import SlashCommand, CommandRegistry
+from .commands import CommandRegistry
 from .utils import FileFinder, FileSizeFormatter
 
 

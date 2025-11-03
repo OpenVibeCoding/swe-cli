@@ -1,6 +1,6 @@
 """Slash command definitions and registry."""
 
-from typing import List, Optional
+from typing import List
 
 
 class SlashCommand:

@@ -3,9 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Callable, Optional, List
-from prompt_toolkit.application import Application
-from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.key_binding import KeyBindings
 

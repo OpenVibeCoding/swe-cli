@@ -1,8 +1,7 @@
 """Utility functions and classes for formatting."""
 
 import json
-from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Any
 
 
 class LanguageDetector:

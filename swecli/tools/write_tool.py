@@ -1,11 +1,10 @@
 """Tool for creating new files."""
 
-import os
 from pathlib import Path
 from typing import Optional
 
 from swecli.models.config import AppConfig
-from swecli.models.operation import WriteResult, Operation, OperationType
+from swecli.models.operation import WriteResult, Operation
 from swecli.tools.base import BaseTool
 
 

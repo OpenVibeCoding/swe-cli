@@ -1,16 +1,15 @@
 """Rules editor modal for managing approval rules."""
 
-from typing import Optional, List, Tuple
+from typing import Optional, List
 from prompt_toolkit.application import Application
 from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.layout.containers import HSplit, Window, WindowAlign
+from prompt_toolkit.layout.containers import HSplit, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.layout import Layout
 from prompt_toolkit.formatted_text import FormattedText
 from prompt_toolkit.styles import Style
-from prompt_toolkit.widgets import TextArea
 
-from swecli.core.approval import ApprovalRule, ApprovalRulesManager, RuleAction, RuleType
+from swecli.core.approval import ApprovalRulesManager
 
 
 class RulesEditorModal:

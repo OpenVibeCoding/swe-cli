@@ -1,7 +1,6 @@
 """Undo system for rolling back operations."""
 
 import shutil
-from datetime import datetime
 from pathlib import Path
 from typing import Optional
 

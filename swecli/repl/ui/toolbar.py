@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.formatted_text import FormattedText
 
 if TYPE_CHECKING:
-    from swecli.core.management import ModeManager, SessionManager, OperationMode
+    from swecli.core.management import ModeManager, SessionManager
     from swecli.models.config import Config
 
 

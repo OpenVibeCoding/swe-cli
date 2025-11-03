@@ -1,7 +1,7 @@
 """Status line component for SWE-CLI."""
 
 from pathlib import Path
-from typing import List, Optional, Sequence, Tuple
+from typing import Optional, Sequence, Tuple
 import subprocess
 from rich.console import Console
 from rich.text import Text

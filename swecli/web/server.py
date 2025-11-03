@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import webbrowser
 from pathlib import Path
 from threading import Thread

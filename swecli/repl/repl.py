@@ -1,24 +1,15 @@
 """Interactive REPL for SWE-CLI."""
 
-import json
-import os
-import random
-import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 from prompt_toolkit import PromptSession
-from prompt_toolkit.formatted_text import FormattedText
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.styles import Style
 from rich.console import Console
-from rich.markdown import Markdown
 from rich.panel import Panel
-from rich.syntax import Syntax
-from rich.table import Table
-from rich.text import Text
 
 from swecli.core.approval import ApprovalManager
 from swecli.core.management import (
@@ -28,7 +19,7 @@ from swecli.core.management import (
     SessionManager,
     UndoManager,
 )
-from swecli.core.monitoring import ErrorHandler, TaskMonitor
+from swecli.core.monitoring import ErrorHandler
 from swecli.core.services import RuntimeService
 from swecli.models.message import ChatMessage, Role
 from swecli.models.operation import Operation, OperationType
@@ -37,13 +28,11 @@ from swecli.tools.file_ops import FileOperations
 from swecli.tools.write_tool import WriteTool
 from swecli.tools.edit_tool import EditTool
 from swecli.tools.bash_tool import BashTool
-from swecli.ui.components.animations import Spinner, FlashingSymbol, ProgressIndicator
-from swecli.ui.components.task_progress import TaskProgressDisplay
+from swecli.ui.components.animations import Spinner
 from swecli.ui.components.status_line import StatusLine
 from swecli.ui.autocomplete import SwecliCompleter
 from swecli.ui.formatters_internal.output_formatter import OutputFormatter
 from swecli.ui.components.notifications import NotificationCenter
-from swecli.ui.formatters_internal.markdown_formatter import markdown_to_plain_text
 
 # Command handlers
 from swecli.repl.commands import (
@@ -623,7 +612,6 @@ class REPL:
 
     def _connect_mcp_servers(self) -> None:
         """Connect to enabled MCP servers on startup asynchronously."""
-        import asyncio
         import threading
 
         def connect_in_background():

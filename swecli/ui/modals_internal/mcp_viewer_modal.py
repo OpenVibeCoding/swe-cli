@@ -1,6 +1,6 @@
 """MCP Server Viewer Modal - Interactive MCP server inspection."""
 
-from typing import Optional, Dict, List, Any
+from typing import Dict, List, Any
 from prompt_toolkit.layout import (
     Layout, HSplit, Window, FormattedTextControl, Dimension
 )

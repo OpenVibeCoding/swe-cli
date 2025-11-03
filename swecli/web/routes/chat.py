@@ -1,6 +1,6 @@
 """Chat and query API endpoints."""
 
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel

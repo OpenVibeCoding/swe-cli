@@ -42,7 +42,6 @@ class ToolExecutor:
             tool_calls: List of tool calls
             messages: Message history
         """
-        from swecli.ui.utils.rich_to_text import rich_to_text_box
         from swecli.models.operation import Operation, OperationType
 
         # Phase 1: Collect bash commands and get approvals
@@ -67,7 +66,6 @@ class ToolExecutor:
                 )
 
                 # Request approval
-                from pathlib import Path
 
                 working_dir = (
                     str(self.repl.tool_registry.bash_tool.working_dir)
@@ -262,8 +260,6 @@ class ToolExecutor:
             tool_args: Tool arguments
             result: Tool execution result
         """
-        from rich.console import Console
-        from io import StringIO
         from swecli.ui.utils.rich_to_text import rich_to_text_box
 
         # Format tool result using OutputFormatter (returns string for Claude style, Panel for legacy)

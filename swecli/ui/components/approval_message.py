@@ -1,8 +1,5 @@
 """Approval modal integrated as a conversation message."""
 
-from typing import Tuple
-from prompt_toolkit.formatted_text import FormattedText
-import re
 
 from swecli.ui.components.box_styles import BoxStyles
 

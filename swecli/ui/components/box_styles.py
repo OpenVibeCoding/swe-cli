@@ -1,6 +1,5 @@
 """Unified box and border styling for all UI components."""
 
-from typing import Tuple
 
 
 class BoxStyles:

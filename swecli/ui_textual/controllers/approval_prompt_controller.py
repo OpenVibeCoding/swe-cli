@@ -15,7 +15,7 @@ class ApprovalPromptController:
 
     def __init__(self, app: "SWECLIChatApp") -> None:
         if TYPE_CHECKING:  # pragma: no cover
-            from swecli.ui_textual.chat_app import SWECLIChatApp
+            pass
 
         self.app = app
         self._active = False

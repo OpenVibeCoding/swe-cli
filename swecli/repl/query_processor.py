@@ -3,7 +3,6 @@
 import json
 import os
 import random
-import time
 from datetime import datetime
 from typing import TYPE_CHECKING, Iterable
 
@@ -12,8 +11,7 @@ from swecli.ui_textual.utils.tool_display import format_tool_call
 
 if TYPE_CHECKING:
     from rich.console import Console
-    from swecli.core.management import ModeManager, SessionManager, OperationMode
-    from swecli.core.monitoring import TaskMonitor
+    from swecli.core.management import ModeManager, SessionManager
     from swecli.core.approval import ApprovalManager
     from swecli.core.management import UndoManager
     from swecli.tools.file_ops import FileOperations

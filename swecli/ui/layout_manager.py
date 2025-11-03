@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import shutil
-from typing import Tuple
 
 from prompt_toolkit.layout.containers import (
     HSplit,

@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Iterable, List, Tuple
+from typing import Any, List, Tuple
 
-from rich.console import Group, RenderableType
+from rich.console import Group
 from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.text import Text

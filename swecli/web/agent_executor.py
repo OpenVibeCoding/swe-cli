@@ -3,15 +3,13 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from swecli.web.state import WebState
 from swecli.models.message import ChatMessage, Role
 from swecli.models.agent_deps import AgentDependencies
-from swecli.core.management import OperationMode
 
 
 class AgentExecutor:

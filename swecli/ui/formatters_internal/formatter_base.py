@@ -1,8 +1,7 @@
 """Base output formatter with shared functionality."""
 
 import json
-from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from rich.console import Console
 from rich.panel import Panel

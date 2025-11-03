@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
-from typing import Callable, Iterable, List, Tuple
+from typing import List, Tuple
 
 from rich.console import RenderableType
 from rich.text import Text

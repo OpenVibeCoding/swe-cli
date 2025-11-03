@@ -1,15 +1,13 @@
 """REPL with integrated ChatApplication for split-screen UI."""
 
 import asyncio
-import time
 from pathlib import Path
 from typing import Optional
 
-from swecli.core.management import ConfigManager, ModeManager, OperationMode, SessionManager
+from swecli.core.management import ConfigManager, OperationMode, SessionManager
 from swecli.core.agents.compact_agent import CompactAgent
 from swecli.core.context import ContextTokenMonitor
 from swecli.ui.chat_app import ChatApplication
-from swecli.ui.utils.rich_to_text import rich_to_text_box
 from swecli.ui_textual.utils.tool_display import format_tool_call
 from swecli.models.message import ChatMessage, Role
 from swecli.repl.repl import REPL  # Import existing REPL for all the logic
@@ -700,7 +698,6 @@ class REPLChatApplication(ChatApplication):
         try:
             # More comprehensive output capture - redirect both stdout and stderr
             import sys
-            from contextlib import redirect_stdout, redirect_stderr
             from rich.console import Console
             from io import StringIO
 

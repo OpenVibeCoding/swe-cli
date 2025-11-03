@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from swecli.ui_textual.utils.tool_display import get_tool_display_parts, summarize_tool_arguments
 
@@ -12,7 +12,7 @@ class ToolSummaryManager:
 
     def __init__(self, app: "SWECLIChatApp") -> None:
         if TYPE_CHECKING:  # pragma: no cover
-            from swecli.ui_textual.chat_app import SWECLIChatApp
+            pass
         self.app = app
         self.reset()
 

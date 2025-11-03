@@ -3,13 +3,12 @@
 from pathlib import Path
 from typing import Any, Dict
 
-from rich.console import Console
 from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.text import Text
 
 from .base import BaseToolFormatter
-from .utils import LanguageDetector, SizeFormatter, DiffParser
+from .utils import LanguageDetector, SizeFormatter
 
 
 class WriteFileFormatter(BaseToolFormatter):
@@ -136,7 +135,6 @@ class EditFileFormatter(BaseToolFormatter):
 
     def format(self, tool_name: str, tool_args: Dict[str, Any], result: Dict[str, Any]) -> Panel:
         """Format edit_file result with diff."""
-        from pathlib import Path
         from .utils import DiffParser
 
         file_path = tool_args.get("file_path", "unknown")

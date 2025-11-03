@@ -7,11 +7,10 @@ from pathlib import Path
 from rich.console import Console
 
 from swecli.core.approval import ApprovalManager
-from swecli.core.management import ConfigManager, ModeManager, OperationMode, SessionManager, UndoManager
+from swecli.core.management import ConfigManager, ModeManager, SessionManager, UndoManager
 from swecli.core.services import RuntimeService
 from swecli.models.agent_deps import AgentDependencies
 from swecli.models.message import ChatMessage, Role
-from swecli.repl.repl import REPL
 from swecli.repl.repl_chat import create_repl_chat
 from swecli.setup import run_setup_wizard
 from swecli.setup.wizard import config_exists
@@ -451,7 +450,6 @@ def _handle_mcp_command(args) -> None:
         args: Parsed command-line arguments
     """
     from swecli.mcp.manager import MCPManager
-    from swecli.mcp.models import MCPServerConfig
     from rich.table import Table
 
     console = Console()
@@ -568,7 +566,6 @@ def _handle_run_command(args) -> None:
     Args:
         args: Parsed command-line arguments
     """
-    import subprocess
     import webbrowser
     import time
     from pathlib import Path

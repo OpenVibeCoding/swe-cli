@@ -14,7 +14,7 @@ class ConsoleBufferManager:
     def __init__(self, app: "SWECLIChatApp") -> None:
         from typing import TYPE_CHECKING
         if TYPE_CHECKING:  # pragma: no cover
-            from swecli.ui_textual.chat_app import SWECLIChatApp
+            pass
         self.app = app
         self._buffering = False
         self._queue: list = []
