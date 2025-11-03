@@ -6,7 +6,7 @@ import re
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from swecli.ui.utils.tool_display import build_tool_call_text, format_tool_call
+from swecli.ui_textual.utils.tool_display import build_tool_call_text, format_tool_call
 
 if TYPE_CHECKING:
     from swecli.repl.repl import REPL

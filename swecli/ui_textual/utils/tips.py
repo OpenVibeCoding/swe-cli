@@ -1,13 +1,16 @@
-"""Tips system for displaying helpful hints below spinners."""
+"""Tips system used by the Textual UI for spinner hints."""
+
+from __future__ import annotations
 
 import random
 from typing import List
+
+__all__ = ["TipsManager"]
 
 
 class TipsManager:
     """Manages rotating tips displayed during processing."""
 
-    # Collection of helpful tips about swecli features
     TIPS: List[str] = [
         "Create custom slash commands by adding .md files to .swecli/commands/",
         "Use @ to mention files and add them to context (e.g., @README.md)",
@@ -31,35 +34,15 @@ class TipsManager:
         "Use /undo to revert the last operation",
     ]
 
-    def __init__(self):
+    def __init__(self, *, random_mode: bool = True) -> None:
         """Initialize tips manager."""
         self._current_tip_index = 0
-        self._random_mode = True  # Use random tips by default
+        self._random_mode = random_mode
 
     def get_next_tip(self) -> str:
-        """Get the next tip to display.
-
-        Returns:
-            A tip string
-        """
+        """Return the next tip to display."""
         if self._random_mode:
             return random.choice(self.TIPS)
-        else:
-            # Sequential mode (for testing or predictable behavior)
-            tip = self.TIPS[self._current_tip_index]
-            self._current_tip_index = (self._current_tip_index + 1) % len(self.TIPS)
-            return tip
-
-    def format_tip(self, tip: str, color: str = "\033[38;5;240m") -> str:
-        """Format a tip with proper styling.
-
-        Args:
-            tip: The tip text
-            color: ANSI color code for the tip (default: dim gray)
-
-        Returns:
-            Formatted tip string with prefix and styling
-        """
-        reset = "\033[0m"
-        # Use Claude Code style: "⎿ Tip: ..." with indentation
-        return f"{color}  ⎿ Tip: {tip}{reset}"
+        tip = self.TIPS[self._current_tip_index]
+        self._current_tip_index = (self._current_tip_index + 1) % len(self.TIPS)
+        return tip

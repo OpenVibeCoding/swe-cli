@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Optional, TYPE_CHECKING
 
-from swecli.ui.utils.tool_display import get_tool_display_parts, summarize_tool_arguments
+from swecli.ui_textual.utils.tool_display import get_tool_display_parts, summarize_tool_arguments
 
 
 class ToolSummaryManager:

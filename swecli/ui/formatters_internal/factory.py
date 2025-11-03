@@ -8,7 +8,6 @@ from rich.panel import Panel
 from .base import BaseToolFormatter
 from .file_operations import WriteFileFormatter, ReadFileFormatter, EditFileFormatter
 from .system_operations import BashExecuteFormatter, ListDirectoryFormatter, GenericToolFormatter
-from .plan import PlanFormatter
 
 
 class FormatterFactory:
@@ -47,11 +46,6 @@ class FormatterFactory:
         Returns:
             Formatted panel
         """
-        # Check if it's a plan-only result
-        if result.get("plan_only"):
-            plan_formatter = PlanFormatter(self.console)
-            return plan_formatter.format(tool_name, tool_args, result)
-
         # Get the appropriate formatter
         formatter = self._formatters.get(tool_name, self._formatters["generic"])
         return formatter.format(tool_name, tool_args, result)

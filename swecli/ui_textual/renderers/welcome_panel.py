@@ -11,7 +11,7 @@ from rich.panel import Panel
 from rich.text import Text
 
 from swecli.core.management import OperationMode
-from swecli.ui.components.welcome import WelcomeMessage
+from swecli.ui_textual.components.welcome_message import WelcomeMessage
 
 
 def render_welcome_panel(

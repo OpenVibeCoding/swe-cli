@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 from typing import Any, Dict
 
-from swecli.ui.formatters_internal.claude_style_formatter import ClaudeStyleFormatter
-from swecli.ui.utils.tool_display import build_tool_call_text
+from swecli.ui_textual.formatters.claude_style_formatter import ClaudeStyleFormatter
+from swecli.ui_textual.utils.tool_display import build_tool_call_text
 
 
 class TextualUICallback:

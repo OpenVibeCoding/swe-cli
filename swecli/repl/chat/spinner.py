@@ -4,7 +4,7 @@ import threading
 import time
 from typing import Optional, TYPE_CHECKING
 
-from swecli.ui.components.tips import TipsManager
+from swecli.ui_textual.utils.tips import TipsManager
 
 if TYPE_CHECKING:
     from swecli.ui.chat_app import Conversation

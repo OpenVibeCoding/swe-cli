@@ -4,11 +4,10 @@ from typing import Dict, Any, Union
 from rich.console import Console
 from rich.panel import Panel
 
-from .claude_style_formatter import ClaudeStyleFormatter
+from swecli.ui_textual.formatters.claude_style_formatter import ClaudeStyleFormatter
 from .formatter_base import TOOL_ICONS
 from .file_formatters import FileFormatter
 from .directory_formatter import DirectoryFormatter
-from .plan_formatter import PlanFormatter
 from .bash_formatter import BashFormatter
 from .generic_formatter import GenericFormatter
 
@@ -62,8 +61,6 @@ class OutputFormatter:
         icon = TOOL_ICONS.get(tool_name, "⏺")
 
         # Format based on tool type
-        if result.get("plan_only"):
-            return self.plan_formatter.format_plan_result(tool_name, tool_args, result)
 
         if tool_name == "write_file":
             return self.file_formatter.format_write_file(icon, tool_args, result)

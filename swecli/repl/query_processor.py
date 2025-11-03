@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Iterable
 
 from swecli.core.context_management import ExecutionReflector, SessionPlaybook, Strategy
-from swecli.ui.utils.tool_display import format_tool_call
+from swecli.ui_textual.utils.tool_display import format_tool_call
 
 if TYPE_CHECKING:
     from rich.console import Console

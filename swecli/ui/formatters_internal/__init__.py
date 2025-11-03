@@ -6,8 +6,6 @@ from .base import BaseToolFormatter, STATUS_ICONS, ACTION_HINTS
 from .utils import LanguageDetector, SizeFormatter, ValueSummarizer, DiffParser
 from .file_operations import WriteFileFormatter, ReadFileFormatter, EditFileFormatter
 from .system_operations import BashExecuteFormatter, ListDirectoryFormatter, GenericToolFormatter
-from .plan import PlanFormatter
-
 __all__ = [
     "FormatterFactory",
     "BaseToolFormatter",
@@ -23,5 +21,4 @@ __all__ = [
     "BashExecuteFormatter",
     "ListDirectoryFormatter",
     "GenericToolFormatter",
-    "PlanFormatter",
 ]

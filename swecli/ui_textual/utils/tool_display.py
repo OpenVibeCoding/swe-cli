@@ -1,4 +1,4 @@
-"""Utilities for presenting human-friendly tool call information."""
+"""Utilities for presenting human-friendly tool call information in Textual."""
 
 from __future__ import annotations
 
@@ -7,7 +7,13 @@ from typing import Any, Mapping, Tuple
 
 from rich.text import Text
 
-# Mapping from tool identifiers to (verb, default label)
+__all__ = [
+    "build_tool_call_text",
+    "format_tool_call",
+    "get_tool_display_parts",
+    "summarize_tool_arguments",
+]
+
 _TOOL_DISPLAY_PARTS: dict[str, tuple[str, str]] = {
     "read_file": ("Read", "file"),
     "write_file": ("Write", "file"),
@@ -35,7 +41,6 @@ _TOOL_DISPLAY_PARTS: dict[str, tuple[str, str]] = {
     "git_branch": ("Branch", "git"),
 }
 
-# Keys whose values should be treated as paths/locations
 _PATH_HINT_KEYS = {
     "file_path",
     "path",
@@ -46,7 +51,6 @@ _PATH_HINT_KEYS = {
     "target",
 }
 
-# Preferred argument keys to summarize for each tool
 _PRIMARY_ARG_MAP: dict[str, tuple[str, ...]] = {
     "read_file": ("file_path",),
     "write_file": ("file_path", "path"),
@@ -99,7 +103,6 @@ def _fallback_parts(tool_name: str) -> tuple[str, str]:
 
 
 def get_tool_display_parts(tool_name: str) -> Tuple[str, str]:
-    """Return the (verb, label) pair for a tool."""
     if tool_name.startswith("mcp__"):
         parts = tool_name.split("__", 2)
         if len(parts) == 3:
@@ -153,7 +156,6 @@ def _format_summary_value(value: Any, key: str | None = None) -> str:
 
 
 def _summarize_nested_value(value: Any, key: str | None, seen: set[int] | None = None) -> str:
-    """Render a nested mapping/list structure into a concise summary string."""
     if seen is None:
         seen = set()
 
@@ -186,7 +188,6 @@ def _summarize_nested_value(value: Any, key: str | None, seen: set[int] | None =
 
 
 def summarize_tool_arguments(tool_name: str, tool_args: Mapping[str, Any]) -> str:
-    """Return a concise summary payload for a tool based on its arguments."""
     if not isinstance(tool_args, Mapping) or not tool_args:
         return ""
 
@@ -197,53 +198,33 @@ def summarize_tool_arguments(tool_name: str, tool_args: Mapping[str, Any]) -> st
             if summary:
                 return summary
 
-    # Fall back to first string argument
-    for key, value in tool_args.items():
-        if isinstance(value, str) and value:
-            summary = _summarize_nested_value(value, key)
-            if summary:
-                return summary
-
-    # Finally, use the first available value
-    fallback_parts: list[str] = []
     for key, value in tool_args.items():
         summary = _summarize_nested_value(value, key)
         if summary:
-            fallback_parts.append(summary)
-        if len(fallback_parts) >= 2:
-            break
-
-    if fallback_parts:
-        # Deduplicate while preserving order
-        seen: set[str] = set()
-        ordered_unique = []
-        for part in fallback_parts:
-            if part not in seen:
-                seen.add(part)
-                ordered_unique.append(part)
-        return ", ".join(ordered_unique)
+            return summary
 
     return ""
 
 
-def format_tool_call(tool_name: str, tool_args: Mapping[str, Any]) -> str:
-    """Format a tool call for CLI output with ANSI styling."""
+def format_tool_call(tool_name: str, tool_args: Mapping[str, Any] | None = None) -> str:
     verb, label = get_tool_display_parts(tool_name)
-    summary = summarize_tool_arguments(tool_name, tool_args)
+    summary = summarize_tool_arguments(tool_name, tool_args or {})
+
+    display = verb
+    if label:
+        display = f"{verb}({label})"
 
     bold_cyan = "\033[1;36m"
     reset = "\033[0m"
+
     if summary:
         return f"{bold_cyan}{verb}{reset}({summary})"
-    if label:
-        return f"{bold_cyan}{verb}{reset}({label})"
-    return f"{bold_cyan}{verb}{reset}"
+    return f"{bold_cyan}{display}{reset}" if display else f"{bold_cyan}{verb}{reset}"
 
 
-def build_tool_call_text(tool_name: str, tool_args: Mapping[str, Any]) -> Text:
-    """Return a Rich ``Text`` renderable for the tool call line."""
+def build_tool_call_text(tool_name: str, tool_args: Mapping[str, Any] | None = None) -> Text:
     verb, label = get_tool_display_parts(tool_name)
-    summary = summarize_tool_arguments(tool_name, tool_args)
+    summary = summarize_tool_arguments(tool_name, tool_args or {})
 
     text = Text()
     text.append(verb, style="bold cyan")

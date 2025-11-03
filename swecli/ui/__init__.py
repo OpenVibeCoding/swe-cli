@@ -10,7 +10,6 @@ from swecli.ui.autocomplete import (
     SlashCommand,
     SLASH_COMMANDS,
 )
-from swecli.ui.formatters_internal.output_formatter import OutputFormatter
 
 __all__ = [
     "Spinner",
@@ -24,5 +23,4 @@ __all__ = [
     "SlashCommandCompleter",
     "SlashCommand",
     "SLASH_COMMANDS",
-    "OutputFormatter",
 ]

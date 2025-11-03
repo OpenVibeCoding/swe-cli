@@ -10,7 +10,7 @@ from swecli.core.agents.compact_agent import CompactAgent
 from swecli.core.context import ContextTokenMonitor
 from swecli.ui.chat_app import ChatApplication
 from swecli.ui.utils.rich_to_text import rich_to_text_box
-from swecli.ui.utils.tool_display import format_tool_call
+from swecli.ui_textual.utils.tool_display import format_tool_call
 from swecli.models.message import ChatMessage, Role
 from swecli.repl.repl import REPL  # Import existing REPL for all the logic
 from swecli.repl.chat.spinner import ChatSpinner
@@ -390,7 +390,7 @@ class REPLChatApplication(ChatApplication):
         """Show compact welcome banner using shared welcome module."""
         from rich.console import Console
         from io import StringIO
-        from swecli.ui.components.welcome import WelcomeMessage
+        from swecli.ui_textual.components.welcome_message import WelcomeMessage
 
         # Helper to render Rich markup to ANSI
         def rich_markup_to_ansi(markup: str) -> str:

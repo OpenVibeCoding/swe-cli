@@ -11,7 +11,6 @@ from textual.binding import Binding
 from textual.containers import Container, Vertical
 from textual.widgets import Header, Rule, Static
 
-from swecli.ui.components.tips import TipsManager
 from swecli.ui_textual.widgets import ConversationLog
 from swecli.ui_textual.widgets.chat_text_area import ChatTextArea
 from swecli.ui_textual.widgets.status_bar import ModelFooter, StatusBar
@@ -25,6 +24,7 @@ from swecli.ui_textual.managers.console_buffer_manager import ConsoleBufferManag
 from swecli.ui_textual.managers.message_history import MessageHistory
 from swecli.ui_textual.managers.tool_summary_manager import ToolSummaryManager
 from swecli.ui_textual.renderers.welcome_panel import render_welcome_panel
+from swecli.ui_textual.utils.tips import TipsManager
 
 
 

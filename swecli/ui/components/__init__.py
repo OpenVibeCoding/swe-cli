@@ -1,5 +1,3 @@
-"""UI components for chat application."""
+"""Utilities for the legacy Rich-based UI components."""
 
-from .message_buffer import ChatMessageBuffer
-
-__all__ = ["ChatMessageBuffer"]
+__all__: list[str] = []
