@@ -29,6 +29,8 @@ from swecli.ui_textual.console_buffer import ConsoleBufferManager
 from swecli.ui_textual.tool_summary import ToolSummaryManager
 from swecli.ui_textual.autocomplete_popup import AutocompletePopupController
 from swecli.ui_textual.command_router import CommandRouter
+from swecli.ui_textual.history import MessageHistory
+from swecli.ui_textual.message_controller import MessageController
 from swecli.ui_textual.welcome_panel import render_welcome_panel
 
 
@@ -251,9 +253,6 @@ class SWECLIChatApp(App):
         self._autocomplete_controller: AutocompletePopupController | None = None
         self.footer: ModelFooter | None = None
         self._is_processing = False
-        self._message_history = []
-        self._history_index = -1
-        self._current_input = ""
         self._last_assistant_lines: set[str] = set()
         self._last_rendered_assistant: str | None = None
         self._last_assistant_normalized: str | None = None
@@ -268,6 +267,8 @@ class SWECLIChatApp(App):
         self._queued_console_renderables = self._console_buffer._queue
         self._tool_summary = ToolSummaryManager(self)
         self._command_router = CommandRouter(self)
+        self._history = MessageHistory()
+        self._message_controller = MessageController(self)
 
     def compose(self) -> ComposeResult:
         """Create child widgets."""
@@ -441,60 +442,11 @@ class SWECLIChatApp(App):
 
     async def action_send_message(self) -> None:
         """Send message when user presses Enter."""
-        await self._submit_message(self.input_field.text)
+        await self._message_controller.submit(self.input_field.text)
 
     async def on_chat_text_area_submitted(self, event: ChatTextArea.Submitted) -> None:
         """Handle chat submissions from the custom text area."""
-        await self._submit_message(event.value)
-
-    def _reset_interaction_state(self) -> None:
-        """Clear per-request tracking for tool summaries and assistant follow-ups."""
-        if hasattr(self, "_tool_summary"):
-            self._tool_summary.reset()
-        if hasattr(self, "_console_buffer"):
-            self._console_buffer.clear_assistant_history()
-        if hasattr(self.input_field, "_clear_completions"):
-            self.input_field._clear_completions()
-
-    async def _submit_message(self, raw_text: str) -> None:
-        """Normalize, display, and process submitted chat text."""
-
-        if not raw_text.strip():
-            self.input_field.load_text("")
-            return
-
-        message_with_placeholders = raw_text.rstrip("\n")
-        message = self.input_field.resolve_large_pastes(message_with_placeholders)
-
-        self._reset_interaction_state()
-
-        # Clear input field in preparation for the next message
-        self.input_field.load_text("")
-        self._history_index = -1
-        self._current_input = ""
-        self.input_field.clear_large_pastes()
-
-        # Add to history
-        self._message_history.append(message)
-
-        # Display user message
-        self.conversation.add_user_message(message)
-
-        if self._model_picker.active:
-            handled = await self._handle_model_picker_input(message.strip())
-            if handled:
-                return
-
-        stripped_message = message.strip()
-
-        # Handle special commands (trimmed for robustness)
-        if stripped_message.startswith("/"):
-            handled = await self.handle_command(stripped_message)
-            if not handled and self.on_message:
-                self.on_message(message)
-            return
-
-        await self.process_message(message)
+        await self._message_controller.submit(event.value)
 
     def add_assistant_message(self, message: str) -> None:
         """Proxy to conversation helper for compatibility with approval manager."""
@@ -555,33 +507,11 @@ class SWECLIChatApp(App):
 
     async def process_message(self, message: str) -> None:
         """Send the user message to the backend for processing."""
-
-        if not self.on_message:
-            self.conversation.add_error("No backend handler configured; unable to process message.")
-            return
-
-        self._set_processing_state(True)
-
-        try:
-            self.on_message(message)
-        except Exception as exc:  # pragma: no cover - defensive guard
-            self.notify_processing_error(f"Failed to submit message: {exc}")
+        await self._message_controller.process(message)
 
     def _set_processing_state(self, active: bool) -> None:
         """Update internal processing state and status bar indicator."""
-
-        if active == self._is_processing:
-            return
-
-        self._is_processing = active
-
-        if not hasattr(self, "status_bar"):
-            return
-
-        if active:
-            self._start_local_spinner()
-        else:
-            self._stop_local_spinner()
+        self._message_controller.set_processing_state(active)
 
     def record_tool_summary(
         self, tool_name: str, tool_args: dict[str, Any], result_lines: list[str]
@@ -630,22 +560,11 @@ class SWECLIChatApp(App):
 
     def notify_processing_complete(self) -> None:
         """Reset processing indicators once backend work completes."""
-
-        def finalize() -> None:
-            self._set_processing_state(False)
-            self._emit_tool_follow_up_if_needed()
-
-        self._invoke_on_ui_thread(finalize)
+        self._message_controller.notify_processing_complete()
 
     def notify_processing_error(self, error: str) -> None:
         """Display an error message and reset processing indicators."""
-
-        def finalize() -> None:
-            self.conversation.add_error(error)
-            self._set_processing_state(False)
-            self._reset_interaction_state()
-
-        self._invoke_on_ui_thread(finalize)
+        self._message_controller.notify_processing_error(error)
 
     def action_clear_conversation(self) -> None:
         """Clear the conversation (Ctrl+L)."""
@@ -702,34 +621,28 @@ class SWECLIChatApp(App):
     def action_history_up(self) -> None:
         """Navigate backward through previously submitted messages."""
 
-        if not self._message_history:
+        if not hasattr(self, '_history'):
             return
 
-        if self._history_index == -1:
-            self._current_input = self.input_field.text
+        result = self._history.navigate_up(self.input_field.text)
+        if result is None:
+            return
 
-        if self._history_index < len(self._message_history) - 1:
-            self._history_index += 1
-
-        history_entry = self._message_history[-(self._history_index + 1)]
-        self.input_field.load_text(history_entry)
+        self.input_field.load_text(result)
         self.input_field.move_cursor_to_end()
+
 
     def action_history_down(self) -> None:
         """Navigate forward through history or restore unsent input."""
 
-        if self._history_index == -1:
+        if not hasattr(self, '_history'):
             return
 
-        if self._history_index > 0:
-            self._history_index -= 1
-            history_entry = self._message_history[-(self._history_index + 1)]
-            self.input_field.load_text(history_entry)
-            self.input_field.move_cursor_to_end()
+        result = self._history.navigate_down()
+        if result is None:
             return
 
-        self._history_index = -1
-        self.input_field.load_text(self._current_input)
+        self.input_field.load_text(result)
         self.input_field.move_cursor_to_end()
 
     def action_cycle_mode(self) -> None:

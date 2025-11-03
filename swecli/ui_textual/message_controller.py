@@ -1,0 +1,153 @@
+"""Message submission and processing helpers for the Textual chat app."""
+
+from __future__ import annotations
+
+import asyncio
+import threading
+from typing import Callable, TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover
+    from swecli.ui_textual.chat_app import SWECLIChatApp
+
+
+class MessageController:
+    """Coordinate chat message submission and backend processing."""
+
+    def __init__(self, app: "SWECLIChatApp") -> None:
+        self.app = app
+
+    async def submit(self, raw_text: str) -> None:
+        """Normalize user input, update history, and trigger processing."""
+
+        app = self.app
+        input_field = app.input_field
+
+        if not raw_text.strip():
+            input_field.load_text("")
+            return
+
+        message_with_placeholders = raw_text.rstrip("\n")
+        message = input_field.resolve_large_pastes(message_with_placeholders)
+
+        self._reset_interaction_state()
+
+        input_field.load_text("")
+        input_field.clear_large_pastes()
+
+        if hasattr(app, "_history"):
+            app._history.record(message)
+
+        app.conversation.add_user_message(message)
+
+        if app._model_picker.active:
+            handled = await app._model_picker.handle_input(message.strip())
+            if handled:
+                return
+
+        stripped_message = message.strip()
+
+        if stripped_message.startswith("/"):
+            handled = await app.handle_command(stripped_message)
+            if not handled and app.on_message:
+                app.on_message(message)
+            return
+
+        await self._process_message(message)
+
+    async def process(self, message: str) -> None:
+        """Process a message that has already been recorded in history."""
+        await self._process_message(message)
+
+    async def _process_message(self, message: str) -> None:
+        app = self.app
+        if not app.on_message:
+            app.conversation.add_error("No backend handler configured; unable to process message.")
+            return
+
+        self._set_processing_state(True)
+
+        try:
+            app.on_message(message)
+        except Exception as exc:  # pragma: no cover - defensive
+            self.notify_processing_error(f"Failed to submit message: {exc}")
+
+    def notify_processing_complete(self) -> None:
+        """Reset processing flags after the backend finishes."""
+
+        def finalize() -> None:
+            self._set_processing_state(False)
+            app = self.app
+            if hasattr(app, "_emit_tool_follow_up_if_needed"):
+                app._emit_tool_follow_up_if_needed()
+
+        self._invoke_on_ui_thread(finalize)
+
+    def notify_processing_error(self, error: str) -> None:
+        """Display an error message and reset state."""
+
+        def finalize() -> None:
+            app = self.app
+            app.conversation.add_error(error)
+            self._set_processing_state(False)
+            self._reset_interaction_state()
+
+        self._invoke_on_ui_thread(finalize)
+
+    def _reset_interaction_state(self) -> None:
+        app = self.app
+        tool_summary = getattr(app, "_tool_summary", None)
+        if tool_summary is not None:
+            tool_summary.reset()
+        console_buffer = getattr(app, "_console_buffer", None)
+        if console_buffer is not None:
+            console_buffer.clear_assistant_history()
+
+        input_field = getattr(app, "input_field", None)
+        if input_field is not None and hasattr(input_field, "_clear_completions"):
+            input_field._clear_completions()
+
+    def _set_processing_state(self, active: bool) -> None:
+        app = self.app
+        if active == app._is_processing:
+            return
+
+        app._is_processing = active
+
+        if not hasattr(app, "status_bar"):
+            return
+
+        if active:
+            app._start_local_spinner()
+        else:
+            app._stop_local_spinner()
+
+    def set_processing_state(self, active: bool) -> None:
+        """Expose processing state toggles for the chat app."""
+        self._set_processing_state(active)
+
+    def _invoke_on_ui_thread(self, callback: Callable[[], None]) -> None:
+        app = self.app
+        ui_thread = getattr(app, "_ui_thread", None)
+
+        if ui_thread and threading.current_thread() is ui_thread:
+            callback()
+            return
+
+        try:
+            app.call_from_thread(callback)
+            return
+        except Exception:  # pragma: no cover - defensive
+            pass
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            loop.call_soon_threadsafe(callback)
+        else:
+            callback()
+
+
+__all__ = ["MessageController"]
