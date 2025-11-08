@@ -79,7 +79,6 @@ Changelog = "https://github.com/swe-cli/swe-cli/releases"
 
 [project.scripts]
 swecli = "swecli.cli:main"
-swecli-textual = "swecli.ui_textual.runner:launch_textual_cli"
 
 [tool.setuptools]
 include-package-data = true

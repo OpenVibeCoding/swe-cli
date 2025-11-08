@@ -54,10 +54,11 @@ class StatusBar(Static):
 
     def update_status(self) -> None:
         """Update status bar text - clean and professional."""
-        mode_color = "#4a9eff" if self.mode == "normal" else "#89d185"
+        mode_color = "#ff8c00" if self.mode == "normal" else "#89d185"  # Orange for NORMAL
         status = Text()
 
         status.append(f"{self.mode.upper()}", style=f"bold {mode_color}")
+        status.append(" (Shift + Tab to cycle)", style="#6a6a6a")
         status.append("  │  ", style="#6a6a6a")
 
         status.append(f"Context {self.context_pct}%", style="#808080")

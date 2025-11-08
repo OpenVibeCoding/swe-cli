@@ -61,7 +61,7 @@ swecli/ui_textual/
 │   ├── chat_text_area.py
 │   ├── conversation_log.py
 │   └── status_bar.py
-├── runner.py                 # Entry point used by `swecli-textual`
+├── runner.py                 # Entry point used by `swecli`
 ├── ui_callback.py            # Real-time tool display callback
 └── welcome_panel.py          # Rich welcome panel renderer
 ```

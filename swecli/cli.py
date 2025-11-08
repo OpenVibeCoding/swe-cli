@@ -11,7 +11,7 @@ from swecli.core.management import ConfigManager, ModeManager, SessionManager, U
 from swecli.core.services import RuntimeService
 from swecli.models.agent_deps import AgentDependencies
 from swecli.models.message import ChatMessage, Role
-from swecli.repl.repl_chat import create_repl_chat
+from swecli.ui_textual.runner import launch_textual_cli
 from swecli.setup import run_setup_wizard
 from swecli.setup.wizard import config_exists
 from swecli.tools.bash_tool import BashTool
@@ -303,19 +303,20 @@ Examples:
                 session_dir = Path(config.session_dir).expanduser()
                 session_manager = SessionManager(session_dir)
                 session_manager.load_session(resume_id)
-        elif not resume_id:
-            session_manager.create_session(working_directory=str(working_dir))
 
         # Non-interactive mode
         if args.prompt:
+            if not resume_id:
+                session_manager.create_session(working_directory=str(working_dir))
             _run_non_interactive(config_manager, session_manager, args.prompt)
             return
 
-        # Interactive REPL mode with chat UI (web server NOT started automatically)
-        # Check if continuing/resuming a session
-        is_continuation = bool(args.resume or args.continue_session)
-        chat_app = create_repl_chat(config_manager, session_manager, is_continuation=is_continuation)
-        chat_app.run()
+        launch_textual_cli(
+            working_dir=working_dir,
+            resume_session=resume_id,
+            continue_session=args.continue_session if not resume_id else False,
+        )
+        return
 
     except KeyboardInterrupt:
         console.print("\n[yellow]Interrupted.[/yellow]")

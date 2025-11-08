@@ -14,7 +14,7 @@ from rich.text import Text
 from swecli.core.management import ConfigManager, OperationMode, SessionManager
 from swecli.models.message import ChatMessage, Role
 from swecli.repl.repl import REPL
-from swecli.repl.chat.approval_manager import ChatApprovalManager
+from swecli.ui_textual.managers.approval_manager import ChatApprovalManager
 from swecli.ui_textual.chat_app import create_chat_app
 
 

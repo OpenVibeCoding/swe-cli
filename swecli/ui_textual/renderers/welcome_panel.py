@@ -68,7 +68,7 @@ def render_welcome_panel(
             border_style="bright_cyan",
             padding=(1, 3),
             title="Welcome",
-            subtitle="swecli-textual",
+            subtitle="swecli",
             subtitle_align="left",
             width=78,
         )
