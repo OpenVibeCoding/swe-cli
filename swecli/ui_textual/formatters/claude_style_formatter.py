@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, List
 
-from swecli.ui.formatters_internal.formatter_base import STATUS_ICONS
+from swecli.ui_textual.formatters_internal.formatter_base import STATUS_ICONS
 from swecli.ui_textual.utils.tool_display import get_tool_display_parts
 
 
@@ -255,4 +255,3 @@ class ClaudeStyleFormatter:
             return [STATUS_ICONS.get(status, "✅") + f" {status}"]
 
         return [str(output)]
-

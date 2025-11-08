@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from swecli.core.approval import ApprovalManager
     from swecli.core.management import UndoManager
     from swecli.tools.file_ops import FileOperations
-    from swecli.ui.formatters_internal.output_formatter import OutputFormatter
+    from swecli.ui_textual.formatters_internal.output_formatter import OutputFormatter
     from swecli.ui.components.status_line import StatusLine
     from swecli.models.config import Config
     from swecli.core.management import ConfigManager

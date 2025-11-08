@@ -31,7 +31,7 @@ from swecli.tools.bash_tool import BashTool
 from swecli.ui.components.animations import Spinner
 from swecli.ui.components.status_line import StatusLine
 from swecli.ui.autocomplete import SwecliCompleter
-from swecli.ui.formatters_internal.output_formatter import OutputFormatter
+from swecli.ui_textual.formatters_internal.output_formatter import OutputFormatter
 from swecli.ui.components.notifications import NotificationCenter
 
 # Command handlers

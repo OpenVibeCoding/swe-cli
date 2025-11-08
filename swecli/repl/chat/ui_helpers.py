@@ -84,7 +84,7 @@ class ChatUIHelpers:
         Returns:
             Rendered and wrapped message, or None if content is empty
         """
-        from swecli.ui.formatters_internal.markdown_formatter import markdown_to_plain_text
+        from swecli.ui_textual.formatters_internal.markdown_formatter import markdown_to_plain_text
 
         cleaned = (content or "").strip()
         if not cleaned:

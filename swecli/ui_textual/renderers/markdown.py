@@ -69,6 +69,12 @@ def render_markdown_text_segment(content: str, *, leading: bool = False) -> Tupl
             index += 1
             continue
 
+        if re.fullmatch(r"^[\-\*_]{3,}$", stripped):
+            hr = Text("─" * 40, style="dim")
+            emit(hr, allow_leading=False)
+            index += 1
+            continue
+
         heading_match = re.match(r"^(#{1,6})\s+(.*)", stripped)
         if heading_match:
             level = len(heading_match.group(1))
@@ -86,8 +92,10 @@ def render_markdown_text_segment(content: str, *, leading: bool = False) -> Tupl
             quote_text = " ".join(quote_lines).strip()
             if quote_text:
                 rendered = _render_inline_markdown(quote_text)
+                quote_line = Text("❝ ", style="dim")
                 rendered.stylize("dim italic")
-                emit(rendered)
+                quote_line.append_text(rendered)
+                emit(quote_line, allow_leading=False)
             continue
 
         bullet_match = re.match(r"^(\s*)[-*+]\s+(.*)", raw_line)
@@ -97,7 +105,8 @@ def render_markdown_text_segment(content: str, *, leading: bool = False) -> Tupl
             rendered = _render_inline_markdown(bullet_text)
             indent_level = max(0, len(indent) // 2)
             bullet_line = Text()
-            bullet_line.append("  " * indent_level + "• ")
+            symbol = "•" if indent_level == 0 else "–"
+            bullet_line.append("  " * indent_level + f"{symbol} ")
             bullet_line.append_text(rendered)
             emit(bullet_line, allow_leading=False)
             index += 1
@@ -111,7 +120,10 @@ def render_markdown_text_segment(content: str, *, leading: bool = False) -> Tupl
             rendered = _render_inline_markdown(item_text)
             indent_level = max(0, len(indent) // 2)
             ordered_line = Text()
-            ordered_line.append("  " * indent_level + f"{number}. ")
+            if indent_level == 0:
+                ordered_line.append(f"{number}. ")
+            else:
+                ordered_line.append("  " * indent_level + "– ")
             ordered_line.append_text(rendered)
             emit(ordered_line, allow_leading=False)
             index += 1
