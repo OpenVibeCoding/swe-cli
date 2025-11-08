@@ -54,28 +54,45 @@ class FileOperations:
                 return "".join(lines[start:end])
             return f.read()
 
-    def glob_files(self, pattern: str, max_results: int = 100) -> list[str]:
+    def glob_files(
+        self,
+        pattern: str,
+        max_results: int = 100,
+        base_path: Optional[Path] = None,
+    ) -> list[str]:
         """Find files matching a glob pattern.
 
         Args:
             pattern: Glob pattern (e.g., "**/*.py", "src/**/*.ts")
             max_results: Maximum number of results to return
+            base_path: Optional base directory to run the glob from
 
         Returns:
             List of matching file paths (relative to working_dir)
         """
         matches = []
+        search_root = base_path or self.working_dir
         try:
-            for path in self.working_dir.glob(pattern):
-                if path.is_file():
-                    rel_path = path.relative_to(self.working_dir)
-                    matches.append(str(rel_path))
-                    if len(matches) >= max_results:
-                        break
+            iterator = search_root.glob(pattern)
+        except NotImplementedError:
+            return [f"Error: Non-relative pattern '{pattern}' is not supported"]
         except Exception as e:
             return [f"Error: {str(e)}"]
 
+        for path in iterator:
+            if path.is_file():
+                matches.append(self._format_display_path(path))
+                if len(matches) >= max_results:
+                    break
+
         return matches
+
+    def _format_display_path(self, path: Path) -> str:
+        """Return a human-friendly representation of a path."""
+        try:
+            return str(path.relative_to(self.working_dir))
+        except ValueError:
+            return str(path)
 
     def grep_files(
         self,
@@ -229,7 +246,6 @@ class FileOperations:
                 current_prefix = "└── " if is_last else "├── "
                 next_prefix = "    " if is_last else "│   "
 
-                rel_path = item.relative_to(self.working_dir)
                 lines.append(f"{prefix}{current_prefix}{item.name}")
 
                 if item.is_dir():

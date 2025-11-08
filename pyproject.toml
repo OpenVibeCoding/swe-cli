@@ -58,7 +58,6 @@ dependencies = [
     "pillow>=10.0.0",
     "fastapi>=0.119.1",
     "uvicorn>=0.38.0",
-    "any-llm-sdk[anthropic,openai,fireworks,gemini,ollama,mistral,groq,deepseek]>=0.1.0",
 ]
 
 [project.optional-dependencies]

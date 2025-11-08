@@ -2,7 +2,6 @@
 
 agentlightning==0.2.1
 anthropic==0.69.0
-any-llm-sdk==1.2.0
 browser-use==0.8.0
 Crawl4AI==0.7.6
 datasets==4.2.0

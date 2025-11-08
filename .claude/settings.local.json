@@ -37,7 +37,9 @@
       "Bash(curl -s https://raw.githubusercontent.com/mozilla-ai/any-llm/main/README.md)",
       "Bash(curl -s https://raw.githubusercontent.com/mozilla-ai/any-llm/main/CONTRIBUTING.md)",
       "Bash(curl -s https://api.github.com/repos/mozilla-ai/any-llm/contents/src/any_llm)",
-      "Bash(git push origin feat/textual-migration)"
+      "Bash(git push origin feat/textual-migration)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:microsoft.github.io)"
     ],
     "deny": [],
     "ask": []

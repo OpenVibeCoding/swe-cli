@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime
+from pathlib import Path
 from typing import Union, Any
 
 from swecli.core.tools.context import ToolExecutionContext
@@ -145,18 +146,35 @@ class FileToolHandler:
         if not self._file_ops:
             return {"success": False, "error": "FileOperations not available"}
 
-        path = sanitize_path(args.get("path", "."))
+        raw_path = args.get("path")
+        path = sanitize_path(raw_path) if raw_path is not None else "."
         pattern = args.get("pattern")
         max_results = args.get("max_results", 100)
 
         try:
+            base_path = Path(path)
+            if not base_path.is_absolute():
+                base_path = (self._file_ops.working_dir / base_path).resolve()
+        except Exception as exc:
+            return {"success": False, "error": f"Invalid path: {exc}", "output": None}
+
+        try:
             if pattern:
-                path_prefix = path if not path or path.endswith("/") else f"{path}/"
-                full_pattern = f"{path_prefix}{pattern}" if path and path != "." else pattern
-                files = self._file_ops.glob_files(full_pattern, max_results=max_results)
+                search_root = base_path if base_path.is_dir() else base_path.parent
+                if not search_root.exists():
+                    return {
+                        "success": True,
+                        "output": f"Directory not found: {search_root}",
+                        "error": None,
+                    }
+                files = self._file_ops.glob_files(
+                    pattern,
+                    max_results=max_results,
+                    base_path=search_root,
+                )
                 output = "\n".join(files) if files else "No files found"
             else:
-                output = self._file_ops.list_directory(path)
+                output = self._file_ops.list_directory(str(base_path))
 
             return {"success": True, "output": output, "error": None}
         except Exception as exc:  # noqa: BLE001
