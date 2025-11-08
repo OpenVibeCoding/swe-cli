@@ -96,7 +96,7 @@ class Session(BaseModel):
 
         Args:
             window_size: If provided, only include last N interactions (user+assistant pairs).
-                        Following ACE architecture: use small window (3-5) instead of full history.
+                        For ACE compatibility, use small window (1 interaction) or none.
 
         Returns:
             List of API messages with tool_calls and concise result summaries.

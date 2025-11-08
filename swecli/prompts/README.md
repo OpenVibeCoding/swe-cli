@@ -28,15 +28,24 @@ This directory contains all system prompts used by SWE-CLI agents. Prompts are s
 - Output format template
 - Smart mode detection
 
-### 3. `agent_compact.txt`
-**Purpose**: Context compaction/summarization prompt
-**Used by**: `CompactAgent` for conversation summarization
-**Description**: Instructions for summarizing conversation history while preserving critical information.
+### 3. `agent_planning.txt`
+**Purpose**: Task planning and strategy development
+**Used by**: `PlanningAgent` for complex multi-step tasks
+**Description**: Instructions for breaking down complex queries into manageable steps.
 
 **Key sections**:
-- What to preserve vs. discard
-- Output format (structured markdown)
-- Compaction targets (60-80% reduction)
+- Task decomposition approach
+- Step validation criteria
+- Progress reporting format
+
+## Note on Context Management
+
+**Context compaction has been removed** in favor of ACE (Agentic Context Engine) integration. The system now uses:
+- **Structured playbooks** instead of conversation summarization
+- **Learned strategies** that evolve from execution feedback
+- **Delta operations** for playbook evolution
+
+This approach eliminates the need for conversation history compaction entirely.
 
 ## How to Edit Prompts
 

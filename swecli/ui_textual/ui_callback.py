@@ -101,6 +101,7 @@ class TextualUICallback:
 
         # Extract the result line(s) from the formatted output
         summary_lines: list[str] = []
+        collected_lines: list[str] = []
         if isinstance(formatted, str):
             lines = formatted.splitlines()
             for line in lines:
@@ -110,7 +111,7 @@ class TextualUICallback:
                     result_text = stripped.lstrip("⎿").strip()
                     if result_text:
                         summary_lines.append(result_text)
-                        self._run_on_ui(self.conversation.add_tool_result, result_text)
+                        collected_lines.append(result_text)
         else:
             self._run_on_ui(self.conversation.write, formatted)
             if hasattr(formatted, "renderable") and hasattr(formatted, "title"):
@@ -118,6 +119,10 @@ class TextualUICallback:
                 renderable = getattr(formatted, "renderable", None)
                 if isinstance(renderable, str):
                     summary_lines.append(renderable.strip())
+
+        if collected_lines:
+            block = "\n".join(collected_lines)
+            self._run_on_ui(self.conversation.add_tool_result, block)
 
         if summary_lines and self.chat_app and hasattr(self.chat_app, "record_tool_summary"):
             self._run_on_ui(self.chat_app.record_tool_summary, tool_name, normalized_args, summary_lines.copy())

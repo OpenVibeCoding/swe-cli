@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from pathlib import PurePath
+import os
+from pathlib import Path, PurePath
 from typing import Any, Mapping, Tuple
 
 from rich.text import Text
@@ -111,6 +112,30 @@ def _shorten_path(value: str) -> str:
     return f".../{'/'.join(parts[-2:])}"
 
 
+def _is_path_string(value: str, key: str | None = None) -> bool:
+    if key in _PATH_HINT_KEYS:
+        return True
+    normalized = value.strip()
+    if not normalized:
+        return False
+    if normalized.startswith(("./", "../", "~/", "/")):
+        return True
+    if "\\" in normalized:
+        return True
+    if len(normalized) > 2 and normalized[1] == ":":
+        return True
+    return False
+
+
+def _normalize_path_display(value: str) -> str:
+    try:
+        expanded = os.path.expanduser(value.strip())
+        # os.path.abspath handles both relative inputs and already-absolute paths
+        return os.path.abspath(expanded)
+    except Exception:
+        return value
+
+
 def _format_summary_value(value: Any, key: str | None = None) -> str:
     if value is None:
         return ""
@@ -123,11 +148,11 @@ def _format_summary_value(value: Any, key: str | None = None) -> str:
         if key in {"pid", "process_id"} and display.isdigit():
             return f"{key}={display}"
         display = display.replace("\n", " ")
-        if key in _PATH_HINT_KEYS or "/" in display or "\\" in display:
-            display = _shorten_path(display)
+        if _is_path_string(display, key):
+            return _normalize_path_display(display)
         if len(display) > _MAX_SUMMARY_LEN:
             display = display[: _MAX_SUMMARY_LEN - 3] + "..."
-        return f'"{display}"'
+        return display
     display = str(value)
     if len(display) > _MAX_SUMMARY_LEN:
         display = display[: _MAX_SUMMARY_LEN - 3] + "..."

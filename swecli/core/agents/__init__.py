@@ -9,7 +9,6 @@ from .components import (
     ToolSchemaBuilder,
     resolve_api_config,
 )
-from .compact_agent import CompactAgent
 from .swecli_agent import SwecliAgent
 from .planning_agent import PlanningAgent
 
@@ -21,7 +20,6 @@ __all__ = [
     "PlanningPromptBuilder",
     "ToolSchemaBuilder",
     "resolve_api_config",
-    "CompactAgent",
     "SwecliAgent",
     "PlanningAgent",
 ]
