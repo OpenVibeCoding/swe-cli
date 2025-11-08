@@ -63,7 +63,7 @@ class MCPViewerModalManager:
             Tuple of (action_taken: bool, action: str or None)
                 action can be: "reconnect", "connect", "disable", "enable", or None
         """
-        from swecli.ui.components.mcp_viewer_message import create_mcp_viewer_message
+        from swecli.ui_textual.components.mcp_viewer_message import create_mcp_viewer_message
 
         # Reset state for new viewer
         self.reset_state()
@@ -272,7 +272,7 @@ class MCPViewerModalManager:
 
     def _update_viewer_message(self) -> None:
         """Update the viewer message with new selection."""
-        from swecli.ui.components.mcp_viewer_message import create_mcp_viewer_message
+        from swecli.ui_textual.components.mcp_viewer_message import create_mcp_viewer_message
 
         viewer_msg = create_mcp_viewer_message(
             server_name=self._server_name,

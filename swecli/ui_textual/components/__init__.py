@@ -9,6 +9,7 @@ from .notifications import NotificationCenter, Notification
 from .task_progress import TaskProgressDisplay
 from .category_selector_message import create_category_selector_message, get_category_items
 from .model_selector_message import create_model_selector_message, get_model_items
+from .mcp_viewer_message import create_mcp_viewer_message
 
 __all__ = [
     "BoxStyles",
@@ -25,4 +26,5 @@ __all__ = [
     "get_category_items",
     "create_model_selector_message",
     "get_model_items",
+    "create_mcp_viewer_message",
 ]
