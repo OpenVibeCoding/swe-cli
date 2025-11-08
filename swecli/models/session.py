@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from swecli.models.message import ChatMessage
 
 if TYPE_CHECKING:
-    from swecli.core.context_management import SessionPlaybook
+    from swecli.core.context_management import Playbook
 
 
 class SessionMetadata(BaseModel):
@@ -29,8 +29,8 @@ class SessionMetadata(BaseModel):
 class Session(BaseModel):
     """Represents a conversation session.
 
-    The session now includes a playbook for storing learned strategies
-    extracted from tool executions, inspired by ACE (Agentic Context Engine).
+    The session uses ACE (Agentic Context Engine) Playbook for storing
+    learned strategies extracted from tool executions.
     """
 
     id: str = Field(default_factory=lambda: uuid4().hex[:12])
@@ -40,22 +40,32 @@ class Session(BaseModel):
     context_files: list[str] = Field(default_factory=list)
     working_directory: Optional[str] = None
     metadata: dict[str, Any] = Field(default_factory=dict)
-    playbook: Optional[dict] = Field(default_factory=dict)  # Serialized SessionPlaybook
+    playbook: Optional[dict] = Field(default_factory=dict)  # Serialized ACE Playbook
 
     model_config = ConfigDict(
         json_encoders={datetime: lambda v: v.isoformat()}
     )
 
-    def get_playbook(self) -> "SessionPlaybook":
-        """Get the session's playbook, creating if needed."""
-        from swecli.core.context_management import SessionPlaybook
+    def get_playbook(self) -> "Playbook":
+        """Get the session's ACE playbook, creating if needed.
+
+        Returns:
+            ACE Playbook instance loaded from session data
+        """
+        from swecli.core.context_management import Playbook
 
         if not self.playbook:
-            self.playbook = {}
-        return SessionPlaybook.from_dict(self.playbook)
+            return Playbook()
 
-    def update_playbook(self, playbook: "SessionPlaybook") -> None:
-        """Update the session's playbook."""
+        # Load from serialized dict
+        return Playbook.from_dict(self.playbook)
+
+    def update_playbook(self, playbook: "Playbook") -> None:
+        """Update the session's ACE playbook.
+
+        Args:
+            playbook: ACE Playbook instance to save
+        """
         self.playbook = playbook.to_dict()
         self.updated_at = datetime.now()
 

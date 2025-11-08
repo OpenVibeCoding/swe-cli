@@ -6,7 +6,16 @@ import random
 from datetime import datetime
 from typing import TYPE_CHECKING, Iterable
 
-from swecli.core.context_management import ExecutionReflector, SessionPlaybook, Strategy
+from swecli.core.context_management import (
+    Playbook,
+    Generator,
+    Reflector,
+    Curator,
+    SwecliLLMClient,
+    GeneratorOutput,
+    ReflectorOutput,
+    CuratorOutput,
+)
 from swecli.ui_textual.utils.tool_display import format_tool_call
 
 if TYPE_CHECKING:
@@ -175,7 +184,14 @@ class QueryProcessor:
         self._last_operation_summary = "—"
         self._last_error = None
         self._notification_center = None
-        self.reflector = ExecutionReflector(min_tool_calls=2, min_confidence=0.65)
+
+        # ACE Components - Initialize on first use (lazy loading)
+        self._ace_client: Optional[SwecliLLMClient] = None
+        self._ace_generator: Optional[Generator] = None
+        self._ace_reflector: Optional[Reflector] = None
+        self._ace_curator: Optional[Curator] = None
+        self._last_generator_output: Optional[GeneratorOutput] = None
+        self._execution_count = 0
 
     def set_notification_center(self, notification_center):
         """Set notification center for status line rendering.
@@ -184,6 +200,36 @@ class QueryProcessor:
             notification_center: Notification center instance
         """
         self._notification_center = notification_center
+
+    def _init_ace_components(self, agent):
+        """Initialize ACE components lazily on first use.
+
+        Args:
+            agent: Agent with LLM client
+        """
+        if self._ace_client is None:
+            from ace.prompts_v2_1 import PromptManager
+
+            # Create ACE client wrapper
+            self._ace_client = SwecliLLMClient(agent.client)
+
+            # Initialize ACE roles with v2.1 prompts
+            prompt_mgr = PromptManager(default_version="2.1")
+
+            self._ace_generator = Generator(
+                self._ace_client,
+                prompt_template=prompt_mgr.get_generator_prompt()
+            )
+
+            self._ace_reflector = Reflector(
+                self._ace_client,
+                prompt_template=prompt_mgr.get_reflector_prompt()
+            )
+
+            self._ace_curator = Curator(
+                self._ace_client,
+                prompt_template=prompt_mgr.get_curator_prompt()
+            )
 
     def enhance_query(self, query: str) -> str:
         """Enhance query with file contents if referenced.
@@ -244,9 +290,10 @@ class QueryProcessor:
         if session:
             try:
                 playbook = session.get_playbook()
-                playbook_context = playbook.as_context(max_strategies=self.MAX_PLAYBOOK_STRATEGIES)
+                # Use ACE's as_prompt() method to format playbook
+                playbook_context = playbook.as_prompt()
                 if playbook_context:
-                    system_content = f"{system_content.rstrip()}\n\n{playbook_context}"
+                    system_content = f"{system_content.rstrip()}\n\n## Learned Strategies\n{playbook_context}"
             except Exception:  # pragma: no cover
                 pass
 
@@ -310,47 +357,132 @@ class QueryProcessor:
         query: str,
         tool_call_objects: Iterable["ToolCall"],
         outcome: str,
+        agent,
     ) -> None:
-        """Use the reflector to learn strategies from executed tool calls."""
+        """Use ACE Reflector and Curator to evolve playbook from tool execution.
+
+        This implements the full ACE workflow:
+        1. Reflector analyzes what happened (LLM-powered)
+        2. Curator decides playbook changes (delta operations)
+        3. Apply deltas to evolve playbook
+
+        Args:
+            query: User's query
+            tool_call_objects: Tool calls that were executed
+            outcome: "success", "error", or "partial"
+            agent: Agent with LLM client (for ACE initialization)
+        """
         session = self.session_manager.current_session
-        if not session or not self.reflector:
+        if not session:
             return
 
         tool_calls = list(tool_call_objects)
         if not tool_calls:
             return
 
-        try:
-            result = self.reflector.reflect(query=query, tool_calls=tool_calls, outcome=outcome)
-        except Exception:  # pragma: no cover
-            return
-
-        if not result:
+        # Skip if no generator output (ACE workflow needs it)
+        if not self._last_generator_output:
             return
 
         try:
-            playbook: SessionPlaybook = session.get_playbook()
-            before = len(playbook.strategies)
-            strategy: Strategy = playbook.add_strategy(result.category, result.content)
+            # Initialize ACE components if needed
+            self._init_ace_components(agent)
+
+            playbook = session.get_playbook()
+
+            # Format tool feedback for reflector
+            feedback = self._format_tool_feedback(tool_calls, outcome)
+
+            # STEP 1: Reflect on execution using ACE Reflector
+            reflection = self._ace_reflector.reflect(
+                question=query,
+                generator_output=self._last_generator_output,
+                playbook=playbook,
+                ground_truth=None,
+                feedback=feedback
+            )
+
+            # STEP 2: Apply bullet tags from reflection
+            for bullet_tag in reflection.bullet_tags:
+                try:
+                    playbook.tag_bullet(bullet_tag.id, bullet_tag.tag)
+                except (ValueError, KeyError):
+                    continue
+
+            # STEP 3: Curate playbook updates using ACE Curator
+            self._execution_count += 1
+            curator_output = self._ace_curator.curate(
+                reflection=reflection,
+                playbook=playbook,
+                question_context=query,
+                progress=f"Query #{self._execution_count}"
+            )
+
+            # STEP 4: Apply delta operations
+            bullets_before = len(playbook.bullets())
+            playbook.apply_delta(curator_output.delta)
+            bullets_after = len(playbook.bullets())
+
+            # Save updated playbook
             session.update_playbook(playbook)
 
+            # Debug logging
+            if bullets_after != bullets_before or curator_output.delta.operations:
+                debug_dir = os.path.dirname(self.PLAYBOOK_DEBUG_PATH)
+                os.makedirs(debug_dir, exist_ok=True)
+                with open(self.PLAYBOOK_DEBUG_PATH, "a", encoding="utf-8") as log:
+                    timestamp = datetime.now().isoformat()
+                    log.write(f"\n{'=' * 60}\n")
+                    log.write(f"🧠 ACE PLAYBOOK EVOLUTION - {timestamp}\n")
+                    log.write(f"{'=' * 60}\n")
+                    log.write(f"Query: {query}\n")
+                    log.write(f"Outcome: {outcome}\n")
+                    log.write(f"Bullets: {bullets_before} -> {bullets_after}\n")
+                    log.write(f"Delta Operations: {len(curator_output.delta.operations)}\n")
+                    for op in curator_output.delta.operations:
+                        log.write(f"  - {op.type}: {op.section} - {op.content[:80] if op.content else op.bullet_id}\n")
+                    log.write(f"Reflection Key Insight: {reflection.key_insight}\n")
+                    log.write(f"Curator Reasoning: {curator_output.delta.reasoning[:200]}\n")
+
+        except Exception as e:  # pragma: no cover
+            # Log error but don't break query processing
+            import traceback
             debug_dir = os.path.dirname(self.PLAYBOOK_DEBUG_PATH)
             os.makedirs(debug_dir, exist_ok=True)
             with open(self.PLAYBOOK_DEBUG_PATH, "a", encoding="utf-8") as log:
-                timestamp = datetime.now().isoformat()
-                log.write(f"\n{'=' * 60}\n")
-                log.write(f"🧠 PLAYBOOK EVOLUTION - {timestamp}\n")
-                log.write(f"{'=' * 60}\n")
-                log.write(f"Query: {query}\n")
-                log.write(f"Outcome: {outcome}\n")
-                log.write(f"Strategy Count: {before} -> {len(playbook.strategies)}\n")
-                log.write(f"New Strategy ID: {strategy.id}\n")
-                log.write(f"Category: {result.category}\n")
-                log.write(f"Content: {result.content}\n")
-                log.write(f"Confidence: {result.confidence}\n")
-                log.write(f"Reasoning: {result.reasoning}\n")
-        except Exception:  # pragma: no cover
-            return
+                log.write(f"\n{'!' * 60}\n")
+                log.write(f"❌ ACE ERROR: {str(e)}\n")
+                log.write(traceback.format_exc())
+
+    def _format_tool_feedback(self, tool_calls: list, outcome: str) -> str:
+        """Format tool execution results as feedback string for ACE Reflector.
+
+        Args:
+            tool_calls: List of ToolCall objects with results
+            outcome: "success", "error", or "partial"
+
+        Returns:
+            Formatted feedback string
+        """
+        lines = [f"Outcome: {outcome}"]
+        lines.append(f"Tools executed: {len(tool_calls)}")
+
+        if outcome == "success":
+            lines.append("All tools completed successfully")
+            # Add brief summary of what was done
+            tool_names = [tc.name for tc in tool_calls]
+            lines.append(f"Tools: {', '.join(tool_names)}")
+        elif outcome == "error":
+            # List errors
+            errors = [f"{tc.name}: {tc.error}" for tc in tool_calls if tc.error]
+            lines.append(f"Errors ({len(errors)}):")
+            for error in errors[:3]:  # First 3 errors
+                lines.append(f"  - {error[:200]}")
+        else:  # partial
+            successes = sum(1 for tc in tool_calls if not tc.error)
+            lines.append(f"Partial success: {successes}/{len(tool_calls)} tools succeeded")
+
+        return "\n".join(lines)
 
     def _execute_tool_call(self, tool_call: dict, tool_registry, approval_manager, undo_manager) -> dict:
         """Execute a single tool call.
@@ -609,7 +741,7 @@ class QueryProcessor:
 
                 if tool_call_objects:
                     outcome = "error" if any(tc.error for tc in tool_call_objects) else "success"
-                    self._record_tool_learnings(query, tool_call_objects, outcome)
+                    self._record_tool_learnings(query, tool_call_objects, outcome, agent)
 
                 # Check if agent needs nudge
                 if self._should_nudge_agent(consecutive_reads, messages):
@@ -808,7 +940,7 @@ class QueryProcessor:
 
                 if tool_call_objects:
                     outcome = "error" if any(tc.error for tc in tool_call_objects) else "success"
-                    self._record_tool_learnings(query, tool_call_objects, outcome)
+                    self._record_tool_learnings(query, tool_call_objects, outcome, agent)
 
                 # Break on excessive consecutive reads
                 if consecutive_reads >= 5:
