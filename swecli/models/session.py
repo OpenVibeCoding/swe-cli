@@ -126,7 +126,14 @@ class Session(BaseModel):
         # Convert selected messages to API format
         result = []
         for msg in messages_to_convert:
-            api_msg = {"role": msg.role.value, "content": msg.content}
+            raw_content = None
+            if msg.metadata and "raw_content" in msg.metadata:
+                raw_content = msg.metadata["raw_content"]
+
+            api_msg = {
+                "role": msg.role.value,
+                "content": raw_content if raw_content is not None else msg.content,
+            }
             # Include tool_calls if present
             if msg.tool_calls:
                 api_msg["tool_calls"] = [

@@ -773,7 +773,22 @@ def _run_non_interactive(
     session_manager.add_message(user_msg, config.auto_save_interval)
 
     assistant_content = result.get("content", "") or ""
-    assistant_msg = ChatMessage(role=Role.ASSISTANT, content=assistant_content)
+    raw_assistant_content = assistant_content
+    history = result.get("messages") or []
+    for msg in reversed(history):
+        if msg.get("role") == "assistant":
+            raw_assistant_content = msg.get("content", raw_assistant_content)
+            break
+
+    metadata = {}
+    if raw_assistant_content is not None:
+        metadata["raw_content"] = raw_assistant_content
+
+    assistant_msg = ChatMessage(
+        role=Role.ASSISTANT,
+        content=assistant_content,
+        metadata=metadata,
+    )
     session_manager.add_message(assistant_msg, config.auto_save_interval)
     session_manager.save_session()
 

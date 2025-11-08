@@ -55,7 +55,22 @@ class AgentExecutor:
             # Add assistant response to session
             if response and response.get("success"):
                 assistant_content = response.get("content", "")
-                assistant_msg = ChatMessage(role=Role.ASSISTANT, content=assistant_content)
+                raw_assistant_content = assistant_content
+                history = response.get("messages") or []
+                for msg in reversed(history):
+                    if msg.get("role") == "assistant":
+                        raw_assistant_content = msg.get("content", raw_assistant_content)
+                        break
+
+                metadata = {}
+                if raw_assistant_content is not None:
+                    metadata["raw_content"] = raw_assistant_content
+
+                assistant_msg = ChatMessage(
+                    role=Role.ASSISTANT,
+                    content=assistant_content,
+                    metadata=metadata,
+                )
                 self.state.add_message(assistant_msg)
 
             # Save session to persist messages immediately

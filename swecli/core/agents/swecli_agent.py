@@ -123,11 +123,12 @@ class SwecliAgent(BaseAgent):
                 }
 
             message_data = result["message"]
-            cleaned_content = result.get("content", "")
+            raw_content = message_data.get("content", "") or ""
+            cleaned_content = result.get("content", raw_content)
 
             assistant_msg: dict[str, Any] = {
                 "role": "assistant",
-                "content": cleaned_content,
+                "content": raw_content,
             }
             if "tool_calls" in message_data and message_data["tool_calls"]:
                 assistant_msg["tool_calls"] = message_data["tool_calls"]

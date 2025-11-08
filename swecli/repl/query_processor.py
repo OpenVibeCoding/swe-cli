@@ -323,7 +323,8 @@ class QueryProcessor:
         latency_ms = int((time.perf_counter() - started) * 1000)
 
         # Get LLM description
-        llm_description = response.get("content", "")
+        message_payload = response.get("message", {}) or {}
+        llm_description = response.get("content", message_payload.get("content", ""))
 
         # Stop progress and show final status
         progress.stop()
@@ -640,8 +641,15 @@ class QueryProcessor:
                     break
 
                 # Get LLM description and tool calls
-                llm_description = response.get("content", "")
+                message_payload = response.get("message", {}) or {}
+                raw_llm_content = message_payload.get("content")
+                llm_description = response.get("content", raw_llm_content or "")
+                if raw_llm_content is None:
+                    raw_llm_content = llm_description
+
                 tool_calls = response.get("tool_calls")
+                if tool_calls is None:
+                    tool_calls = message_payload.get("tool_calls")
                 has_tool_calls = bool(tool_calls)
                 normalized_description = (llm_description or "").strip()
 
@@ -656,14 +664,21 @@ class QueryProcessor:
                     if not normalized_description:
                         normalized_description = "Warning: model returned no reply."
                     self.console.print(f"\n[dim]{normalized_description}[/dim]")
-                    assistant_msg = ChatMessage(role=Role.ASSISTANT, content=normalized_description)
+                    metadata = {}
+                    if raw_llm_content is not None:
+                        metadata["raw_content"] = raw_llm_content
+                    assistant_msg = ChatMessage(
+                        role=Role.ASSISTANT,
+                        content=normalized_description,
+                        metadata=metadata,
+                    )
                     self.session_manager.add_message(assistant_msg, self.config.auto_save_interval)
                     break
 
                 # Add assistant message with tool calls to history
                 messages.append({
                     "role": "assistant",
-                    "content": llm_description,
+                    "content": raw_llm_content,
                     "tool_calls": tool_calls,
                 })
 
@@ -717,9 +732,14 @@ class QueryProcessor:
                     )
 
                 if normalized_description or tool_call_objects:
+                    metadata = {}
+                    if raw_llm_content is not None:
+                        metadata["raw_content"] = raw_llm_content
+
                     assistant_msg = ChatMessage(
                         role=Role.ASSISTANT,
                         content=normalized_description or "",
+                        metadata=metadata,
                         tool_calls=tool_call_objects,
                     )
                     self.session_manager.add_message(assistant_msg, self.config.auto_save_interval)
@@ -813,8 +833,15 @@ class QueryProcessor:
                     break
 
                 # Get LLM description and tool calls
-                llm_description = response.get("content", "")
+                message_payload = response.get("message", {}) or {}
+                raw_llm_content = message_payload.get("content")
+                llm_description = response.get("content", raw_llm_content or "")
+                if raw_llm_content is None:
+                    raw_llm_content = llm_description
+
                 tool_calls = response.get("tool_calls")
+                if tool_calls is None:
+                    tool_calls = message_payload.get("tool_calls")
                 has_tool_calls = bool(tool_calls)
                 normalized_description = (llm_description or "").strip()
 
@@ -828,7 +855,14 @@ class QueryProcessor:
                         normalized_description = "Warning: model returned no reply."
                     if ui_callback and hasattr(ui_callback, 'on_assistant_message'):
                         ui_callback.on_assistant_message(normalized_description)
-                    assistant_msg = ChatMessage(role=Role.ASSISTANT, content=normalized_description)
+                    metadata = {}
+                    if raw_llm_content is not None:
+                        metadata["raw_content"] = raw_llm_content
+                    assistant_msg = ChatMessage(
+                        role=Role.ASSISTANT,
+                        content=normalized_description,
+                        metadata=metadata,
+                    )
                     self.session_manager.add_message(assistant_msg, self.config.auto_save_interval)
                     break
 
@@ -839,7 +873,7 @@ class QueryProcessor:
                 # Add assistant message with tool calls to history
                 messages.append({
                     "role": "assistant",
-                    "content": llm_description,
+                    "content": raw_llm_content,
                     "tool_calls": tool_calls,
                 })
 
@@ -919,6 +953,7 @@ class QueryProcessor:
                 assistant_msg = ChatMessage(
                     role=Role.ASSISTANT,
                     content=normalized_description or "",
+                    metadata={"raw_content": raw_llm_content} if raw_llm_content is not None else {},
                     tool_calls=tool_call_objects,
                 )
                 self.session_manager.add_message(assistant_msg, self.config.auto_save_interval)
