@@ -6,7 +6,7 @@ from rich.console import Console
 from rich.table import Table
 
 from swecli.repl.commands.base import CommandHandler, CommandResult
-from swecli.ui.modals_internal.mcp_viewer_modal import show_mcp_server
+from swecli.ui_textual.modals.mcp_viewer_modal import show_mcp_server
 
 if TYPE_CHECKING:
     from swecli.mcp.manager import MCPManager
