@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import time
 from typing import Any, List, Tuple
 
 from rich.console import Group
@@ -42,6 +43,8 @@ class ConversationLog(RichLog):
         self._spinner_index = 0
         self._tool_call_start: int | None = None
         self._approval_start: int | None = None
+        self._tool_timer_start: float | None = None
+        self._tool_last_elapsed: int | None = None
 
     def on_mount(self) -> None:
         return
@@ -100,6 +103,8 @@ class ConversationLog(RichLog):
             self._tool_display = Text(str(display), style="white")
 
         self._tool_call_start = len(self.lines)
+        self._tool_timer_start = None
+        self._tool_last_elapsed = None
         self._write_tool_call_line("⏺")
 
     def start_tool_execution(self) -> None:
@@ -108,11 +113,18 @@ class ConversationLog(RichLog):
 
         self._spinner_active = True
         self._spinner_index = 0
+        self._tool_timer_start = time.monotonic()
+        self._tool_last_elapsed = None
         self._render_tool_spinner_frame()
         self._schedule_tool_spinner()
 
     def stop_tool_execution(self) -> None:
         self._spinner_active = False
+        if self._tool_timer_start is not None:
+            self._tool_last_elapsed = max(int(time.monotonic() - self._tool_timer_start), 0)
+        else:
+            self._tool_last_elapsed = None
+        self._tool_timer_start = None
         if self._tool_call_start is not None and self._tool_display is not None:
             self._replace_tool_call_line("⏺")
 
@@ -328,9 +340,25 @@ class ConversationLog(RichLog):
         formatted = Text()
         style = "green" if prefix == "⏺" else "white"
         formatted.append(f"{prefix} ", style=style)
+        timer = self._format_tool_timer()
         if self._tool_display is not None:
             formatted += self._tool_display.copy()
+        if timer is not None:
+            formatted.append_text(timer)
         self.write(formatted, scroll_end=False, animate=False)
+
+    def _tool_elapsed_seconds(self) -> int | None:
+        if self._spinner_active and self._tool_timer_start is not None:
+            return max(int(time.monotonic() - self._tool_timer_start), 0)
+        if self._tool_last_elapsed is not None:
+            return self._tool_last_elapsed
+        return None
+
+    def _format_tool_timer(self) -> Text | None:
+        elapsed = self._tool_elapsed_seconds()
+        if elapsed is None:
+            return None
+        return Text(f" ({elapsed}s)", style="#7a8594")
 
     def _schedule_tool_spinner(self) -> None:
         if not self._spinner_active:
