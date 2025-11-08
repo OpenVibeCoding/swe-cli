@@ -4,6 +4,7 @@ from .box_styles import BoxStyles
 from .console_animations import Spinner, FlashingSymbol, ProgressIndicator
 from .tips import TipsManager
 from .welcome import WelcomeMessage
+from .status_line import StatusLine
 
 __all__ = [
     "BoxStyles",
@@ -12,4 +13,5 @@ __all__ = [
     "Spinner",
     "FlashingSymbol",
     "ProgressIndicator",
+    "StatusLine",
 ]
