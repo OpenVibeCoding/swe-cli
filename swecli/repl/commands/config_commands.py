@@ -108,7 +108,7 @@ class ConfigCommands(CommandHandler):
         Returns:
             Selected category ("normal", "thinking", "vlm") or None if cancelled
         """
-        from swecli.ui.components.category_selector_message import (
+        from swecli.ui_textual.components.category_selector_message import (
             create_category_selector_message,
             get_category_items
         )

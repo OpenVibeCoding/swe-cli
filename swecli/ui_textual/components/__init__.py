@@ -7,6 +7,8 @@ from .welcome import WelcomeMessage
 from .status_line import StatusLine
 from .notifications import NotificationCenter, Notification
 from .task_progress import TaskProgressDisplay
+from .category_selector_message import create_category_selector_message, get_category_items
+from .model_selector_message import create_model_selector_message, get_model_items
 
 __all__ = [
     "BoxStyles",
@@ -19,4 +21,8 @@ __all__ = [
     "NotificationCenter",
     "Notification",
     "TaskProgressDisplay",
+    "create_category_selector_message",
+    "get_category_items",
+    "create_model_selector_message",
+    "get_model_items",
 ]

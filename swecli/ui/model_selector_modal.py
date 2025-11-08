@@ -42,7 +42,7 @@ class ModelSelectorModalManager:
             Tuple of (selected: bool, item: dict or None)
                 item format: {"type": "model", "provider_id": str, "model_id": str, "mode": str}
         """
-        from swecli.ui.components.model_selector_message import (
+        from swecli.ui_textual.components.model_selector_message import (
             create_model_selector_message,
             get_model_items
         )
@@ -217,13 +217,13 @@ class ModelSelectorModalManager:
         """Update the selector message with new selection."""
         # Choose appropriate selector based on mode
         if self._is_category_selector:
-            from swecli.ui.components.category_selector_message import create_category_selector_message
+            from swecli.ui_textual.components.category_selector_message import create_category_selector_message
             selector_msg = create_category_selector_message(
                 self._selector_selected_index,
                 self._normal_configured
             )
         else:
-            from swecli.ui.components.model_selector_message import create_model_selector_message
+            from swecli.ui_textual.components.model_selector_message import create_model_selector_message
             selector_msg = create_model_selector_message(self._selector_selected_index, self._selection_mode)
 
         if self.chat_app.conversation.messages:
