@@ -2,7 +2,7 @@
 
 from swecli.ui_textual.components.console_animations import Spinner, FlashingSymbol, ProgressIndicator
 from swecli.ui_textual.components.status_line import StatusLine
-from swecli.ui.components.notifications import NotificationCenter, Notification
+from swecli.ui_textual.components import NotificationCenter, Notification
 from swecli.ui.autocomplete import (
     SwecliCompleter,
     FileMentionCompleter,
