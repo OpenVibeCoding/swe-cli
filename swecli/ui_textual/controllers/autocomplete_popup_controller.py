@@ -7,6 +7,8 @@ from typing import Optional, Tuple
 from rich.text import Text
 from textual.widgets import Static
 
+from swecli.ui_textual.utils.file_type_colors import FileTypeColors
+
 StateType = Tuple[Tuple[Tuple[str, str], ...], int]
 
 
@@ -64,13 +66,34 @@ class AutocompletePopupController:
         text = Text()
         for index, (label, meta) in enumerate(rows):
             is_active = index == window_active
+
+            # Detect if this is a directory
+            is_dir = "📁" in label or label.endswith("/")
+
+            # Get appropriate color for this file type
+            file_color = FileTypeColors.get_color_from_icon_label(label)
+
+            # Enhanced pointer styling
             pointer = "▸ " if is_active else "  "
-            pointer_style = "bold bright_cyan" if is_active else "dim"
+            pointer_style = f"bold {file_color}" if is_active else "dim"
+
+            # Apply file-type-specific colors
+            if is_active:
+                # Selected item: bold + file-type color
+                label_style = f"bold {file_color}"
+            else:
+                # Non-selected: file-type color with slight dim
+                label_style = file_color
+
             text.append(pointer, style=pointer_style)
-            text.append(label, style="bold white" if is_active else "bright_cyan")
+            text.append(label, style=label_style)
+
+            # Meta info (file size, description)
             if meta:
                 text.append("  ")
-                text.append(meta, style="dim white" if is_active else "dim")
+                meta_style = "white" if is_active else "grey70"
+                text.append(meta, style=meta_style)
+
             if index < len(rows) - 1:
                 text.append("\n")
 

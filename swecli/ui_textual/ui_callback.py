@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any, Dict
 
-from swecli.ui_textual.formatters.claude_style_formatter import ClaudeStyleFormatter
+from swecli.ui_textual.formatters.style_formatter import StyleFormatter
 from swecli.ui_textual.utils.tool_display import build_tool_call_text
 
 
@@ -23,7 +23,7 @@ class TextualUICallback:
         self.chat_app = chat_app
         # chat_app IS the Textual App instance itself, not a wrapper
         self._app = chat_app
-        self.formatter = ClaudeStyleFormatter()
+        self.formatter = StyleFormatter()
         self._current_thinking = False
 
     def on_thinking_start(self) -> None:

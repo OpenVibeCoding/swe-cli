@@ -1,4 +1,4 @@
-"""Claude Code-style formatter used by the Textual UI."""
+"""Default conversation tool formatter used by the Textual UI."""
 
 from __future__ import annotations
 
@@ -10,8 +10,8 @@ from swecli.ui_textual.utils.tool_display import get_tool_display_parts
 from swecli.ui_textual.constants import TOOL_ERROR_SENTINEL
 
 
-class ClaudeStyleFormatter:
-    """Minimalist formatter inspired by Claude Code's display style."""
+class StyleFormatter:
+    """Minimalist formatter for conversational tool output."""
 
     def format_tool_result(self, tool_name: str, tool_args: Dict[str, Any], result: Dict[str, Any]) -> str:
         tool_display = self._format_tool_call(tool_name, tool_args)

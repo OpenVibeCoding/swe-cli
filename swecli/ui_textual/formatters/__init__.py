@@ -1,6 +1,5 @@
 """Formatter utilities for the Textual UI."""
 
-from .claude_style_formatter import ClaudeStyleFormatter
+from .style_formatter import StyleFormatter
 
-__all__ = ["ClaudeStyleFormatter"]
-
+__all__ = ["StyleFormatter"]

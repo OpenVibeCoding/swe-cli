@@ -4,7 +4,7 @@ from typing import Dict, Any, Union
 from rich.console import Console
 from rich.panel import Panel
 
-from swecli.ui_textual.formatters.claude_style_formatter import ClaudeStyleFormatter
+from swecli.ui_textual.formatters.style_formatter import StyleFormatter
 from .formatter_base import TOOL_ICONS
 from .file_formatters import FileFormatter
 from .directory_formatter import DirectoryFormatter
@@ -27,7 +27,7 @@ class OutputFormatter:
 
         # Initialize Claude-style formatter (new style)
         if self.use_claude_style:
-            self.claude_formatter = ClaudeStyleFormatter()
+            self.claude_formatter = StyleFormatter()
         else:
             # Initialize legacy formatters (old style)
             self.file_formatter = FileFormatter(console)
