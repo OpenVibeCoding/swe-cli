@@ -186,19 +186,25 @@ class FileTypeColors:
 
     @classmethod
     def get_color_from_icon_label(cls, label: str) -> str:
-        """Extract file type from icon label like '[py]' and return color.
+        """Extract file type from label and return color.
 
         Args:
-            label: Label that might contain icon like '[py]' or 'script.py'
+            label: Label like '• script.py' or '[py] script.py' or just 'script.py'
 
         Returns:
             Rich color style string
         """
-        # Check if label starts with icon bracket
-        if label.startswith("[") and "]" in label:
-            # Extract extension from icon
-            icon_end = label.index("]")
-            icon_text = label[1:icon_end].strip()
+        # Remove common prefixes (colored dot, old bracket style)
+        clean_label = label.strip()
+
+        # Remove colored dot prefix if present
+        if clean_label.startswith("•"):
+            clean_label = clean_label[1:].strip()
+
+        # Handle old bracket style for backward compatibility
+        if clean_label.startswith("[") and "]" in clean_label:
+            icon_end = clean_label.index("]")
+            icon_text = clean_label[1:icon_end].strip()
 
             # Try to get color from icon text
             color = cls.get_color_from_extension(icon_text)
@@ -206,8 +212,8 @@ class FileTypeColors:
                 return color
 
             # Also check the actual filename part
-            filename_part = label[icon_end + 1:].strip()
+            filename_part = clean_label[icon_end + 1:].strip()
             return cls.get_color_for_path(filename_part)
 
-        # No icon, just check the label as filename
-        return cls.get_color_for_path(label)
+        # No prefix, just check the label as filename
+        return cls.get_color_for_path(clean_label)

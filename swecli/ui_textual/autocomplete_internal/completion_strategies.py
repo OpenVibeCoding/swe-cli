@@ -242,8 +242,8 @@ class FileMentionStrategy(CompletionStrategy):
             # Get file icon and color
             icon_text, icon_color = get_file_icon(file_path)
 
-            # Format icon with padding for alignment (max 4 chars + brackets)
-            icon_display = f"[{icon_text:>4}]"
+            # Use clean colored dot for files, keep folder emoji for directories
+            icon_display = icon_text if is_dir else "•"
 
             # Get file size for display
             size_str = "" if is_dir else FileSizeFormatter.get_file_size(file_path)
