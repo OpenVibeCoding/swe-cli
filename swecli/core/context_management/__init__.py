@@ -19,10 +19,9 @@ Repository: https://github.com/kayba-ai/agentic-context-engine
 from swecli.core.context_management.playbook import Playbook, Bullet
 from swecli.core.context_management.delta import DeltaOperation, DeltaBatch
 from swecli.core.context_management.roles import (
-    Generator,
+    AgentResponse,
     Reflector,
     Curator,
-    GeneratorOutput,
     ReflectorOutput,
     CuratorOutput,
 )
@@ -35,10 +34,9 @@ __all__ = [
     # Native ACE Components (recommended)
     "Playbook",
     "Bullet",
-    "Generator",
+    "AgentResponse",
     "Reflector",
     "Curator",
-    "GeneratorOutput",
     "ReflectorOutput",
     "CuratorOutput",
     "DeltaOperation",

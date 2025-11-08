@@ -7,6 +7,7 @@ from typing import Any, Dict, List
 
 from swecli.ui_textual.formatters_internal.formatter_base import STATUS_ICONS
 from swecli.ui_textual.utils.tool_display import get_tool_display_parts
+from swecli.ui_textual.constants import TOOL_ERROR_SENTINEL
 
 
 class ClaudeStyleFormatter:
@@ -63,6 +64,10 @@ class ClaudeStyleFormatter:
         RESET = "\033[0m"
         return f"{COLOR}{BOLD}{function_name}{RESET}"
 
+    @staticmethod
+    def _error_line(message: str) -> str:
+        return f"{TOOL_ERROR_SENTINEL} {message.strip()}"
+
     def _format_argument(self, key: str, value: Any) -> str:
         if value is None:
             return ""
@@ -91,7 +96,7 @@ class ClaudeStyleFormatter:
 
     def _format_read_file_result(self, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
         if not result.get("success"):
-            return [f"❌ {result.get('error', 'Unknown error')}"]
+            return [self._error_line(result.get("error", "Unknown error"))]
 
         output = result.get("output", "")
         size_bytes = len(output)
@@ -103,7 +108,7 @@ class ClaudeStyleFormatter:
 
     def _format_write_file_result(self, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
         if not result.get("success"):
-            return [f"❌ {result.get('error', 'Unknown error')}"]
+            return [self._error_line(result.get("error", "Unknown error"))]
 
         file_path = tool_args.get("file_path", "unknown")
         content = tool_args.get("content", "")
@@ -115,7 +120,7 @@ class ClaudeStyleFormatter:
 
     def _format_edit_file_result(self, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
         if not result.get("success"):
-            return [f"❌ {result.get('error', 'Unknown error')}"]
+            return [self._error_line(result.get("error", "Unknown error"))]
 
         file_path = tool_args.get("file_path", "unknown")
         old_content = tool_args.get("old_content", "")
@@ -129,7 +134,7 @@ class ClaudeStyleFormatter:
 
     def _format_search_result(self, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
         if not result.get("success"):
-            return [f"❌ {result.get('error', 'Unknown error')}"]
+            return [self._error_line(result.get("error", "Unknown error"))]
 
         matches = result.get("matches", [])
         if not matches:
@@ -146,7 +151,7 @@ class ClaudeStyleFormatter:
 
     def _format_shell_result(self, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
         if not result.get("success"):
-            return [f"❌ {result.get('error', 'Unknown error')}"]
+            return [self._error_line(result.get("error", "Unknown error"))]
 
         command = (tool_args.get("command") or "").strip()
         stdout = (result.get("stdout") or result.get("output") or "").strip()
@@ -157,12 +162,10 @@ class ClaudeStyleFormatter:
         normalized_stdout = stdout.lower()
 
         if exit_code not in (None, 0):
-            red = "[91m"
-            reset = "[0m"
             if stderr:
                 first_err = stderr.splitlines()[0].strip()
-                return [f"{red}Error: {first_err}{reset}"]
-            return [f"{red}Error: Exit code {exit_code}{reset}"]
+                return [self._error_line(first_err)]
+            return [self._error_line(f"Exit code {exit_code}")]
 
         if normalized_cmd.startswith("git ") or " git " in normalized_cmd:
             if "push" in normalized_cmd:
@@ -194,7 +197,7 @@ class ClaudeStyleFormatter:
 
     def _format_list_files_result(self, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
         if not result.get("success"):
-            return [f"❌ {result.get('error', 'Unknown error')}"]
+            return [self._error_line(result.get("error", "Unknown error"))]
 
         entries = result.get("entries", [])
         if not entries:
@@ -203,7 +206,7 @@ class ClaudeStyleFormatter:
 
     def _format_fetch_url_result(self, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
         if not result.get("success"):
-            return [f"❌ {result.get('error', 'Unknown error')}"]
+            return [self._error_line(result.get("error", "Unknown error"))]
 
         elapsed = result.get("elapsed", 0.0)
         status = result.get("status_code", 200)
@@ -211,12 +214,12 @@ class ClaudeStyleFormatter:
 
     def _format_analyze_image_result(self, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
         if not result.get("success"):
-            return [f"❌ {result.get('error', 'Unknown error')}"]
+            return [self._error_line(result.get("error", "Unknown error"))]
         return [result.get("summary", "Analysis complete")]
 
     def _format_process_output_result(self, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
         if not result.get("success"):
-            return [f"❌ {result.get('error', 'Unknown error')}"]
+            return [self._error_line(result.get("error", "Unknown error"))]
 
         lines = (result.get("output") or "").splitlines()
         lines = [line.strip() for line in lines if line.strip()]
@@ -232,7 +235,7 @@ class ClaudeStyleFormatter:
 
     def _format_generic_result(self, tool_name: str, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
         if not result.get("success"):
-            return [f"❌ {result.get('error', 'Unknown error')}"]
+            return [self._error_line(result.get("error", "Unknown error"))]
 
         output = result.get("output")
         if isinstance(output, str):

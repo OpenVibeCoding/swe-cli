@@ -15,6 +15,7 @@ from textual.timer import Timer
 from textual.widgets import RichLog
 
 from swecli.ui_textual.renderers import render_markdown_text_segment
+from swecli.ui_textual.constants import TOOL_ERROR_SENTINEL
 
 
 class ConversationLog(RichLog):
@@ -187,7 +188,12 @@ class ConversationLog(RichLog):
         grey = "#a0a4ad"
         for raw_line in lines:
             line = Text("  ⎿ ", style=grey)
-            line.append(raw_line, style=grey)
+            message = raw_line.rstrip("\n")
+            is_error = False
+            if message.startswith(TOOL_ERROR_SENTINEL):
+                is_error = True
+                message = message[len(TOOL_ERROR_SENTINEL):].lstrip()
+            line.append(message, style="red" if is_error else grey)
             self.write(line)
 
     def _write_edit_result(self, header: str, diff_lines: list[str]) -> None:

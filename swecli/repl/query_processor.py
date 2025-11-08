@@ -8,10 +8,9 @@ from typing import TYPE_CHECKING, Iterable
 
 from swecli.core.context_management import (
     Playbook,
-    Generator,
+    AgentResponse,
     Reflector,
     Curator,
-    GeneratorOutput,
     ReflectorOutput,
     CuratorOutput,
 )
@@ -185,10 +184,9 @@ class QueryProcessor:
         self._notification_center = None
 
         # ACE Components - Initialize on first use (lazy loading)
-        self._ace_generator: Optional[Generator] = None
         self._ace_reflector: Optional[Reflector] = None
         self._ace_curator: Optional[Curator] = None
-        self._last_generator_output: Optional[GeneratorOutput] = None
+        self._last_agent_response: Optional[AgentResponse] = None
         self._execution_count = 0
 
     def set_notification_center(self, notification_center):
@@ -205,11 +203,9 @@ class QueryProcessor:
         Args:
             agent: Agent with LLM client
         """
-        if self._ace_generator is None:
+        if self._ace_reflector is None:
             # Initialize ACE roles with native implementation
             # The native components use swecli's LLM client directly
-            self._ace_generator = Generator(agent.client)
-
             self._ace_reflector = Reflector(agent.client)
 
             self._ace_curator = Curator(agent.client)
@@ -363,8 +359,8 @@ class QueryProcessor:
         if not tool_calls:
             return
 
-        # Skip if no generator output (ACE workflow needs it)
-        if not self._last_generator_output:
+        # Skip if no agent response (ACE workflow needs it)
+        if not self._last_agent_response:
             return
 
         try:
@@ -379,7 +375,7 @@ class QueryProcessor:
             # STEP 1: Reflect on execution using ACE Reflector
             reflection = self._ace_reflector.reflect(
                 question=query,
-                generator_output=self._last_generator_output,
+                agent_response=self._last_agent_response,
                 playbook=playbook,
                 ground_truth=None,
                 feedback=feedback
@@ -648,6 +644,12 @@ class QueryProcessor:
                 tool_calls = response.get("tool_calls")
                 has_tool_calls = bool(tool_calls)
                 normalized_description = (llm_description or "").strip()
+
+                # Store agent response for ACE learning
+                self._last_agent_response = AgentResponse(
+                    content=normalized_description,
+                    tool_calls=tool_calls or []
+                )
 
                 # If no tool calls, task is complete
                 if not has_tool_calls:

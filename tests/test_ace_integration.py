@@ -4,7 +4,7 @@ import pytest
 from swecli.core.context_management import (
     Playbook,
     Bullet,
-    Generator,
+    AgentResponse,
     Reflector,
     Curator,
 )
@@ -112,13 +112,22 @@ class TestACEIntegration:
         mock_client = MockSwecliClient()
 
         # Test that native ACE roles can be initialized with swecli client
-        generator = Generator(mock_client)
         reflector = Reflector(mock_client)
         curator = Curator(mock_client)
 
-        assert generator.llm_client is mock_client
         assert reflector.llm_client is mock_client
         assert curator.llm_client is mock_client
+
+    def test_agent_response_creation(self):
+        """Test AgentResponse dataclass works correctly."""
+        response = AgentResponse(
+            content="Test response content",
+            tool_calls=[{"function": {"name": "read_file"}}]
+        )
+
+        assert response.content == "Test response content"
+        assert len(response.tool_calls) == 1
+        assert response.tool_calls[0]["function"]["name"] == "read_file"
 
     def test_playbook_delta_operations(self):
         """Test delta operations for playbook evolution."""

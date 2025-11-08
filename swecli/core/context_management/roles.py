@@ -1,7 +1,10 @@
 """Native swecli ACE Roles implementation.
 
-This module re-implements the ACE roles (Generator, Reflector, Curator)
+This module re-implements the ACE learning roles (Reflector, Curator)
 natively within swecli, without external dependencies.
+
+The main system prompt (agent_normal.txt) serves as the Generator,
+so this module focuses on the learning components.
 """
 
 from __future__ import annotations
@@ -50,12 +53,15 @@ def _format_optional(value: Optional[str]) -> str:
 
 
 @dataclass
-class GeneratorOutput:
-    """Output from the Generator role."""
-    reasoning: str
-    final_answer: str
-    bullet_ids: List[str]
-    raw: Dict[str, Any]
+class AgentResponse:
+    """Main agent response for ACE analysis."""
+    content: str
+    reasoning: Optional[str] = None  # Extracted from response if available
+    tool_calls: List[dict] = None  # Tool calls made by the agent
+
+    def __post_init__(self):
+        if self.tool_calls is None:
+            self.tool_calls = []
 
 
 @dataclass
@@ -84,111 +90,14 @@ class CuratorOutput:
     raw: Dict[str, Any]
 
 
-class Generator:
-    """
-    Produces answers using the current playbook of strategies.
-
-    The Generator is one of three core ACE roles. It takes a question and
-    uses the accumulated strategies in the playbook to produce reasoned answers.
-    """
-
-    DEFAULT_PROMPT = """You are a helpful assistant with access to a playbook of learned strategies.
-
-## Playbook
-{playbook}
-
-## Previous Reflection (if any)
-{reflection}
-
-## Question
-{question}
-
-## Additional Context
-{context}
-
-Using the strategies in the playbook above, provide a clear and helpful answer to the question.
-
-Return your response as a JSON object with these fields:
-- reasoning: Your step-by-step thinking process
-- bullet_ids: List of playbook bullet IDs that influenced your answer (empty list if none)
-- final_answer: Your actual answer to the question
-
-Example response:
-{
-    "reasoning": "I considered the file operations strategy from the playbook...",
-    "bullet_ids": ["fil-00001", "fil-00002"],
-    "final_answer": "Based on the playbook strategies, you should first list the directory..."
-}"""
-
-    def __init__(
-        self,
-        llm_client: Any,  # swecli's AnyLLMClient
-        prompt_template: str = DEFAULT_PROMPT,
-        *,
-        max_retries: int = 3,
-        retry_prompt: str = "\n\nIMPORTANT: Return ONLY a single valid JSON object. Escape all quotes properly or use single quotes. Do not include any additional text outside the JSON.",
-    ) -> None:
-        self.llm_client = llm_client
-        self.prompt_template = prompt_template
-        self.max_retries = max_retries
-        self.retry_prompt = retry_prompt
-
-    def generate(
-        self,
-        *,
-        question: str,
-        context: Optional[str],
-        playbook: Playbook,
-        reflection: Optional[str] = None,
-        **kwargs: Any,
-    ) -> GeneratorOutput:
-        """Generate an answer using the playbook strategies."""
-        base_prompt = self.prompt_template.format(
-            playbook=playbook.as_prompt() or "(empty playbook)",
-            reflection=_format_optional(reflection),
-            question=question,
-            context=_format_optional(context),
-        )
-        prompt = base_prompt
-        last_error: Optional[Exception] = None
-
-        for attempt in range(self.max_retries):
-            try:
-                # Convert to chat format for swecli's LLM client
-                messages = [{"role": "user", "content": prompt}]
-                response = self.llm_client.chat_completion(messages)
-                response_text = response.get("content", "")
-
-                data = _safe_json_loads(response_text)
-                reasoning = str(data.get("reasoning", ""))
-                final_answer = str(data.get("final_answer", ""))
-                bullet_ids = [
-                    str(item)
-                    for item in data.get("bullet_ids", [])
-                    if isinstance(item, (str, int))
-                ]
-                return GeneratorOutput(
-                    reasoning=reasoning,
-                    final_answer=final_answer,
-                    bullet_ids=bullet_ids,
-                    raw=data,
-                )
-            except ValueError as err:
-                last_error = err
-                if attempt + 1 >= self.max_retries:
-                    break
-                # Append retry instruction to help LLM produce valid JSON
-                prompt = base_prompt + self.retry_prompt
-
-        raise RuntimeError("Generator failed to produce valid JSON.") from last_error
 
 
 class Reflector:
     """
-    Analyzes generator outputs to extract lessons and improve strategies.
+    Analyzes main agent outputs to extract lessons and improve strategies.
 
-    The Reflector is the second ACE role. It analyzes the Generator's output
-    and environment feedback to understand what went right or wrong, classifying
+    The Reflector analyzes the main agent's response (using agent_normal.txt)
+    and execution feedback to understand what went right or wrong, classifying
     which playbook bullets were helpful, harmful, or neutral.
     """
 
@@ -197,11 +106,11 @@ class Reflector:
 ## Question
 {question}
 
-## Generator's Reasoning
-{reasoning}
+## Agent's Response
+{agent_response}
 
-## Generator's Answer
-{prediction}
+## Tools Used
+{tool_summary}
 
 ## Ground Truth (if available)
 {ground_truth}
@@ -209,15 +118,16 @@ class Reflector:
 ## Feedback/Execution Result
 {feedback}
 
-## Relevant Playbook Excerpt
-{playbook_excerpt}
+## Current Playbook Strategies
+{playbook_content}
 
 Analyze the performance and provide insights. Focus on:
-1. What went wrong in the reasoning or approach
-2. The root cause of any errors
+1. What went wrong in the agent's approach or tool usage
+2. The root cause of any errors or inefficiencies
 3. What would have been the correct approach
 4. Key insights for future improvements
-5. Which playbook bullets were helpful, harmful, or neutral
+5. Which current playbook strategies were helpful, harmful, or neutral
+6. What new strategies should be added to the playbook
 
 Return your response as a JSON object with these fields:
 - reasoning: Your overall analysis
@@ -226,17 +136,22 @@ Return your response as a JSON object with these fields:
 - correct_approach: What should have been done instead
 - key_insight: The most important lesson to learn
 - bullet_tags: List of objects with "id" and "tag" fields ("helpful", "harmful", or "neutral")
+- suggested_strategies: List of new strategies that should be added to the playbook
 
 Example response:
 {
-    "reasoning": "The generator failed to check file existence...",
-    "error_identification": "Attempted to read non-existent file",
-    "root_cause_analysis": "Missing validation step before file operations",
-    "correct_approach": "Always verify file existence before reading",
-    "key_insight": "File operations require existence checks",
+    "reasoning": "The agent attempted to read a file without checking if it exists first...",
+    "error_identification": "File read operation failed due to missing existence check",
+    "root_cause_analysis": "Agent followed pattern of direct file access without validation",
+    "correct_approach": "Always verify file existence before reading or writing",
+    "key_insight": "File operations require validation steps to prevent errors",
     "bullet_tags": [
-        {"id": "fil-00001", "tag": "helpful"},
-        {"id": "fil-00002", "tag": "harmful"}
+        {"id": "fil-00001", "tag": "harmful"},
+        {"id": "fil-00003", "tag": "helpful"}
+    ],
+    "suggested_strategies": [
+        "Always check file existence before read operations",
+        "Use try-catch blocks for file operations"
     ]
 }"""
 
@@ -257,23 +172,31 @@ Example response:
         self,
         *,
         question: str,
-        generator_output: GeneratorOutput,
+        agent_response: AgentResponse,
         playbook: Playbook,
         ground_truth: Optional[str] = None,
         feedback: Optional[str] = None,
         **kwargs: Any,
     ) -> ReflectorOutput:
-        """Reflect on generator performance."""
-        # Create playbook excerpt for referenced bullets
-        playbook_excerpt = self._make_playbook_excerpt(playbook, generator_output.bullet_ids)
+        """Reflect on main agent performance."""
+        # Create tool summary
+        tool_summary = ""
+        if agent_response.tool_calls:
+            tool_names = [call.get("function", {}).get("name", "unknown") for call in agent_response.tool_calls]
+            tool_summary = f"Used tools: {', '.join(tool_names)}"
+        else:
+            tool_summary = "No tools used"
+
+        # Format playbook content
+        playbook_content = playbook.as_prompt() or "(empty playbook)"
 
         base_prompt = self.prompt_template.format(
             question=question,
-            reasoning=generator_output.reasoning,
-            prediction=generator_output.final_answer,
+            agent_response=agent_response.content[:1000] + "..." if len(agent_response.content) > 1000 else agent_response.content,
+            tool_summary=tool_summary,
             ground_truth=_format_optional(ground_truth),
             feedback=_format_optional(feedback),
-            playbook_excerpt=playbook_excerpt or "(no bullets referenced)",
+            playbook_content=playbook_content,
         )
 
         prompt = base_prompt
@@ -320,19 +243,7 @@ Example response:
 
         raise RuntimeError("Reflector failed to produce valid JSON.") from last_error
 
-    def _make_playbook_excerpt(self, playbook: Playbook, bullet_ids: Sequence[str]) -> str:
-        """Create excerpt of playbook bullets for analysis."""
-        lines: List[str] = []
-        seen = set()
-        for bullet_id in bullet_ids:
-            if bullet_id in seen:
-                continue
-            bullet = playbook.get_bullet(bullet_id)
-            if bullet:
-                seen.add(bullet_id)
-                lines.append(f"[{bullet.id}] {bullet.content}")
-        return "\n".join(lines)
-
+    
 
 class Curator:
     """
