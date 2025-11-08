@@ -28,7 +28,7 @@ from swecli.tools.file_ops import FileOperations
 from swecli.tools.write_tool import WriteTool
 from swecli.tools.edit_tool import EditTool
 from swecli.tools.bash_tool import BashTool
-from swecli.ui.components.animations import Spinner
+from swecli.ui_textual.components.console_animations import Spinner
 from swecli.ui.components.status_line import StatusLine
 from swecli.ui.autocomplete import SwecliCompleter
 from swecli.ui_textual.formatters_internal.output_formatter import OutputFormatter
