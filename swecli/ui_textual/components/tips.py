@@ -1,11 +1,9 @@
-"""Tips system used by the Textual UI for spinner hints."""
+"""Tips system for displaying helpful hints below spinners."""
 
 from __future__ import annotations
 
 import random
 from typing import List
-
-__all__ = ["TipsManager"]
 
 
 class TipsManager:
@@ -34,15 +32,19 @@ class TipsManager:
         "Use /undo to revert the last operation",
     ]
 
-    def __init__(self, *, random_mode: bool = True) -> None:
-        """Initialize tips manager."""
+    def __init__(self) -> None:
         self._current_tip_index = 0
-        self._random_mode = random_mode
+        self._random_mode = True
 
     def get_next_tip(self) -> str:
-        """Return the next tip to display."""
+        """Return the next tip."""
         if self._random_mode:
             return random.choice(self.TIPS)
         tip = self.TIPS[self._current_tip_index]
         self._current_tip_index = (self._current_tip_index + 1) % len(self.TIPS)
         return tip
+
+    def format_tip(self, tip: str, color: str = "\033[38;5;240m") -> str:
+        """Format a tip with ANSI styling for terminal fallbacks."""
+        reset = "\033[0m"
+        return f"{color}  ⎿ Tip: {tip}{reset}"

@@ -1,5 +1,7 @@
-"""Component helpers for the Textual UI."""
+"""Shared components used across the Textual UI."""
 
-from .welcome_message import WelcomeMessage
+from .box_styles import BoxStyles
+from .tips import TipsManager
+from .welcome import WelcomeMessage
 
-__all__ = ["WelcomeMessage"]
+__all__ = ["BoxStyles", "TipsManager", "WelcomeMessage"]

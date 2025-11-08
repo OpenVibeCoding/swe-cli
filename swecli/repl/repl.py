@@ -360,7 +360,7 @@ class REPL:
 
     def _print_welcome(self) -> None:
         """Print compact welcome banner using shared welcome module."""
-        from swecli.ui_textual.components.welcome_message import WelcomeMessage
+        from swecli.ui_textual.components import WelcomeMessage
 
         # Generate welcome content using shared module
         welcome_lines = WelcomeMessage.generate_full_welcome(

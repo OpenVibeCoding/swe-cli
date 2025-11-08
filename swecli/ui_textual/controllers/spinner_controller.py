@@ -11,7 +11,7 @@ from textual.timer import Timer
 
 if TYPE_CHECKING:  # pragma: no cover
     from swecli.ui_textual.chat_app import SWECLIChatApp
-    from swecli.ui_textual.utils.tips import TipsManager
+    from swecli.ui_textual.components import TipsManager
 
 
 class SpinnerController:

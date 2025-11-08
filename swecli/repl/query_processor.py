@@ -715,6 +715,7 @@ class QueryProcessor:
                 consecutive_reads = consecutive_reads + 1 if all_reads else 0
 
                 # Execute tool calls with real-time display
+                operation_cancelled = False
                 for tool_call in tool_calls:
                     # Notify UI about tool call
                     if ui_callback and hasattr(ui_callback, 'on_tool_call'):
@@ -724,6 +725,10 @@ class QueryProcessor:
                         )
 
                     result = self._execute_tool_call(tool_call, tool_registry, approval_manager, undo_manager)
+
+                    # Check if operation was cancelled
+                    if not result["success"] and result.get("error") == "Operation cancelled by user":
+                        operation_cancelled = True
 
                     # Notify UI about tool result
                     if ui_callback and hasattr(ui_callback, 'on_tool_result'):
@@ -740,6 +745,10 @@ class QueryProcessor:
                         "tool_call_id": tool_call["id"],
                         "content": tool_result,
                     })
+
+                # If operation was cancelled, exit loop immediately without calling LLM
+                if operation_cancelled:
+                    break
 
                 # Persist assistant step with tool calls to session
                 from swecli.models.message import ToolCall as ToolCallModel

@@ -8,6 +8,7 @@ from swecli.core.management import ConfigManager, OperationMode, SessionManager
 from swecli.core.agents.compact_agent import CompactAgent
 from swecli.core.context import ContextTokenMonitor
 from swecli.ui.chat_app import ChatApplication
+from swecli.ui_textual.utils.rich_to_text import rich_to_text_box
 from swecli.ui_textual.utils.tool_display import format_tool_call
 from swecli.models.message import ChatMessage, Role
 from swecli.repl.repl import REPL  # Import existing REPL for all the logic
@@ -388,7 +389,7 @@ class REPLChatApplication(ChatApplication):
         """Show compact welcome banner using shared welcome module."""
         from rich.console import Console
         from io import StringIO
-        from swecli.ui_textual.components.welcome_message import WelcomeMessage
+        from swecli.ui_textual.components import WelcomeMessage
 
         # Helper to render Rich markup to ANSI
         def rich_markup_to_ansi(markup: str) -> str:
@@ -451,7 +452,6 @@ class REPLChatApplication(ChatApplication):
                 # Display tool calls first (if any) using the SAME logic as live execution
                 for tool_call in msg.tool_calls:
                     from io import StringIO
-                    from swecli.ui.utils.rich_to_text import rich_to_text_box
 
                     tool_call_display = format_tool_call(tool_call.name, tool_call.parameters)
 

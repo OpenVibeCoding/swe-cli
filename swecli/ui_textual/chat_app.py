@@ -14,6 +14,7 @@ from textual.widgets import Header, Rule, Static
 from swecli.ui_textual.widgets import ConversationLog
 from swecli.ui_textual.widgets.chat_text_area import ChatTextArea
 from swecli.ui_textual.widgets.status_bar import ModelFooter, StatusBar
+from swecli.ui_textual.components import TipsManager
 from swecli.ui_textual.controllers.approval_prompt_controller import ApprovalPromptController
 from swecli.ui_textual.controllers.autocomplete_popup_controller import AutocompletePopupController
 from swecli.ui_textual.controllers.command_router import CommandRouter
@@ -24,7 +25,6 @@ from swecli.ui_textual.managers.console_buffer_manager import ConsoleBufferManag
 from swecli.ui_textual.managers.message_history import MessageHistory
 from swecli.ui_textual.managers.tool_summary_manager import ToolSummaryManager
 from swecli.ui_textual.renderers.welcome_panel import render_welcome_panel
-from swecli.ui_textual.utils.tips import TipsManager
 
 
 

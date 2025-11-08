@@ -1,7 +1,7 @@
 """Approval modal integrated as a conversation message."""
 
 
-from swecli.ui.components.box_styles import BoxStyles
+from swecli.ui_textual.components import BoxStyles
 
 
 def create_approval_message(command: str, selected_index: int = 0) -> str:

@@ -6,6 +6,7 @@ import re
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+from swecli.ui_textual.utils.rich_to_text import rich_to_text_box
 from swecli.ui_textual.utils.tool_display import build_tool_call_text, format_tool_call
 
 if TYPE_CHECKING:
@@ -260,8 +261,6 @@ class ToolExecutor:
             tool_args: Tool arguments
             result: Tool execution result
         """
-        from swecli.ui.utils.rich_to_text import rich_to_text_box
-
         # Format tool result using OutputFormatter (returns string for Claude style, Panel for legacy)
         formatted_result = self.repl.output_formatter.format_tool_result(
             tool_name=tool_name, tool_args=tool_args, result=result

@@ -8,7 +8,8 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 from swecli.core.management import OperationMode
-from swecli.ui.components.box_styles import BoxStyles
+
+from .box_styles import BoxStyles
 
 __all__ = ["WelcomeMessage"]
 
@@ -218,4 +219,3 @@ class WelcomeMessage:
             *rows,
             cls._footer_line(),
         ]
-

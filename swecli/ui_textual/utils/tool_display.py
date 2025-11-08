@@ -1,4 +1,4 @@
-"""Utilities for presenting human-friendly tool call information in Textual."""
+"""Utilities for presenting human-friendly tool call information."""
 
 from __future__ import annotations
 
@@ -6,13 +6,6 @@ from pathlib import PurePath
 from typing import Any, Mapping, Tuple
 
 from rich.text import Text
-
-__all__ = [
-    "build_tool_call_text",
-    "format_tool_call",
-    "get_tool_display_parts",
-    "summarize_tool_arguments",
-]
 
 _TOOL_DISPLAY_PARTS: dict[str, tuple[str, str]] = {
     "read_file": ("Read", "file"),
@@ -41,15 +34,7 @@ _TOOL_DISPLAY_PARTS: dict[str, tuple[str, str]] = {
     "git_branch": ("Branch", "git"),
 }
 
-_PATH_HINT_KEYS = {
-    "file_path",
-    "path",
-    "directory",
-    "dir",
-    "image_path",
-    "working_dir",
-    "target",
-}
+_PATH_HINT_KEYS = {"file_path", "path", "directory", "dir", "image_path", "working_dir", "target"}
 
 _PRIMARY_ARG_MAP: dict[str, tuple[str, ...]] = {
     "read_file": ("file_path",),
@@ -73,7 +58,7 @@ _PRIMARY_ARG_MAP: dict[str, tuple[str, ...]] = {
 }
 
 _MAX_SUMMARY_LEN = 60
-_NESTED_KEY_PRIORITY: tuple[str, ...] = (
+_NESTED_KEY_PRIORITY = (
     "command",
     "file_path",
     "path",
@@ -110,10 +95,8 @@ def get_tool_display_parts(tool_name: str) -> Tuple[str, str]:
         if len(parts) == 2:
             return ("MCP", parts[1])
         return ("MCP", "tool")
-
     if tool_name in _TOOL_DISPLAY_PARTS:
         return _TOOL_DISPLAY_PARTS[tool_name]
-
     return _fallback_parts(tool_name)
 
 
@@ -122,7 +105,6 @@ def _shorten_path(value: str) -> str:
         path = PurePath(value)
     except Exception:
         return value
-
     parts = path.parts
     if len(parts) <= 2:
         return str(path)
@@ -132,10 +114,8 @@ def _shorten_path(value: str) -> str:
 def _format_summary_value(value: Any, key: str | None = None) -> str:
     if value is None:
         return ""
-
     if isinstance(value, (int, float)):
         return f"{key}={value}" if key else str(value)
-
     if isinstance(value, str):
         display = value.strip()
         if not display:
@@ -143,16 +123,11 @@ def _format_summary_value(value: Any, key: str | None = None) -> str:
         if key in {"pid", "process_id"} and display.isdigit():
             return f"{key}={display}"
         display = display.replace("\n", " ")
-
-        # Don't shorten URLs (they contain :// which PurePath mangles)
-        is_url = display.startswith(("http://", "https://", "ftp://", "file://"))
-        if not is_url and (key in _PATH_HINT_KEYS or "/" in display or "\\" in display):
+        if key in _PATH_HINT_KEYS or "/" in display or "\\" in display:
             display = _shorten_path(display)
-
         if len(display) > _MAX_SUMMARY_LEN:
             display = display[: _MAX_SUMMARY_LEN - 3] + "..."
         return f'"{display}"'
-
     display = str(value)
     if len(display) > _MAX_SUMMARY_LEN:
         display = display[: _MAX_SUMMARY_LEN - 3] + "..."
@@ -162,80 +137,61 @@ def _format_summary_value(value: Any, key: str | None = None) -> str:
 def _summarize_nested_value(value: Any, key: str | None, seen: set[int] | None = None) -> str:
     if seen is None:
         seen = set()
-
     identity = id(value)
     if identity in seen:
         return ""
-
     seen.add(identity)
-
     if isinstance(value, Mapping):
         for preferred_key in _NESTED_KEY_PRIORITY:
             if preferred_key in value:
-                nested_summary = _summarize_nested_value(value[preferred_key], preferred_key, seen)
-                if nested_summary:
-                    return nested_summary
+                nested = _summarize_nested_value(value[preferred_key], preferred_key, seen)
+                if nested:
+                    return nested
         for nested_key, nested_value in value.items():
-            nested_summary = _summarize_nested_value(nested_value, nested_key, seen)
-            if nested_summary:
-                return nested_summary
+            nested = _summarize_nested_value(nested_value, nested_key, seen)
+            if nested:
+                return nested
         return ""
-
     if isinstance(value, (list, tuple, set)):
         for item in value:
-            nested_summary = _summarize_nested_value(item, key, seen)
-            if nested_summary:
-                return nested_summary
+            nested = _summarize_nested_value(item, key, seen)
+            if nested:
+                return nested
         return ""
-
     return _format_summary_value(value, key)
 
 
 def summarize_tool_arguments(tool_name: str, tool_args: Mapping[str, Any]) -> str:
     if not isinstance(tool_args, Mapping) or not tool_args:
         return ""
-
     primary_keys = _PRIMARY_ARG_MAP.get(tool_name, ())
     for key in primary_keys:
         if key in tool_args:
             summary = _summarize_nested_value(tool_args[key], key)
             if summary:
                 return summary
-
     for key, value in tool_args.items():
-        summary = _summarize_nested_value(value, key)
-        if summary:
-            return summary
-
+        if isinstance(value, str) and value.strip():
+            return _format_summary_value(value, key)
     return ""
 
 
-def format_tool_call(tool_name: str, tool_args: Mapping[str, Any] | None = None) -> str:
+def build_tool_call_text(tool_name: str, tool_args: Mapping[str, Any]) -> Text:
     verb, label = get_tool_display_parts(tool_name)
-    summary = summarize_tool_arguments(tool_name, tool_args or {})
-
-    display = verb
-    if label:
-        display = f"{verb}({label})"
-
-    bold_cyan = "\033[1;36m"
-    reset = "\033[0m"
-
+    summary = summarize_tool_arguments(tool_name, tool_args)
+    text = Text(verb)
     if summary:
-        return f"{bold_cyan}{verb}{reset}({summary})"
-    return f"{bold_cyan}{display}{reset}" if display else f"{bold_cyan}{verb}{reset}"
-
-
-def build_tool_call_text(tool_name: str, tool_args: Mapping[str, Any] | None = None) -> Text:
-    verb, label = get_tool_display_parts(tool_name)
-    summary = summarize_tool_arguments(tool_name, tool_args or {})
-
-    text = Text()
-    text.append(verb, style="bold cyan")
-    if summary:
-        text.append("(", style="white")
-        text.append(summary, style="white")
-        text.append(")", style="white")
+        text.append(f" ({summary})", style="dim")
     elif label:
-        text.append(f"({label})", style="white")
+        text.append(f" ({label})", style="dim")
     return text
+
+
+def format_tool_call(tool_name: str, tool_args: Mapping[str, Any]) -> str:
+    verb, label = get_tool_display_parts(tool_name)
+    summary = summarize_tool_arguments(tool_name, tool_args)
+    if summary:
+        return f"{verb}({summary})"
+    if label:
+        return f"{verb}({label})"
+    return verb
