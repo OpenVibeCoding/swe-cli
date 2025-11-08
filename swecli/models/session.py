@@ -89,7 +89,11 @@ class Session(BaseModel):
                         Following ACE architecture: use small window (3-5) instead of full history.
 
         Returns:
-            List of API messages with tool_calls and tool results preserved.
+            List of API messages with tool_calls and concise result summaries.
+
+        Note:
+            Tool results use concise summaries (e.g., "✓ Read file (100 lines)")
+            instead of full results to prevent context bloat.
         """
         # Select messages based on window size
         messages_to_convert = self.messages
@@ -130,10 +134,24 @@ class Session(BaseModel):
                 result.append(api_msg)
 
                 # Add tool result messages for each tool call
+                # Use concise summaries instead of full results to prevent context bloat
                 for tc in msg.tool_calls:
-                    tool_content = tc.error if tc.error else (tc.result or "")
-                    if tc.error:
-                        tool_content = f"Error: {tool_content}"
+                    # Prefer result_summary (concise 1-2 line summary)
+                    if tc.result_summary:
+                        tool_content = tc.result_summary
+                    else:
+                        # Fallback: generate summary on-the-fly if not available
+                        if tc.error:
+                            tool_content = f"❌ Error: {str(tc.error)[:200]}"
+                        elif tc.result:
+                            result_str = str(tc.result)
+                            if len(result_str) > 200:
+                                tool_content = f"✓ Success ({len(result_str)} chars)"
+                            else:
+                                tool_content = f"✓ {result_str}"
+                        else:
+                            tool_content = "✓ Success"
+
                     result.append({
                         "role": "tool",
                         "tool_call_id": tc.id,

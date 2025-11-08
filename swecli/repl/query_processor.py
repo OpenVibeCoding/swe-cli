@@ -255,6 +255,15 @@ class QueryProcessor:
         else:
             messages[0]["content"] = system_content
 
+        # Debug: Log message count and estimated size
+        total_chars = sum(len(str(m.get("content", ""))) for m in messages)
+        estimated_tokens = total_chars // 4  # Rough estimate: 4 chars per token
+        if self.console and hasattr(self.console, "print"):
+            if estimated_tokens > 100000:  # Warn if > 100k tokens
+                self.console.print(
+                    f"[yellow]⚠ Large context: {len(messages)} messages, ~{estimated_tokens:,} tokens[/yellow]"
+                )
+
         return messages
 
     def _call_llm_with_progress(self, agent, messages, task_monitor) -> tuple:
@@ -559,6 +568,8 @@ class QueryProcessor:
 
                 # Persist assistant step with tool calls to session
                 from swecli.models.message import ToolCall as ToolCallModel
+                from swecli.core.utils.tool_result_summarizer import summarize_tool_result
+
                 tool_call_objects = []
                 for tc in tool_calls:
                     tool_result = None
@@ -572,12 +583,17 @@ class QueryProcessor:
                                 tool_result = content
                             break
 
+                    # Generate concise summary for LLM context
+                    tool_name = tc["function"]["name"]
+                    result_summary = summarize_tool_result(tool_name, tool_result, tool_error)
+
                     tool_call_objects.append(
                         ToolCallModel(
                             id=tc["id"],
-                            name=tc["function"]["name"],
+                            name=tool_name,
                             parameters=json.loads(tc["function"]["arguments"]),
                             result=tool_result,
+                            result_summary=result_summary,
                             error=tool_error,
                             approved=True,
                         )
@@ -752,6 +768,8 @@ class QueryProcessor:
 
                 # Persist assistant step with tool calls to session
                 from swecli.models.message import ToolCall as ToolCallModel
+                from swecli.core.utils.tool_result_summarizer import summarize_tool_result
+
                 tool_call_objects = []
                 for tc in tool_calls:
                     tool_result = None
@@ -765,12 +783,17 @@ class QueryProcessor:
                                 tool_result = content
                             break
 
+                    # Generate concise summary for LLM context
+                    tool_name = tc["function"]["name"]
+                    result_summary = summarize_tool_result(tool_name, tool_result, tool_error)
+
                     tool_call_objects.append(
                         ToolCallModel(
                             id=tc["id"],
-                            name=tc["function"]["name"],
+                            name=tool_name,
                             parameters=json.loads(tc["function"]["arguments"]),
                             result=tool_result,
+                            result_summary=result_summary,
                             error=tool_error,
                             approved=True,
                         )

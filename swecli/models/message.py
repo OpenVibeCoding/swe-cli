@@ -22,6 +22,7 @@ class ToolCall(BaseModel):
     name: str
     parameters: dict[str, Any]
     result: Optional[Any] = None
+    result_summary: Optional[str] = None  # Concise 1-2 line summary for LLM context
     timestamp: datetime = Field(default_factory=datetime.now)
     approved: bool = False
     error: Optional[str] = None
