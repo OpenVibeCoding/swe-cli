@@ -49,6 +49,7 @@ Built on **SOLID principles** with **dependency injection** and **interface-driv
 
 ### ✅ Ready Features
 - **Interactive Coding Agent that Understand Codebase**
+- **Multi-Provider LLM Support** (35+ providers via any-llm: OpenAI, Anthropic, Gemini, Ollama, Groq, DeepSeek, and more)
 - **Basic Access to Shell Commands and Control Them Through LLMs**
 - **Context Management**
 - **Compact Context Automatically**
@@ -57,11 +58,10 @@ Built on **SOLID principles** with **dependency injection** and **interface-driv
 - **Switch between Plan Mode and Normal Mode**
 
 ### 🔄 In-Progress
-- **Compatible with Multiple Providers** (OpenAI, Anthropic, OpenRouter, Fireworks AI, Z.ai, DeepSeek, Alibaba Cloud)
-- **Coding Rules**
 - **LSP for Accurate Codebase Understanding**
 - **Github Issues Resolve** (across scaffolds: SWE-Agent, Agentless, HyperAgent)
 - **UI Management**
+- **Coding Rules**
 
 ### 📋 In-Plan
 - **Sub-Agents**
@@ -76,14 +76,14 @@ Built on **SOLID principles** with **dependency injection** and **interface-driv
 
 ### Installation
 
-**macOS (Homebrew)**
-```bash
-brew install swe-cli
-```
-
 **pip**
 ```bash
 pip install swe-cli
+```
+
+**macOS (Homebrew)**
+```bash
+brew install swe-cli
 ```
 
 **From source**
@@ -112,6 +112,27 @@ Configure your settings in `~/.swecli/settings.json`:
 ```
 
 For more details, see the [documentation](./docs).
+
+### Multi-Provider Support
+
+SWE-CLI supports **35 LLM providers** through Mozilla's [any-llm](https://github.com/mozilla-ai/any-llm) framework:
+
+**Configuration Example:**
+```json
+{
+  "model_provider": "anthropic",
+  "model": "claude-3-5-sonnet-20241022"
+}
+```
+
+**All 35 Supported Providers:**
+- **Major Cloud**: `anthropic`, `openai`, `azure`, `azureopenai`, `gemini`, `mistral`, `bedrock`, `vertexai`
+- **Fast/Specialized**: `groq`, `fireworks`, `together`, `cerebras`, `deepseek`, `perplexity`, `xai`, `zai`
+- **Local/Self-Hosted**: `ollama`, `lmstudio`, `llamacpp`, `llamafile`, `llama`
+- **Enterprise**: `databricks`, `sagemaker`, `watsonx`, `nebius`
+- **More**: `cohere`, `huggingface`, `minimax`, `moonshot`, `sambanova`, `openrouter`, `portkey`, `gateway`, `inception`, `voyage`
+
+Set your API key via environment variable (e.g., `export ANTHROPIC_API_KEY="..."`) or in config.
 
 ---
 

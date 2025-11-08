@@ -5,12 +5,8 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from swecli.core.abstract import BaseAgent
-from swecli.core.agents.components import (
-    AgentHttpClient,
-    PlanningPromptBuilder,
-    ResponseCleaner,
-    resolve_api_config,
-)
+from swecli.core.agents.components import PlanningPromptBuilder
+from swecli.core.providers import create_provider_adapter
 from swecli.models.config import AppConfig
 
 
@@ -24,9 +20,8 @@ class PlanningAgent(BaseAgent):
         mode_manager: Any,
         working_dir: Any = None,
     ) -> None:
-        self.api_url, self.headers = resolve_api_config(config)
-        self._http_client = AgentHttpClient(self.api_url, self.headers)
-        self._response_cleaner = ResponseCleaner()
+        # Use provider adapter pattern
+        self._provider_adapter = create_provider_adapter(config)
         self._working_dir = working_dir
         super().__init__(config, tool_registry, mode_manager)
 
@@ -37,48 +32,30 @@ class PlanningAgent(BaseAgent):
         return []
 
     def call_llm(self, messages: list[dict], task_monitor: Optional[Any] = None) -> dict:
-        payload = {
-            "model": self.config.model,
-            "messages": messages,
-            "temperature": self.config.temperature,
-            "max_tokens": self.config.max_tokens,
-        }
+        """Call LLM using the provider adapter (no tools for planning mode).
 
-        result = self._http_client.post_json(payload, task_monitor=task_monitor)
-        if not result.success or result.response is None:
+        Args:
+            messages: Message history
+            task_monitor: Optional task monitor for interrupt handling
+
+        Returns:
+            Dict with success, message, content, usage, etc.
+        """
+        try:
+            result = self._provider_adapter.completion(
+                model=self.config.model,
+                messages=messages,
+                tools=None,  # Planning mode has no tools
+                temperature=self.config.temperature,
+                max_tokens=self.config.max_tokens,
+                task_monitor=task_monitor,
+            )
+            return result
+        except Exception as e:
             return {
                 "success": False,
-                "error": result.error or "Unknown error",
-                "interrupted": result.interrupted,
+                "error": f"Provider error: {str(e)}",
             }
-
-        response = result.response
-        if response.status_code != 200:
-            return {
-                "success": False,
-                "error": f"API Error {response.status_code}: {response.text}",
-            }
-
-        response_data = response.json()
-        choice = response_data["choices"][0]
-        message_data = choice["message"]
-
-        raw_content = message_data.get("content")
-        cleaned_content = self._response_cleaner.clean(raw_content)
-
-        if task_monitor and "usage" in response_data:
-            usage = response_data["usage"]
-            total_tokens = usage.get("total_tokens", 0)
-            if total_tokens > 0:
-                task_monitor.update_tokens(total_tokens)
-
-        return {
-            "success": True,
-            "message": message_data,
-            "content": cleaned_content,
-            "tool_calls": message_data.get("tool_calls"),
-            "usage": response_data.get("usage"),
-        }
 
     def run_sync(
         self,

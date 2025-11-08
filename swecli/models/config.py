@@ -112,10 +112,19 @@ class AppConfig(BaseModel):
     @field_validator("model_provider")
     @classmethod
     def validate_provider(cls, v: str) -> str:
-        """Validate model provider."""
-        allowed = ["fireworks", "anthropic", "openai"]
-        if v not in allowed:
-            raise ValueError(f"model_provider must be one of {allowed}")
+        """Validate model provider.
+
+        Legacy mode: Only fireworks, anthropic, openai allowed
+        any-llm mode: Validates against any-llm's supported providers
+        """
+        # For backward compatibility, always allow these three
+        legacy_allowed = ["fireworks", "anthropic", "openai"]
+        if v in legacy_allowed:
+            return v
+
+        # If using any-llm, check against its supported providers
+        # We don't validate strictly here to avoid import errors
+        # The adapter will handle validation at runtime
         return v
 
     def get_api_key(self) -> str:

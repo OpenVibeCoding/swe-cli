@@ -7,11 +7,10 @@ from typing import Any, Optional
 
 from swecli.core.abstract import BaseAgent
 from swecli.core.agents.components import (
-    ResponseCleaner,
     SystemPromptBuilder,
     ToolSchemaBuilder,
-    create_http_client,
 )
+from swecli.core.providers import create_provider_adapter
 from swecli.models.config import AppConfig
 
 
@@ -27,7 +26,7 @@ class WebInterruptMonitor:
 
 
 class SwecliAgent(BaseAgent):
-    """Custom agent that coordinates LLM interactions via HTTP."""
+    """Custom agent that coordinates LLM interactions via provider adapters."""
 
     def __init__(
         self,
@@ -36,8 +35,8 @@ class SwecliAgent(BaseAgent):
         mode_manager: Any,
         working_dir: Any = None,
     ) -> None:
-        self._http_client = create_http_client(config)
-        self._response_cleaner = ResponseCleaner()
+        # Use provider adapter pattern instead of direct HTTP client
+        self._provider_adapter = create_provider_adapter(config)
         self._working_dir = working_dir
         super().__init__(config, tool_registry, mode_manager)
 
@@ -48,50 +47,31 @@ class SwecliAgent(BaseAgent):
         return ToolSchemaBuilder(self.tool_registry).build()
 
     def call_llm(self, messages: list[dict], task_monitor: Optional[Any] = None) -> dict:
-        payload = {
-            "model": self.config.model,
-            "messages": messages,
-            "tools": self.tool_schemas,
-            "tool_choice": "auto",
-            "temperature": self.config.temperature,
-            "max_tokens": self.config.max_tokens,
-        }
+        """Call LLM using the provider adapter.
 
-        result = self._http_client.post_json(payload, task_monitor=task_monitor)
-        if not result.success or result.response is None:
+        Args:
+            messages: Message history
+            task_monitor: Optional task monitor for interrupt handling
+
+        Returns:
+            Dict with success, message, content, tool_calls, usage, etc.
+        """
+        try:
+            result = self._provider_adapter.completion(
+                model=self.config.model,
+                messages=messages,
+                tools=self.tool_schemas,
+                tool_choice="auto",
+                temperature=self.config.temperature,
+                max_tokens=self.config.max_tokens,
+                task_monitor=task_monitor,
+            )
+            return result
+        except Exception as e:
             return {
                 "success": False,
-                "error": result.error or "Unknown error",
-                "interrupted": result.interrupted,
+                "error": f"Provider error: {str(e)}",
             }
-
-        response = result.response
-        if response.status_code != 200:
-            return {
-                "success": False,
-                "error": f"API Error {response.status_code}: {response.text}",
-            }
-
-        response_data = response.json()
-        choice = response_data["choices"][0]
-        message_data = choice["message"]
-
-        raw_content = message_data.get("content")
-        cleaned_content = self._response_cleaner.clean(raw_content)
-
-        if task_monitor and "usage" in response_data:
-            usage = response_data["usage"]
-            total_tokens = usage.get("total_tokens", 0)
-            if total_tokens > 0:
-                task_monitor.update_tokens(total_tokens)
-
-        return {
-            "success": True,
-            "message": message_data,
-            "content": cleaned_content,
-            "tool_calls": message_data.get("tool_calls"),
-            "usage": response_data.get("usage"),
-        }
 
     def run_sync(
         self,
@@ -118,44 +98,32 @@ class SwecliAgent(BaseAgent):
                     "interrupted": True,
                 }
 
-            payload = {
-                "model": self.config.model,
-                "messages": messages,
-                "tools": self.tool_schemas,
-                "tool_choice": "auto",
-                "temperature": self.config.temperature,
-                "max_tokens": self.config.max_tokens,
-            }
-
             # Create interrupt monitor if web_state is available
             monitor = None
             if hasattr(self, 'web_state'):
                 monitor = WebInterruptMonitor(self.web_state)
 
-            result = self._http_client.post_json(payload, task_monitor=monitor)
-            if not result.success or result.response is None:
-                error_msg = result.error or "Unknown error"
+            # Use provider adapter instead of direct HTTP client
+            result = self._provider_adapter.completion(
+                model=self.config.model,
+                messages=messages,
+                tools=self.tool_schemas,
+                tool_choice="auto",
+                temperature=self.config.temperature,
+                max_tokens=self.config.max_tokens,
+                task_monitor=monitor,
+            )
+
+            if not result.get("success", False):
+                error_msg = result.get("error", "Unknown error")
                 return {
                     "content": error_msg,
                     "messages": messages,
                     "success": False,
                 }
 
-            response = result.response
-            if response.status_code != 200:
-                error_msg = f"API Error {response.status_code}: {response.text}"
-                return {
-                    "content": error_msg,
-                    "messages": messages,
-                    "success": False,
-                }
-
-            response_data = response.json()
-            choice = response_data["choices"][0]
-            message_data = choice["message"]
-
-            raw_content = message_data.get("content")
-            cleaned_content = self._response_cleaner.clean(raw_content)
+            message_data = result["message"]
+            cleaned_content = result.get("content", "")
 
             assistant_msg: dict[str, Any] = {
                 "role": "assistant",
