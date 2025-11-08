@@ -6,6 +6,7 @@ from .tips import TipsManager
 from .welcome import WelcomeMessage
 from .status_line import StatusLine
 from .notifications import NotificationCenter, Notification
+from .task_progress import TaskProgressDisplay
 
 __all__ = [
     "BoxStyles",
@@ -17,4 +18,5 @@ __all__ = [
     "StatusLine",
     "NotificationCenter",
     "Notification",
+    "TaskProgressDisplay",
 ]

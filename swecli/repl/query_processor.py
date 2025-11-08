@@ -268,7 +268,7 @@ class QueryProcessor:
         Returns:
             Tuple of (response, latency_ms)
         """
-        from swecli.ui.components.task_progress import TaskProgressDisplay
+        from swecli.ui_textual.components.task_progress import TaskProgressDisplay
         import time
 
         # Get random thinking verb
@@ -356,7 +356,7 @@ class QueryProcessor:
             Tool execution result
         """
         from swecli.core.monitoring import TaskMonitor
-        from swecli.ui.components.task_progress import TaskProgressDisplay
+        from swecli.ui_textual.components.task_progress import TaskProgressDisplay
         from swecli.core.management import OperationMode
         import json
 
