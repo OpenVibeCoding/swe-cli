@@ -7,7 +7,6 @@ from swecli.core.context_management import (
     Generator,
     Reflector,
     Curator,
-    SwecliLLMClient,
 )
 from swecli.models.session import Session
 
@@ -101,32 +100,25 @@ class TestACEIntegration:
         assert "List before read" in prompt
         assert "helpful=" in prompt
 
-    def test_swecli_llm_client_adapter(self):
-        """Test SwecliLLMClient adapter interface."""
+    def test_native_ace_roles_direct_integration(self):
+        """Test native ACE roles work directly with swecli LLM client."""
         # Mock swecli client
         class MockSwecliClient:
             model_name = "test-model"
 
             def chat_completion(self, messages):
-                class MockResponse:
-                    class Choice:
-                        class Message:
-                            content = "Test response"
-                        message = Message()
-                    choices = [Choice()]
-
-                    def model_dump(self):
-                        return {"model": "test"}
-
-                return MockResponse()
+                return {"content": "Test response"}
 
         mock_client = MockSwecliClient()
-        ace_client = SwecliLLMClient(mock_client)
 
-        # Test complete method
-        response = ace_client.complete("Test prompt")
-        assert response.text == "Test response"
-        assert isinstance(response.raw, dict)
+        # Test that native ACE roles can be initialized with swecli client
+        generator = Generator(mock_client)
+        reflector = Reflector(mock_client)
+        curator = Curator(mock_client)
+
+        assert generator.llm_client is mock_client
+        assert reflector.llm_client is mock_client
+        assert curator.llm_client is mock_client
 
     def test_playbook_delta_operations(self):
         """Test delta operations for playbook evolution."""

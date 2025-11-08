@@ -1,366 +1,280 @@
-"""Playbook for storing learned strategies across sessions.
+"""Native swecli ACE Playbook implementation.
 
-Inspired by ACE (Agentic Context Engine) architecture, this module provides
-a structured way to store and manage learned patterns and best practices
-instead of accumulating verbose conversation history.
+This module re-implements the ACE (Agentic Context Engine) playbook system
+natively within swecli, without external dependencies.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Dict, List, Optional
+import json
+from dataclasses import asdict, dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Dict, Iterable, List, Optional
+
+from .delta import DeltaBatch, DeltaOperation
 
 
 @dataclass
-class Strategy:
-    """A learned pattern or best practice.
-
-    Strategies are distilled learnings from tool executions, stored in a
-    structured format that's more context-efficient than raw conversation messages.
-
-    Attributes:
-        id: Unique identifier (e.g., "fil-00042")
-        category: Strategy category (e.g., "file_operations", "error_handling")
-        content: The actual strategy description
-        helpful_count: Number of times this strategy led to success
-        harmful_count: Number of times this strategy caused errors
-        neutral_count: Number of times with no clear impact
-        created_at: When the strategy was first learned
-        last_used: When the strategy was last referenced
-    """
+class Bullet:
+    """Single playbook entry storing a strategy or insight."""
 
     id: str
-    category: str
+    section: str
     content: str
-    helpful_count: int = 0
-    harmful_count: int = 0
-    neutral_count: int = 0
-    created_at: datetime = field(default_factory=datetime.now)
-    last_used: datetime = field(default_factory=datetime.now)
+    helpful: int = 0
+    harmful: int = 0
+    neutral: int = 0
+    created_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
+    updated_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
 
-    def tag(self, tag: str) -> None:
-        """Update effectiveness counter.
+    def apply_metadata(self, metadata: Dict[str, int]) -> None:
+        """Apply metadata updates to counters."""
+        for key, value in metadata.items():
+            if hasattr(self, key):
+                setattr(self, key, int(value))
 
-        Args:
-            tag: One of "helpful", "harmful", or "neutral"
-
-        Raises:
-            ValueError: If tag is not one of the valid options
-        """
-        if tag == "helpful":
-            self.helpful_count += 1
-        elif tag == "harmful":
-            self.harmful_count += 1
-        elif tag == "neutral":
-            self.neutral_count += 1
-        else:
-            raise ValueError(f"Invalid tag: {tag}. Must be helpful, harmful, or neutral")
-        self.last_used = datetime.now()
-
-    @property
-    def effectiveness_score(self) -> float:
-        """Calculate effectiveness score (-1 to 1).
-
-        Returns:
-            Score where positive is helpful, negative is harmful
-        """
-        total = self.helpful_count + self.harmful_count + self.neutral_count
-        if total == 0:
-            return 0.0
-        return (self.helpful_count - self.harmful_count) / total
-
-    def to_dict(self) -> dict:
-        """Serialize strategy to dictionary."""
-        return {
-            "id": self.id,
-            "category": self.category,
-            "content": self.content,
-            "helpful_count": self.helpful_count,
-            "harmful_count": self.harmful_count,
-            "neutral_count": self.neutral_count,
-            "created_at": self.created_at.isoformat(),
-            "last_used": self.last_used.isoformat(),
-        }
-
-    @classmethod
-    def from_dict(cls, data: dict) -> "Strategy":
-        """Deserialize strategy from dictionary."""
-        return cls(
-            id=data["id"],
-            category=data["category"],
-            content=data["content"],
-            helpful_count=data.get("helpful_count", 0),
-            harmful_count=data.get("harmful_count", 0),
-            neutral_count=data.get("neutral_count", 0),
-            created_at=datetime.fromisoformat(
-                data.get("created_at", datetime.now().isoformat())
-            ),
-            last_used=datetime.fromisoformat(
-                data.get("last_used", datetime.now().isoformat())
-            ),
-        )
+    def tag(self, tag: str, increment: int = 1) -> None:
+        """Increment a counter (helpful/harmful/neutral)."""
+        if tag not in ("helpful", "harmful", "neutral"):
+            raise ValueError(f"Unsupported tag: {tag}")
+        current = getattr(self, tag)
+        setattr(self, tag, current + increment)
+        self.updated_at = datetime.now(timezone.utc).isoformat()
 
 
-class SessionPlaybook:
-    """Stores learned strategies for a session.
+class Playbook:
+    """Structured context store for accumulated strategies and insights.
 
-    The playbook maintains a collection of strategies learned from tool executions.
-    Instead of storing raw conversation messages, it stores distilled patterns
-    that can be efficiently included in system prompts.
-
-    Example:
-        >>> playbook = SessionPlaybook()
-        >>> strategy = playbook.add_strategy(
-        ...     category="file_operations",
-        ...     content="List directory before reading files"
-        ... )
-        >>> print(playbook.as_context())
-        ## Learned Strategies
-        ### File Operations
-        - [fil-00000] List directory before reading files (helpful=0, harmful=0)
+    The Playbook replaces traditional message history with a curated collection
+    of strategy entries (bullets) that evolve based on execution feedback.
     """
 
-    def __init__(self):
-        """Initialize empty playbook."""
-        self.strategies: Dict[str, Strategy] = {}
+    def __init__(self) -> None:
+        self._bullets: Dict[str, Bullet] = {}
+        self._sections: Dict[str, List[str]] = {}
         self._next_id = 0
 
-    def add_strategy(
+    def __repr__(self) -> str:
+        """Concise representation for debugging."""
+        return f"Playbook(bullets={len(self._bullets)}, sections={list(self._sections.keys())})"
+
+    def __str__(self) -> str:
+        """Human-readable representation showing content."""
+        if not self._bullets:
+            return "Playbook(empty)"
+        return self.as_prompt()
+
+    # ------------------------------------------------------------------ #
+    # CRUD operations
+    # ------------------------------------------------------------------ #
+    def add_bullet(
         self,
-        category: str,
+        section: str,
         content: str,
-        strategy_id: Optional[str] = None,
-    ) -> Strategy:
-        """Add new strategy to playbook.
+        bullet_id: Optional[str] = None,
+        metadata: Optional[Dict[str, int]] = None,
+    ) -> Bullet:
+        """Add a new bullet to the playbook."""
+        bullet_id = bullet_id or self._generate_id(section)
+        metadata = metadata or {}
+        bullet = Bullet(id=bullet_id, section=section, content=content)
+        bullet.apply_metadata(metadata)
+        self._bullets[bullet_id] = bullet
+        self._sections.setdefault(section, []).append(bullet_id)
+        return bullet
 
-        Args:
-            category: Strategy category (e.g., "file_operations")
-            content: Strategy description
-            strategy_id: Optional custom ID (auto-generated if None)
+    def update_bullet(
+        self,
+        bullet_id: str,
+        *,
+        content: Optional[str] = None,
+        metadata: Optional[Dict[str, int]] = None,
+    ) -> Optional[Bullet]:
+        """Update an existing bullet."""
+        bullet = self._bullets.get(bullet_id)
+        if bullet is None:
+            return None
+        if content is not None:
+            bullet.content = content
+        if metadata:
+            bullet.apply_metadata(metadata)
+        bullet.updated_at = datetime.now(timezone.utc).isoformat()
+        return bullet
 
-        Returns:
-            The created Strategy object
+    def tag_bullet(
+        self, bullet_id: str, tag: str, increment: int = 1
+    ) -> Optional[Bullet]:
+        """Tag a bullet to update its counters."""
+        bullet = self._bullets.get(bullet_id)
+        if bullet is None:
+            return None
+        bullet.tag(tag, increment=increment)
+        return bullet
 
-        Example:
-            >>> playbook = SessionPlaybook()
-            >>> strategy = playbook.add_strategy(
-            ...     category="error_handling",
-            ...     content="Check parent directory exists before file operations"
-            ... )
-            >>> strategy.id
-            'err-00000'
-        """
-        if strategy_id is None:
-            # Generate ID from category prefix + counter
-            prefix = category[:3].lower()
-            strategy_id = f"{prefix}-{self._next_id:05d}"
-            self._next_id += 1
+    def remove_bullet(self, bullet_id: str) -> None:
+        """Remove a bullet from the playbook."""
+        bullet = self._bullets.pop(bullet_id, None)
+        if bullet is None:
+            return
+        section_list = self._sections.get(bullet.section)
+        if section_list:
+            self._sections[bullet.section] = [
+                bid for bid in section_list if bid != bullet_id
+            ]
+            if not self._sections[bullet.section]:
+                del self._sections[bullet.section]
 
-        strategy = Strategy(id=strategy_id, category=category, content=content)
-        self.strategies[strategy_id] = strategy
-        return strategy
+    def get_bullet(self, bullet_id: str) -> Optional[Bullet]:
+        """Get a bullet by ID."""
+        return self._bullets.get(bullet_id)
 
-    def get_strategy(self, strategy_id: str) -> Optional[Strategy]:
-        """Get strategy by ID.
+    def bullets(self) -> List[Bullet]:
+        """Get all bullets."""
+        return list(self._bullets.values())
 
-        Args:
-            strategy_id: Strategy identifier
-
-        Returns:
-            Strategy object if found, None otherwise
-        """
-        return self.strategies.get(strategy_id)
-
-    def tag_strategy(self, strategy_id: str, tag: str) -> bool:
-        """Tag a strategy as helpful/harmful/neutral.
-
-        Args:
-            strategy_id: Strategy to tag
-            tag: One of "helpful", "harmful", or "neutral"
-
-        Returns:
-            True if strategy was found and tagged, False otherwise
-        """
-        strategy = self.strategies.get(strategy_id)
-        if strategy:
-            strategy.tag(tag)
-            return True
-        return False
-
-    def remove_strategy(self, strategy_id: str) -> bool:
-        """Remove a strategy from the playbook.
-
-        Args:
-            strategy_id: Strategy to remove
-
-        Returns:
-            True if strategy was found and removed, False otherwise
-        """
-        if strategy_id in self.strategies:
-            del self.strategies[strategy_id]
-            return True
-        return False
-
-    def get_strategies_by_category(self, category: str) -> List[Strategy]:
-        """Get all strategies in a category.
-
-        Args:
-            category: Category name
-
-        Returns:
-            List of strategies in that category
-        """
-        return [s for s in self.strategies.values() if s.category == category]
-
-    def prune_harmful_strategies(self, threshold: float = -0.3) -> int:
-        """Remove strategies with negative effectiveness score.
-
-        Args:
-            threshold: Effectiveness score threshold (default: -0.3)
-
-        Returns:
-            Number of strategies removed
-
-        Example:
-            >>> playbook = SessionPlaybook()
-            >>> strategy = playbook.add_strategy("test", "Bad strategy")
-            >>> strategy.tag("harmful")
-            >>> strategy.tag("harmful")
-            >>> strategy.tag("helpful")  # Score: (1-2)/3 = -0.33
-            >>> removed = playbook.prune_harmful_strategies()
-            >>> removed
-            1
-        """
-        to_remove = [
-            sid
-            for sid, s in self.strategies.items()
-            if s.effectiveness_score < threshold and (s.helpful_count + s.harmful_count) > 2
-        ]
-        for sid in to_remove:
-            del self.strategies[sid]
-        return len(to_remove)
-
-    def as_context(self, max_strategies: int = 50) -> str:
-        """Format strategies for inclusion in system prompt.
-
-        Args:
-            max_strategies: Maximum number of strategies to include
-
-        Returns:
-            Markdown-formatted string of strategies grouped by category
-
-        Example:
-            >>> playbook = SessionPlaybook()
-            >>> playbook.add_strategy("file_operations", "List before read")
-            >>> print(playbook.as_context())
-            ## Learned Strategies
-            ### File Operations
-            - [fil-00000] List before read (helpful=0, harmful=0)
-        """
-        if not self.strategies:
-            return ""
-
-        # Sort strategies by effectiveness score (best first)
-        sorted_strategies = sorted(
-            self.strategies.values(),
-            key=lambda s: (s.effectiveness_score, s.helpful_count),
-            reverse=True,
-        )
-
-        # Limit number of strategies
-        strategies_to_show = sorted_strategies[:max_strategies]
-
-        # Group by category
-        by_category: Dict[str, List[Strategy]] = {}
-        for strategy in strategies_to_show:
-            by_category.setdefault(strategy.category, []).append(strategy)
-
-        # Format as markdown
-        lines = ["\n## Learned Strategies\n"]
-        for category, strategies in sorted(by_category.items()):
-            category_title = category.replace("_", " ").title()
-            lines.append(f"\n### {category_title}\n")
-            for s in strategies:
-                effectiveness = f"(helpful={s.helpful_count}, harmful={s.harmful_count})"
-                lines.append(f"- [{s.id}] {s.content} {effectiveness}\n")
-
-        return "".join(lines)
-
-    def stats(self) -> dict:
-        """Get playbook statistics.
-
-        Returns:
-            Dictionary with strategy counts and effectiveness metrics
-        """
-        if not self.strategies:
-            return {
-                "total_strategies": 0,
-                "categories": 0,
-                "avg_effectiveness": 0.0,
-                "helpful_total": 0,
-                "harmful_total": 0,
-                "neutral_total": 0,
-            }
-
-        categories = set(s.category for s in self.strategies.values())
-        effectiveness_scores = [s.effectiveness_score for s in self.strategies.values()]
-
+    # ------------------------------------------------------------------ #
+    # Serialization
+    # ------------------------------------------------------------------ #
+    def to_dict(self) -> Dict[str, object]:
+        """Convert to dictionary for serialization."""
         return {
-            "total_strategies": len(self.strategies),
-            "categories": len(categories),
-            "avg_effectiveness": sum(effectiveness_scores) / len(effectiveness_scores)
-            if effectiveness_scores
-            else 0.0,
-            "helpful_total": sum(s.helpful_count for s in self.strategies.values()),
-            "harmful_total": sum(s.harmful_count for s in self.strategies.values()),
-            "neutral_total": sum(s.neutral_count for s in self.strategies.values()),
-        }
-
-    def to_dict(self) -> dict:
-        """Serialize playbook to dictionary for session storage.
-
-        Returns:
-            Dictionary representation of the playbook
-        """
-        return {
-            "strategies": {sid: s.to_dict() for sid, s in self.strategies.items()},
+            "bullets": {
+                bullet_id: asdict(bullet) for bullet_id, bullet in self._bullets.items()
+            },
+            "sections": self._sections,
             "next_id": self._next_id,
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "SessionPlaybook":
-        """Deserialize playbook from dictionary.
+    def from_dict(cls, payload: Dict[str, object]) -> Playbook:
+        """Load from dictionary."""
+        instance = cls()
+        bullets_payload = payload.get("bullets", {})
+        if isinstance(bullets_payload, dict):
+            for bullet_id, bullet_value in bullets_payload.items():
+                if isinstance(bullet_value, dict):
+                    instance._bullets[bullet_id] = Bullet(**bullet_value)
+        sections_payload = payload.get("sections", {})
+        if isinstance(sections_payload, dict):
+            instance._sections = {
+                section: list(ids) if isinstance(ids, Iterable) else []
+                for section, ids in sections_payload.items()
+            }
+        instance._next_id = int(payload.get("next_id", 0))
+        return instance
 
-        Args:
-            data: Dictionary representation
+    def dumps(self) -> str:
+        """Convert to JSON string."""
+        return json.dumps(self.to_dict(), ensure_ascii=False, indent=2)
 
-        Returns:
-            Reconstructed SessionPlaybook instance
-        """
-        playbook = cls()
-        playbook._next_id = data.get("next_id", 0)
+    @classmethod
+    def loads(cls, data: str) -> Playbook:
+        """Load from JSON string."""
+        payload = json.loads(data)
+        if not isinstance(payload, dict):
+            raise ValueError("Playbook serialization must be a JSON object.")
+        return cls.from_dict(payload)
 
-        for sid, sdata in data.get("strategies", {}).items():
-            try:
-                strategy = Strategy.from_dict(sdata)
-                playbook.strategies[sid] = strategy
-            except (KeyError, ValueError) as e:
-                # Skip malformed strategies
-                print(f"Warning: Skipping malformed strategy {sid}: {e}")
-                continue
+    def save_to_file(self, path: str) -> None:
+        """Save playbook to JSON file."""
+        file_path = Path(path)
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        with file_path.open("w", encoding="utf-8") as f:
+            f.write(self.dumps())
 
-        return playbook
+    @classmethod
+    def load_from_file(cls, path: str) -> Playbook:
+        """Load playbook from JSON file."""
+        file_path = Path(path)
+        if not file_path.exists():
+            raise FileNotFoundError(f"Playbook file not found: {path}")
+        with file_path.open("r", encoding="utf-8") as f:
+            return cls.loads(f.read())
 
-    def __len__(self) -> int:
-        """Return number of strategies in playbook."""
-        return len(self.strategies)
+    # ------------------------------------------------------------------ #
+    # Delta operations
+    # ------------------------------------------------------------------ #
+    def apply_delta(self, delta: DeltaBatch) -> None:
+        """Apply a batch of delta operations."""
+        bullets_before = len(self._bullets)
 
-    def __repr__(self) -> str:
-        """Return string representation of playbook."""
-        stats = self.stats()
-        return (
-            f"SessionPlaybook(strategies={stats['total_strategies']}, "
-            f"categories={stats['categories']}, "
-            f"avg_effectiveness={stats['avg_effectiveness']:.2f})"
-        )
+        for operation in delta.operations:
+            self._apply_operation(operation)
+
+        bullets_after = len(self._bullets)
+
+    def _apply_operation(self, operation: DeltaOperation) -> None:
+        """Apply a single delta operation."""
+        op_type = operation.type.upper()
+        if op_type == "ADD":
+            self.add_bullet(
+                section=operation.section,
+                content=operation.content or "",
+                bullet_id=operation.bullet_id,
+                metadata=operation.metadata,
+            )
+        elif op_type == "UPDATE":
+            if operation.bullet_id is None:
+                return
+            self.update_bullet(
+                operation.bullet_id,
+                content=operation.content,
+                metadata=operation.metadata,
+            )
+        elif op_type == "TAG":
+            if operation.bullet_id is None:
+                return
+            # Only apply valid tag names
+            valid_tags = {"helpful", "harmful", "neutral"}
+            for tag, increment in operation.metadata.items():
+                if tag in valid_tags:
+                    self.tag_bullet(operation.bullet_id, tag, increment)
+        elif op_type == "REMOVE":
+            if operation.bullet_id is None:
+                return
+            self.remove_bullet(operation.bullet_id)
+
+    # ------------------------------------------------------------------ #
+    # Presentation helpers
+    # ------------------------------------------------------------------ #
+    def as_prompt(self) -> str:
+        """Return playbook as formatted string for LLM prompting."""
+        parts: List[str] = []
+        for section, bullet_ids in sorted(self._sections.items()):
+            parts.append(f"## {section}")
+            for bullet_id in bullet_ids:
+                bullet = self._bullets[bullet_id]
+                counters = f"(helpful={bullet.helpful}, harmful={bullet.harmful}, neutral={bullet.neutral})"
+                parts.append(f"- [{bullet.id}] {bullet.content} {counters}")
+        return "\n".join(parts)
+
+    def stats(self) -> Dict[str, object]:
+        """Get playbook statistics."""
+        return {
+            "sections": len(self._sections),
+            "bullets": len(self._bullets),
+            "tags": {
+                "helpful": sum(b.helpful for b in self._bullets.values()),
+                "harmful": sum(b.harmful for b in self._bullets.values()),
+                "neutral": sum(b.neutral for b in self._bullets.values()),
+            },
+        }
+
+    # ------------------------------------------------------------------ #
+    # Internal helpers
+    # ------------------------------------------------------------------ #
+    def _generate_id(self, section: str) -> str:
+        """Generate unique bullet ID."""
+        self._next_id += 1
+        section_prefix = section.split()[0].lower()
+        return f"{section_prefix}-{self._next_id:05d}"
+
+
+# Backward compatibility aliases
+Strategy = Bullet
+SessionPlaybook = Playbook

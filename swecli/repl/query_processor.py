@@ -11,7 +11,6 @@ from swecli.core.context_management import (
     Generator,
     Reflector,
     Curator,
-    SwecliLLMClient,
     GeneratorOutput,
     ReflectorOutput,
     CuratorOutput,
@@ -186,7 +185,6 @@ class QueryProcessor:
         self._notification_center = None
 
         # ACE Components - Initialize on first use (lazy loading)
-        self._ace_client: Optional[SwecliLLMClient] = None
         self._ace_generator: Optional[Generator] = None
         self._ace_reflector: Optional[Reflector] = None
         self._ace_curator: Optional[Curator] = None
@@ -207,29 +205,14 @@ class QueryProcessor:
         Args:
             agent: Agent with LLM client
         """
-        if self._ace_client is None:
-            from ace.prompts_v2_1 import PromptManager
+        if self._ace_generator is None:
+            # Initialize ACE roles with native implementation
+            # The native components use swecli's LLM client directly
+            self._ace_generator = Generator(agent.client)
 
-            # Create ACE client wrapper
-            self._ace_client = SwecliLLMClient(agent.client)
+            self._ace_reflector = Reflector(agent.client)
 
-            # Initialize ACE roles with v2.1 prompts
-            prompt_mgr = PromptManager(default_version="2.1")
-
-            self._ace_generator = Generator(
-                self._ace_client,
-                prompt_template=prompt_mgr.get_generator_prompt()
-            )
-
-            self._ace_reflector = Reflector(
-                self._ace_client,
-                prompt_template=prompt_mgr.get_reflector_prompt()
-            )
-
-            self._ace_curator = Curator(
-                self._ace_client,
-                prompt_template=prompt_mgr.get_curator_prompt()
-            )
+            self._ace_curator = Curator(agent.client)
 
     def enhance_query(self, query: str) -> str:
         """Enhance query with file contents if referenced.
