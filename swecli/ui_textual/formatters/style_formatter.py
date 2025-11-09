@@ -199,10 +199,23 @@ class StyleFormatter:
         if not result.get("success"):
             return [self._error_line(result.get("error", "Unknown error"))]
 
-        entries = result.get("entries", [])
-        if not entries:
+        entries = result.get("entries")
+        if entries:
+            return [f"{len(entries)} entries"]
+
+        output = result.get("output")
+        if not output:
             return ["No files found"]
-        return [f"{len(entries)} entries"]
+
+        lines = [line for line in output.splitlines() if line.strip()]
+        if not lines:
+            return ["No files found"]
+
+        first_line = lines[0]
+        preview = first_line if len(first_line) <= 70 else first_line[:67] + "..."
+        if len(lines) == 1:
+            return [preview]
+        return [f"{preview} ({len(lines)} lines)"]
 
     def _format_fetch_url_result(self, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
         if not result.get("success"):
@@ -255,6 +268,10 @@ class StyleFormatter:
 
         if output is None:
             status = result.get("status", "completed")
-            return [STATUS_ICONS.get(status, "✅") + f" {status}"]
+            if isinstance(status, str):
+                status_display = status.replace("_", " ").capitalize()
+            else:
+                status_display = "Completed"
+            return [status_display]
 
         return [str(output)]

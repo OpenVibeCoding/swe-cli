@@ -159,6 +159,7 @@ class FileToolHandler:
             return {"success": False, "error": f"Invalid path: {exc}", "output": None}
 
         try:
+            entries: list[str] | None = None
             if pattern:
                 search_root = base_path if base_path.is_dir() else base_path.parent
                 if not search_root.exists():
@@ -173,10 +174,13 @@ class FileToolHandler:
                     base_path=search_root,
                 )
                 output = "\n".join(files) if files else "No files found"
+                entries = files
             else:
                 output = self._file_ops.list_directory(str(base_path))
+                if output and not output.startswith(("Directory not found", "Not a directory")):
+                    entries = [line for line in output.splitlines() if line.strip()]
 
-            return {"success": True, "output": output, "error": None}
+            return {"success": True, "output": output, "entries": entries, "error": None}
         except Exception as exc:  # noqa: BLE001
             return {"success": False, "error": str(exc), "output": None}
 
