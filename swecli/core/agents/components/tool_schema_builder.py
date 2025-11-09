@@ -306,6 +306,105 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "type": "function",
         "function": {
+            "name": "create_todo",
+            "description": "Create a new to-do entry that appears in the live inline plan. Always call this before executing a new step.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "Human-readable summary of the step you are about to perform.",
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": ["todo", "doing", "done"],
+                        "description": "Optional initial state. Defaults to todo.",
+                        "default": "todo",
+                    },
+                    "log": {
+                        "type": "string",
+                        "description": "Optional log entry describing additional context for this task.",
+                    },
+                    "expanded": {
+                        "type": "boolean",
+                        "description": "Whether to show log entries under this task in the panel.",
+                        "default": True,
+                    },
+                },
+                "required": ["title"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "update_todo",
+            "description": "Update the status/title/log/expanded state of an existing to-do item.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "ID of the to-do to update (shown in the panel).",
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "New title for this to-do item.",
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": ["todo", "doing", "done"],
+                        "description": "Set to 'doing' when you start, 'done' when you finish.",
+                    },
+                    "log": {
+                        "type": "string",
+                        "description": "Append a log entry while working on this task.",
+                    },
+                    "expanded": {
+                        "type": "boolean",
+                        "description": "Show or hide logs beneath this to-do.",
+                    },
+                },
+                "required": ["id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "complete_todo",
+            "description": "Mark a to-do item as done and optionally append a final log entry.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "ID of the to-do item to mark complete.",
+                    },
+                    "log": {
+                        "type": "string",
+                        "description": "Optional completion note.",
+                    },
+                },
+                "required": ["id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_todos",
+            "description": "Render the current to-do panel inside the console output.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "open_browser",
             "description": "Opens a URL or local file in the user's default web browser. Useful for showing web applications during development (e.g., 'open http://localhost:3000' or 'open index.html'). Automatically handles localhost URLs and converts local file paths to file:// URLs.",
             "parameters": {

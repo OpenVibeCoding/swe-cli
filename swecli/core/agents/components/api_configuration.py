@@ -36,10 +36,18 @@ def create_http_client(config: AppConfig) -> Any:
     """Create the appropriate HTTP client based on the provider.
 
     Returns:
+        LangChainLLMAdapter if LangChain is enabled
         AgentHttpClient for OpenAI-compatible APIs (Fireworks, OpenAI)
         AnthropicAdapter for Anthropic
     """
-    if config.model_provider == "anthropic":
+    # Check if LangChain is enabled via environment variable or config
+    import os
+    use_langchain = os.getenv("SWECO_LANGCHAIN_ENABLED", "false").lower() == "true"
+
+    if use_langchain:
+        from .langchain.langchain_adapter import LangChainLLMAdapter
+        return LangChainLLMAdapter(config)
+    elif config.model_provider == "anthropic":
         from .anthropic_adapter import AnthropicAdapter
         api_key = config.get_api_key()
         return AnthropicAdapter(api_key)

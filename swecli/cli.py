@@ -2,7 +2,12 @@
 
 import argparse
 import sys
+import warnings
 from pathlib import Path
+
+# Suppress transformers warning about missing ML frameworks
+# SWE-CLI uses LLM APIs directly and doesn't need local models
+warnings.filterwarnings("ignore", message=".*None of PyTorch, TensorFlow.*found.*")
 
 from rich.console import Console
 
