@@ -235,7 +235,7 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
         "type": "function",
         "function": {
             "name": "fetch_url",
-            "description": "Fetch content from a URL. Useful for reading documentation, APIs, or web pages. Automatically extracts text from HTML.",
+            "description": "Fetch content from a URL or perform a deep crawl across linked pages. Useful for reading documentation, APIs, or entire site sections. Automatically extracts text from HTML.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -252,6 +252,51 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
                         "type": "integer",
                         "description": "Maximum content length in characters (default: 50000)",
                         "default": 50000,
+                    },
+                    "deep_crawl": {
+                        "type": "boolean",
+                        "description": "Follow links and crawl multiple pages starting from the seed URL.",
+                        "default": False,
+                    },
+                    "crawl_strategy": {
+                        "type": "string",
+                        "enum": ["bfs", "dfs", "best_first"],
+                        "description": "Traversal strategy when deep_crawl is true. best_first (default) prioritizes relevance, bfs covers broadly, dfs follows a single branch.",
+                        "default": "best_first",
+                    },
+                    "max_depth": {
+                        "type": "integer",
+                        "description": "Maximum depth (beyond the seed page) to crawl when deep_crawl is enabled. Depth 0 is the starting page. Defaults to 1.",
+                        "default": 1,
+                    },
+                    "include_external": {
+                        "type": "boolean",
+                        "description": "Allow crawling links that leave the starting domain when deep_crawl is enabled.",
+                        "default": False,
+                    },
+                    "max_pages": {
+                        "type": "integer",
+                        "description": "Optional cap on the total number of pages to crawl when deep_crawl is enabled.",
+                    },
+                    "allowed_domains": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional allow-list of domains to keep while deep crawling.",
+                    },
+                    "blocked_domains": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional block-list of domains to skip while deep crawling.",
+                    },
+                    "url_patterns": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional glob-style URL patterns the crawler must match (e.g., '*docs*').",
+                    },
+                    "stream": {
+                        "type": "boolean",
+                        "description": "When true (and deep_crawl is enabled) stream pages as they are discovered before aggregation.",
+                        "default": False,
                     },
                 },
                 "required": ["url"],
