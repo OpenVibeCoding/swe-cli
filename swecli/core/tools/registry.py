@@ -24,6 +24,7 @@ _PLAN_READ_ONLY_TOOLS = {
     "list_screenshots",
     "analyze_image",  # VLM is read-only, safe for planning mode
     "create_todo",
+    "create_todos",
     "update_todo",
     "complete_todo",
     "list_todos",
@@ -84,6 +85,7 @@ class ToolRegistry:
             "list_web_screenshots": lambda args: self._list_web_screenshots(),
             "clear_web_screenshots": self._clear_web_screenshots,
             "create_todo": self._todo_handler.create,
+            "create_todos": self._todo_handler.bulk_create,
             "update_todo": self._todo_handler.update,
             "complete_todo": self._todo_handler.complete,
             "list_todos": self._todo_handler.list,
@@ -115,6 +117,7 @@ class ToolRegistry:
         mode_manager: Union[Any, None] = None,
         approval_manager: Union[Any, None] = None,
         undo_manager: Union[Any, None] = None,
+        task_monitor: Union[Any, None] = None,
     ) -> dict[str, Any]:
         """Execute a tool by delegating to registered handlers."""
         if tool_name.startswith("mcp__"):
@@ -127,6 +130,7 @@ class ToolRegistry:
             mode_manager=mode_manager,
             approval_manager=approval_manager,
             undo_manager=undo_manager,
+            task_monitor=task_monitor,
         )
 
         if self._is_plan_blocked(tool_name, context):

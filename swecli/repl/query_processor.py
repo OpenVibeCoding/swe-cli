@@ -487,24 +487,28 @@ class QueryProcessor:
         # Format tool call display
         tool_call_display = format_tool_call(tool_name, tool_args)
 
+        # Create task monitor for interrupt support
+        tool_monitor = TaskMonitor()
+        tool_monitor.start(tool_call_display, initial_tokens=0)
+
         # Show progress in PLAN mode
         if self.mode_manager.current_mode == OperationMode.PLAN:
-            tool_monitor = TaskMonitor()
-            tool_monitor.start(tool_call_display, initial_tokens=0)
             tool_progress = TaskProgressDisplay(self.console, tool_monitor)
             tool_progress.start()
         else:
             # In NORMAL mode, show static symbol before approval
             self.console.print(f"\n⏺ [cyan]{tool_call_display}[/cyan]")
-            tool_progress = None
+            tool_progress = TaskProgressDisplay(self.console, tool_monitor)
+            tool_progress.start()
 
-        # Execute tool
+        # Execute tool with interrupt support
         result = tool_registry.execute_tool(
             tool_name,
             tool_args,
             mode_manager=self.mode_manager,
             approval_manager=approval_manager,
             undo_manager=undo_manager,
+            task_monitor=tool_monitor,
         )
 
         # Update state

@@ -61,7 +61,12 @@ class ProcessToolHandler:
                 "output": None,
             }
 
-        result = self._bash_tool.execute(command, background=background, operation=operation)
+        result = self._bash_tool.execute(
+            command,
+            background=background,
+            operation=operation,
+            task_monitor=context.task_monitor,
+        )
 
         if result.success and context.undo_manager:
             context.undo_manager.record_operation(operation)
