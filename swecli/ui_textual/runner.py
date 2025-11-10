@@ -78,6 +78,7 @@ class TextualRunner:
             "completer": getattr(self.repl, "completer", None),
             "on_model_selected": self._apply_model_selection,
             "get_model_config": self._get_model_config_snapshot,
+            "on_interrupt": self._handle_interrupt,
         }
         if self._auto_connect_mcp:
             create_kwargs["on_ready"] = self._start_mcp_connect_thread
@@ -573,6 +574,16 @@ class TextualRunner:
 
         output = string_io.getvalue()
         self._enqueue_console_text(output)
+
+    def _handle_interrupt(self) -> bool:
+        """Handle interrupt request from UI (ESC key press).
+
+        Returns:
+            True if interrupt was requested, False if no task is running
+        """
+        if hasattr(self.repl, "query_processor") and self.repl.query_processor:
+            return self.repl.query_processor.request_interrupt()
+        return False
 
     def _cycle_mode(self) -> str:
         """Toggle between NORMAL and PLAN modes and return the active mode."""

@@ -57,6 +57,7 @@ class SWECLIChatApp(App):
         on_model_selected: Optional[Callable[[str, str, str], Any]] = None,
         get_model_config: Optional[Callable[[], Mapping[str, Any]]] = None,
         on_ready: Optional[Callable[[], None]] = None,
+        on_interrupt: Optional[Callable[[], bool]] = None,
         **kwargs,
     ):
         """Initialize chat application.
@@ -69,12 +70,14 @@ class SWECLIChatApp(App):
             on_model_selected: Callback invoked after a model is selected
             get_model_config: Callback returning current model configuration details
             on_ready: Callback invoked once the UI finishes its first layout pass
+            on_interrupt: Callback for when user presses ESC to interrupt
         """
         # Set color system to inherit from terminal
         kwargs.setdefault("ansi_color", "auto")
         super().__init__(**kwargs)
         self.on_message = on_message
         self.on_cycle_mode = on_cycle_mode
+        self.on_interrupt = on_interrupt
         self.model = model
         self.completer = completer
         self.model_slots = dict(model_slots or {})
@@ -408,7 +411,15 @@ class SWECLIChatApp(App):
     def action_interrupt(self) -> None:
         """Interrupt processing (ESC)."""
         if self._is_processing:
-            self.conversation.add_system_message("⚠ Processing interrupted")
+            # Call interrupt callback if provided
+            interrupted = False
+            if self.on_interrupt:
+                interrupted = self.on_interrupt()
+
+            if interrupted:
+                self.conversation.add_system_message("⚠ Processing interrupted")
+            else:
+                self.conversation.add_system_message("⚠ Interrupt requested (no active task)")
             self._set_processing_state(False)
 
     def action_quit(self) -> None:
@@ -506,6 +517,7 @@ def create_chat_app(
     on_model_selected: Optional[Callable[[str, str, str], Any]] = None,
     get_model_config: Optional[Callable[[], Mapping[str, Any]]] = None,
     on_ready: Optional[Callable[[], None]] = None,
+    on_interrupt: Optional[Callable[[], bool]] = None,
 ) -> SWECLIChatApp:
     """Create and return a new chat application instance.
 
@@ -517,6 +529,7 @@ def create_chat_app(
         on_model_selected: Callback invoked after a model is selected
         get_model_config: Callback returning current model configuration details
         on_ready: Callback invoked once the UI completes its first render pass
+        on_interrupt: Callback for when user presses ESC to interrupt
 
     Returns:
         Configured SWECLIChatApp instance
@@ -530,6 +543,7 @@ def create_chat_app(
         on_model_selected=on_model_selected,
         get_model_config=get_model_config,
         on_ready=on_ready,
+        on_interrupt=on_interrupt,
     )
 
 

@@ -5,14 +5,12 @@ from __future__ import annotations
 from typing import Any, Union
 
 from swecli.core.management import OperationMode
-from swecli.core.todo import TodoManager
 from swecli.core.tools.context import ToolExecutionContext
 from swecli.core.tools.file_handlers import FileToolHandler
 from swecli.core.tools.mcp_handler import McpToolHandler
 from swecli.core.tools.process_handlers import ProcessToolHandler
 from swecli.core.tools.web_handlers import WebToolHandler
 from swecli.core.tools.screenshot_handler import ScreenshotToolHandler
-from swecli.core.tools.todo_handler import TodoToolHandler
 
 _PLAN_READ_ONLY_TOOLS = {
     "read_file",
@@ -23,11 +21,6 @@ _PLAN_READ_ONLY_TOOLS = {
     "get_process_output",
     "list_screenshots",
     "analyze_image",  # VLM is read-only, safe for planning mode
-    "create_todo",
-    "create_todos",
-    "update_todo",
-    "complete_todo",
-    "list_todos",
 }
 
 
@@ -44,8 +37,7 @@ class ToolRegistry:
         open_browser_tool: Union[Any, None] = None,
         vlm_tool: Union[Any, None] = None,
         web_screenshot_tool: Union[Any, None] = None,
-        mcp_manager: Union[Any, None] = None,
-        todo_manager: Union[Any, None] = None,
+        mcp_manager: Union[Any, None] = None
     ) -> None:
         self.file_ops = file_ops
         self.write_tool = write_tool
@@ -55,14 +47,12 @@ class ToolRegistry:
         self.open_browser_tool = open_browser_tool
         self.vlm_tool = vlm_tool
         self.web_screenshot_tool = web_screenshot_tool
-        self.todo_manager = todo_manager or TodoManager()
 
         self._file_handler = FileToolHandler(file_ops, write_tool, edit_tool)
         self._process_handler = ProcessToolHandler(bash_tool)
         self._web_handler = WebToolHandler(web_fetch_tool)
         self._mcp_handler = McpToolHandler(mcp_manager)
         self._screenshot_handler = ScreenshotToolHandler()
-        self._todo_handler = TodoToolHandler(self.todo_manager)
         self.set_mcp_manager(mcp_manager)
 
         self._handlers: dict[str, Any] = {
@@ -83,12 +73,7 @@ class ToolRegistry:
             "analyze_image": self._analyze_image,
             "capture_web_screenshot": self._capture_web_screenshot,
             "list_web_screenshots": lambda args: self._list_web_screenshots(),
-            "clear_web_screenshots": self._clear_web_screenshots,
-            "create_todo": self._todo_handler.create,
-            "create_todos": self._todo_handler.bulk_create,
-            "update_todo": self._todo_handler.update,
-            "complete_todo": self._todo_handler.complete,
-            "list_todos": self._todo_handler.list,
+            "clear_web_screenshots": self._clear_web_screenshots
         }
 
     def get_schemas(self) -> list[dict[str, Any]]:

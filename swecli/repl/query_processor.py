@@ -183,6 +183,9 @@ class QueryProcessor:
         self._last_error = None
         self._notification_center = None
 
+        # Interrupt support - track current task monitor
+        self._current_task_monitor: Optional[Any] = None
+
         # ACE Components - Initialize on first use (lazy loading)
         self._ace_reflector: Optional[Reflector] = None
         self._ace_curator: Optional[Curator] = None
@@ -196,6 +199,17 @@ class QueryProcessor:
             notification_center: Notification center instance
         """
         self._notification_center = notification_center
+
+    def request_interrupt(self) -> bool:
+        """Request interrupt of currently running task (LLM call or tool execution).
+
+        Returns:
+            True if interrupt was requested, False if no task is running
+        """
+        if self._current_task_monitor is not None:
+            self._current_task_monitor.request_interrupt()
+            return True
+        return False
 
     def _init_ace_components(self, agent):
         """Initialize ACE components lazily on first use.
@@ -310,6 +324,9 @@ class QueryProcessor:
         thinking_verb = random.choice(self.THINKING_VERBS)
         task_monitor.start(thinking_verb, initial_tokens=0)
 
+        # Track current monitor for interrupt support
+        self._current_task_monitor = task_monitor
+
         # Create progress display with live updates
         progress = TaskProgressDisplay(self.console, task_monitor)
         progress.start()
@@ -317,20 +334,24 @@ class QueryProcessor:
         # Give display a moment to render before HTTP call
         time.sleep(0.05)
 
-        # Call LLM
-        started = time.perf_counter()
-        response = agent.call_llm(messages, task_monitor=task_monitor)
-        latency_ms = int((time.perf_counter() - started) * 1000)
+        try:
+            # Call LLM
+            started = time.perf_counter()
+            response = agent.call_llm(messages, task_monitor=task_monitor)
+            latency_ms = int((time.perf_counter() - started) * 1000)
 
-        # Get LLM description
-        message_payload = response.get("message", {}) or {}
-        llm_description = response.get("content", message_payload.get("content", ""))
+            # Get LLM description
+            message_payload = response.get("message", {}) or {}
+            llm_description = response.get("content", message_payload.get("content", ""))
 
-        # Stop progress and show final status
-        progress.stop()
-        progress.print_final_status(replacement_message=llm_description)
+            # Stop progress and show final status
+            progress.stop()
+            progress.print_final_status(replacement_message=llm_description)
 
-        return response, latency_ms
+            return response, latency_ms
+        finally:
+            # Clear current monitor
+            self._current_task_monitor = None
 
     def _record_tool_learnings(
         self,
@@ -491,6 +512,9 @@ class QueryProcessor:
         tool_monitor = TaskMonitor()
         tool_monitor.start(tool_call_display, initial_tokens=0)
 
+        # Track current monitor for interrupt support
+        self._current_task_monitor = tool_monitor
+
         # Show progress in PLAN mode
         if self.mode_manager.current_mode == OperationMode.PLAN:
             tool_progress = TaskProgressDisplay(self.console, tool_monitor)
@@ -501,32 +525,36 @@ class QueryProcessor:
             tool_progress = TaskProgressDisplay(self.console, tool_monitor)
             tool_progress.start()
 
-        # Execute tool with interrupt support
-        result = tool_registry.execute_tool(
-            tool_name,
-            tool_args,
-            mode_manager=self.mode_manager,
-            approval_manager=approval_manager,
-            undo_manager=undo_manager,
-            task_monitor=tool_monitor,
-        )
+        try:
+            # Execute tool with interrupt support
+            result = tool_registry.execute_tool(
+                tool_name,
+                tool_args,
+                mode_manager=self.mode_manager,
+                approval_manager=approval_manager,
+                undo_manager=undo_manager,
+                task_monitor=tool_monitor,
+            )
 
-        # Update state
-        self._last_operation_summary = tool_call_display
-        if result.get("success"):
-            self._last_error = None
-        else:
-            self._last_error = result.get("error", "Tool execution failed")
+            # Update state
+            self._last_operation_summary = tool_call_display
+            if result.get("success"):
+                self._last_error = None
+            else:
+                self._last_error = result.get("error", "Tool execution failed")
 
-        # Stop progress if it was started
-        if tool_progress:
-            tool_progress.stop()
+            # Stop progress if it was started
+            if tool_progress:
+                tool_progress.stop()
 
-        # Display result
-        panel = self.output_formatter.format_tool_result(tool_name, tool_args, result)
-        self.console.print(panel)
+            # Display result
+            panel = self.output_formatter.format_tool_result(tool_name, tool_args, result)
+            self.console.print(panel)
 
-        return result
+            return result
+        finally:
+            # Clear current monitor
+            self._current_task_monitor = None
 
     def _handle_safety_limit(self, agent, messages: list):
         """Handle safety limit reached by requesting summary.
