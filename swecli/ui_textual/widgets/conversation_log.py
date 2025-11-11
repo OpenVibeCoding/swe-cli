@@ -187,13 +187,21 @@ class ConversationLog(RichLog):
         lines = text.rstrip("\n").splitlines() or [text]
         grey = "#a0a4ad"
         for raw_line in lines:
-            line = Text("  ⎿ ", style=grey)
+            line = Text("  ⎿  ", style=grey)
             message = raw_line.rstrip("\n")
             is_error = False
+            is_interrupted = False
             if message.startswith(TOOL_ERROR_SENTINEL):
                 is_error = True
                 message = message[len(TOOL_ERROR_SENTINEL):].lstrip()
-            line.append(message, style="red" if is_error else grey)
+            elif message.startswith("::interrupted::"):
+                is_interrupted = True
+                message = message[len("::interrupted::"):].lstrip()
+
+            if is_interrupted:
+                line.append(message, style="bold red")
+            else:
+                line.append(message, style="red" if is_error else grey)
             self.write(line)
 
     def _write_edit_result(self, header: str, diff_lines: list[str]) -> None:
