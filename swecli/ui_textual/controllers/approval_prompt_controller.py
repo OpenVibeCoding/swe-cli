@@ -137,7 +137,10 @@ class ApprovalPromptController:
                 else:
                     call_line = Text("Command", style="white")
                 conversation.write(call_line, scroll_end=True, animate=False)
-                result_line = Text("  ⎿ Interrupted · What should we do instead?", style="yellow")
+                # Use consistent interrupt message styling (grey prefix, red text)
+                grey = "#a0a4ad"
+                result_line = Text("  ⎿  ", style=grey)
+                result_line.append("Interrupted · What should I do instead?", style="bold red")
                 conversation.write(result_line, scroll_end=True, animate=False)
                 conversation.write(Text(""))
             else:

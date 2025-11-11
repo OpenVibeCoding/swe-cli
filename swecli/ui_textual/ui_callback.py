@@ -146,6 +146,11 @@ class TextualUICallback:
         if hasattr(self.conversation, 'stop_tool_execution'):
             self._run_on_ui(self.conversation.stop_tool_execution)
 
+        # Skip displaying "Operation cancelled by user" errors
+        # These are already shown by the approval controller interrupt message
+        if not result.get("success") and result.get("error") == "Operation cancelled by user":
+            return
+
         # Format the result using the Claude-style formatter
         normalized_args = self._normalize_arguments(tool_args)
         formatted = self.formatter.format_tool_result(tool_name, normalized_args, result)
