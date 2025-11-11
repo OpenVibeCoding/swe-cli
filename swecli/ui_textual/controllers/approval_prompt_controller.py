@@ -130,13 +130,20 @@ class ApprovalPromptController:
                     timer.stop()
                     conversation._tool_spinner_timer = None
                 conversation._spinner_active = False
+                # Add red bullet to indicate interrupted tool call
                 if isinstance(call_display, Text):
                     call_line = call_display.copy()
                 elif call_display is not None:
                     call_line = Text(str(call_display), style="white")
                 else:
                     call_line = Text("Command", style="white")
-                conversation.write(call_line, scroll_end=True, animate=False)
+
+                # Prepend with red bullet to indicate interruption
+                interrupted_line = Text("⏺ ", style="bold red")
+                # Convert call_line to plain text and append with white style
+                call_text = str(call_line)
+                interrupted_line.append(call_text, style="white")
+                conversation.write(interrupted_line, scroll_end=True, animate=False)
                 # Use consistent interrupt message styling (grey prefix, red text)
                 grey = "#a0a4ad"
                 result_line = Text("  ⎿  ", style=grey)
