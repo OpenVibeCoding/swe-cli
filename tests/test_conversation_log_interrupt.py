@@ -9,7 +9,7 @@ def test_interrupted_message_rendering():
     log = ConversationLog()
 
     # Simulate adding an interrupted tool result
-    result_text = "  ⎿ ::interrupted:: Interrupted by user - What should I do instead?"
+    result_text = "  ⎿ ::interrupted:: Interrupted · What should I do instead?"
 
     # Add the result (this calls _write_generic_tool_result internally)
     log.add_tool_result(result_text)
@@ -26,14 +26,15 @@ def test_interrupted_message_rendering():
             plain = line.plain
             print(f"Line {i}: {repr(plain)}")
             # Check if this is the interrupted message
-            if "Interrupted by user" in plain:
+            if "Interrupted" in plain and "should I do" in plain:
                 print(f"  -> Found interrupted message")
                 print(f"  -> Style: {line.spans if hasattr(line, 'spans') else 'N/A'}")
 
                 # Verify it doesn't have the ❌ icon
                 assert "❌" not in plain, "Should not contain ❌ icon"
                 assert "::interrupted::" not in plain, "Should have marker stripped"
-                assert "Interrupted by user" in plain, "Should contain message"
+                assert "Interrupted" in plain, "Should contain 'Interrupted'"
+                assert "What should I do instead?" in plain, "Should contain message"
                 print(f"  -> ✅ Correct: No ❌ icon, marker stripped")
         else:
             print(f"Line {i}: {line}")

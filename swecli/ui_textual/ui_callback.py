@@ -57,6 +57,57 @@ class TextualUICallback:
             if hasattr(self.conversation, 'add_assistant_message'):
                 self._run_on_ui(self.conversation.add_assistant_message, content)
 
+    def on_interrupt(self) -> None:
+        """Called when execution is interrupted by user.
+
+        Displays the interrupt message directly by replacing the blank line after user prompt.
+        """
+        # Stop spinner first - this removes spinner lines but leaves the blank line after user prompt
+        if hasattr(self.conversation, 'stop_spinner'):
+            self._run_on_ui(self.conversation.stop_spinner)
+        if self.chat_app and hasattr(self.chat_app, "_stop_local_spinner"):
+            self._run_on_ui(self.chat_app._stop_local_spinner)
+
+        # The key insight: after user message, there's a blank line (added by add_user_message)
+        # After stopping spinner, this blank line is the last line
+        # We need to remove it using _truncate_from to properly update widget state
+        def write_interrupt_replacing_blank_line():
+            from rich.text import Text
+
+            # Check if we have lines and last line is blank
+            if hasattr(self.conversation, 'lines') and len(self.conversation.lines) > 0:
+                # Check if last line is blank
+                last_line = self.conversation.lines[-1]
+
+                # RichLog stores lines as Strip objects, not Text objects
+                # A blank line is a Strip with empty segments or a single empty Segment
+                is_blank = False
+
+                # Check if it's a Strip object with empty content
+                if hasattr(last_line, '_segments'):
+                    segments = last_line._segments
+                    if len(segments) == 0:
+                        is_blank = True
+                    elif len(segments) == 1 and segments[0].text == '':
+                        is_blank = True
+                elif hasattr(last_line, 'plain'):
+                    # Fallback for Text objects
+                    if last_line.plain.strip() == "":
+                        is_blank = True
+
+                if is_blank:
+                    # Use _truncate_from to properly remove the blank line and update widget state
+                    if hasattr(self.conversation, '_truncate_from'):
+                        self.conversation._truncate_from(len(self.conversation.lines) - 1)
+
+            # Now write the interrupt message
+            grey = "#a0a4ad"
+            line = Text("  ⎿  ", style=grey)
+            line.append("Interrupted · What should I do instead?", style="bold red")
+            self.conversation.write(line)
+
+        self._run_on_ui(write_interrupt_replacing_blank_line)
+
     def on_tool_call(self, tool_name: str, tool_args: Dict[str, Any]) -> None:
         """Called when a tool call is about to be executed.
 

@@ -40,7 +40,7 @@ def test_interrupt_display_format():
     assert "::interrupted::" in result_line, f"Expected ::interrupted:: marker, got: {result_line}"
 
     # Should contain the expected message
-    assert "Interrupted by user" in result_line, f"Expected 'Interrupted by user', got: {result_line}"
+    assert "Interrupted" in result_line, f"Expected 'Interrupted', got: {result_line}"
     assert "What should I do instead?" in result_line, f"Expected 'What should I do instead?', got: {result_line}"
 
     # Should NOT contain ::tool_error:: marker (which would show ❌)

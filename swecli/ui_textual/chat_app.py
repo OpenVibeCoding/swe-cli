@@ -412,15 +412,10 @@ class SWECLIChatApp(App):
         """Interrupt processing (ESC)."""
         if self._is_processing:
             # Call interrupt callback if provided
-            interrupted = False
             if self.on_interrupt:
-                interrupted = self.on_interrupt()
-
-            if interrupted:
-                self.conversation.add_system_message("⚠ Processing interrupted")
-            else:
-                self.conversation.add_system_message("⚠ Interrupt requested (no active task)")
-            self._set_processing_state(False)
+                self.on_interrupt()
+            # Don't display system message here - let the tool result formatter handle it
+            # This prevents duplicate "Processing interrupted" messages
 
     def action_quit(self) -> None:
         """Quit the application (Ctrl+C)."""

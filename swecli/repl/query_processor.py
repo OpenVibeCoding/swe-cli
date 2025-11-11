@@ -666,10 +666,17 @@ class QueryProcessor:
 
                 if not response["success"]:
                     error_text = response.get("error", "Unknown error")
-                    self.console.print(f"[red]Error: {error_text}[/red]")
-                    self._last_error = error_text
-                    fallback = ChatMessage(role=Role.ASSISTANT, content=f"❌ {error_text}")
-                    self.session_manager.add_message(fallback, self.config.auto_save_interval)
+                    # Check if this is an interruption
+                    if "interrupted" in error_text.lower():
+                        # For interruptions, just print directly (no UI callback in non-callback mode)
+                        self.console.print(f"  ⎿  [bold red]Interrupted · What should I do instead?[/bold red]")
+                        self._last_error = error_text
+                        # Don't save to session
+                    else:
+                        self.console.print(f"[red]Error: {error_text}[/red]")
+                        fallback = ChatMessage(role=Role.ASSISTANT, content=f"❌ {error_text}")
+                        self._last_error = error_text
+                        self.session_manager.add_message(fallback, self.config.auto_save_interval)
                     break
 
                 # Get LLM description and tool calls
@@ -856,12 +863,20 @@ class QueryProcessor:
 
                 if not response["success"]:
                     error_text = response.get("error", "Unknown error")
-                    self.console.print(f"[red]Error: {error_text}[/red]")
-                    self._last_error = error_text
-                    fallback = ChatMessage(role=Role.ASSISTANT, content=f"❌ {error_text}")
-                    self.session_manager.add_message(fallback, self.config.auto_save_interval)
-                    if ui_callback and hasattr(ui_callback, 'on_assistant_message'):
-                        ui_callback.on_assistant_message(fallback.content)
+                    # Check if this is an interruption
+                    if "interrupted" in error_text.lower():
+                        # Display interrupt using UI callback - same mechanism as tool results
+                        self._last_error = error_text
+                        if ui_callback and hasattr(ui_callback, 'on_interrupt'):
+                            ui_callback.on_interrupt()
+                        # Don't save to session
+                    else:
+                        self.console.print(f"[red]Error: {error_text}[/red]")
+                        fallback = ChatMessage(role=Role.ASSISTANT, content=f"❌ {error_text}")
+                        self._last_error = error_text
+                        self.session_manager.add_message(fallback, self.config.auto_save_interval)
+                        if ui_callback and hasattr(ui_callback, 'on_assistant_message'):
+                            ui_callback.on_assistant_message(fallback.content)
                     break
 
                 # Get LLM description and tool calls
