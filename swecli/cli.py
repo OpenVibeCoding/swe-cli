@@ -10,7 +10,6 @@ from pathlib import Path
 warnings.filterwarnings("ignore", message=".*None of PyTorch, TensorFlow.*found.*")
 
 from rich.console import Console
-from rich.panel import Panel
 
 from swecli.core.approval import ApprovalManager
 from swecli.core.management import ConfigManager, ModeManager, SessionManager, UndoManager
@@ -585,15 +584,13 @@ def _handle_run_command(args) -> None:
 
     if args.run_command == "ui":
         try:
-            warnings: list[str] = []
-            backend_url = ""
-            frontend_desc = ""
-
-            with console.status("[cyan]Starting SWE-CLI web UI…[/cyan]", spinner="dots"):
+            # Show spinner while starting up
+            with console.status("[cyan]Starting Web UI…[/cyan]", spinner="dots"):
                 # Initialize managers for backend
                 from swecli.core.management import ConfigManager, ModeManager, SessionManager, UndoManager
                 from swecli.core.approval import ApprovalManager
                 from swecli.mcp.manager import MCPManager
+                import webbrowser
 
                 working_dir = Path.cwd()
                 config_manager = ConfigManager(working_dir)
@@ -604,19 +601,25 @@ def _handle_run_command(args) -> None:
                 undo_manager = UndoManager(config.max_undo_history)
                 mcp_manager = MCPManager(working_dir)
 
+                # Get port and host from args
                 preferred_port = getattr(args, 'ui_port', 8080)
                 backend_host = getattr(args, 'ui_host', '127.0.0.1')
 
+                # Find an available port
                 from swecli.web.port_utils import find_available_port
                 backend_port = find_available_port(backend_host, preferred_port, max_attempts=10)
 
                 if backend_port is None:
                     console.print(f"[red]Error: Could not find available port starting from {preferred_port}[/red]")
-                    console.print(f"[yellow]Try ports {preferred_port} to {preferred_port + 9} are all in use[/yellow]")
                     sys.exit(1)
 
-                if backend_port != preferred_port:
-                    warnings.append(f"[yellow]⚠ Port {preferred_port} busy → using {backend_port}[/yellow]")
+                # Check for static files
+                from swecli.web import find_static_directory
+                static_dir = find_static_directory()
+
+                if not static_dir or not static_dir.exists():
+                    console.print("[red]Error: Built web UI static files not found[/red]")
+                    sys.exit(1)
 
                 try:
                     from swecli.web import start_server
@@ -630,51 +633,42 @@ def _handle_run_command(args) -> None:
                         mcp_manager=mcp_manager,
                         host=backend_host,
                         port=backend_port,
-                        open_browser=True,
-                        background=True,
+                        open_browser=False,
                     )
 
+                    # Wait for backend to be ready
                     time.sleep(1.5)
 
+                    # Verify server is running
                     if not web_server_thread.is_alive():
                         console.print("[red]Error: Backend server thread terminated unexpectedly[/red]")
                         sys.exit(1)
 
                 except ImportError as e:
                     console.print("[red]Error: Web dependencies not installed[/red]")
-                    console.print(f"[dim]{str(e)}[/dim]")
                     console.print("[yellow]Install with: pip install 'swe-cli[web]'[/yellow]")
                     sys.exit(1)
                 except Exception as e:
                     console.print(f"[red]Error starting backend server: {str(e)}[/red]")
-                    import traceback
-                    console.print(f"[dim]{traceback.format_exc()}[/dim]")
                     sys.exit(1)
 
-                from swecli.web import find_static_directory
-                static_dir = find_static_directory()
+                url = f"http://{backend_host}:{backend_port}"
 
-                if not static_dir or not static_dir.exists():
-                    console.print("[red]Error: Built web UI static files not found[/red]")
-                    console.print("\nThis could mean:")
-                    console.print("• The package was not built with web UI assets")
-                    console.print("• You're using a development version")
-                    console.print("\nSolutions:")
-                    console.print("• Install the full package: pip install swe-cli>=0.1.6")
-                    console.print("• Or build from source with web UI included")
-                    sys.exit(1)
-
-                backend_url = f"http://{backend_host}:{backend_port}"
-
-            # Print warnings if any
-            for warning in warnings:
-                console.print(warning)
+                # Open browser in background
+                import threading
+                def open_browser():
+                    webbrowser.open(url)
+                threading.Thread(target=open_browser, daemon=True).start()
 
             # Simple success message
-            import os
-            pid = os.getpid()
-            console.print(f"[bold green]✓[/bold green] Web UI available at [cyan]{backend_url}[/cyan]")
-            console.print(f"[dim]  Stop with: kill {pid}[/dim]\n")
+            console.print(f"[green]✓ Web UI available at [cyan]{url}[/cyan][/green]\n")
+
+            # Keep the main thread alive and serve until interrupted
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                console.print("\n[yellow]Stopping Web UI…[/yellow]")
 
         except KeyboardInterrupt:
             console.print("\n[yellow]Startup cancelled.[/yellow]")
