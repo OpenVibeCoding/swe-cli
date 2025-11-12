@@ -300,28 +300,39 @@ export function ToolCallMessage({ message }: ToolCallMessageProps) {
     return (
       <div className="animate-slide-up my-3 px-6">
         <div className="max-w-3xl">
-          <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 shadow-sm">
+          <div className="bg-slate-100 border border-slate-300 rounded-lg px-4 py-3 shadow-sm">
             {/* Tool action header */}
             <div className="flex items-center gap-3 mb-2">
-              <span className="text-gray-400 font-mono text-sm">▶</span>
-              <span className="font-medium text-gray-800">
+              <span className="text-slate-600 font-mono text-sm">▶</span>
+              <span className="font-medium text-slate-900">
                 {verb}
               </span>
               {summary && (
-                <span className="text-gray-600 text-sm bg-white px-2 py-1 rounded border border-gray-200">
+                <span className="text-slate-700 text-sm bg-white px-2 py-1 rounded border border-slate-400 font-mono">
                   {summary}
                 </span>
               )}
             </div>
 
-            {/* Tool result summary */}
+            {/* Tool result summary with proper colors */}
             {summaryLines.length > 0 && (
-              <div className="ml-4 pl-3 border-l-2 border-gray-200">
-                {summaryLines.map((line: string, index: number) => (
-                  <div key={index} className="font-mono text-sm text-gray-600 mb-1">
-                    {line}
-                  </div>
-                ))}
+              <div className="ml-4 pl-3 border-l-2 border-slate-300">
+                {summaryLines.map((line: string, index: number) => {
+                  // Check if this line indicates success or failure
+                  const isSuccess = line.includes('Read') || line.includes('Created') || line.includes('Updated') ||
+                                   line.includes('Changes') || line.includes('Packages installed') || line.includes('completed');
+                  const isError = line.includes('Error') || line.includes('Failed') || line.includes('interrupted') || line.includes('Exit code');
+
+                  return (
+                    <div key={index} className={`font-mono text-sm mb-1 ${
+                      isError ? 'text-red-600' :
+                      isSuccess ? 'text-green-600' :
+                      'text-slate-600'
+                    }`}>
+                      {line}
+                    </div>
+                  );
+                })}
               </div>
             )}
 
@@ -329,7 +340,7 @@ export function ToolCallMessage({ message }: ToolCallMessageProps) {
             {hasExpandableContent && (
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="ml-4 text-xs text-gray-500 hover:text-gray-700 font-medium mt-2"
+                className="ml-4 text-xs text-slate-500 hover:text-slate-700 font-medium mt-2"
               >
                 {isExpanded ? 'Hide details' : 'Show details'}
               </button>
@@ -337,8 +348,8 @@ export function ToolCallMessage({ message }: ToolCallMessageProps) {
 
             {/* Expanded content */}
             {hasExpandableContent && isExpanded && (
-              <div className="ml-4 mt-3 pl-3 border-t border-gray-200 pt-3">
-                <pre className="text-xs text-gray-600 font-mono bg-white border border-gray-200 rounded p-3 overflow-x-auto max-h-96">
+              <div className="ml-4 mt-3 pl-3 border-t border-slate-300 pt-3">
+                <pre className="text-xs text-slate-600 font-mono bg-white border border-slate-300 rounded p-3 overflow-x-auto max-h-96">
                   {typeof fullOutput === 'string' ? fullOutput : JSON.stringify(fullOutput, null, 2)}
                 </pre>
               </div>
