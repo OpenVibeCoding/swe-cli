@@ -67,6 +67,7 @@ class ConversationLog(RichLog):
         self._last_assistant_rendered = normalized
         segments = self._split_code_blocks(message)
         text_output = False
+        leading_used = False
 
         for _, segment in enumerate(segments):
             if segment["type"] == "code":
@@ -77,12 +78,13 @@ class ConversationLog(RichLog):
                     continue
                 renderables, wrote = render_markdown_text_segment(
                     content,
-                    leading=not text_output,
+                    leading=(not text_output and not leading_used),
                 )
                 for renderable in renderables:
                     self.write(renderable)
                 if wrote:
                     text_output = True
+                    leading_used = True
 
         self.write(Text(""))
 

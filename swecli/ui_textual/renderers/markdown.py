@@ -105,8 +105,8 @@ def render_markdown_text_segment(content: str, *, leading: bool = False) -> Tupl
             rendered = _render_inline_markdown(bullet_text)
             indent_level = max(0, len(indent) // 2)
             bullet_line = Text()
-            symbol = "•" if indent_level == 0 else "–"
-            bullet_line.append("  " * indent_level + f"{symbol} ")
+            symbol = "  - " if indent_level == 0 else "    - "
+            bullet_line.append("  " * indent_level + symbol)
             bullet_line.append_text(rendered)
             emit(bullet_line, allow_leading=False)
             index += 1
