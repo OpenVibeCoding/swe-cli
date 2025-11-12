@@ -5,137 +5,169 @@ interface ToolCallMessageProps {
   message: Message;
 }
 
+// Terminal-style tool display utilities
+function getToolDisplayParts(toolName: string): { verb: string; label: string } {
+  const toolMap: Record<string, { verb: string; label: string }> = {
+    'read_file': { verb: 'Read', label: 'file' },
+    'write_file': { verb: 'Write', label: 'file' },
+    'edit_file': { verb: 'Edit', label: 'file' },
+    'delete_file': { verb: 'Delete', label: 'file' },
+    'list_files': { verb: 'List', label: 'files' },
+    'list_directory': { verb: 'List', label: 'directory' },
+    'search_code': { verb: 'Search', label: 'code' },
+    'search': { verb: 'Search', label: 'project' },
+    'run_command': { verb: 'Run', label: 'command' },
+    'bash_execute': { verb: 'Run', label: 'command' },
+    'fetch_url': { verb: 'Fetch', label: 'url' },
+    'open_browser': { verb: 'Open', label: 'browser' },
+    'capture_screenshot': { verb: 'Capture', label: 'screenshot' },
+    'analyze_image': { verb: 'Analyze', label: 'image' },
+    'git_commit': { verb: 'Commit', label: 'changes' },
+  };
+
+  if (toolName.startsWith('mcp__')) {
+    const parts = toolName.split('__', 2);
+    if (parts.length === 3) {
+      return { verb: 'MCP', label: `${parts[1]}/${parts[2]}` };
+    }
+    if (parts.length === 2) {
+      return { verb: 'MCP', label: parts[1] };
+    }
+    return { verb: 'MCP', label: 'tool' };
+  }
+
+  return toolMap[toolName] || { verb: 'Call', label: 'tool' };
+}
+
+function summarizeToolArgs(toolName: string, toolArgs: any): string {
+  if (!toolArgs || typeof toolArgs !== 'object') return '';
+
+  const primaryKeys: Record<string, string[]> = {
+    'read_file': ['file_path', 'path'],
+    'write_file': ['file_path', 'path'],
+    'edit_file': ['file_path', 'path'],
+    'delete_file': ['file_path', 'path'],
+    'list_files': ['path', 'directory'],
+    'list_directory': ['path', 'directory'],
+    'search_code': ['pattern', 'query'],
+    'search': ['query'],
+    'run_command': ['command'],
+    'bash_execute': ['command'],
+    'fetch_url': ['url'],
+    'open_browser': ['url'],
+    'capture_screenshot': ['target', 'path'],
+    'capture_web_screenshot': ['url'],
+    'analyze_image': ['image_path', 'file_path'],
+    'git_commit': ['message'],
+  };
+
+  const keys = primaryKeys[toolName] || Object.keys(toolArgs);
+  for (const key of keys) {
+    if (toolArgs[key] && typeof toolArgs[key] === 'string') {
+      return toolArgs[key];
+    }
+  }
+  return '';
+}
+
 export function ToolCallMessage({ message }: ToolCallMessageProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   if (message.role === 'tool_call') {
-    // Extract key parameters to show inline
-    const keyParams: string[] = [];
-    if (message.tool_args) {
-      if (message.tool_args.file_path) keyParams.push(message.tool_args.file_path);
-      if (message.tool_args.command) keyParams.push(message.tool_args.command);
-      if (message.tool_args.url) keyParams.push(message.tool_args.url);
-      if (message.tool_args.pattern) keyParams.push(message.tool_args.pattern);
-    }
+    const { verb, label } = getToolDisplayParts(message.tool_name || '');
+    const summary = summarizeToolArgs(message.tool_name || '', message.tool_args);
 
     return (
-      <div className="flex justify-start px-6 animate-slide-up my-2">
-        <div className="max-w-[85%] w-full">
-          <div className="rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50/50 to-indigo-50/30 shadow-sm overflow-hidden backdrop-blur-sm">
-            {/* Elegant thinking step header */}
-            <div className="px-4 py-2.5 flex items-start gap-3">
-              <div className="mt-0.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-semibold text-blue-700 uppercase tracking-wider">
-                    Execute
-                  </span>
-                  <code className="text-xs font-mono font-bold text-gray-800 bg-white/60 px-2 py-0.5 rounded">
-                    {message.tool_name}
-                  </code>
-                </div>
-                {keyParams.length > 0 && (
-                  <div className="text-xs text-gray-600 font-mono truncate">
-                    {keyParams[0]}
-                  </div>
-                )}
-              </div>
-              {message.tool_args && Object.keys(message.tool_args).length > 0 && (
-                <button
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="text-xs text-gray-400 hover:text-gray-600 transition-colors px-2 py-1"
-                  title="View details"
-                >
-                  {isExpanded ? '▼' : '▶'}
-                </button>
-              )}
-            </div>
-
-            {/* Expanded Arguments */}
-            {isExpanded && message.tool_args && (
-              <div className="px-4 py-3 border-t border-blue-100 bg-white/40">
-                <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
-                  Parameters
-                </div>
-                <pre className="text-xs text-gray-700 font-mono whitespace-pre-wrap overflow-x-auto bg-white/60 rounded p-2 border border-gray-200">
-                  {JSON.stringify(message.tool_args, null, 2)}
-                </pre>
-              </div>
-            )}
-          </div>
+      <div className="animate-slide-up my-1 px-6">
+        <div className="font-mono text-sm text-gray-300">
+          <span className="text-gray-400">⏺ </span>
+          <span className="text-white">{verb}</span>
+          <span className="text-gray-500">
+            {summary ? `(${summary})` : label ? `(${label})` : ''}
+          </span>
+          {message.tool_args && Object.keys(message.tool_args).length > 0 && (
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="ml-2 text-gray-500 hover:text-gray-300 text-xs"
+              title="View details"
+            >
+              {isExpanded ? '▼' : '▶'}
+            </button>
+          )}
         </div>
+
+        {isExpanded && message.tool_args && (
+          <div className="ml-6 mt-1 text-xs">
+            <div className="text-gray-500 mb-1">Parameters:</div>
+            <pre className="text-gray-400 font-mono bg-gray-900 rounded p-2 border border-gray-700 overflow-x-auto">
+              {JSON.stringify(message.tool_args, null, 2)}
+            </pre>
+          </div>
+        )}
       </div>
     );
   }
 
   if (message.role === 'tool_result') {
-    const isSuccess = message.content?.toLowerCase().includes('success');
-    const resultPreview = typeof message.tool_result === 'string'
-      ? message.tool_result.slice(0, 200)
-      : JSON.stringify(message.tool_result).slice(0, 200);
+    const resultContent = message.tool_result || message.content || '';
+
+    // Check for error sentinel
+    const isError = resultContent.includes('::tool_error::');
+    const isInterrupted = resultContent.includes('::interrupted::');
+
+    // Clean up special markers
+    let cleanContent = resultContent;
+    if (isError) {
+      cleanContent = resultContent.replace('::tool_error::', '').trim();
+    } else if (isInterrupted) {
+      cleanContent = resultContent.replace('::interrupted::', '').trim();
+    }
+
+    // Parse the content into lines
+    const lines = cleanContent.split('\n').filter(line => line.trim());
 
     return (
-      <div className="flex justify-start px-6 animate-slide-up my-2">
-        <div className="max-w-[85%] w-full">
-          <div className={`rounded-xl border shadow-sm overflow-hidden backdrop-blur-sm ${
-            isSuccess
-              ? 'border-emerald-100 bg-gradient-to-br from-emerald-50/50 to-teal-50/30'
-              : 'border-rose-100 bg-gradient-to-br from-rose-50/50 to-red-50/30'
-          }`}>
-            {/* Elegant result header */}
-            <div className="px-4 py-2.5 flex items-start gap-3">
-              <div className="mt-0.5">
-                <div className={`w-1.5 h-1.5 rounded-full ${
-                  isSuccess ? 'bg-emerald-500' : 'bg-rose-500'
-                }`} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className={`text-xs font-semibold uppercase tracking-wider ${
-                    isSuccess ? 'text-emerald-700' : 'text-rose-700'
-                  }`}>
-                    {isSuccess ? 'Complete' : 'Failed'}
-                  </span>
-                  <code className="text-xs font-mono font-bold text-gray-800 bg-white/60 px-2 py-0.5 rounded">
-                    {message.tool_name}
-                  </code>
-                </div>
-                {!isExpanded && resultPreview && (
-                  <div className="text-xs text-gray-600 font-mono truncate">
-                    {resultPreview.slice(0, 100)}{resultPreview.length > 100 ? '...' : ''}
-                  </div>
-                )}
-              </div>
-              {message.tool_result && (
-                <button
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="text-xs text-gray-400 hover:text-gray-600 transition-colors px-2 py-1"
-                  title="View output"
-                >
-                  {isExpanded ? '▼' : '▶'}
-                </button>
-              )}
-            </div>
-
-            {/* Expanded Output */}
-            {isExpanded && message.tool_result && (
-              <div className={`px-4 py-3 border-t bg-white/40 ${
-                isSuccess ? 'border-emerald-100' : 'border-rose-100'
-              }`}>
-                <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
-                  Output
-                </div>
-                <pre className="text-xs text-gray-700 font-mono whitespace-pre-wrap overflow-x-auto max-h-96 bg-white/60 rounded p-2 border border-gray-200">
-                  {typeof message.tool_result === 'string'
-                    ? message.tool_result
-                    : JSON.stringify(message.tool_result, null, 2)}
-                </pre>
-              </div>
-            )}
+      <div className="animate-slide-up my-1 px-6">
+        {lines.map((line, index) => (
+          <div key={index} className="font-mono text-sm">
+            <span className="text-gray-400">⎿ </span>
+            <span className={
+              isInterrupted ? 'text-red-500 font-bold' :
+              isError ? 'text-red-400' :
+              'text-gray-400'
+            }>
+              {line}
+            </span>
           </div>
-        </div>
+        ))}
+
+        {/* Expand button for long results */}
+        {!isExpanded && resultContent.length > 500 && (
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="ml-6 text-xs text-gray-500 hover:text-gray-300"
+          >
+            Show full output
+          </button>
+        )}
+
+        {isExpanded && (
+          <button
+            onClick={() => setIsExpanded(false)}
+            className="ml-6 text-xs text-gray-500 hover:text-gray-300"
+          >
+            Show less
+          </button>
+        )}
+
+        {/* Full content when expanded */}
+        {isExpanded && (
+          <div className="ml-6 mt-1">
+            <pre className="text-xs text-gray-400 font-mono bg-gray-900 rounded p-2 border border-gray-700 overflow-x-auto max-h-96">
+              {cleanContent}
+            </pre>
+          </div>
+        )}
       </div>
     );
   }

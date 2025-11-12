@@ -81,8 +81,8 @@ export function MessageList() {
   }
 
   return (
-    <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-white">
-      <div className="max-w-4xl mx-auto py-8 space-y-5">
+    <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-gray-900">
+      <div className="max-w-4xl mx-auto py-6 px-6 space-y-4">
         {messages.map((message, index) => {
           // Render tool calls and tool results with special component
           if (message.role === 'tool_call' || message.role === 'tool_result') {
@@ -90,16 +90,19 @@ export function MessageList() {
           }
 
           // ChatGPT-style message bubbles
-          const isUser = message.role === 'user';
+          
+        const isUser = message.role === 'user';
 
-          return (
-            <div key={index} className={`flex ${isUser ? 'justify-end' : 'justify-start'} px-6 animate-slide-up`}>
-              <div className={`max-w-[80%] rounded-2xl px-6 py-4 shadow-sm ${
-                isUser
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-gray-100 text-gray-900'
-              }`}>
-                <div className="prose prose-sm max-w-none">
+        return (
+          <div key={index} className={`animate-slide-up ${isUser ? '' : 'px-6'}`}>
+            {isUser ? (
+              <div className="font-mono text-sm bg-gray-800 rounded px-4 py-2 border border-gray-600">
+                <span className="text-gray-400">› </span>
+                <span className="text-gray-200">{message.content}</span>
+              </div>
+            ) : (
+              <div className="text-gray-100 leading-relaxed">
+                <div className="prose prose-sm max-w-none prose-invert">
                   <ReactMarkdown
                     components={{
                       code({ node, className, children, ...props }) {
@@ -107,44 +110,46 @@ export function MessageList() {
                         const languageMatch = /language-(\w+)/.exec(className || '');
                         const language = languageMatch ? languageMatch[1] : null;
                         return isInline ? (
-                          <code className={`text-sm px-1.5 py-0.5 rounded font-mono ${
-                            isUser ? 'bg-gray-800 text-gray-100' : 'bg-gray-200 text-gray-800'
-                          }`} {...props}>
+                          <code className="text-sm px-1.5 py-0.5 rounded font-mono bg-gray-200 text-gray-800" {...props}>
                             {children}
                           </code>
                         ) : (
-                          <pre className={`rounded-lg p-3 overflow-x-auto my-2 ${
-                            isUser ? 'bg-gray-800 text-gray-100' : 'bg-white border border-gray-200'
-                          }`}>
-                            <code className={className} data-language={language} {...props}>
-                              {children}
-                            </code>
-                          </pre>
+                          <div className="rounded border border-blue-600 overflow-x-auto my-2">
+                            <div className="bg-gray-900 px-3 py-1 text-xs text-blue-400 border-b border-blue-600">
+                              {language ? language.toUpperCase() : 'CODE'}
+                            </div>
+                            <pre className="p-3 m-0 text-gray-100 font-mono text-sm overflow-x-auto">
+                              <code className={className} data-language={language} {...props}>
+                                {children}
+                              </code>
+                            </pre>
+                          </div>
                         );
                       },
                       p({ children }) {
-                        return <p className={`leading-relaxed mb-2 last:mb-0 ${isUser ? 'text-white' : 'text-gray-900'}`}>{children}</p>;
+                        return <p className="leading-relaxed mb-2 last:mb-0 text-gray-100">{children}</p>;
                       },
                       ul({ children }) {
-                        return <ul className={`list-disc pl-5 space-y-1 mb-2 ${isUser ? 'text-white' : 'text-gray-900'}`}>{children}</ul>;
+                        return <ul className="list-disc pl-5 space-y-1 mb-2 text-gray-100">{children}</ul>;
                       },
                       ol({ children }) {
-                        return <ol className={`list-decimal pl-5 space-y-1 mb-2 ${isUser ? 'text-white' : 'text-gray-900'}`}>{children}</ol>;
+                        return <ol className="list-decimal pl-5 space-y-1 mb-2 text-gray-100">{children}</ol>;
                       },
                       li({ children }) {
-                        return <li className={isUser ? 'text-white' : 'text-gray-900'}>{children}</li>;
+                        return <li className="text-gray-100">{children}</li>;
                       },
                       strong({ children }) {
-                        return <strong className="font-semibold">{children}</strong>;
+                        return <strong className="font-semibold text-white">{children}</strong>;
                       },
                       a({ children, href }) {
-                        return <a href={href} className={`underline ${isUser ? 'text-blue-300' : 'text-blue-600'}`} target="_blank" rel="noopener noreferrer">{children}</a>;
+                        return <a href={href} className="underline text-cyan-400" target="_blank" rel="noopener noreferrer">{children}</a>;
                       },
                     }}
                   >
                     {message.content}
                   </ReactMarkdown>
                 </div>
+                )}
               </div>
             </div>
           );
@@ -152,16 +157,9 @@ export function MessageList() {
 
         {isLoading && (
           <div className="flex justify-start px-6 animate-fade-in">
-            <div className="max-w-[85%] px-5 py-3">
-              <div className="flex items-center gap-3">
-                {/* Braille dots spinner matching terminal style */}
-                <span className={`text-lg font-medium ${SPINNER_COLORS[colorIndex]} transition-colors duration-100`}>
-                  {SPINNER_FRAMES[spinnerIndex]}
-                </span>
-                <span className="text-sm text-gray-600 font-medium">
-                  {THINKING_VERBS[verbIndex]}...
-                </span>
-              </div>
+            <div className="font-mono text-sm">
+              <span className="text-cyan-500">{SPINNER_FRAMES[spinnerIndex]}</span>
+              <span className="text-cyan-500 ml-2">{THINKING_VERBS[verbIndex]}...</span>
             </div>
           </div>
         )}
