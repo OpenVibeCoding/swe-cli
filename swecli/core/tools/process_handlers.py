@@ -182,15 +182,22 @@ class ProcessToolHandler:
         try:
             asyncio.get_running_loop()
         except RuntimeError:
-            result = asyncio.run(
-                approval_manager.request_approval(
-                    operation=operation,
-                    preview=preview,
-                    command=command,
-                    working_dir=working_dir,
-                    force_prompt=True,
-                )
+            # Check if request_approval already returned a result (WebApprovalManager) or needs to be awaited
+            approval_result = approval_manager.request_approval(
+                operation=operation,
+                preview=preview,
+                command=command,
+                working_dir=working_dir,
+                force_prompt=True,
             )
+
+            # If it's already a result object, use it directly
+            if hasattr(approval_result, 'approved'):
+                result = approval_result
+            else:
+                # If it's a coroutine, run it
+                result = asyncio.run(approval_result)
+
             if not result.approved:
                 return False
             operation.approved = True

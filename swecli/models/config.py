@@ -34,9 +34,9 @@ class PermissionConfig(BaseModel):
     file_read: ToolPermission = Field(default_factory=ToolPermission)
     bash: ToolPermission = Field(
         default_factory=lambda: ToolPermission(
-            enabled=False,  # Disabled by default for safety
+            enabled=True,  # Enabled for development
             always_allow=False,
-            deny_patterns=["rm -rf /", "sudo *", "chmod -R 777"],
+            deny_patterns=["rm -rf /", "sudo rm -rf /*", "chmod -R 777 /*"],
         )
     )
     git: ToolPermission = Field(default_factory=ToolPermission)
@@ -133,7 +133,7 @@ class AppConfig(BaseModel):
     permissions: PermissionConfig = Field(default_factory=PermissionConfig)
 
     # Phase 2: Operation settings
-    enable_bash: bool = False  # Require explicit enable for bash execution
+    enable_bash: bool = True  # Enable bash execution for development
     bash_timeout: int = 30  # Timeout in seconds for bash commands
     auto_mode: AutoModeConfig = Field(default_factory=AutoModeConfig)
     operation: OperationConfig = Field(default_factory=OperationConfig)

@@ -74,12 +74,11 @@ class WebSocketManager:
     async def handle_message(self, websocket: WebSocket, data: Dict[str, Any]):
         """Handle incoming WebSocket message."""
         msg_type = data.get("type")
-        logger.info(f"📨 Received WebSocket message: type={msg_type}")
+        logger.debug(f"Received WebSocket message: type={msg_type}")
 
         if msg_type == "query":
             await self._handle_query(websocket, data)
         elif msg_type == "approve":
-            logger.info("Routing to _handle_approval")
             await self._handle_approval(websocket, data)
         elif msg_type == "ping":
             await self.send_message(websocket, {"type": "pong"})
@@ -117,11 +116,14 @@ class WebSocketManager:
             }
         })
 
-        # Execute query with agent
+        # Execute query with agent in background task
         from swecli.web.agent_executor import AgentExecutor
 
         executor = AgentExecutor(state)
-        await executor.execute_query(message, self)
+
+        # Create background task so WebSocket handler can continue processing messages
+        import asyncio
+        asyncio.create_task(executor.execute_query(message, self))
 
     async def _handle_approval(self, websocket: WebSocket, data: Dict[str, Any]):
         """Handle an approval response from the web UI."""
@@ -176,9 +178,8 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             # Receive message from client
-            logger.debug("Waiting for message...")
             data = await websocket.receive_json()
-            logger.info(f"📩 Raw message received: {data}")
+            logger.debug(f"Raw message received: {data}")
 
             # Handle the message
             await ws_manager.handle_message(websocket, data)

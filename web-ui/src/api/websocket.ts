@@ -86,6 +86,10 @@ class WebSocketClient {
     }
   }
 
+  ping() {
+    this.send({ type: 'ping', data: { timestamp: Date.now() } });
+  }
+
   on(eventType: string, handler: WSEventHandler) {
     if (!this.handlers.has(eventType)) {
       this.handlers.set(eventType, new Set());

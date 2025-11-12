@@ -321,12 +321,19 @@ class FileToolHandler:
         try:
             asyncio.get_running_loop()
         except RuntimeError:
-            return asyncio.run(
-                approval_manager.request_approval(
-                    operation=operation,
-                    preview=preview,
-                    **extra_kwargs,
-                )
+            # Check if request_approval already returned a result (WebApprovalManager) or needs to be awaited
+            approval_result = approval_manager.request_approval(
+                operation=operation,
+                preview=preview,
+                **extra_kwargs,
             )
+
+            # If it's already a result object, use it directly
+            if hasattr(approval_result, 'approved'):
+                return approval_result
+            else:
+                # If it's a coroutine, run it
+                return asyncio.run(approval_result)
+
         operation.approved = True
         return None
