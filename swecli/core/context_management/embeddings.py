@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Dict, List, Optional
 
 import numpy as np
@@ -216,6 +217,40 @@ class EmbeddingCache:
             cache._cache[key] = metadata
 
         return cache
+
+    def save_to_file(self, path: str) -> None:
+        """Save cache to JSON file.
+
+        Args:
+            path: File path to save to
+        """
+        file_path = Path(path)
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with file_path.open("w", encoding="utf-8") as f:
+            json.dump(self.to_dict(), f, ensure_ascii=False, indent=2)
+
+    @classmethod
+    def load_from_file(cls, path: str) -> Optional["EmbeddingCache"]:
+        """Load cache from JSON file.
+
+        Args:
+            path: File path to load from
+
+        Returns:
+            EmbeddingCache instance or None if file doesn't exist
+        """
+        file_path = Path(path)
+        if not file_path.exists():
+            return None
+
+        try:
+            with file_path.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+            return cls.from_dict(data)
+        except (json.JSONDecodeError, KeyError, ValueError):
+            # Return None if file is corrupted
+            return None
 
     def _make_key(self, text: str, model: str) -> str:
         """Create cache key from text and model.

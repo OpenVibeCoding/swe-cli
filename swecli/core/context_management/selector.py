@@ -36,6 +36,7 @@ class BulletSelector:
         self,
         weights: Optional[Dict[str, float]] = None,
         embedding_model: str = "text-embedding-3-small",
+        cache_file: Optional[str] = None,
     ):
         """Initialize bullet selector.
 
@@ -45,6 +46,7 @@ class BulletSelector:
                 - recency: Weight for recent usage (default: 0.3)
                 - semantic: Weight for semantic similarity (default: 0.2)
             embedding_model: Model to use for embeddings
+            cache_file: Optional path to cache file for persistence
         """
         self.weights = weights or {
             "effectiveness": 0.5,
@@ -52,7 +54,17 @@ class BulletSelector:
             "semantic": 0.2,
         }
         self.embedding_model = embedding_model
-        self.embedding_cache = EmbeddingCache(model=embedding_model)
+        self.cache_file = cache_file
+
+        # Try to load cache from disk if cache_file provided
+        if cache_file:
+            loaded_cache = EmbeddingCache.load_from_file(cache_file)
+            if loaded_cache:
+                self.embedding_cache = loaded_cache
+            else:
+                self.embedding_cache = EmbeddingCache(model=embedding_model)
+        else:
+            self.embedding_cache = EmbeddingCache(model=embedding_model)
 
     def select(
         self,
@@ -70,18 +82,28 @@ class BulletSelector:
         Returns:
             List of selected bullets, ordered by relevance (highest first)
         """
-        # If we have fewer bullets than max_count, return all
-        if len(bullets) <= max_count:
-            return bullets
+        try:
+            # If we have fewer bullets than max_count, return all
+            if len(bullets) <= max_count:
+                return bullets
 
-        # Score all bullets
-        scored_bullets = [self._score_bullet(bullet, query) for bullet in bullets]
+            # Score all bullets
+            scored_bullets = [self._score_bullet(bullet, query) for bullet in bullets]
 
-        # Sort by score (descending)
-        scored_bullets.sort(key=lambda x: x.score, reverse=True)
+            # Sort by score (descending)
+            scored_bullets.sort(key=lambda x: x.score, reverse=True)
 
-        # Return top-K bullets
-        return [sb.bullet for sb in scored_bullets[:max_count]]
+            # Return top-K bullets
+            return [sb.bullet for sb in scored_bullets[:max_count]]
+        finally:
+            # Always save cache to disk if cache_file is configured
+            # This ensures embeddings are persisted regardless of selection path
+            if self.cache_file:
+                try:
+                    self.embedding_cache.save_to_file(self.cache_file)
+                except Exception:
+                    # Silently fail if save fails - don't break selection
+                    pass
 
     def _score_bullet(self, bullet: Bullet, query: Optional[str] = None) -> ScoredBullet:
         """Calculate relevance score for a single bullet.

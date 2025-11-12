@@ -284,12 +284,34 @@ class QueryProcessor:
             try:
                 playbook = session.get_playbook()
                 # Use ACE's as_context() method for intelligent bullet selection
-                # Falls back to as_prompt() if selection disabled or playbook is small
-                max_strategies = getattr(self.config, 'max_playbook_strategies', 30)
+                # Configuration from config.playbook section
+                playbook_config = getattr(self.config, 'playbook', None)
+                if playbook_config:
+                    max_strategies = playbook_config.max_strategies
+                    use_selection = playbook_config.use_selection
+                    weights = playbook_config.scoring_weights.to_dict()
+                    embedding_model = playbook_config.embedding_model
+                    cache_file = playbook_config.cache_file
+                    # If cache_file not specified but cache enabled, use session-based default
+                    if cache_file is None and playbook_config.cache_embeddings and session:
+                        import os
+                        swecli_dir = os.path.expanduser(self.config.swecli_dir)
+                        cache_file = os.path.join(swecli_dir, "sessions", f"{session.session_id}_embeddings.json")
+                else:
+                    # Fallback to defaults if config not available
+                    max_strategies = 30
+                    use_selection = True
+                    weights = None
+                    embedding_model = "text-embedding-3-small"
+                    cache_file = None
+
                 playbook_context = playbook.as_context(
-                    query=query,  # For future semantic matching (Phase 2+)
+                    query=query,  # Enables semantic matching (Phase 2)
                     max_strategies=max_strategies,
-                    use_selection=True,  # Set to False to disable selection
+                    use_selection=use_selection,
+                    weights=weights,
+                    embedding_model=embedding_model,
+                    cache_file=cache_file,
                 )
                 if playbook_context:
                     system_content = f"{system_content.rstrip()}\n\n## Learned Strategies\n{playbook_context}"

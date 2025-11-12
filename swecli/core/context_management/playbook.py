@@ -262,6 +262,8 @@ class Playbook:
         max_strategies: Optional[int] = 30,
         use_selection: bool = True,
         weights: Optional[Dict[str, float]] = None,
+        embedding_model: str = "text-embedding-3-small",
+        cache_file: Optional[str] = None,
     ) -> str:
         """Return intelligently selected bullets for LLM context.
 
@@ -273,6 +275,8 @@ class Playbook:
             max_strategies: Maximum number of bullets to include (None = all)
             use_selection: Whether to use intelligent selection (False = same as as_prompt())
             weights: Custom scoring weights (effectiveness, recency, semantic)
+            embedding_model: Model to use for embeddings
+            cache_file: Optional path to cache file for embedding persistence
 
         Returns:
             Formatted string with selected bullets
@@ -295,7 +299,11 @@ class Playbook:
             return self.as_prompt()
 
         # Select top-K bullets
-        selector = BulletSelector(weights=weights)
+        selector = BulletSelector(
+            weights=weights,
+            embedding_model=embedding_model,
+            cache_file=cache_file,
+        )
         selected_bullets = selector.select(
             bullets=all_bullets,
             max_count=max_strategies,

@@ -655,6 +655,69 @@ class TestSemanticSimilarity:
         assert restored_cache.get("text2") == [0.0, 1.0, 0.0]
         assert restored_cache.size() == 2
 
+    def test_embedding_cache_file_persistence(self, tmp_path):
+        """Test embedding cache can be saved to and loaded from file."""
+        import tempfile
+        cache_file = tmp_path / "test_cache.json"
+
+        # Create cache and add embeddings
+        cache = BulletSelector().embedding_cache
+        cache.set("query1", [1.0, 0.0, 0.0])
+        cache.set("bullet1", [0.9, 0.1, 0.0])
+
+        # Save to file
+        cache.save_to_file(str(cache_file))
+
+        # Verify file exists
+        assert cache_file.exists()
+
+        # Load from file
+        from swecli.core.context_management.embeddings import EmbeddingCache
+        loaded_cache = EmbeddingCache.load_from_file(str(cache_file))
+
+        # Verify embeddings are restored
+        assert loaded_cache is not None
+        assert loaded_cache.get("query1") == [1.0, 0.0, 0.0]
+        assert loaded_cache.get("bullet1") == [0.9, 0.1, 0.0]
+        assert loaded_cache.size() == 2
+
+    def test_selector_with_cache_file(self, tmp_path):
+        """Test BulletSelector with cache file persistence."""
+        cache_file = tmp_path / "selector_cache.json"
+        now = datetime.now(timezone.utc)
+
+        # Create selector with cache file
+        selector = BulletSelector(cache_file=str(cache_file))
+
+        # Pre-populate cache
+        query = "test query"
+        bullet = Bullet(
+            id="b1",
+            section="Test",
+            content="test content",
+            updated_at=now.isoformat(),
+        )
+
+        query_emb = [1.0, 0.0, 0.0]
+        bullet_emb = [1.0, 0.0, 0.0]
+        selector.embedding_cache.set(query, query_emb)
+        selector.embedding_cache.set(bullet.content, bullet_emb)
+
+        # Select bullets (this should trigger save)
+        bullets = [bullet]
+        selected = selector.select(bullets, max_count=1, query=query)
+
+        # Verify cache file was created
+        assert cache_file.exists()
+
+        # Create new selector that loads from cache
+        selector2 = BulletSelector(cache_file=str(cache_file))
+
+        # Verify cache was loaded
+        assert selector2.embedding_cache.size() == 2
+        assert selector2.embedding_cache.get(query) == query_emb
+        assert selector2.embedding_cache.get(bullet.content) == bullet_emb
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
