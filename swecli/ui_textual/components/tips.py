@@ -21,7 +21,7 @@ class TipsManager:
         "Press Esc to interrupt long-running operations",
         "Use /mode plan for read-only analysis and planning",
         "Use /mode normal for full execution with file writes",
-        "Context compaction automatically manages long conversations",
+        "ACE playbooks remember long-term goals without storing long chats",
         "MCP servers extend swecli with custom tools and capabilities",
         "Use /mcp list to see all available MCP servers",
         "Session auto-save preserves your work automatically",

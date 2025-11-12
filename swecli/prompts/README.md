@@ -113,8 +113,7 @@ Return complete prompt string
   - `SystemPromptBuilder`: Builds normal mode prompt with MCP integration
   - `PlanningPromptBuilder`: Builds planning mode prompt
 
-- **`compact_agent.py`**: Compaction agent
-  - Uses `agent_compact.txt` for summarization instructions
+- **`init_analysis.txt`**: Boot-time analysis snippet that seeds the ACE playbook with workspace facts
 
 ## Customization Tips
 

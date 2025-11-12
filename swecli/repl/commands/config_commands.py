@@ -225,10 +225,6 @@ class ConfigCommands(CommandHandler):
         try:
             self.config_manager.save_config(config, global_config=True)
 
-            # Update chat app context monitor if mode is normal
-            if mode == "normal" and self.chat_app and hasattr(self.chat_app, 'context_monitor'):
-                self.chat_app.context_monitor.context_limit = config.max_context_tokens
-
             # Refresh the UI (footer will show new model)
             if self.chat_app:
                 refresher = getattr(self.chat_app, "refresh", None)
