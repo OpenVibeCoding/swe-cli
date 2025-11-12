@@ -170,12 +170,15 @@ ws_manager = WebSocketManager()
 
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint handler."""
+    logger.info("New WebSocket connection established")
     await ws_manager.connect(websocket)
 
     try:
         while True:
             # Receive message from client
+            logger.debug("Waiting for message...")
             data = await websocket.receive_json()
+            logger.info(f"📩 Raw message received: {data}")
 
             # Handle the message
             await ws_manager.handle_message(websocket, data)
@@ -184,7 +187,7 @@ async def websocket_endpoint(websocket: WebSocket):
         logger.info("WebSocket disconnected normally")
         ws_manager.disconnect(websocket)
     except Exception as e:
-        logger.error(f"WebSocket error: {e}")
+        logger.error(f"❌ WebSocket error: {e}")
         import traceback
         logger.error(traceback.format_exc())
         ws_manager.disconnect(websocket)
