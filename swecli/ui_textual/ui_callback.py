@@ -100,11 +100,10 @@ class TextualUICallback:
                     if hasattr(self.conversation, '_truncate_from'):
                         self.conversation._truncate_from(len(self.conversation.lines) - 1)
 
-            # Now write the interrupt message
-            grey = "#a0a4ad"
-            line = Text("  ⎿  ", style=grey)
-            line.append("Interrupted · What should I do instead?", style="bold red")
-            self.conversation.write(line)
+            # Now write the interrupt message using shared utility
+            from swecli.ui_textual.utils.interrupt_utils import create_interrupt_text, THINKING_INTERRUPT_MESSAGE
+            interrupt_line = create_interrupt_text(THINKING_INTERRUPT_MESSAGE)
+            self.conversation.write(interrupt_line)
 
         self._run_on_ui(write_interrupt_replacing_blank_line)
 

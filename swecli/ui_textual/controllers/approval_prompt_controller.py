@@ -144,10 +144,9 @@ class ApprovalPromptController:
                 call_text = str(call_line)
                 interrupted_line.append(call_text, style="white")
                 conversation.write(interrupted_line, scroll_end=True, animate=False)
-                # Use consistent interrupt message styling (grey prefix, red text)
-                grey = "#a0a4ad"
-                result_line = Text("  ⎿  ", style=grey)
-                result_line.append("Interrupted · What should I do instead?", style="bold red")
+                # Use shared interrupt message utility for consistency
+                from swecli.ui_textual.utils.interrupt_utils import create_interrupt_text, APPROVAL_INTERRUPT_MESSAGE
+                result_line = create_interrupt_text(APPROVAL_INTERRUPT_MESSAGE)
                 conversation.write(result_line, scroll_end=True, animate=False)
                 conversation.write(Text(""))
             else:

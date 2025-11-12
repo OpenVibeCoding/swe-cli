@@ -8,6 +8,7 @@ from typing import Any, Dict, List
 from swecli.ui_textual.formatters_internal.formatter_base import STATUS_ICONS
 from swecli.ui_textual.utils.tool_display import get_tool_display_parts
 from swecli.ui_textual.constants import TOOL_ERROR_SENTINEL
+from swecli.ui_textual.utils.interrupt_utils import create_interrupt_message, STANDARD_INTERRUPT_MESSAGE
 
 
 class StyleFormatter:
@@ -107,7 +108,7 @@ class StyleFormatter:
         if not result.get("success"):
             error_msg = result.get("error", "Unknown error")
             if "interrupted by user" in error_msg.lower():
-                return [self._interrupted_line("Interrupted · What should I do instead?")]
+                return [create_interrupt_message(STANDARD_INTERRUPT_MESSAGE)]
             return [self._error_line(error_msg)]
 
         output = result.get("output", "")
@@ -122,7 +123,7 @@ class StyleFormatter:
         if not result.get("success"):
             error_msg = result.get("error", "Unknown error")
             if "interrupted by user" in error_msg.lower():
-                return [self._interrupted_line("Interrupted · What should I do instead?")]
+                return [create_interrupt_message(STANDARD_INTERRUPT_MESSAGE)]
             return [self._error_line(error_msg)]
 
         file_path = tool_args.get("file_path", "unknown")
@@ -137,7 +138,7 @@ class StyleFormatter:
         if not result.get("success"):
             error_msg = result.get("error", "Unknown error")
             if "interrupted by user" in error_msg.lower():
-                return [self._interrupted_line("Interrupted · What should I do instead?")]
+                return [create_interrupt_message(STANDARD_INTERRUPT_MESSAGE)]
             return [self._error_line(error_msg)]
 
         file_path = tool_args.get("file_path", "unknown")
@@ -154,7 +155,7 @@ class StyleFormatter:
         if not result.get("success"):
             error_msg = result.get("error", "Unknown error")
             if "interrupted by user" in error_msg.lower():
-                return [self._interrupted_line("Interrupted · What should I do instead?")]
+                return [create_interrupt_message(STANDARD_INTERRUPT_MESSAGE)]
             return [self._error_line(error_msg)]
 
         matches = result.get("matches", [])
@@ -175,7 +176,7 @@ class StyleFormatter:
             error_msg = result.get("error", "Unknown error")
             # Special handling for interrupted commands
             if "interrupted" in error_msg.lower():
-                return [self._interrupted_line("Interrupted · What should I do instead?")]
+                return [create_interrupt_message(STANDARD_INTERRUPT_MESSAGE)]
             return [self._error_line(error_msg)]
 
         command = (tool_args.get("command") or "").strip()
@@ -224,7 +225,7 @@ class StyleFormatter:
         if not result.get("success"):
             error_msg = result.get("error", "Unknown error")
             if "interrupted by user" in error_msg.lower():
-                return [self._interrupted_line("Interrupted · What should I do instead?")]
+                return [create_interrupt_message(STANDARD_INTERRUPT_MESSAGE)]
             return [self._error_line(error_msg)]
 
         entries = result.get("entries")
@@ -249,7 +250,7 @@ class StyleFormatter:
         if not result.get("success"):
             error_msg = result.get("error", "Unknown error")
             if "interrupted by user" in error_msg.lower():
-                return [self._interrupted_line("Interrupted · What should I do instead?")]
+                return [create_interrupt_message(STANDARD_INTERRUPT_MESSAGE)]
             return [self._error_line(error_msg)]
 
         elapsed = result.get("elapsed", 0.0)
@@ -260,7 +261,7 @@ class StyleFormatter:
         if not result.get("success"):
             error_msg = result.get("error", "Unknown error")
             if "interrupted by user" in error_msg.lower():
-                return [self._interrupted_line("Interrupted · What should I do instead?")]
+                return [create_interrupt_message(STANDARD_INTERRUPT_MESSAGE)]
             return [self._error_line(error_msg)]
         return [result.get("summary", "Analysis complete")]
 
@@ -268,7 +269,7 @@ class StyleFormatter:
         if not result.get("success"):
             error_msg = result.get("error", "Unknown error")
             if "interrupted by user" in error_msg.lower():
-                return [self._interrupted_line("Interrupted · What should I do instead?")]
+                return [create_interrupt_message(STANDARD_INTERRUPT_MESSAGE)]
             return [self._error_line(error_msg)]
 
         lines = (result.get("output") or "").splitlines()
@@ -287,7 +288,7 @@ class StyleFormatter:
         if not result.get("success"):
             error_msg = result.get("error", "Unknown error")
             if "interrupted by user" in error_msg.lower():
-                return [self._interrupted_line("Interrupted · What should I do instead?")]
+                return [create_interrupt_message(STANDARD_INTERRUPT_MESSAGE)]
             return [self._error_line(error_msg)]
 
         output = result.get("output")
