@@ -262,32 +262,48 @@ export function ToolCallMessage({ message }: ToolCallMessageProps) {
 
     return (
       <div className="animate-slide-up my-1 px-6">
-        <div className="font-mono text-sm text-gray-700">
-          <span className="text-gray-500">⏺ </span>
-          <span className="text-gray-800">{verb}</span>
-          <span className="text-gray-600">
-            {summary ? `(${summary})` : label ? `(${label})` : ''}
-          </span>
-          {(message.tool_args && Object.keys(message.tool_args).length > 0) ||
-            (message.tool_calls && message.tool_calls.length > 0) ? (
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="ml-2 text-gray-500 hover:text-gray-700 text-xs"
-              title="View details"
-            >
-              {isExpanded ? '▼' : '▶'}
-            </button>
-          ) : null}
-        </div>
+        <div className="max-w-3xl">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-amber-600 text-lg">⚡</span>
+                  <span className="font-semibold text-amber-800">{verb}</span>
+                  {summary && (
+                    <span className="text-amber-600 text-sm bg-amber-100 px-2 py-1 rounded">
+                      {summary}
+                    </span>
+                  )}
+                  {label && !summary && (
+                    <span className="text-amber-600 text-sm bg-amber-100 px-2 py-1 rounded">
+                      {label}
+                    </span>
+                  )}
+                </div>
+              </div>
 
-        {isExpanded && message.tool_args && (
-          <div className="ml-6 mt-1 text-xs">
-            <div className="text-gray-500 mb-1">Parameters:</div>
-            <pre className="text-gray-700 font-mono bg-gray-100 rounded p-2 border border-gray-300 overflow-x-auto">
-              {JSON.stringify(message.tool_args, null, 2)}
-            </pre>
+              {(message.tool_args && Object.keys(message.tool_args).length > 0) ||
+                (message.tool_calls && message.tool_calls.length > 0) ? (
+                <button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="text-amber-600 hover:text-amber-800 text-xs font-medium"
+                  title="View details"
+                >
+                  {isExpanded ? 'Hide details' : 'Show details'}
+                </button>
+              ) : null}
+            </div>
+
+            {isExpanded && message.tool_args && (
+              <div className="mt-3 pt-3 border-t border-amber-200">
+                <div className="text-amber-700 text-xs font-semibold mb-2">Parameters:</div>
+                <pre className="text-xs text-gray-700 font-mono bg-white border border-amber-200 rounded p-3 overflow-x-auto">
+                  {JSON.stringify(message.tool_args, null, 2)}
+                </pre>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     );
   }
@@ -341,46 +357,73 @@ export function ToolCallMessage({ message }: ToolCallMessageProps) {
 
     return (
       <div className="animate-slide-up my-1 px-6">
-        {summaryLines.map((line: string, index: number) => (
-          <div key={index} className="font-mono text-sm">
-            <span className="text-gray-500">⎿ </span>
-            <span className={
-              isInterrupted ? 'text-red-600 font-bold' :
-              isError ? 'text-red-500' :
-              'text-gray-600'
-            }>
-              {line}
-            </span>
+        <div className="max-w-3xl">
+          <div className={`${
+            isError ? 'bg-red-50 border-red-200' :
+            isInterrupted ? 'bg-orange-50 border-orange-200' :
+            'bg-green-50 border-green-200'
+          } border rounded-lg px-4 py-3 shadow-sm`}>
+
+            {/* Header with result summary */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className={
+                  isError ? 'text-red-500 text-lg' :
+                  isInterrupted ? 'text-orange-500 text-lg' :
+                  'text-green-600 text-lg'
+                }>✓</span>
+                <span className={`font-semibold ${
+                  isError ? 'text-red-800' :
+                  isInterrupted ? 'text-orange-800' :
+                  'text-green-800'
+                }`}>
+                  {isError ? 'Error' : isInterrupted ? 'Interrupted' : 'Success'}
+                </span>
+              </div>
+
+              {hasExpandableContent && (
+                <button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className={`text-xs font-medium ${
+                    isError ? 'text-red-600 hover:text-red-800' :
+                    isInterrupted ? 'text-orange-600 hover:text-orange-800' :
+                    'text-green-600 hover:text-green-800'
+                  }`}
+                >
+                  {isExpanded ? 'Hide details' : 'Show details'}
+                </button>
+              )}
+            </div>
+
+            {/* Result summary lines */}
+            <div className="space-y-1">
+              {summaryLines.map((line: string, index: number) => (
+                <div key={index} className="font-mono text-sm">
+                  <span className={
+                    isError ? 'text-red-600' :
+                    isInterrupted ? 'text-orange-600' :
+                    'text-green-700'
+                  }>
+                    {line}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Full content when expanded */}
+            {hasExpandableContent && isExpanded && (
+              <div className={`mt-3 pt-3 border-t ${
+                isError ? 'border-red-200' :
+                isInterrupted ? 'border-orange-200' :
+                'border-green-200'
+              }`}>
+                <pre className="text-xs text-gray-700 font-mono bg-white border border-gray-200 rounded p-3 overflow-x-auto max-h-96">
+                  {typeof fullOutput === 'string' ? fullOutput : JSON.stringify(fullOutput, null, 2)}
+                </pre>
+              </div>
+            )}
           </div>
-        ))}
-
-        {/* Expand button for long results */}
-        {hasExpandableContent && !isExpanded && (
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="ml-6 text-xs text-gray-500 hover:text-gray-700"
-          >
-            Show full output
-          </button>
-        )}
-
-        {hasExpandableContent && isExpanded && (
-          <button
-            onClick={() => setIsExpanded(false)}
-            className="ml-6 text-xs text-gray-500 hover:text-gray-700"
-          >
-            Show less
-          </button>
-        )}
-
-        {/* Full content when expanded */}
-        {hasExpandableContent && isExpanded && (
-          <div className="ml-6 mt-1">
-            <pre className="text-xs text-gray-700 font-mono bg-gray-100 rounded p-2 border border-gray-300 overflow-x-auto max-h-96">
-              {typeof fullOutput === 'string' ? fullOutput : JSON.stringify(fullOutput, null, 2)}
-            </pre>
-          </div>
-        )}
+        </div>
       </div>
     );
   }
