@@ -65,16 +65,10 @@ BUILTIN_COMMANDS.register(SlashCommand("history", "show command history"))
 BUILTIN_COMMANDS.register(SlashCommand("sessions", "list all saved sessions"))
 BUILTIN_COMMANDS.register(SlashCommand("resume", "resume a previous session"))
 BUILTIN_COMMANDS.register(SlashCommand("models", "interactive model/provider selector"))
-BUILTIN_COMMANDS.register(SlashCommand("mention", "insert a workspace mention"))
-BUILTIN_COMMANDS.register(SlashCommand("context", "toggle context overview"))
-
-# File operations commands
-BUILTIN_COMMANDS.register(SlashCommand("tree", "show directory tree structure"))
 
 # Execution commands
 BUILTIN_COMMANDS.register(SlashCommand("run", "run a bash command"))
 BUILTIN_COMMANDS.register(SlashCommand("mode", "switch between NORMAL and PLAN mode"))
-BUILTIN_COMMANDS.register(SlashCommand("undo", "undo the last operation"))
 
 # Advanced commands
 BUILTIN_COMMANDS.register(SlashCommand("init", "analyze codebase and generate AGENTS.md"))

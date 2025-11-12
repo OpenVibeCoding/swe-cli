@@ -15,7 +15,6 @@ class TipsManager:
         "Press Shift+Tab to toggle between NORMAL and PLAN modes",
         "Use ↑↓ arrow keys to navigate through command history",
         "Use /help to see all available commands",
-        "Use /tree to visualize your project structure",
         "Use /sessions to list all previous sessions",
         "Use /models to switch between different AI models",
         "Page Up/Page Down scroll through long conversations",
@@ -29,7 +28,6 @@ class TipsManager:
         "Use /continue to resume your most recent session",
         "Use /clear to start a fresh conversation",
         "Approval rules can be customized for different operations",
-        "Use /undo to revert the last operation",
     ]
 
     def __init__(self) -> None:
