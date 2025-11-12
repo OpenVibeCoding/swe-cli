@@ -5,6 +5,15 @@ export function ApprovalDialog() {
   const pendingApproval = useChatStore(state => state.pendingApproval);
   const respondToApproval = useChatStore(state => state.respondToApproval);
 
+  // Debug log
+  useEffect(() => {
+    if (pendingApproval) {
+      console.log('[ApprovalDialog] Showing approval dialog:', pendingApproval);
+    } else {
+      console.log('[ApprovalDialog] No pending approval');
+    }
+  }, [pendingApproval]);
+
   if (!pendingApproval) {
     return null;
   }
