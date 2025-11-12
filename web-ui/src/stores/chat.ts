@@ -212,6 +212,7 @@ wsClient.on('message_start', () => {
 });
 
 wsClient.on('message_chunk', (message) => {
+  console.log('[Frontend] Received message_chunk:', message.data.content.substring(0, 100));
   const { messages } = useChatStore.getState();
   const lastMessage = messages[messages.length - 1];
 
@@ -236,6 +237,7 @@ wsClient.on('message_chunk', (message) => {
 });
 
 wsClient.on('message_complete', () => {
+  console.log('[Frontend] Received message_complete');
   useChatStore.setState({ isLoading: false });
 });
 

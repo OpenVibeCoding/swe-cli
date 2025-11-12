@@ -60,6 +60,7 @@ class AgentExecutor:
             )
 
             # Add assistant response to session
+            logger.info(f"Agent response: success={response.get('success')}, has_content={bool(response.get('content'))}")
             if response and response.get("success"):
                 assistant_content = response.get("content", "")
                 raw_assistant_content = assistant_content
@@ -202,8 +203,10 @@ class AgentExecutor:
 
             # Broadcast the full response as a chunk
             # (Streaming at character level will be added later)
+            logger.info(f"Agent run_sync completed: success={result.get('success')}")
             if result.get("success"):
                 content = result.get("content", "")
+                logger.info(f"Broadcasting message_chunk with content length: {len(str(content))}")
                 try:
                     # Schedule the broadcast coroutine in the event loop
                     future = asyncio.run_coroutine_threadsafe(
@@ -215,8 +218,11 @@ class AgentExecutor:
                     )
                     # Wait for it to complete
                     future.result(timeout=5)
+                    logger.info("message_chunk broadcasted successfully")
                 except Exception as e:
                     logger.error(f"Failed to broadcast message_chunk: {e}")
+            else:
+                logger.warning(f"Agent returned success=False, not broadcasting message_chunk")
 
             return result
 
