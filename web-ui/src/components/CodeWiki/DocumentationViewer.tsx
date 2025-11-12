@@ -9,14 +9,32 @@ import {
 } from '@heroicons/react/24/outline';
 import './CodeWiki.css';
 
+interface WikiPage {
+  id: string;
+  title: string;
+  type: 'architecture' | 'api' | 'guide' | 'reference' | 'overview';
+  path?: string;
+  content: string;
+  description?: string;
+  lastModified: string;
+  importance?: number;
+  parent?: string;
+  children?: WikiPage[];
+  relatedFiles?: string[];
+  relatedPages?: string[];
+  tags?: string[];
+  diagrams?: string[];
+}
+
 interface DocumentationItem {
   id: string;
   title: string;
-  type: 'readme' | 'doc' | 'code' | 'folder';
-  path: string;
+  type: 'wiki-page' | 'readme' | 'doc' | 'code' | 'folder';
+  path?: string;
   content?: string;
   children?: DocumentationItem[];
   lastModified: string;
+  wikiPage?: WikiPage;
 }
 
 interface DocumentationViewerProps {
@@ -25,8 +43,211 @@ interface DocumentationViewerProps {
   onIndexingChange: (isIndexing: boolean) => void;
 }
 
-// Mock data for development
+// Mock wiki pages that demonstrate DeepWiki-style intelligent documentation
+const mockWikiPages: WikiPage[] = [
+  {
+    id: 'overview',
+    title: 'SWE-CLI Architecture Overview',
+    type: 'overview',
+    description: 'High-level architecture and design principles of SWE-CLI',
+    lastModified: '2 hours ago',
+    importance: 10,
+    content: `# SWE-CLI Architecture Overview
+
+SWE-CLI (Software Engineering CLI) is an AI-powered command-line tool designed to enhance developer productivity through intelligent code assistance and automation.
+
+## Core Components
+
+### 1. Agent System
+- **Multi-Agent Architecture**: Specialized agents for different tasks (coding, debugging, testing)
+- **Agent Orchestrator**: Coordinates multiple agents for complex workflows
+- **Tool Integration**: Extensible tool system for file operations, web access, and more
+
+### 2. Web Interface
+- **Real-time Communication**: WebSocket-based live updates
+- **Session Management**: Persistent conversation history and workspace management
+- **Approval System**: Interactive tool execution approval with detailed previews
+
+### 3. Backend Services
+- **Tool Registry**: Centralized tool discovery and execution
+- **Configuration Management**: Dynamic configuration with workspace-specific settings
+- **WebSocket Server**: Real-time bidirectional communication
+
+## Key Design Principles
+
+- **Modularity**: Each component is independently testable and replaceable
+- **Extensibility**: Plugin-based architecture for custom tools and agents
+- **Security**: Sandboxed execution environment with approval workflows
+- **Performance**: Async execution with intelligent caching and optimization`,
+    relatedFiles: ['swecli/core/agent.py', 'swecli/web/server.py', 'swecli/tools/registry.py'],
+    relatedPages: ['agent-system', 'web-interface', 'tool-system'],
+    tags: ['architecture', 'overview', 'design'],
+    diagrams: ['architecture-diagram.svg', 'component-interaction.svg']
+  },
+  {
+    id: 'agent-system',
+    title: 'Agent System Architecture',
+    type: 'architecture',
+    description: 'Detailed breakdown of the multi-agent execution system',
+    lastModified: '3 hours ago',
+    importance: 9,
+    parent: 'overview',
+    content: `# Agent System Architecture
+
+The agent system is the core intelligence layer of SWE-CLI, responsible for understanding user intent and executing complex coding tasks through coordinated tool usage.
+
+## Agent Types
+
+### 1. Normal Agent
+- **Purpose**: General coding assistance and problem-solving
+- **Capabilities**: Code analysis, file operations, debugging, testing
+- **Tool Access**: Full tool registry with approval workflows
+- **Primary Use Case**: Daily development tasks and code improvement
+
+### 2. Debug Agent
+- **Purpose**: Specialized debugging and error resolution
+- **Capabilities**: Stack trace analysis, root cause identification, fix suggestions
+- **Tool Access**: Read-only operations with limited write capabilities
+- **Primary Use Case**: Troubleshooting and bug fixing
+
+### 3. Planning Agent
+- **Purpose**: Complex task decomposition and workflow planning
+- **Capabilities**: Task breakdown, dependency analysis, execution planning
+- **Tool Access**: Analysis tools without execution capabilities
+- **Primary Use Case**: Large-scale refactoring and feature implementation
+
+## Agent Lifecycle
+
+1. **Intent Analysis**: Understanding user requirements and context
+2. **Tool Selection**: Choosing appropriate tools for the task
+3. **Execution Planning**: Creating step-by-step execution plan
+4. **Tool Execution**: Running tools with user approval when required
+5. **Result Processing**: Analyzing outputs and determining next steps
+6. **Response Generation**: Providing clear, actionable responses`,
+    relatedFiles: ['swecli/core/agent.py', 'swecli/agents/normal.py', 'swecli/agents/debug.py'],
+    relatedPages: ['tool-system', 'approval-workflow'],
+    tags: ['agents', 'architecture', 'execution']
+  },
+  {
+    id: 'web-interface',
+    title: 'Web Interface and Real-time Communication',
+    type: 'architecture',
+    description: 'Modern web-based interface with WebSocket communication',
+    lastModified: '1 day ago',
+    importance: 8,
+    parent: 'overview',
+    content: `# Web Interface Architecture
+
+The web interface provides a modern, responsive UI for SWE-CLI with real-time communication capabilities and session management.
+
+## Frontend Components
+
+### 1. Chat Interface
+- **Real-time Messaging**: Live updates via WebSocket connections
+- **Tool Call Visualization**: Interactive tool execution with approval dialogs
+- **Session Management**: Persistent conversation history and workspace switching
+- **Responsive Design**: Optimized for desktop and mobile usage
+
+### 2. Approval System
+- **Tool Previews**: Detailed preview of pending operations
+- **Interactive Approval**: Approve, deny, or modify tool execution
+- **Batch Operations**: Apply approval decisions to multiple similar operations
+- **Security Controls**: Configurable approval rules and restrictions
+
+### 3. Workspace Management
+- **Session Persistence**: Save and restore conversation contexts
+- **File Change Tracking**: Monitor and review all file modifications
+- **Configuration**: Workspace-specific settings and preferences
+
+## Backend Services
+
+### WebSocket Server
+- **Bidirectional Communication**: Real-time message exchange
+- **Connection Management**: Handle multiple concurrent connections
+- **Message Routing**: Efficient message distribution and processing
+- **Error Handling**: Robust error recovery and reporting
+
+### Session Manager
+- **State Management**: Persistent session state and history
+- **Workspace Isolation**: Separate contexts for different projects
+- **File Change Tracking**: Comprehensive audit trail of modifications
+- **Configuration Management**: Dynamic settings and preferences`,
+    relatedFiles: ['swecli/web/server.py', 'swecli/web/websocket.py', 'swecli/web/state.py'],
+    relatedPages: ['api-reference', 'session-management'],
+    tags: ['web', 'websocket', 'ui', 'real-time']
+  },
+  {
+    id: 'api-reference',
+    title: 'API Reference',
+    type: 'reference',
+    description: 'Complete API documentation for SWE-CLI components',
+    lastModified: '6 hours ago',
+    importance: 7,
+    content: `# API Reference
+
+Complete API documentation for SWE-CLI components, including REST endpoints, WebSocket messages, and internal APIs.
+
+## REST API Endpoints
+
+### Session Management
+- \`POST /api/sessions/create\` - Create new session
+- \`GET /api/sessions\` - List all sessions
+- \`POST /api/sessions/{id}/resume\` - Resume existing session
+- \`DELETE /api/sessions/{id}\` - Delete session
+
+### Chat and Messages
+- \`GET /api/chat/messages\` - Get conversation history
+- \`POST /api/chat/clear\` - Clear conversation history
+
+### Configuration
+- \`GET /api/config\` - Get current configuration
+- \`PUT /api/config\` - Update configuration settings
+- \`GET /api/config/providers\` - List AI providers
+
+## WebSocket API
+
+### Message Types
+- \`query\` - Send user query to agent
+- \`approve\` - Respond to tool execution approval
+- \`ping\` - Connection health check
+
+### Event Types
+- \`user_message\` - New user message
+- \`message_start\` - Agent response starting
+- \`message_chunk\` - Partial response content
+- \`message_complete\` - Full response received
+- \`tool_call\` - Tool execution started
+- \`tool_result\` - Tool execution completed
+- \`approval_required\` - User approval needed`,
+    relatedFiles: ['swecli/web/routes/chat.py', 'swecli/web/routes/sessions.py', 'swecli/web/config.py'],
+    relatedPages: ['web-interface'],
+    tags: ['api', 'reference', 'endpoints', 'websocket']
+  }
+];
+
+// Mock documentation tree that combines wiki pages with traditional files
 const mockDocumentation: DocumentationItem[] = [
+  {
+    id: 'wiki-overview',
+    title: 'Architecture Overview',
+    type: 'wiki-page',
+    lastModified: '2 hours ago',
+    wikiPage: mockWikiPages[0]
+  },
+  {
+    id: 'wiki-agent-system',
+    title: 'Agent System',
+    type: 'wiki-page',
+    lastModified: '3 hours ago',
+    wikiPage: mockWikiPages[1]
+  },
+  {
+    id: 'wiki-web-interface',
+    title: 'Web Interface',
+    type: 'wiki-page',
+    lastModified: '1 day ago',
+    wikiPage: mockWikiPages[2]
+  },
   {
     id: '1',
     title: 'README.md',
@@ -59,7 +280,7 @@ swe-cli chat
 - [Examples](./examples/)`
   },
   {
-    id: '2',
+    id: 'docs',
     title: 'docs',
     type: 'folder',
     path: '/docs',
@@ -78,36 +299,6 @@ swe-cli chat
         type: 'doc',
         path: '/docs/api.md',
         lastModified: '3 days ago'
-      },
-      {
-        id: '2-3',
-        title: 'configuration.md',
-        type: 'doc',
-        path: '/docs/configuration.md',
-        lastModified: '1 week ago'
-      }
-    ]
-  },
-  {
-    id: '3',
-    title: 'examples',
-    type: 'folder',
-    path: '/examples',
-    lastModified: '2 days ago',
-    children: [
-      {
-        id: '3-1',
-        title: 'basic-chat.py',
-        type: 'code',
-        path: '/examples/basic-chat.py',
-        lastModified: '2 days ago'
-      },
-      {
-        id: '3-2',
-        title: 'code-review.js',
-        type: 'code',
-        path: '/examples/code-review.js',
-        lastModified: '5 days ago'
       }
     ]
   }
@@ -168,6 +359,15 @@ export function DocumentationViewer({ selectedRepo, searchQuery, onIndexingChang
   const renderDocumentationItem = (item: DocumentationItem, level = 0) => {
     const getItemIcon = () => {
       switch (item.type) {
+        case 'wiki-page':
+          return item.wikiPage ? (
+            <div className="flex items-center gap-1">
+              <DocumentTextIcon className="w-4 h-4 text-purple-500" />
+              {item.wikiPage.importance && item.wikiPage.importance > 8 && (
+                <div className="w-2 h-2 bg-orange-400 rounded-full" />
+              )}
+            </div>
+          ) : <DocumentTextIcon className="w-4 h-4 text-purple-500" />;
         case 'readme':
           return <DocumentTextIcon className="w-4 h-4 text-blue-500" />;
         case 'doc':
@@ -189,8 +389,34 @@ export function DocumentationViewer({ selectedRepo, searchQuery, onIndexingChang
           onClick={() => setSelectedDoc(item)}
         >
           {getItemIcon()}
-          <span className="text-sm text-gray-900 truncate flex-1">{item.title}</span>
-          <span className="text-xs text-gray-500">{item.lastModified}</span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-900 truncate">{item.title}</span>
+              {item.wikiPage?.tags && (
+                <div className="flex gap-1">
+                  {item.wikiPage.tags.slice(0, 2).map(tag => (
+                    <span
+                      key={tag}
+                      className="px-2 py-0.5 text-xs bg-purple-100 text-purple-700 rounded-full"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+            {item.wikiPage?.description && (
+              <p className="text-xs text-gray-600 mt-1 line-clamp-2">{item.wikiPage.description}</p>
+            )}
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <span className="text-xs text-gray-500">{item.lastModified}</span>
+            {item.wikiPage?.relatedFiles && (
+              <span className="text-xs text-blue-600">
+                {item.wikiPage.relatedFiles.length} files
+              </span>
+            )}
+          </div>
         </div>
         {item.children && item.children.map(child => renderDocumentationItem(child, level + 1))}
       </div>
@@ -248,18 +474,123 @@ export function DocumentationViewer({ selectedRepo, searchQuery, onIndexingChang
             <>
               {/* Document Header */}
               <div className="border-b border-gray-200 p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  {selectedDoc.type === 'readme' && <DocumentTextIcon className="w-5 h-5 text-blue-500" />}
-                  {selectedDoc.type === 'doc' && <DocumentTextIcon className="w-5 h-5 text-gray-500" />}
-                  {selectedDoc.type === 'code' && <CodeBracketIcon className="w-5 h-5 text-green-500" />}
-                  <h2 className="text-lg font-semibold text-gray-900">{selectedDoc.title}</h2>
+                <div className="flex items-start gap-3 mb-3">
+                  <div>
+                    {selectedDoc.type === 'wiki-page' && <DocumentTextIcon className="w-5 h-5 text-purple-500" />}
+                    {selectedDoc.type === 'readme' && <DocumentTextIcon className="w-5 h-5 text-blue-500" />}
+                    {selectedDoc.type === 'doc' && <DocumentTextIcon className="w-5 h-5 text-gray-500" />}
+                    {selectedDoc.type === 'code' && <CodeBracketIcon className="w-5 h-5 text-green-500" />}
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-1">{selectedDoc.title}</h2>
+                    {selectedDoc.wikiPage && (
+                      <div className="flex items-center gap-3 text-sm text-gray-600">
+                        <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                          {selectedDoc.wikiPage.type}
+                        </span>
+                        {selectedDoc.wikiPage.importance && (
+                          <span className="flex items-center gap-1">
+                            <span>Importance:</span>
+                            <span className="font-medium">{selectedDoc.wikiPage.importance}/10</span>
+                          </span>
+                        )}
+                        {selectedDoc.wikiPage.lastModified && (
+                          <span>Last updated: {selectedDoc.wikiPage.lastModified}</span>
+                        )}
+                      </div>
+                    )}
+                    {selectedDoc.path && (
+                      <p className="text-sm text-gray-600 font-mono">{selectedDoc.path}</p>
+                    )}
+                  </div>
                 </div>
-                <p className="text-sm text-gray-600 font-mono">{selectedDoc.path}</p>
+                {selectedDoc.wikiPage?.description && (
+                  <p className="text-sm text-gray-700 bg-purple-50 p-3 rounded-lg border border-purple-200">
+                    {selectedDoc.wikiPage.description}
+                  </p>
+                )}
+                {selectedDoc.wikiPage?.tags && (
+                  <div className="flex gap-2 flex-wrap">
+                    {selectedDoc.wikiPage.tags.map(tag => (
+                      <span
+                        key={tag}
+                        className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Document Content */}
               <div className="flex-1 overflow-y-auto p-6">
-                {selectedDoc.content ? (
+                {selectedDoc.wikiPage ? (
+                  <div className="prose prose-sm max-w-none">
+                    <div dangerouslySetInnerHTML={{
+                      __html: selectedDoc.wikiPage.content.replace(
+                        /`([^`]+)`/g,
+                        '<code class="bg-gray-100 px-1 py-0.5 rounded text-sm text-gray-800">$1</code>'
+                      ).replace(
+                        /\*\*([^*]+)\*\*/g,
+                        '<strong>$1</strong>'
+                      ).replace(
+                        /### (.+)/g,
+                        '<h3 class="text-lg font-semibold text-gray-900 mt-6 mb-3">$1</h3>'
+                      ).replace(
+                        /## (.+)/g,
+                        '<h2 class="text-xl font-bold text-gray-900 mt-8 mb-4">$1</h2>'
+                      ).replace(
+                        /# (.+)/g,
+                        '<h1 class="text-2xl font-bold text-gray-900 mt-8 mb-6">$1</h1>'
+                      ).replace(
+                        /- (.+)/g,
+                        '<li class="ml-4 mb-1">$1</li>'
+                      ).replace(
+                        /\n\n/g,
+                        '</p><p class="mb-4">'
+                      )
+                    }} />
+                    {selectedDoc.wikiPage.relatedFiles && selectedDoc.wikiPage.relatedFiles.length > 0 && (
+                      <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <h4 className="font-semibold text-blue-900 mb-2">Related Files</h4>
+                        <div className="space-y-2">
+                          {selectedDoc.wikiPage.relatedFiles.map((file, index) => (
+                            <div key={index} className="flex items-center gap-2 text-sm">
+                              <CodeBracketIcon className="w-4 h-4 text-blue-600" />
+                              <code className="text-blue-800 bg-blue-100 px-2 py-1 rounded">{file}</code>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {selectedDoc.wikiPage.relatedPages && selectedDoc.wikiPage.relatedPages.length > 0 && (
+                      <div className="mt-8 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                        <h4 className="font-semibold text-purple-900 mb-2">Related Pages</h4>
+                        <div className="space-y-2">
+                          {selectedDoc.wikiPage.relatedPages.map((page, index) => (
+                            <div key={index} className="flex items-center gap-2 text-sm">
+                              <DocumentTextIcon className="w-4 h-4 text-purple-600" />
+                              <span className="text-purple-800 underline cursor-pointer hover:text-purple-900">{page}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {selectedDoc.wikiPage.diagrams && selectedDoc.wikiPage.diagrams.length > 0 && (
+                      <div className="mt-8 p-4 bg-green-50 rounded-lg border border-green-200">
+                        <h4 className="font-semibold text-green-900 mb-2">Diagrams</h4>
+                        <div className="space-y-2 text-sm text-green-800">
+                          {selectedDoc.wikiPage.diagrams.map((diagram, index) => (
+                            <div key={index} className="flex items-center gap-2">
+                              📊 {diagram}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : selectedDoc.content ? (
                   <div className="prose prose-sm max-w-none">
                     <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono">
                       {selectedDoc.content}
