@@ -10,6 +10,7 @@ from pathlib import Path
 warnings.filterwarnings("ignore", message=".*None of PyTorch, TensorFlow.*found.*")
 
 from rich.console import Console
+from rich.panel import Panel
 
 from swecli.core.approval import ApprovalManager
 from swecli.core.management import ConfigManager, ModeManager, SessionManager, UndoManager
@@ -629,10 +630,11 @@ def _handle_run_command(args) -> None:
                         mcp_manager=mcp_manager,
                         host=backend_host,
                         port=backend_port,
-                        open_browser=False,
+                        open_browser=True,
+                        background=True,
                     )
 
-                    time.sleep(1.0)
+                    time.sleep(1.5)
 
                     if not web_server_thread.is_alive():
                         console.print("[red]Error: Backend server thread terminated unexpectedly[/red]")
@@ -662,44 +664,20 @@ def _handle_run_command(args) -> None:
                     console.print("• Or build from source with web UI included")
                     sys.exit(1)
 
-                frontend_desc = f"Serving built assets from {static_dir}"
                 backend_url = f"http://{backend_host}:{backend_port}"
 
-                def open_browser_delayed():
-                    time.sleep(1.5)
-                    webbrowser.open(backend_url)
-
-                import threading
-                browser_thread = threading.Thread(target=open_browser_delayed, daemon=True)
-                browser_thread.start()
-
+            # Print warnings if any
             for warning in warnings:
                 console.print(warning)
 
-            summary = "\n".join(
-                [
-                    "[bold green]Web UI ready[/bold green]",
-                    f"  • Backend    [cyan]{backend_url}[/cyan] (docs at /docs)",
-                    f"  • Frontend   {frontend_desc}",
-                    f"  • Browser    Auto-opened [cyan]{backend_url}[/cyan]",
-                    "[dim]Press Ctrl+C to stop the server[/dim]",
-                ]
-            )
-            console.print(summary + "\n")
-
-            # Keep the main thread alive and serve until interrupted
-            try:
-                while True:
-                    time.sleep(1)
-            except KeyboardInterrupt:
-                console.print("\n[yellow]Stopping server...[/yellow]")
+            # Simple success message
+            import os
+            pid = os.getpid()
+            console.print(f"[bold green]✓[/bold green] Web UI available at [cyan]{backend_url}[/cyan]")
+            console.print(f"[dim]  Stop with: kill {pid}[/dim]\n")
 
         except KeyboardInterrupt:
-            console.print("\n[yellow]Stopping dev server...[/yellow]")
-        except FileNotFoundError:
-            console.print("[red]Error: npm not found. Please install Node.js and npm.[/red]")
-            console.print("Visit: https://nodejs.org/")
-            sys.exit(1)
+            console.print("\n[yellow]Startup cancelled.[/yellow]")
         except Exception as e:
             console.print(f"[red]Error: {str(e)}[/red]")
             sys.exit(1)
