@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronDownIcon, Cog6ToothIcon, Bars3Icon, XMarkIcon, FolderIcon, PlusIcon, ChatBubbleLeftRightIcon, BookOpenIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon, Cog6ToothIcon, Bars3Icon, XMarkIcon, FolderIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useChatStore } from '../../stores/chat';
 import { SettingsModal } from '../Settings/SettingsModal';
 import { NewSessionModal } from './NewSessionModal';
@@ -25,12 +25,7 @@ interface WorkspaceGroup {
   mostRecent: Session;
 }
 
-interface SessionsSidebarProps {
-  activeTab: 'chat' | 'codewiki';
-  setActiveTab: (tab: 'chat' | 'codewiki') => void;
-}
-
-export function SessionsSidebar({ activeTab, setActiveTab }: SessionsSidebarProps) {
+export function SessionsSidebar() {
   const [_sessions, setSessions] = useState<Session[]>([]);
   const [workspaces, setWorkspaces] = useState<WorkspaceGroup[]>([]);
   const [expandedWorkspaces, setExpandedWorkspaces] = useState<Set<string>>(new Set());
@@ -281,38 +276,9 @@ export function SessionsSidebar({ activeTab, setActiveTab }: SessionsSidebarProp
         )}
       </div>
 
-      {/* Navigation Tabs */}
+  
+      {/* Workspaces Header */}
       {!isCollapsed && (
-        <div className="px-5 py-4 border-b border-gray-100">
-          <nav className="flex space-x-1">
-            <button
-              onClick={() => setActiveTab('chat')}
-              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                activeTab === 'chat'
-                  ? 'bg-blue-500 text-white shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-            >
-              <ChatBubbleLeftRightIcon className="w-4 h-4" />
-              <span>Chat</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('codewiki')}
-              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                activeTab === 'codewiki'
-                  ? 'bg-purple-500 text-white shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-            >
-              <BookOpenIcon className="w-4 h-4" />
-              <span>CodeWiki</span>
-            </button>
-          </nav>
-        </div>
-      )}
-
-      {/* Workspaces Header - Only show in Chat tab */}
-      {!isCollapsed && activeTab === 'chat' && (
       <>
         <div className="px-5 py-4 border-b border-gray-100">
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Workspaces</h2>
