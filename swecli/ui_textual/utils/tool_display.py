@@ -202,17 +202,60 @@ def summarize_tool_arguments(tool_name: str, tool_args: Mapping[str, Any]) -> st
 
 
 def build_tool_call_text(tool_name: str, tool_args: Mapping[str, Any]) -> Text:
-    verb, label = get_tool_display_parts(tool_name)
-    summary = summarize_tool_arguments(tool_name, tool_args)
-    text = Text(verb)
-    if summary:
-        text.append(f" ({summary})", style="dim")
-    elif label:
-        text.append(f" ({label})", style="dim")
-    return text
+    # Use the same enhanced formatting for rich text display
+    formatted = format_tool_call(tool_name, tool_args)
+
+    # Parse the formatted string to add styling
+    if '(' in formatted and formatted.endswith(')'):
+        tool_part, params_part = formatted.split('(', 1)
+        params_part = params_part[:-1]  # Remove closing parenthesis
+
+        text = Text(tool_part)
+        if params_part:
+            text.append(f" ({params_part})", style="dim")
+        return text
+    else:
+        return Text(formatted)
 
 
 def format_tool_call(tool_name: str, tool_args: Mapping[str, Any]) -> str:
+    # Enhanced formatting for Search tool
+    if tool_name == "search" and tool_args:
+        params = []
+        if "pattern" in tool_args and tool_args["pattern"]:
+            params.append(f'pattern: "{tool_args["pattern"]}"')
+        if "glob" in tool_args and tool_args["glob"]:
+            params.append(f'glob: "{tool_args["glob"]}"')
+        if "output_mode" in tool_args and tool_args["output_mode"]:
+            params.append(f'output_mode: "{tool_args["output_mode"]}"')
+        if "path" in tool_args and tool_args["path"] and tool_args["path"] != ".":
+            params.append(f'path: "{tool_args["path"]}"')
+
+        if params:
+            return f"Search({', '.join(params)})"
+
+    # Enhanced formatting for Web Fetch tool
+    elif tool_name == "fetch_url" and tool_args:
+        params = []
+        if "url" in tool_args and tool_args["url"]:
+            params.append(f'url: "{tool_args["url"]}"')
+        if "deep_crawl" in tool_args and tool_args["deep_crawl"]:
+            params.append(f'deep_crawl: {tool_args["deep_crawl"]}')
+            if "max_depth" in tool_args and tool_args["max_depth"] != 1:
+                params.append(f'max_depth: {tool_args["max_depth"]}')
+            if "max_pages" in tool_args and tool_args["max_pages"]:
+                params.append(f'max_pages: {tool_args["max_pages"]}')
+            if "crawl_strategy" in tool_args and tool_args["crawl_strategy"] != "best_first":
+                params.append(f'crawl_strategy: "{tool_args["crawl_strategy"]}"')
+        if "extract_text" in tool_args and not tool_args["extract_text"]:
+            params.append(f'extract_text: {tool_args["extract_text"]}')
+        if "include_external" in tool_args and tool_args["include_external"]:
+            params.append(f'include_external: {tool_args["include_external"]}')
+
+        if params:
+            return f"Fetch({', '.join(params)})"
+
+    # Default formatting for other tools
     verb, label = get_tool_display_parts(tool_name)
     summary = summarize_tool_arguments(tool_name, tool_args)
     if summary:
