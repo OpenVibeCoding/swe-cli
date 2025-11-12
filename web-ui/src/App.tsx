@@ -1,16 +1,23 @@
+import { useState } from 'react';
 import { SessionsSidebar } from './components/Layout/SessionsSidebar';
 import { ChatInterface } from './components/Chat/ChatInterface';
+import { CodeWikiInterface } from './components/CodeWiki/CodeWikiInterface';
 import { ApprovalDialog } from './components/ApprovalDialog';
 
+type Tab = 'chat' | 'codewiki';
+
 function App() {
+  const [activeTab, setActiveTab] = useState<Tab>('chat');
+
   return (
     <div className="h-screen flex bg-cream">
       {/* Left Sidebar - Sessions */}
-      <SessionsSidebar />
+      <SessionsSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      {/* Main Chat Area - Now uses full available space */}
+      {/* Main Content Area */}
       <main className="flex-1 flex flex-col overflow-hidden bg-white">
-        <ChatInterface />
+        {activeTab === 'chat' && <ChatInterface />}
+        {activeTab === 'codewiki' && <CodeWikiInterface />}
       </main>
 
       {/* Modals */}
