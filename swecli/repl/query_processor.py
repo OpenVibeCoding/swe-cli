@@ -283,8 +283,14 @@ class QueryProcessor:
         if session:
             try:
                 playbook = session.get_playbook()
-                # Use ACE's as_prompt() method to format playbook
-                playbook_context = playbook.as_prompt()
+                # Use ACE's as_context() method for intelligent bullet selection
+                # Falls back to as_prompt() if selection disabled or playbook is small
+                max_strategies = getattr(self.config, 'max_playbook_strategies', 30)
+                playbook_context = playbook.as_context(
+                    query=query,  # For future semantic matching (Phase 2+)
+                    max_strategies=max_strategies,
+                    use_selection=True,  # Set to False to disable selection
+                )
                 if playbook_context:
                     system_content = f"{system_content.rstrip()}\n\n## Learned Strategies\n{playbook_context}"
             except Exception:  # pragma: no cover

@@ -243,7 +243,10 @@ class Playbook:
     # Presentation helpers
     # ------------------------------------------------------------------ #
     def as_prompt(self) -> str:
-        """Return playbook as formatted string for LLM prompting."""
+        """Return playbook as formatted string for LLM prompting.
+
+        Returns ALL bullets without selection. Use as_context() for intelligent selection.
+        """
         parts: List[str] = []
         for section, bullet_ids in sorted(self._sections.items()):
             parts.append(f"## {section}")
@@ -251,6 +254,68 @@ class Playbook:
                 bullet = self._bullets[bullet_id]
                 counters = f"(helpful={bullet.helpful}, harmful={bullet.harmful}, neutral={bullet.neutral})"
                 parts.append(f"- [{bullet.id}] {bullet.content} {counters}")
+        return "\n".join(parts)
+
+    def as_context(
+        self,
+        query: Optional[str] = None,
+        max_strategies: Optional[int] = 30,
+        use_selection: bool = True,
+        weights: Optional[Dict[str, float]] = None,
+    ) -> str:
+        """Return intelligently selected bullets for LLM context.
+
+        This method implements ACE's hybrid retrieval approach, selecting only the
+        most relevant bullets instead of including all bullets in context.
+
+        Args:
+            query: User query for semantic matching (Phase 2+, currently unused)
+            max_strategies: Maximum number of bullets to include (None = all)
+            use_selection: Whether to use intelligent selection (False = same as as_prompt())
+            weights: Custom scoring weights (effectiveness, recency, semantic)
+
+        Returns:
+            Formatted string with selected bullets
+
+        Examples:
+            >>> playbook.as_context(query="fix authentication bug", max_strategies=20)
+            Returns top 20 most relevant bullets for authentication debugging
+        """
+        from .selector import BulletSelector
+
+        # Get all bullets
+        all_bullets = self.bullets()
+
+        # If no bullets or selection disabled, return all
+        if not all_bullets or not use_selection:
+            return self.as_prompt()
+
+        # If max_strategies is None or >= total bullets, return all
+        if max_strategies is None or max_strategies >= len(all_bullets):
+            return self.as_prompt()
+
+        # Select top-K bullets
+        selector = BulletSelector(weights=weights)
+        selected_bullets = selector.select(
+            bullets=all_bullets,
+            max_count=max_strategies,
+            query=query,
+        )
+
+        # Format selected bullets (same format as as_prompt())
+        # Group by section
+        bullets_by_section: Dict[str, List[Bullet]] = {}
+        for bullet in selected_bullets:
+            bullets_by_section.setdefault(bullet.section, []).append(bullet)
+
+        # Format output
+        parts: List[str] = []
+        for section in sorted(bullets_by_section.keys()):
+            parts.append(f"## {section}")
+            for bullet in bullets_by_section[section]:
+                counters = f"(helpful={bullet.helpful}, harmful={bullet.harmful}, neutral={bullet.neutral})"
+                parts.append(f"- [{bullet.id}] {bullet.content} {counters}")
+
         return "\n".join(parts)
 
     def stats(self) -> Dict[str, object]:
