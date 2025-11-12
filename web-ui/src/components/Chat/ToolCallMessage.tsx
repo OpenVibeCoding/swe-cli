@@ -257,10 +257,14 @@ export function ToolCallMessage({ message }: ToolCallMessageProps) {
                      (message as any)?.name || '';
 
     const toolArgs = message.tool_args || {};
-    const toolResult = message.tool_result || {};
+    const toolResult = message.tool_result ?? {};
+    const summaryOverride = message.tool_summary;
+    const successOverride = message.tool_success;
 
     const { verb } = getToolDisplayParts(toolName);
-    const summary = summarizeToolArgs(toolName, toolArgs);
+    const summary =
+      message.tool_args_display ??
+      summarizeToolArgs(toolName, toolArgs);
 
     // Handle result processing
     let resultData = toolResult;
@@ -278,24 +282,42 @@ export function ToolCallMessage({ message }: ToolCallMessageProps) {
 
     // Get result summary
     let summaryLines: string[] = [];
-    try {
-      summaryLines = formatToolResult(toolName, toolArgs, resultData);
-    } catch {
-      if (typeof toolResult === 'string') {
-        const cleaned = toolResult.replace(/::tool_error::|::interrupted::/g, '').trim();
-        summaryLines = cleaned.split('\n').slice(0, 3).filter((line: string) => line.trim());
-        if (cleaned.split('\n').length > 3) {
-          summaryLines.push('…');
+    if (summaryOverride) {
+      summaryLines = Array.isArray(summaryOverride)
+        ? summaryOverride
+        : [summaryOverride];
+    } else {
+      try {
+        summaryLines = formatToolResult(toolName, toolArgs, resultData);
+      } catch {
+        if (typeof toolResult === 'string') {
+          const cleaned = toolResult.replace(/::tool_error::|::interrupted::/g, '').trim();
+          summaryLines = cleaned.split('\n').slice(0, 3).filter((line: string) => line.trim());
+          if (cleaned.split('\n').length > 3) {
+            summaryLines.push('…');
+          }
+        } else {
+          summaryLines = ['Tool completed'];
         }
-      } else {
-        summaryLines = ['Tool completed'];
       }
     }
 
     // Check for expandable content
-    const fullOutput = typeof toolResult === 'string' ? toolResult :
-                      (resultData?.output || JSON.stringify(resultData, null, 2));
-    const hasExpandableContent = fullOutput && fullOutput.length > 200;
+    let fullOutput: string | undefined;
+    if (typeof toolResult === 'string') {
+      fullOutput = toolResult;
+    } else if (resultData?.output) {
+      fullOutput = typeof resultData.output === 'string'
+        ? resultData.output
+        : JSON.stringify(resultData.output, null, 2);
+    } else if (Object.keys(resultData || {}).length > 0) {
+      try {
+        fullOutput = JSON.stringify(resultData, null, 2);
+      } catch {
+        fullOutput = String(resultData);
+      }
+    }
+    const hasExpandableContent = !!fullOutput && fullOutput.length > 200;
 
     return (
       <div className="bg-slate-100 border border-slate-300 rounded-lg px-4 py-3 shadow-sm">
@@ -317,9 +339,13 @@ export function ToolCallMessage({ message }: ToolCallMessageProps) {
           <div className="ml-4 pl-3 border-l-2 border-slate-300">
             {summaryLines.map((line: string, index: number) => {
               // Check if this line indicates success or failure
-              const isSuccess = line.includes('Read') || line.includes('Created') || line.includes('Updated') ||
-                               line.includes('Changes') || line.includes('Packages installed') || line.includes('completed');
-              const isError = line.includes('Error') || line.includes('Failed') || line.includes('interrupted') || line.includes('Exit code');
+              const isSuccess = successOverride ?? (
+                line.includes('Read') || line.includes('Created') || line.includes('Updated') ||
+                line.includes('Changes') || line.includes('Packages installed') || line.includes('completed')
+              );
+              const isError = message.tool_error
+                ? true
+                : line.includes('Error') || line.includes('Failed') || line.includes('interrupted') || line.includes('Exit code');
 
               return (
                 <div key={index} className={`font-mono text-sm mb-1 leading-6 ${
@@ -347,9 +373,11 @@ export function ToolCallMessage({ message }: ToolCallMessageProps) {
         {/* Expanded content */}
         {hasExpandableContent && isExpanded && (
           <div className="ml-4 mt-3 pl-3 border-t border-slate-300 pt-3">
-            <pre className="text-sm text-slate-600 font-mono bg-white border border-slate-300 rounded p-3 overflow-x-auto max-h-96 leading-6">
-              {typeof fullOutput === 'string' ? fullOutput : JSON.stringify(fullOutput, null, 2)}
-            </pre>
+            {fullOutput && (
+              <pre className="text-sm text-slate-600 font-mono bg-white border border-slate-300 rounded p-3 overflow-x-auto max-h-96 leading-6">
+                {fullOutput}
+              </pre>
+            )}
           </div>
         )}
       </div>
