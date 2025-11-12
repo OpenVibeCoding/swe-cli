@@ -107,21 +107,20 @@ export function MessageList() {
                 </div>
               ) : (
                 <div className="max-w-3xl">
-                  {/* Assistant message header with timestamp */}
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="text-gray-500 font-mono text-sm">❯</span>
-                    <span className="text-gray-400 text-xs font-mono">
-                      {message.timestamp ?
-                        new Date(message.timestamp).toLocaleTimeString() :
-                        new Date().toLocaleTimeString()
-                      }
-                    </span>
-                  </div>
-
-                  {/* Assistant message content */}
+                  {/* Assistant message with inline timestamp */}
                   <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 shadow-sm">
-                    <div className="prose prose-sm max-w-none">
-                      <ReactMarkdown
+                    <div className="flex items-start gap-3">
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-gray-500 font-mono text-sm">❯</span>
+                        <span className="text-gray-400 text-xs font-mono">
+                          {message.timestamp ?
+                            new Date(message.timestamp).toLocaleTimeString() :
+                            new Date().toLocaleTimeString()
+                          }
+                        </span>
+                      </div>
+                      <div className="flex-1 mt-0.5 prose prose-sm max-w-none">
+                        <ReactMarkdown
                         components={{
                           code({ node, className, children, ...props }) {
                             const isInline = (props as any)?.inline;
@@ -161,6 +160,7 @@ export function MessageList() {
                       >
                         {message.content}
                       </ReactMarkdown>
+                      </div>
                     </div>
                   </div>
                 </div>

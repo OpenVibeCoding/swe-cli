@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronDownIcon, Cog6ToothIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon, Cog6ToothIcon, Bars3Icon, XMarkIcon, FolderIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useChatStore } from '../../stores/chat';
 import { SettingsModal } from '../Settings/SettingsModal';
 import { NewSessionModal } from './NewSessionModal';
@@ -42,6 +42,19 @@ export function SessionsSidebar() {
 
   useEffect(() => {
     fetchSessions();
+  }, []);
+
+  // Keyboard shortcut to toggle sidebar (Ctrl/Cmd + B)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault();
+        setIsCollapsed(prev => !prev);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const fetchSessions = async () => {
@@ -213,16 +226,20 @@ export function SessionsSidebar() {
   };
 
   return (
-    <aside className={`h-full bg-gradient-to-b from-gray-50 to-white border-r border-gray-200 flex flex-col shadow-sm transition-all duration-300 ${
-      isCollapsed ? 'w-16' : 'w-88'
-    }`}>
+    <aside className={`h-full bg-gradient-to-b from-gray-50 to-white border-r border-gray-200 flex flex-col shadow-sm transition-all duration-300 ease-in-out ${
+      isCollapsed ? 'w-16' : 'w-80'
+    } relative`}>
       {/* Logo and Brand - Centered */}
       <div className={`border-b border-gray-200 flex flex-col items-center ${isCollapsed ? 'p-3' : 'p-6'}`}>
         {/* Toggle Button */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="mb-3 p-2 rounded-lg hover:bg-gray-200 transition-colors self-end"
-          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className={`p-2 rounded-lg transition-all ${
+            isCollapsed 
+              ? 'hover:bg-gray-200 bg-white shadow-sm' 
+              : 'hover:bg-gray-100 self-end'
+          }`}
+          title={`${isCollapsed ? 'Expand' : 'Collapse'} sidebar (Ctrl/Cmd+B)`}
         >
           {isCollapsed ? (
             <Bars3Icon className="w-5 h-5 text-gray-600" />
@@ -424,6 +441,62 @@ export function SessionsSidebar() {
         )}
         </div>
       </>
+      )}
+
+      {/* Collapsed State - Minimal Workspace Indicators */}
+      {isCollapsed && (
+        <div className="flex-1 overflow-y-auto px-2 py-3 space-y-2">
+          {workspaces.slice(0, 5).map((workspace) => {
+            const hasActiveSession = workspace.sessions.some(s => s.id === currentSessionId);
+            
+            return (
+              <div
+                key={workspace.path}
+                className="relative group"
+                title={`${formatWorkspacePath(workspace.path)} (${workspace.sessions.length} sessions)`}
+              >
+                <button
+                  onClick={() => {
+                    // Expand sidebar and select this workspace
+                    setIsCollapsed(false);
+                    // Auto-expand this workspace after sidebar expands
+                    setTimeout(() => {
+                      setExpandedWorkspaces(prev => new Set([...prev, workspace.path]));
+                    }, 100);
+                  }}
+                  className={`w-full aspect-square rounded-lg flex items-center justify-center transition-all duration-200 transform hover:scale-105 ${
+                    hasActiveSession
+                      ? 'bg-blue-100 border-2 border-blue-400 shadow-sm'
+                      : 'bg-gray-100 hover:bg-gray-200 border border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                  }`}
+                >
+                  <FolderIcon className={`w-5 h-5 ${hasActiveSession ? 'text-blue-600' : 'text-gray-500'}`} />
+                </button>
+                
+                {/* Tooltip */}
+                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 shadow-lg">
+                  <div className="font-medium text-sm mb-1">{formatWorkspacePath(workspace.path)}</div>
+                  <div className="text-gray-300 text-xs">{workspace.sessions.length} session{workspace.sessions.length !== 1 ? 's' : ''}</div>
+                  {hasActiveSession && <div className="text-blue-300 text-xs mt-1">● Active</div>}
+                  {/* Arrow */}
+                  <div className="absolute right-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                </div>
+              </div>
+            );
+          })}
+          
+          {/* New Workspace Button (Collapsed) */}
+          <button
+            onClick={() => {
+              setIsCollapsed(false);
+              setTimeout(() => setIsNewSessionOpen(true), 100);
+            }}
+            className="w-full aspect-square rounded-lg flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all"
+            title="New Workspace"
+          >
+            <PlusIcon className="w-5 h-5" />
+          </button>
+        </div>
       )}
 
       {/* Footer */}
