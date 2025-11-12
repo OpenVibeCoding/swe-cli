@@ -92,6 +92,7 @@ If unsure about these commands, ask the user how they verify code quality.
   - Honor user constraints by setting `allowed_domains`, `blocked_domains`, or `url_patterns`; default to same-domain BFS if they don’t care
   - Deep crawls are heavier—confirm the user wants them before running, and summarize per-page results
   - **FOR WEB CLONING**: Use AFTER capturing screenshots, only when needing specific text content
+  - **CRAWL DEPTH SELECTION**: Choose depth based on user requirements - shallow (1-2) for simple sites, medium (3-4) for documentation sites, deep (5+) for complete websites. Always ask if unsure about scope.
 
 - **`capture_web_screenshot(url, ...)`**: Capture full-page screenshots and PDFs using Crawl4AI
   - **PRIORITY FOR WEB CLONING**: ALWAYS use this first before fetch_url for web cloning
