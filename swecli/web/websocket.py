@@ -122,12 +122,16 @@ class WebSocketManager:
 
     async def _handle_approval(self, websocket: WebSocket, data: Dict[str, Any]):
         """Handle an approval response from the web UI."""
+        logger.info(f"Received approval response: {data}")
         approval_data = data.get("data", {})
         approval_id = approval_data.get("approvalId")
         approved = approval_data.get("approved")
         auto_approve = approval_data.get("autoApprove", False)
 
+        logger.info(f"Approval: id={approval_id}, approved={approved}, auto={auto_approve}")
+
         if approval_id is None or approved is None:
+            logger.error(f"Invalid approval data: {approval_data}")
             await self.send_message(
                 websocket,
                 {"type": "error", "data": {"message": "Invalid approval data"}}
@@ -139,12 +143,14 @@ class WebSocketManager:
         success = state.resolve_approval(approval_id, approved, auto_approve)
 
         if not success:
+            logger.error(f"Approval {approval_id} not found in state")
             await self.send_message(
                 websocket,
                 {"type": "error", "data": {"message": f"Approval {approval_id} not found"}}
             )
             return
 
+        logger.info(f"✓ Approval {approval_id} resolved successfully")
         # Broadcast the resolution to all clients
         await self.broadcast({
             "type": "approval_resolved",

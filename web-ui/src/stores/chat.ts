@@ -176,6 +176,7 @@ export const useChatStore = create<ChatState>((set) => ({
   },
 
   respondToApproval: (approvalId: string, approved: boolean, autoApprove: boolean = false) => {
+    console.log('[Frontend] Sending approval response:', { approvalId, approved, autoApprove });
     // Send approval response via WebSocket
     wsClient.send({
       type: 'approve',
@@ -185,6 +186,7 @@ export const useChatStore = create<ChatState>((set) => ({
         autoApprove,
       },
     });
+    console.log('[Frontend] Approval response sent');
     // Clear pending approval
     set({ pendingApproval: null });
   },
