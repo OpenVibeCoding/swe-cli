@@ -161,12 +161,10 @@ class SWECLIChatApp(App):
             self.title = "SWE-CLI Chat"
             self.sub_title = "AI-powered coding assistant"
             render_welcome_panel(self.conversation, real_integration=True)
-            self.status_bar.set_context(15)
         else:
             self.title = "SWE-CLI Chat (Textual POC)"
             self.sub_title = "Full-screen terminal interface"
             render_welcome_panel(self.conversation, real_integration=False)
-            self.status_bar.set_context(15)
 
         if self._on_ready is not None:
             self.call_after_refresh(self._on_ready)

@@ -15,7 +15,6 @@ class StatusBar(Static):
     def __init__(self, model: str = "claude-sonnet-4", **kwargs):
         super().__init__(**kwargs)
         self.mode = "normal"
-        self.context_pct = 0
         self.model = model
         self.spinner_text: str | None = None
         self.spinner_tip: str | None = None
@@ -27,11 +26,6 @@ class StatusBar(Static):
     def set_mode(self, mode: str) -> None:
         """Update mode display."""
         self.mode = mode
-        self.update_status()
-
-    def set_context(self, pct: int) -> None:
-        """Update context percentage."""
-        self.context_pct = pct
         self.update_status()
 
     def set_model_name(self, model: str) -> None:
@@ -59,9 +53,6 @@ class StatusBar(Static):
 
         status.append(f"{self.mode.upper()}", style=f"bold {mode_color}")
         status.append(" (Shift + Tab to cycle)", style="#6a6a6a")
-        status.append("  │  ", style="#6a6a6a")
-
-        status.append(f"Context {self.context_pct}%", style="#808080")
         status.append("  │  ", style="#6a6a6a")
 
         model_display = self._smart_truncate_model(self.model, 60)
