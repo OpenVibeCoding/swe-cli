@@ -97,7 +97,7 @@ export function WikiSidebar({ wikiPages, selectedPageId, onPageSelect }: WikiSid
   };
 
   return (
-    <aside className="w-72 bg-white border-r border-gray-200 overflow-y-auto sticky top-16 h-[calc(100vh-4rem)]">
+    <aside className="w-64 bg-gray-50 border-r border-gray-200 overflow-y-auto sticky top-0 h-[calc(100vh-6.5rem)]">
       <div className="p-4">
         {/* Wiki Pages Section */}
         <div className="mb-6">

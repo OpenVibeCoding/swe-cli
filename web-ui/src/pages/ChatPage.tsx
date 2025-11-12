@@ -4,7 +4,7 @@ import { ApprovalDialog } from '../components/ApprovalDialog';
 
 export function ChatPage() {
   return (
-    <div className="h-screen flex bg-cream">
+    <div className="h-[calc(100vh-3.5rem)] flex bg-cream">
       {/* Left Sidebar - Sessions */}
       <SessionsSidebar />
 

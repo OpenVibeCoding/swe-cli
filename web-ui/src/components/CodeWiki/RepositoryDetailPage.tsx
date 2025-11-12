@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FolderIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
-import { CodeWikiNavBar } from './CodeWikiNavBar';
-import { RepositoryHero } from './RepositoryHero';
+import { Breadcrumb } from '../Layout/Breadcrumb';
 import { WikiSidebar } from './WikiSidebar';
 import { DocumentationContent } from './DocumentationContent';
 import { Repository } from './RepositoryExplorer';
@@ -137,9 +136,11 @@ export function RepositoryDetailPage({ searchQuery = '' }: RepositoryDetailPageP
   const { repoName } = useParams<{ repoName: string }>();
   const repository = getRepositoryByName(repoName || '');
   const [selectedPageId, setSelectedPageId] = useState<string | null>('overview');
-  const [search, setSearch] = useState(searchQuery);
 
   const selectedPage = mockWikiPages.find(page => page.id === selectedPageId);
+
+  // TODO: Implement search functionality
+  void searchQuery;
 
   if (!repository) {
     return (
@@ -162,45 +163,44 @@ export function RepositoryDetailPage({ searchQuery = '' }: RepositoryDetailPageP
     );
   }
 
-  void search;
+  // Build breadcrumb items
+  const breadcrumbItems = [
+    { label: 'CodeWiki', path: '/codewiki' },
+    { label: repository.name },
+  ];
+
+  if (selectedPage) {
+    breadcrumbItems.push({ label: selectedPage.title });
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Fixed Navigation Bar */}
-      <CodeWikiNavBar
-        repoName={repository.name}
-        onSearch={setSearch}
-      />
+    <div className="min-h-screen bg-white">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb items={breadcrumbItems} />
 
-      {/* Main Content - Below Fixed Nav (mt-16 accounts for fixed nav height) */}
-      <div className="pt-16">
-        {/* Repository Hero Section */}
-        <RepositoryHero repository={repository} />
+      {/* 3-Column Layout */}
+      <div className="flex">
+        {/* Left Sidebar - Wiki Navigation */}
+        <WikiSidebar
+          wikiPages={mockWikiPages}
+          selectedPageId={selectedPageId}
+          onPageSelect={setSelectedPageId}
+        />
 
-        {/* 3-Column Layout */}
-        <div className="flex">
-          {/* Left Sidebar - Wiki Navigation */}
-          <WikiSidebar
-            wikiPages={mockWikiPages}
-            selectedPageId={selectedPageId}
-            onPageSelect={setSelectedPageId}
-          />
-
-          {/* Main Content Area */}
-          <main className="flex-1 bg-white min-h-screen">
-            {selectedPage ? (
-              <DocumentationContent wikiPage={selectedPage} />
-            ) : (
-              <div className="flex items-center justify-center h-96">
-                <div className="text-center">
-                  <FolderIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Select a page</h3>
-                  <p className="text-gray-600">Choose a wiki page from the sidebar to view its content</p>
-                </div>
+        {/* Main Content Area */}
+        <main className="flex-1 bg-white min-h-[calc(100vh-6.5rem)]">
+          {selectedPage ? (
+            <DocumentationContent wikiPage={selectedPage} />
+          ) : (
+            <div className="flex items-center justify-center h-96">
+              <div className="text-center">
+                <FolderIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Select a page</h3>
+                <p className="text-gray-600">Choose a wiki page from the sidebar to view its content</p>
               </div>
-            )}
-          </main>
-        </div>
+            </div>
+          )}
+        </main>
       </div>
     </div>
   );
