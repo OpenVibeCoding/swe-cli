@@ -65,6 +65,8 @@ BUILTIN_COMMANDS.register(SlashCommand("history", "show command history"))
 BUILTIN_COMMANDS.register(SlashCommand("sessions", "list all saved sessions"))
 BUILTIN_COMMANDS.register(SlashCommand("resume", "resume a previous session"))
 BUILTIN_COMMANDS.register(SlashCommand("models", "interactive model/provider selector"))
+BUILTIN_COMMANDS.register(SlashCommand("changes", "show files changed in the current session"))
+BUILTIN_COMMANDS.register(SlashCommand("changed-files", "show files changed in the current session"))
 
 # Execution commands
 BUILTIN_COMMANDS.register(SlashCommand("run", "run a bash command"))
