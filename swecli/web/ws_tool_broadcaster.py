@@ -3,13 +3,37 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Dict
+import json
+import uuid
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, Optional
+
+from swecli.web.logging_config import logger
+from swecli.core.utils.tool_result_summarizer import summarize_tool_result
+from swecli.ui_textual.utils.tool_display import summarize_tool_arguments
+
+_PATH_KEYS = {
+    "file_path",
+    "path",
+    "directory",
+    "dir",
+    "target",
+    "image_path",
+    "working_dir",
+}
 
 
 class WebSocketToolBroadcaster:
     """Wraps tool registry to broadcast tool execution events via WebSocket."""
 
-    def __init__(self, tool_registry: Any, ws_manager: Any, loop: asyncio.AbstractEventLoop):
+    def __init__(
+        self,
+        tool_registry: Any,
+        ws_manager: Any,
+        loop: asyncio.AbstractEventLoop,
+        working_dir: Optional[Path] = None,
+    ):
         """Initialize broadcaster.
 
         Args:
@@ -20,6 +44,7 @@ class WebSocketToolBroadcaster:
         self.tool_registry = tool_registry
         self.ws_manager = ws_manager
         self.loop = loop
+        self.working_dir = Path(working_dir).resolve() if working_dir else None
 
     def execute_tool(
         self,
@@ -39,59 +64,193 @@ class WebSocketToolBroadcaster:
         Returns:
             Tool execution result
         """
-        # Broadcast tool call
-        self._broadcast_tool_call(tool_name, arguments)
+        call_id = uuid.uuid4().hex
+        normalized_args = self._normalize_arguments(arguments)
+        display = summarize_tool_arguments(tool_name, normalized_args)
+        self._broadcast_tool_call(call_id, tool_name, normalized_args, display)
 
-        # Execute the tool
         result = self.tool_registry.execute_tool(tool_name, arguments, **kwargs)
 
-        # Broadcast tool result
-        self._broadcast_tool_result(tool_name, result)
+        payload = self._build_result_payload(call_id, tool_name, result, normalized_args)
+        self._broadcast_tool_result(payload)
 
         return result
 
-    def _broadcast_tool_call(self, tool_name: str, arguments: Dict[str, Any]) -> None:
+    def _broadcast_tool_call(
+        self,
+        call_id: str,
+        tool_name: str,
+        arguments: Dict[str, Any],
+        display: str | None,
+    ) -> None:
         """Broadcast tool call event."""
         try:
+            payload = self._make_json_safe({
+                "type": "tool_call",
+                "data": {
+                    "tool_call_id": call_id,
+                    "tool_name": tool_name,
+                    "arguments": arguments,
+                    "arguments_display": display,
+                    "description": f"Calling {tool_name}",
+                }
+            })
             future = asyncio.run_coroutine_threadsafe(
-                self.ws_manager.broadcast({
-                    "type": "tool_call",
-                    "data": {
-                        "tool_name": tool_name,
-                        "arguments": arguments,
-                        "description": f"Calling {tool_name}",
-                    }
-                }),
-                self.loop
+                self.ws_manager.broadcast(payload),
+                self.loop,
             )
             future.result(timeout=2)
-        except Exception as e:
-            print(f"Failed to broadcast tool call: {e}")
+            logger.info(f"✓ Broadcasted tool_call: {tool_name}")
+        except Exception as e:  # noqa: BLE001
+            logger.error(f"❌ Failed to broadcast tool call: {e}")
+            logger.error(f"Tool: {tool_name}, Args: {arguments}")
 
-    def _broadcast_tool_result(self, tool_name: str, result: Dict[str, Any]) -> None:
+    def _broadcast_tool_result(self, payload: Dict[str, Any]) -> None:
         """Broadcast tool result event."""
         try:
-            # Extract relevant result info
-            success = result.get("success", False)
-            output = result.get("output", "")
-            error = result.get("error", "")
-
-            result_text = output if success else f"Error: {error}"
-
+            safe_payload = self._make_json_safe({
+                "type": "tool_result",
+                "data": payload,
+            })
             future = asyncio.run_coroutine_threadsafe(
-                self.ws_manager.broadcast({
-                    "type": "tool_result",
-                    "data": {
-                        "tool_name": tool_name,
-                        "result": "Success" if success else "Failed",
-                        "output": result_text,
-                    }
-                }),
-                self.loop
+                self.ws_manager.broadcast(safe_payload),
+                self.loop,
             )
             future.result(timeout=2)
-        except Exception as e:
-            print(f"Failed to broadcast tool result: {e}")
+            logger.info(f"✓ Broadcasted tool_result: {payload.get('tool_name')}")
+        except Exception as e:  # noqa: BLE001
+            logger.error(f"❌ Failed to broadcast tool result: {e}")
+            logger.error(f"Payload: {payload.get('tool_name')}")
+
+    def _build_result_payload(
+        self,
+        call_id: str,
+        tool_name: str,
+        result: Dict[str, Any],
+        arguments: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """Create a JSON-serializable payload mirroring terminal summaries."""
+        success = bool(result.get("success"))
+        output_text = self._stringify_output(result)
+        summary = summarize_tool_result(tool_name, output_text, result.get("error"))
+        argument_summary = summarize_tool_arguments(tool_name, arguments)
+
+        return {
+            "tool_call_id": call_id,
+            "tool_name": tool_name,
+            "success": success,
+            "summary": summary,
+            "arguments": arguments,
+            "arguments_display": argument_summary,
+            "error": result.get("error"),
+            "output": output_text,
+            "raw_result": self._make_json_safe(result),
+        }
+
+    def _normalize_arguments(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
+        normalized = self._make_json_safe(arguments)
+        if not isinstance(normalized, dict):
+            return normalized
+        return {
+            key: self._normalize_argument_value(key, value)
+            for key, value in normalized.items()
+        }
+
+    def _normalize_argument_value(self, key: str, value: Any) -> Any:
+        if isinstance(value, dict):
+            return {
+                sub_key: self._normalize_argument_value(sub_key, sub_value)
+                for sub_key, sub_value in value.items()
+            }
+        if isinstance(value, list):
+            return [self._normalize_argument_value(key, item) for item in value]
+        if isinstance(value, str) and key in _PATH_KEYS:
+            return self._resolve_path(value)
+        return value
+
+    def _resolve_path(self, value: str) -> str:
+        raw_path = Path(value.strip())
+        if raw_path.is_absolute():
+            return str(raw_path)
+        if self.working_dir:
+            return str((self.working_dir / raw_path).resolve())
+        try:
+            return str(raw_path.resolve())
+        except Exception:  # noqa: BLE001
+            return str(raw_path)
+
+    def _stringify_output(self, result: Dict[str, Any]) -> str:
+        """Do best-effort string conversion for tool output."""
+        output = result.get("output")
+        if isinstance(output, str):
+            return output
+        if output is None and "matches" in result:
+            matches = result.get("matches") or []
+            return "\n".join(str(match) for match in matches)
+        if output is None and "entries" in result:
+            entries = result.get("entries") or []
+            return "\n".join(str(entry) for entry in entries)
+        if output is None:
+            return ""
+
+        try:
+            return json.dumps(self._make_json_safe(output))
+        except TypeError:
+            return str(output)
+
+    def _make_json_safe(self, value: Any) -> Any:
+        """Recursively convert values to JSON-safe representations."""
+        # Handle None and primitives first
+        if value is None or isinstance(value, (bool, int, float, str)):
+            return value
+
+        # Handle collections
+        if isinstance(value, dict):
+            try:
+                return {str(key): self._make_json_safe(val) for key, val in value.items()}
+            except Exception:  # noqa: BLE001
+                return str(value)
+
+        if isinstance(value, (list, tuple)):
+            try:
+                return [self._make_json_safe(item) for item in value]
+            except Exception:  # noqa: BLE001
+                return str(value)
+
+        if isinstance(value, set):
+            try:
+                return [self._make_json_safe(item) for item in value]
+            except Exception:  # noqa: BLE001
+                return str(value)
+
+        # Handle special types
+        if isinstance(value, Path):
+            return str(value)
+
+        if isinstance(value, datetime):
+            try:
+                return value.isoformat()
+            except Exception:  # noqa: BLE001
+                return str(value)
+
+        if isinstance(value, bytes):
+            try:
+                return value.decode("utf-8", errors="ignore")
+            except Exception:  # noqa: BLE001
+                return ""
+
+        # Handle objects with __dict__
+        if hasattr(value, '__dict__'):
+            try:
+                return self._make_json_safe(value.__dict__)
+            except Exception:  # noqa: BLE001
+                return str(value)
+
+        # Final fallback
+        try:
+            return str(value)
+        except Exception:  # noqa: BLE001
+            return "<unserializable>"
 
     def __getattr__(self, name: str) -> Any:
         """Delegate all other attributes to the wrapped tool registry."""

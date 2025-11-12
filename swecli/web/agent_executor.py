@@ -5,11 +5,15 @@ from __future__ import annotations
 import asyncio
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict
+from pathlib import Path
+from typing import Any, Dict, Tuple
 
 from swecli.web.state import WebState
+from swecli.web.logging_config import logger
 from swecli.models.message import ChatMessage, Role
 from swecli.models.agent_deps import AgentDependencies
+from swecli.core.management import ConfigManager
+from swecli.models.config import AppConfig
 
 
 class AgentExecutor:
@@ -37,10 +41,13 @@ class AgentExecutor:
         """
         try:
             # Broadcast message start
-            await ws_manager.broadcast({
-                "type": "message_start",
-                "data": {"messageId": str(time.time())}
-            })
+            try:
+                await ws_manager.broadcast({
+                    "type": "message_start",
+                    "data": {"messageId": str(time.time())}
+                })
+            except Exception as e:
+                logger.error(f"Failed to broadcast message_start: {e}")
 
             # Run agent in thread pool to avoid blocking event loop
             loop = asyncio.get_event_loop()
@@ -77,17 +84,26 @@ class AgentExecutor:
             self.state.session_manager.save_session()
 
             # Broadcast message complete
-            await ws_manager.broadcast({
-                "type": "message_complete",
-                "data": {"messageId": str(time.time())}
-            })
+            try:
+                await ws_manager.broadcast({
+                    "type": "message_complete",
+                    "data": {"messageId": str(time.time())}
+                })
+            except Exception as e:
+                logger.error(f"Failed to broadcast message_complete: {e}")
 
         except Exception as e:
             # Broadcast error
-            await ws_manager.broadcast({
-                "type": "error",
-                "data": {"message": str(e)}
-            })
+            logger.error(f"❌ Agent execution error: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            try:
+                await ws_manager.broadcast({
+                    "type": "error",
+                    "data": {"message": str(e)}
+                })
+            except Exception as broadcast_err:
+                logger.error(f"Failed to broadcast error: {broadcast_err}")
 
     def _run_agent_sync(self, message: str, ws_manager: Any, loop: asyncio.AbstractEventLoop) -> Dict[str, Any]:
         """Run agent synchronously in thread pool.
@@ -114,9 +130,8 @@ class AgentExecutor:
         # Clear any previous interrupt flags
         self.state.clear_interrupt()
 
-        # Get config and setup
-        config = self.state.config_manager.get_config()
-        working_dir = self.state.config_manager.working_dir
+        # Resolve config/working directory for current session
+        config_manager, config, working_dir = self._resolve_runtime_context()
 
         # Initialize tools
         file_ops = FileOperations(config, working_dir)
@@ -131,7 +146,7 @@ class AgentExecutor:
         web_approval_manager = WebApprovalManager(ws_manager, loop)
 
         # Build runtime suite
-        runtime_service = RuntimeService(self.state.config_manager, self.state.mode_manager)
+        runtime_service = RuntimeService(config_manager, self.state.mode_manager)
         runtime_suite = runtime_service.build_suite(
             file_ops=file_ops,
             write_tool=write_tool,
@@ -147,7 +162,8 @@ class AgentExecutor:
         wrapped_registry = WebSocketToolBroadcaster(
             runtime_suite.tool_registry,
             ws_manager,
-            loop
+            loop,
+            working_dir=working_dir,
         )
 
         # Get agent and replace its tool registry with wrapped version
@@ -188,16 +204,19 @@ class AgentExecutor:
             # (Streaming at character level will be added later)
             if result.get("success"):
                 content = result.get("content", "")
-                # Schedule the broadcast coroutine in the event loop
-                future = asyncio.run_coroutine_threadsafe(
-                    ws_manager.broadcast({
-                        "type": "message_chunk",
-                        "data": {"content": content}
-                    }),
-                    loop
-                )
-                # Wait for it to complete
-                future.result(timeout=5)
+                try:
+                    # Schedule the broadcast coroutine in the event loop
+                    future = asyncio.run_coroutine_threadsafe(
+                        ws_manager.broadcast({
+                            "type": "message_chunk",
+                            "data": {"content": str(content)}
+                        }),
+                        loop
+                    )
+                    # Wait for it to complete
+                    future.result(timeout=5)
+                except Exception as e:
+                    logger.error(f"Failed to broadcast message_chunk: {e}")
 
             return result
 
@@ -207,3 +226,22 @@ class AgentExecutor:
                 "error": str(e),
                 "content": f"Error: {str(e)}"
             }
+
+    def _resolve_runtime_context(self) -> Tuple[ConfigManager, AppConfig, Path]:
+        """Determine config manager, config, and working dir for current session."""
+        session = self.state.session_manager.get_current_session()
+        if session and session.working_directory:
+            working_dir = Path(session.working_directory).expanduser().resolve()
+            config_manager = ConfigManager(working_dir)
+            config = config_manager.get_config()
+        else:
+            config_manager = self.state.config_manager
+            config = config_manager.get_config()
+            working_dir = Path(config_manager.working_dir).resolve()
+
+        try:
+            config_manager.ensure_directories()
+        except Exception:
+            pass
+
+        return config_manager, config, working_dir

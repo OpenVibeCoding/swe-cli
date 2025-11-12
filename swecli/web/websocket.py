@@ -7,6 +7,7 @@ from typing import Any, Dict
 from fastapi import WebSocket, WebSocketDisconnect
 
 from swecli.web.state import get_state
+from swecli.web.logging_config import logger
 from swecli.models.message import ChatMessage, Role
 
 
@@ -34,16 +35,36 @@ class WebSocketManager:
         """Send a message to a specific client."""
         try:
             await websocket.send_json(message)
-        except Exception:
+        except Exception as e:
+            logger.error(f"Failed to send WebSocket message: {e}")
+            logger.error(f"Message type: {message.get('type')}")
             self.disconnect(websocket)
 
     async def broadcast(self, message: Dict[str, Any]):
         """Broadcast a message to all connected clients."""
+        # Validate message is JSON-serializable before broadcasting
+        try:
+            import json
+            json.dumps(message)
+            logger.debug(f"Broadcasting: {message.get('type')}")
+        except (TypeError, ValueError) as e:
+            logger.error(f"❌ Message is not JSON-serializable: {e}")
+            logger.error(f"Message type: {message.get('type')}")
+            logger.error(f"Message keys: {list(message.keys())}")
+            # Try to send error message instead
+            error_message = {
+                "type": "error",
+                "data": {"message": f"Internal serialization error: {str(e)}"}
+            }
+            message = error_message
+
         disconnected = []
         for connection in self.active_connections:
             try:
                 await connection.send_json(message)
-            except Exception:
+            except Exception as e:
+                logger.error(f"Failed to broadcast to connection: {e}")
+                logger.error(f"Message type: {message.get('type')}")
                 disconnected.append(connection)
 
         # Clean up disconnected clients
@@ -151,7 +172,10 @@ async def websocket_endpoint(websocket: WebSocket):
             await ws_manager.handle_message(websocket, data)
 
     except WebSocketDisconnect:
+        logger.info("WebSocket disconnected normally")
         ws_manager.disconnect(websocket)
     except Exception as e:
-        print(f"WebSocket error: {e}")
+        logger.error(f"WebSocket error: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         ws_manager.disconnect(websocket)
