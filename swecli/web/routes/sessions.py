@@ -312,6 +312,69 @@ async def verify_path(path_data: Dict[str, str]) -> Dict[str, Any]:
         }
 
 
+@router.get("/{session_id}/file-changes")
+async def get_file_changes(session_id: str) -> Dict[str, Any]:
+    """Get file changes for a specific session.
+
+    Args:
+        session_id: ID of the session
+
+    Returns:
+        File changes data with summary and changes list
+
+    Raises:
+        HTTPException: If session not found or error occurs
+    """
+    try:
+        state = get_state()
+
+        # Load the session
+        original_session_id = state.get_current_session_id()
+        state.resume_session(session_id)
+
+        session = state.session_manager.get_current_session()
+
+        # Restore original session
+        if original_session_id:
+            state.resume_session(original_session_id)
+
+        if not session:
+            raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+
+        # Get file changes summary and list
+        summary = session.get_file_changes_summary()
+        changes = []
+
+        for change in session.file_changes:
+            changes.append({
+                "id": change.id,
+                "type": change.type.value,
+                "file_path": change.file_path,
+                "old_path": change.old_path,
+                "timestamp": change.timestamp.isoformat(),
+                "lines_added": change.lines_added,
+                "lines_removed": change.lines_removed,
+                "description": change.description,
+                "icon": change.get_file_icon(),
+                "color": change.get_status_color(),
+                "summary": change.get_change_summary()
+            })
+
+        # Sort by timestamp (newest first)
+        changes.sort(key=lambda x: x["timestamp"], reverse=True)
+
+        return {
+            "session_id": session_id,
+            "summary": summary,
+            "changes": changes
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get file changes: {str(e)}")
+
+
 @router.get("/files")
 async def list_files(query: str = "") -> Dict[str, Any]:
     """List files in the current session's working directory.

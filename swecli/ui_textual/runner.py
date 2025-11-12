@@ -6,7 +6,7 @@ import asyncio
 import contextlib
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Any, Callable, Optional
 
 from rich.ansi import AnsiDecoder
 from rich.text import Text
@@ -16,6 +16,8 @@ from swecli.models.message import ChatMessage, Role
 from swecli.repl.repl import REPL
 from swecli.ui_textual.managers.approval_manager import ChatApprovalManager
 from swecli.ui_textual.chat_app import create_chat_app
+from swecli.ui_textual.constants import TOOL_ERROR_SENTINEL
+from swecli.ui_textual.utils import build_tool_call_text
 
 
 class TextualRunner:
@@ -33,6 +35,8 @@ class TextualRunner:
         auto_connect_mcp: bool = False,
     ) -> None:
         self.working_dir = Path(working_dir or Path.cwd()).resolve()
+        self._initial_messages: list[ChatMessage] = []
+        self._history_restored = False
 
         if repl is not None:
             self.repl = repl
@@ -66,6 +70,8 @@ class TextualRunner:
                 self.repl.config.enable_bash = True
             self._auto_connect_mcp = auto_connect_mcp and hasattr(self.repl, "mcp_manager")
 
+        self._initial_messages = self._snapshot_session_history()
+
         # Get model display name and slot summaries from config
         model_display = f"{self.config.model_provider}/{self.config.model}"
         model_slots = self._build_model_slots()
@@ -84,6 +90,7 @@ class TextualRunner:
             create_kwargs["on_ready"] = self._start_mcp_connect_thread
         else:
             create_kwargs["on_ready"] = self._notify_manual_mcp_connect
+        create_kwargs["on_ready"] = self._wrap_on_ready_callback(create_kwargs.get("on_ready"))
 
         try:
             self.app = create_chat_app(**create_kwargs)
@@ -113,6 +120,29 @@ class TextualRunner:
         self._last_assistant_message: str | None = None
         self._suppress_console_duplicate = False
         self._last_assistant_message_normalized: str | None = None
+
+    def _snapshot_session_history(self) -> list[ChatMessage]:
+        """Capture a copy of existing session messages for later hydration."""
+        manager = getattr(self, "session_manager", None)
+        if manager is None:
+            return []
+        session = manager.get_current_session()
+        if session is None or not session.messages:
+            return []
+        return [message.model_copy(deep=True) for message in session.messages]
+
+    def _wrap_on_ready_callback(
+        self,
+        downstream: Optional[Callable[[], None]],
+    ) -> Callable[[], None]:
+        """Ensure history hydration runs before any existing on_ready hook."""
+
+        def _callback() -> None:
+            self._hydrate_conversation_history()
+            if downstream:
+                downstream()
+
+        return _callback
 
     def _build_model_slots(self) -> dict[str, tuple[str, str]]:
         """Prepare formatted model slot information for the footer."""
@@ -160,6 +190,129 @@ class TextualRunner:
             self.app.update_primary_model(model_display)
         if hasattr(self.app, "update_model_slots"):
             self.app.update_model_slots(self._build_model_slots())
+
+    def _hydrate_conversation_history(self) -> None:
+        """Replay the persisted session transcript into the Textual conversation log."""
+
+        if self._history_restored:
+            return
+
+        if not self._initial_messages:
+            self._history_restored = True
+            return
+
+        conversation = getattr(self.app, "conversation", None)
+        if conversation is None:
+            return
+
+        conversation.clear()
+        history = getattr(self.app, "_history", None)
+        record_assistant = getattr(self.app, "record_assistant_message", None)
+
+        for message in self._initial_messages:
+            content = (message.content or "").strip()
+            if message.role == Role.USER:
+                if not content:
+                    continue
+                conversation.add_user_message(content)
+                if history is not None and hasattr(history, "record"):
+                    history.record(content)
+            elif message.role == Role.ASSISTANT:
+                if content:
+                    conversation.add_assistant_message(content)
+                    if callable(record_assistant):
+                        record_assistant(content)
+                if getattr(message, "tool_calls", None):
+                    self._render_stored_tool_calls(conversation, message.tool_calls)
+                elif not content:
+                    continue
+            elif message.role == Role.SYSTEM:
+                if not content:
+                    continue
+                conversation.add_system_message(content)
+
+        self._history_restored = True
+
+    def _render_stored_tool_calls(self, conversation, tool_calls: list[Any]) -> None:
+        """Replay historical tool calls and results."""
+
+        if not tool_calls:
+            return
+
+        for tool_call in tool_calls:
+            try:
+                parameters = self._coerce_tool_parameters(getattr(tool_call, "parameters", {}))
+            except Exception:
+                parameters = {}
+
+            display = build_tool_call_text(getattr(tool_call, "name", "tool"), parameters)
+            conversation.add_tool_call(display)
+            if hasattr(conversation, "stop_tool_execution"):
+                conversation.stop_tool_execution()
+
+            lines = self._format_tool_history_lines(tool_call)
+            if lines:
+                conversation.add_tool_result("\n".join(lines))
+
+    @staticmethod
+    def _coerce_tool_parameters(raw: Any) -> dict[str, Any]:
+        if isinstance(raw, dict):
+            return raw
+        return {}
+
+    def _format_tool_history_lines(self, tool_call: Any) -> list[str]:
+        """Convert stored ToolCall data into RichLog-friendly summary lines."""
+
+        lines: list[str] = []
+        seen: set[str] = set()
+
+        def add_line(value: str) -> None:
+            normalized = value.strip()
+            if not normalized or normalized in seen:
+                return
+            lines.append(normalized)
+            seen.add(normalized)
+
+        error = getattr(tool_call, "error", None)
+        if error:
+            add_line(f"{TOOL_ERROR_SENTINEL} {str(error).strip()}")
+
+        summary = getattr(tool_call, "result_summary", None)
+        if summary:
+            add_line(str(summary).strip())
+
+        raw_result = getattr(tool_call, "result", None)
+        snippet = self._truncate_tool_output(raw_result)
+        if snippet:
+            add_line(snippet)
+
+        if not lines:
+            add_line("✓ Tool completed")
+        return lines
+
+    @staticmethod
+    def _truncate_tool_output(raw_result: Any, max_lines: int = 6, max_chars: int = 400) -> str:
+        """Trim long stored tool outputs for concise replay."""
+
+        if raw_result is None:
+            return ""
+
+        text = str(raw_result).strip()
+        if not text:
+            return ""
+
+        lines = [line.rstrip() for line in text.splitlines()]
+        truncated = False
+        if len(lines) > max_lines:
+            lines = lines[:max_lines]
+            truncated = True
+        snippet = "\n".join(lines)
+        if len(snippet) > max_chars:
+            snippet = snippet[:max_chars].rstrip()
+            truncated = True
+        if truncated:
+            snippet = f"{snippet}\n... (truncated)"
+        return snippet.strip()
 
     def _get_model_config_snapshot(self) -> dict[str, dict[str, str]]:
         """Return current model configuration details for the UI."""

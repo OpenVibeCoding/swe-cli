@@ -138,7 +138,7 @@ class QueryProcessor:
         "Adjusting",
     ]
 
-    REFLECTION_WINDOW_SIZE = 1  # ACE-aligned: only immediate context (reduced from 5)
+    REFLECTION_WINDOW_SIZE = 10
     MAX_PLAYBOOK_STRATEGIES = 30
     PLAYBOOK_DEBUG_PATH = "/tmp/swecli_debug/playbook_evolution.log"
 
