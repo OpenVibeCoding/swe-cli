@@ -117,6 +117,7 @@ class WebApprovalManager:
         wait_timeout = timeout if timeout else 300  # 5 minutes default
         start_time = time.time()
 
+        logger.info(f"⏳ Waiting for approval response (timeout: {wait_timeout}s)...")
         while time.time() - start_time < wait_timeout:
             approval = self.state.get_pending_approval(approval_id)
             if approval and approval["resolved"]:
@@ -130,6 +131,11 @@ class WebApprovalManager:
 
             # Sleep briefly to avoid busy waiting
             time.sleep(0.1)
+
+            # Log every 5 seconds to show we're still waiting
+            elapsed = time.time() - start_time
+            if int(elapsed) % 5 == 0 and elapsed > 0:
+                logger.debug(f"Still waiting for approval {approval_id}... ({int(elapsed)}s elapsed)")
 
         # Timeout - default to deny
         logger.warning(f"⏱️  Approval request {approval_id} timed out after {wait_timeout}s")
