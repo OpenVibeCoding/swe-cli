@@ -262,17 +262,17 @@ export function ToolCallMessage({ message }: ToolCallMessageProps) {
 
     return (
       <div className="animate-slide-up my-1 px-6">
-        <div className="font-mono text-sm text-gray-300">
-          <span className="text-gray-400">⏺ </span>
-          <span className="text-white">{verb}</span>
-          <span className="text-gray-500">
+        <div className="font-mono text-sm text-gray-700">
+          <span className="text-gray-500">⏺ </span>
+          <span className="text-gray-800">{verb}</span>
+          <span className="text-gray-600">
             {summary ? `(${summary})` : label ? `(${label})` : ''}
           </span>
           {(message.tool_args && Object.keys(message.tool_args).length > 0) ||
             (message.tool_calls && message.tool_calls.length > 0) ? (
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="ml-2 text-gray-500 hover:text-gray-300 text-xs"
+              className="ml-2 text-gray-500 hover:text-gray-700 text-xs"
               title="View details"
             >
               {isExpanded ? '▼' : '▶'}
@@ -283,7 +283,7 @@ export function ToolCallMessage({ message }: ToolCallMessageProps) {
         {isExpanded && message.tool_args && (
           <div className="ml-6 mt-1 text-xs">
             <div className="text-gray-500 mb-1">Parameters:</div>
-            <pre className="text-gray-400 font-mono bg-gray-900 rounded p-2 border border-gray-700 overflow-x-auto">
+            <pre className="text-gray-700 font-mono bg-gray-100 rounded p-2 border border-gray-300 overflow-x-auto">
               {JSON.stringify(message.tool_args, null, 2)}
             </pre>
           </div>
@@ -343,11 +343,11 @@ export function ToolCallMessage({ message }: ToolCallMessageProps) {
       <div className="animate-slide-up my-1 px-6">
         {summaryLines.map((line: string, index: number) => (
           <div key={index} className="font-mono text-sm">
-            <span className="text-gray-400">⎿ </span>
+            <span className="text-gray-500">⎿ </span>
             <span className={
-              isInterrupted ? 'text-red-500 font-bold' :
-              isError ? 'text-red-400' :
-              'text-gray-400'
+              isInterrupted ? 'text-red-600 font-bold' :
+              isError ? 'text-red-500' :
+              'text-gray-600'
             }>
               {line}
             </span>
@@ -358,7 +358,7 @@ export function ToolCallMessage({ message }: ToolCallMessageProps) {
         {hasExpandableContent && !isExpanded && (
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="ml-6 text-xs text-gray-500 hover:text-gray-300"
+            className="ml-6 text-xs text-gray-500 hover:text-gray-700"
           >
             Show full output
           </button>
@@ -367,7 +367,7 @@ export function ToolCallMessage({ message }: ToolCallMessageProps) {
         {hasExpandableContent && isExpanded && (
           <button
             onClick={() => setIsExpanded(false)}
-            className="ml-6 text-xs text-gray-500 hover:text-gray-300"
+            className="ml-6 text-xs text-gray-500 hover:text-gray-700"
           >
             Show less
           </button>
@@ -376,7 +376,7 @@ export function ToolCallMessage({ message }: ToolCallMessageProps) {
         {/* Full content when expanded */}
         {hasExpandableContent && isExpanded && (
           <div className="ml-6 mt-1">
-            <pre className="text-xs text-gray-400 font-mono bg-gray-100 rounded p-2 border border-gray-300 overflow-x-auto max-h-96">
+            <pre className="text-xs text-gray-700 font-mono bg-gray-100 rounded p-2 border border-gray-300 overflow-x-auto max-h-96">
               {typeof fullOutput === 'string' ? fullOutput : JSON.stringify(fullOutput, null, 2)}
             </pre>
           </div>
