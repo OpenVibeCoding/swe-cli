@@ -87,6 +87,10 @@ class BulletSelector:
             if len(bullets) <= max_count:
                 return bullets
 
+            # Optimization: Batch-generate embeddings if semantic scoring is needed
+            if query and self.weights["semantic"] > 0:
+                self._batch_generate_embeddings(query, bullets)
+
             # Score all bullets
             scored_bullets = [self._score_bullet(bullet, query) for bullet in bullets]
 
@@ -104,6 +108,49 @@ class BulletSelector:
                 except Exception:
                     # Silently fail if save fails - don't break selection
                     pass
+
+    def _batch_generate_embeddings(self, query: str, bullets: List[Bullet]) -> None:
+        """Pre-generate embeddings for query and bullets in batch.
+
+        This optimization reduces API calls from N+1 to 1 by generating all
+        embeddings in a single API call.
+
+        Args:
+            query: User query
+            bullets: List of bullets to generate embeddings for
+        """
+        # Collect texts that need embeddings (not in cache)
+        texts_to_generate = []
+        text_indices = {}  # Map text to original index
+
+        # Check if query needs embedding
+        if self.embedding_cache.get(query) is None:
+            texts_to_generate.append(query)
+            text_indices[query] = len(texts_to_generate) - 1
+
+        # Check which bullets need embeddings
+        for bullet in bullets:
+            if self.embedding_cache.get(bullet.content) is None:
+                texts_to_generate.append(bullet.content)
+                text_indices[bullet.content] = len(texts_to_generate) - 1
+
+        # If all embeddings are cached, nothing to do
+        if not texts_to_generate:
+            return
+
+        # Batch generate embeddings
+        try:
+            embeddings = self.embedding_cache.batch_get_or_generate(
+                texts=texts_to_generate,
+                generator=generate_embeddings,
+            )
+
+            # Note: batch_get_or_generate automatically caches the results
+            # So we don't need to manually cache them here
+        except Exception:
+            # If batch generation fails, fallback to individual generation
+            # This will happen naturally when _semantic_score is called
+            pass
 
     def _score_bullet(self, bullet: Bullet, query: Optional[str] = None) -> ScoredBullet:
         """Calculate relevance score for a single bullet.
@@ -269,3 +316,4 @@ class BulletSelector:
             "avg_selected_score": avg_selected_score,
             "score_improvement": avg_selected_score - avg_all_score,
         }
+
