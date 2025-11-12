@@ -21,9 +21,11 @@ class WebSocketClient {
     const isDev = import.meta.env.DEV;
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 
-    // In dev, use the proxy by using the current host
+    // In dev, connect directly to backend to avoid Vite HMR WebSocket conflicts
     // In prod, use the same host (since static files are served by backend)
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const wsUrl = isDev
+      ? 'ws://localhost:8080/ws'  // Direct connection in dev
+      : `${protocol}//${window.location.host}/ws`;  // Relative in prod
 
     console.log('Connecting to WebSocket:', wsUrl, `(dev mode: ${isDev})`);
 
