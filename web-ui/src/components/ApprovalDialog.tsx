@@ -5,7 +5,26 @@ export function ApprovalDialog() {
   const pendingApproval = useChatStore(state => state.pendingApproval);
   const respondToApproval = useChatStore(state => state.respondToApproval);
 
-  // Debug log
+  // Define handlers first (before hooks)
+  const handleApprove = () => {
+    if (pendingApproval) {
+      respondToApproval(pendingApproval.id, true, false);
+    }
+  };
+
+  const handleApproveAll = () => {
+    if (pendingApproval) {
+      respondToApproval(pendingApproval.id, true, true);
+    }
+  };
+
+  const handleDeny = () => {
+    if (pendingApproval) {
+      respondToApproval(pendingApproval.id, false, false);
+    }
+  };
+
+  // Debug log - MUST be before early return
   useEffect(() => {
     if (pendingApproval) {
       console.log('[ApprovalDialog] Showing approval dialog:', pendingApproval);
@@ -14,12 +33,10 @@ export function ApprovalDialog() {
     }
   }, [pendingApproval]);
 
-  if (!pendingApproval) {
-    return null;
-  }
-
-  // Keyboard shortcuts
+  // Keyboard shortcuts - MUST be before early return
   useEffect(() => {
+    if (!pendingApproval) return;
+
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.key === '1') {
         handleApprove();
@@ -34,17 +51,10 @@ export function ApprovalDialog() {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [pendingApproval]);
 
-  const handleApprove = () => {
-    respondToApproval(pendingApproval.id, true, false);
-  };
-
-  const handleApproveAll = () => {
-    respondToApproval(pendingApproval.id, true, true);
-  };
-
-  const handleDeny = () => {
-    respondToApproval(pendingApproval.id, false, false);
-  };
+  // Early return AFTER all hooks
+  if (!pendingApproval) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
