@@ -81,7 +81,7 @@ export function MessageList() {
   }
 
   return (
-    <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-black">
+    <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-gray-50">
       <div className="max-w-4xl mx-auto py-6 px-6 space-y-3">
         {messages.map((message, index) => {
           // Render tool calls and tool results with special component
