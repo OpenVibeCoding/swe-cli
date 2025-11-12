@@ -81,8 +81,8 @@ export function MessageList() {
   }
 
   return (
-    <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-white">
-      <div className="max-w-4xl mx-auto py-8 space-y-5">
+    <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-black">
+      <div className="max-w-4xl mx-auto py-6 px-6 space-y-3">
         {messages.map((message, index) => {
           // Render tool calls and tool results with special component
           if (message.role === 'tool_call' || message.role === 'tool_result') {
@@ -93,13 +93,27 @@ export function MessageList() {
           const isUser = message.role === 'user';
 
           return (
-            <div key={index} className={`flex ${isUser ? 'justify-end' : 'justify-start'} px-6 animate-slide-up`}>
-              <div className={`max-w-[80%] rounded-2xl px-6 py-4 shadow-sm ${
-                isUser
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-gray-100 text-gray-900'
-              }`}>
-                <div className="prose prose-sm max-w-none">
+            <div key={index} className={`${isUser ? '' : 'ml-6'} animate-slide-up mb-2`}>
+              {isUser ? (
+                <div className="font-mono text-sm bg-gray-850 rounded px-4 py-3 border border-gray-700 shadow-md">
+                  <div className="flex items-start">
+                    <span className="text-cyan-400 font-bold mr-2">#</span>
+                    <span className="text-green-400 flex-1">{message.content}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-gray-100 leading-relaxed">
+                  {/* Terminal response prefix */}
+                  <div className="flex items-start mb-2">
+                    <span className="text-yellow-400 font-mono mr-2">❯</span>
+                    <span className="text-gray-500 text-xs font-mono">
+                      {message.timestamp ?
+                        new Date(message.timestamp).toLocaleTimeString() :
+                        new Date().toLocaleTimeString()
+                      }
+                    </span>
+                  </div>
+                  <div className="prose prose-sm max-w-none prose-invert">
                   <ReactMarkdown
                     components={{
                       code({ node, className, children, ...props }) {
@@ -107,15 +121,11 @@ export function MessageList() {
                         const languageMatch = /language-(\w+)/.exec(className || '');
                         const language = languageMatch ? languageMatch[1] : null;
                         return isInline ? (
-                          <code className={`text-sm px-1.5 py-0.5 rounded font-mono ${
-                            isUser ? 'bg-gray-800 text-gray-100' : 'bg-gray-200 text-gray-800'
-                          }`} {...props}>
+                          <code className="text-sm px-1.5 py-0.5 rounded font-mono bg-gray-800 text-gray-100" {...props}>
                             {children}
                           </code>
                         ) : (
-                          <pre className={`rounded-lg p-3 overflow-x-auto my-2 ${
-                            isUser ? 'bg-gray-800 text-gray-100' : 'bg-white border border-gray-200'
-                          }`}>
+                          <pre className="rounded-lg p-3 overflow-x-auto my-2 bg-gray-900 border border-gray-700">
                             <code className={className} data-language={language} {...props}>
                               {children}
                             </code>
@@ -123,29 +133,30 @@ export function MessageList() {
                         );
                       },
                       p({ children }) {
-                        return <p className={`leading-relaxed mb-2 last:mb-0 ${isUser ? 'text-white' : 'text-gray-900'}`}>{children}</p>;
+                        return <p className="leading-relaxed mb-2 last:mb-0 text-gray-300">{children}</p>;
                       },
                       ul({ children }) {
-                        return <ul className={`list-disc pl-5 space-y-1 mb-2 ${isUser ? 'text-white' : 'text-gray-900'}`}>{children}</ul>;
+                        return <ul className="list-disc pl-5 space-y-1 mb-2 text-gray-300">{children}</ul>;
                       },
                       ol({ children }) {
-                        return <ol className={`list-decimal pl-5 space-y-1 mb-2 ${isUser ? 'text-white' : 'text-gray-900'}`}>{children}</ol>;
+                        return <ol className="list-decimal pl-5 space-y-1 mb-2 text-gray-300">{children}</ol>;
                       },
                       li({ children }) {
-                        return <li className={isUser ? 'text-white' : 'text-gray-900'}>{children}</li>;
+                        return <li className="text-gray-300">{children}</li>;
                       },
                       strong({ children }) {
-                        return <strong className="font-semibold">{children}</strong>;
+                        return <strong className="font-semibold text-white">{children}</strong>;
                       },
                       a({ children, href }) {
-                        return <a href={href} className={`underline ${isUser ? 'text-blue-300' : 'text-blue-600'}`} target="_blank" rel="noopener noreferrer">{children}</a>;
+                        return <a href={href} className="underline text-blue-400" target="_blank" rel="noopener noreferrer">{children}</a>;
                       },
                     }}
                   >
                     {message.content}
                   </ReactMarkdown>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           );
         })}

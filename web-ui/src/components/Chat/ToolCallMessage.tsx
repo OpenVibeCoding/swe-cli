@@ -74,8 +74,13 @@ export function ToolCallMessage({ message }: ToolCallMessageProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   if (message.role === 'tool_call') {
-    const { verb, label } = getToolDisplayParts(message.tool_name || '');
-    const summary = summarizeToolArgs(message.tool_name || '', message.tool_args);
+    const toolName = message.tool_name ||
+                     (message.tool_calls && message.tool_calls[0]?.name) ||
+                     (message as any)?.name || '';
+
+    const { verb, label } = getToolDisplayParts(toolName);
+    const summary = summarizeToolArgs(toolName, message.tool_args ||
+                                             (message.tool_calls && message.tool_calls[0]?.parameters));
 
     return (
       <div className="animate-slide-up my-1 px-6">
@@ -85,7 +90,8 @@ export function ToolCallMessage({ message }: ToolCallMessageProps) {
           <span className="text-gray-500">
             {summary ? `(${summary})` : label ? `(${label})` : ''}
           </span>
-          {message.tool_args && Object.keys(message.tool_args).length > 0 && (
+          {(message.tool_args && Object.keys(message.tool_args).length > 0) ||
+            (message.tool_calls && message.tool_calls.length > 0) ? (
             <button
               onClick={() => setIsExpanded(!isExpanded)}
               className="ml-2 text-gray-500 hover:text-gray-300 text-xs"
@@ -93,7 +99,7 @@ export function ToolCallMessage({ message }: ToolCallMessageProps) {
             >
               {isExpanded ? '▼' : '▶'}
             </button>
-          )}
+          ) : null}
         </div>
 
         {isExpanded && message.tool_args && (
