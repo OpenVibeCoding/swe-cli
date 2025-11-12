@@ -11,7 +11,7 @@ import {
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
 
-interface Repository {
+export interface Repository {
   id: string;
   name: string;
   fullName: string;
