@@ -84,8 +84,8 @@ export function MessageList() {
     <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-gray-50">
       <div className="max-w-4xl mx-auto py-6 px-6 space-y-3">
         {messages.map((message, index) => {
-          // Render tool calls and tool results with special component
-          if (message.role === 'tool_call' || message.role === 'tool_result') {
+          // Render tool calls (which now include results) with special component
+          if (message.role === 'tool_call') {
             return <ToolCallMessage key={index} message={message} />;
           }
 
@@ -110,15 +110,7 @@ export function MessageList() {
                   {/* Assistant message with inline timestamp */}
                   <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 shadow-sm">
                     <div className="flex items-start gap-3">
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-gray-500 font-mono text-sm">❯</span>
-                        <span className="text-gray-400 text-xs font-mono">
-                          {message.timestamp ?
-                            new Date(message.timestamp).toLocaleTimeString() :
-                            new Date().toLocaleTimeString()
-                          }
-                        </span>
-                      </div>
+                      <span className="text-gray-500 font-mono text-sm mt-0.5">❯</span>
                       <div className="flex-1 mt-0.5 prose prose-sm max-w-none">
                         <ReactMarkdown
                         components={{

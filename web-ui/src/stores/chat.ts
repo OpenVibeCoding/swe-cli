@@ -74,22 +74,13 @@ export const useChatStore = create<ChatState>((set) => ({
             });
           }
 
-          // Add each tool call and its result
+          // Add unified tool call + result messages
           for (const tc of msg.tool_calls) {
-            // Add tool call message
             expandedMessages.push({
               role: 'tool_call',
               content: `Calling ${tc.name}`,
               tool_name: tc.name,
               tool_args: tc.parameters,
-              timestamp: msg.timestamp,
-            });
-
-            // Add tool result message
-            expandedMessages.push({
-              role: 'tool_result',
-              content: tc.error ? 'Failed' : 'Success',
-              tool_name: tc.name,
               tool_result: tc.error || tc.result || '',
               timestamp: msg.timestamp,
             });

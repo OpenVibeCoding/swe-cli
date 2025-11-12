@@ -464,7 +464,7 @@ export function SessionsSidebar() {
                       setExpandedWorkspaces(prev => new Set([...prev, workspace.path]));
                     }, 100);
                   }}
-                  className={`w-full aspect-square rounded-lg flex items-center justify-center transition-all duration-200 transform hover:scale-105 ${
+                  className={`w-full aspect-square rounded-lg flex items-center justify-center transition-colors duration-200 ${
                     hasActiveSession
                       ? 'bg-blue-100 border-2 border-blue-400 shadow-sm'
                       : 'bg-gray-100 hover:bg-gray-200 border border-gray-200 hover:border-gray-300 hover:shadow-sm'
@@ -474,7 +474,7 @@ export function SessionsSidebar() {
                 </button>
                 
                 {/* Tooltip */}
-                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 shadow-lg">
+                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 shadow-lg">
                   <div className="font-medium text-sm mb-1">{formatWorkspacePath(workspace.path)}</div>
                   <div className="text-gray-300 text-xs">{workspace.sessions.length} session{workspace.sessions.length !== 1 ? 's' : ''}</div>
                   {hasActiveSession && <div className="text-blue-300 text-xs mt-1">● Active</div>}
@@ -491,7 +491,7 @@ export function SessionsSidebar() {
               setIsCollapsed(false);
               setTimeout(() => setIsNewSessionOpen(true), 100);
             }}
-            className="w-full aspect-square rounded-lg flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all"
+            className="w-full aspect-square rounded-lg flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-colors"
             title="New Workspace"
           >
             <PlusIcon className="w-5 h-5" />

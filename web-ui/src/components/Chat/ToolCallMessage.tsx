@@ -256,71 +256,18 @@ export function ToolCallMessage({ message }: ToolCallMessageProps) {
                      (message.tool_calls && message.tool_calls[0]?.name) ||
                      (message as any)?.name || '';
 
-    const { verb, label } = getToolDisplayParts(toolName);
-    const summary = summarizeToolArgs(toolName, message.tool_args ||
-                                             (message.tool_calls && message.tool_calls[0]?.parameters));
-
-    return (
-      <div className="animate-slide-up my-1 px-6">
-        <div className="max-w-3xl">
-          <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-amber-600 text-lg">⚡</span>
-                  <span className="font-semibold text-amber-800">{verb}</span>
-                  {summary && (
-                    <span className="text-amber-600 text-sm bg-amber-100 px-2 py-1 rounded">
-                      {summary}
-                    </span>
-                  )}
-                  {label && !summary && (
-                    <span className="text-amber-600 text-sm bg-amber-100 px-2 py-1 rounded">
-                      {label}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {(message.tool_args && Object.keys(message.tool_args).length > 0) ||
-                (message.tool_calls && message.tool_calls.length > 0) ? (
-                <button
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="text-amber-600 hover:text-amber-800 text-xs font-medium"
-                  title="View details"
-                >
-                  {isExpanded ? 'Hide details' : 'Show details'}
-                </button>
-              ) : null}
-            </div>
-
-            {isExpanded && message.tool_args && (
-              <div className="mt-3 pt-3 border-t border-amber-200">
-                <div className="text-amber-700 text-xs font-semibold mb-2">Parameters:</div>
-                <pre className="text-xs text-gray-700 font-mono bg-white border border-amber-200 rounded p-3 overflow-x-auto">
-                  {JSON.stringify(message.tool_args, null, 2)}
-                </pre>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (message.role === 'tool_result') {
-    const toolName = message.tool_name || '';
     const toolArgs = message.tool_args || {};
     const toolResult = message.tool_result || {};
 
-    // Handle legacy string-based results
+    const { verb } = getToolDisplayParts(toolName);
+    const summary = summarizeToolArgs(toolName, toolArgs);
+
+    // Handle result processing
     let resultData = toolResult;
     if (typeof toolResult === 'string') {
-      // Try to parse JSON if it looks like JSON
       try {
         resultData = JSON.parse(toolResult);
       } catch {
-        // For string results, create a simple structure
         resultData = {
           output: toolResult,
           success: !toolResult.includes('::tool_error::') && !toolResult.includes('::interrupted::')
@@ -328,17 +275,12 @@ export function ToolCallMessage({ message }: ToolCallMessageProps) {
       }
     }
 
-    // Check for error/interrupt in result data
-    const isError = resultData?.success === false ||
-                   (typeof toolResult === 'string' && toolResult.includes('::tool_error::'));
-    const isInterrupted = typeof toolResult === 'string' && toolResult.includes('::interrupted::');
-
-    // Get summarized result lines
+    
+    // Get result summary
     let summaryLines: string[] = [];
     try {
       summaryLines = formatToolResult(toolName, toolArgs, resultData);
     } catch {
-      // Fallback to simple display
       if (typeof toolResult === 'string') {
         const cleaned = toolResult.replace(/::tool_error::|::interrupted::/g, '').trim();
         summaryLines = cleaned.split('\n').slice(0, 3).filter((line: string) => line.trim());
@@ -350,74 +292,53 @@ export function ToolCallMessage({ message }: ToolCallMessageProps) {
       }
     }
 
-    // Check if we have a large result that could be expanded
+    // Check for expandable content
     const fullOutput = typeof toolResult === 'string' ? toolResult :
                       (resultData?.output || JSON.stringify(resultData, null, 2));
     const hasExpandableContent = fullOutput && fullOutput.length > 200;
 
     return (
-      <div className="animate-slide-up my-1 px-6">
+      <div className="animate-slide-up my-3 px-6">
         <div className="max-w-3xl">
-          <div className={`${
-            isError ? 'bg-red-50 border-red-200' :
-            isInterrupted ? 'bg-orange-50 border-orange-200' :
-            'bg-green-50 border-green-200'
-          } border rounded-lg px-4 py-3 shadow-sm`}>
-
-            {/* Header with result summary */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <span className={
-                  isError ? 'text-red-500 text-lg' :
-                  isInterrupted ? 'text-orange-500 text-lg' :
-                  'text-green-600 text-lg'
-                }>✓</span>
-                <span className={`font-semibold ${
-                  isError ? 'text-red-800' :
-                  isInterrupted ? 'text-orange-800' :
-                  'text-green-800'
-                }`}>
-                  {isError ? 'Error' : isInterrupted ? 'Interrupted' : 'Success'}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 shadow-sm">
+            {/* Tool action header */}
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-gray-400 font-mono text-sm">▶</span>
+              <span className="font-medium text-gray-800">
+                {verb}
+              </span>
+              {summary && (
+                <span className="text-gray-600 text-sm bg-white px-2 py-1 rounded border border-gray-200">
+                  {summary}
                 </span>
-              </div>
-
-              {hasExpandableContent && (
-                <button
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className={`text-xs font-medium ${
-                    isError ? 'text-red-600 hover:text-red-800' :
-                    isInterrupted ? 'text-orange-600 hover:text-orange-800' :
-                    'text-green-600 hover:text-green-800'
-                  }`}
-                >
-                  {isExpanded ? 'Hide details' : 'Show details'}
-                </button>
               )}
             </div>
 
-            {/* Result summary lines */}
-            <div className="space-y-1">
-              {summaryLines.map((line: string, index: number) => (
-                <div key={index} className="font-mono text-sm">
-                  <span className={
-                    isError ? 'text-red-600' :
-                    isInterrupted ? 'text-orange-600' :
-                    'text-green-700'
-                  }>
+            {/* Tool result summary */}
+            {summaryLines.length > 0 && (
+              <div className="ml-4 pl-3 border-l-2 border-gray-200">
+                {summaryLines.map((line: string, index: number) => (
+                  <div key={index} className="font-mono text-sm text-gray-600 mb-1">
                     {line}
-                  </span>
-                </div>
-              ))}
-            </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
-            {/* Full content when expanded */}
+            {/* Expand button */}
+            {hasExpandableContent && (
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="ml-4 text-xs text-gray-500 hover:text-gray-700 font-medium mt-2"
+              >
+                {isExpanded ? 'Hide details' : 'Show details'}
+              </button>
+            )}
+
+            {/* Expanded content */}
             {hasExpandableContent && isExpanded && (
-              <div className={`mt-3 pt-3 border-t ${
-                isError ? 'border-red-200' :
-                isInterrupted ? 'border-orange-200' :
-                'border-green-200'
-              }`}>
-                <pre className="text-xs text-gray-700 font-mono bg-white border border-gray-200 rounded p-3 overflow-x-auto max-h-96">
+              <div className="ml-4 mt-3 pl-3 border-t border-gray-200 pt-3">
+                <pre className="text-xs text-gray-600 font-mono bg-white border border-gray-200 rounded p-3 overflow-x-auto max-h-96">
                   {typeof fullOutput === 'string' ? fullOutput : JSON.stringify(fullOutput, null, 2)}
                 </pre>
               </div>
