@@ -132,6 +132,15 @@ class WebFetchTool:
                     "content": None,
                 }
 
+            # Skip file downloads that cause navigation errors
+            file_extensions = ('.zip', '.pdf', '.exe', '.dmg', '.tar.gz', '.rar', '.mp4', '.avi', '.mov', '.iso', '.pkg')
+            if any(url.lower().endswith(ext) for ext in file_extensions):
+                return {
+                    "success": False,
+                    "error": f"File downloads are not supported: {url}",
+                    "content": None,
+                }
+
             if deep_crawl and max_depth < 1:
                 return {
                     "success": False,
@@ -159,6 +168,8 @@ class WebFetchTool:
                     max_pages=max_pages,
                     filter_chain=filter_chain,
                 )
+            else:
+                filter_chain = None
 
             # Configure browser
             browser_config = BrowserConfig(
