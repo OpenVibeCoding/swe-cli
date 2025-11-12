@@ -562,6 +562,7 @@ class QueryProcessor:
                 approval_manager=approval_manager,
                 undo_manager=undo_manager,
                 task_monitor=tool_monitor,
+                session_manager=self.session_manager,
             )
 
             # Update state

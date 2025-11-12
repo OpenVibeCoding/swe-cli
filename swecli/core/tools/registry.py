@@ -103,6 +103,7 @@ class ToolRegistry:
         approval_manager: Union[Any, None] = None,
         undo_manager: Union[Any, None] = None,
         task_monitor: Union[Any, None] = None,
+        session_manager: Union[Any, None] = None,
     ) -> dict[str, Any]:
         """Execute a tool by delegating to registered handlers."""
         if tool_name.startswith("mcp__"):
@@ -116,6 +117,7 @@ class ToolRegistry:
             approval_manager=approval_manager,
             undo_manager=undo_manager,
             task_monitor=task_monitor,
+            session_manager=session_manager,
         )
 
         if self._is_plan_blocked(tool_name, context):

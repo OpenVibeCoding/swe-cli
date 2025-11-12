@@ -96,3 +96,70 @@ class SessionCommands(CommandHandler):
         except FileNotFoundError:
             self.print_error(f"Session {candidate} not found.")
             return CommandResult(success=False, message=f"Session {candidate} not found")
+
+    def changed_files(self) -> CommandResult:
+        """Display all file changes made in the current session.
+
+        Returns:
+            CommandResult with file changes data
+        """
+        session = self.session_manager.get_current_session()
+
+        if not session:
+            self.print_warning("No active session.")
+            return CommandResult(success=False, message="No active session")
+
+        if not session.file_changes:
+            self.console.print("\n[dim]No file changes recorded in this session yet.[/dim]\n")
+            return CommandResult(success=True, message="No file changes")
+
+        # Get summary
+        summary = session.get_file_changes_summary()
+
+        # Display header with summary
+        self.console.print("\n[bold]File Changes in Current Session[/bold]\n")
+        self.console.print(
+            f"  [green]+{summary['total_lines_added']}[/green] / "
+            f"[red]-{summary['total_lines_removed']}[/red] / "
+            f"[dim]net: {summary['net_lines']:+d}[/dim]\n"
+        )
+
+        # Display each file change
+        for change in sorted(session.file_changes, key=lambda c: c.timestamp, reverse=True):
+            icon = change.get_file_icon()
+            color = change.get_status_color()
+            file_name = Path(change.file_path).name
+
+            # Format time ago
+            from datetime import datetime
+            now = datetime.now()
+            diff = now - change.timestamp
+            if diff.seconds < 60:
+                time_ago = "just now"
+            elif diff.seconds < 3600:
+                time_ago = f"{diff.seconds // 60}m ago"
+            elif diff.days == 0:
+                time_ago = f"{diff.seconds // 3600}h ago"
+            else:
+                time_ago = f"{diff.days}d ago"
+
+            # Build status line
+            status_parts = [f"[{color}]{change.type.value}[/{color}]"]
+            if change.lines_added or change.lines_removed:
+                status_parts.append(
+                    f"[green]+{change.lines_added}[/green] "
+                    f"[red]-{change.lines_removed}[/red]"
+                )
+            status_parts.append(f"[dim]{time_ago}[/dim]")
+
+            self.console.print(
+                f"  {icon} [bold]{file_name}[/bold] "
+                f"[dim]{change.file_path}[/dim]\n"
+                f"     {' · '.join(status_parts)}"
+            )
+
+        self.console.print(
+            f"\n[dim]Total: {summary['total']} files changed[/dim]\n"
+        )
+
+        return CommandResult(success=True, data=summary)

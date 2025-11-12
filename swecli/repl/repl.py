@@ -468,6 +468,8 @@ class REPL:
             self.session_commands.list_sessions()
         elif cmd == "/resume":
             self.session_commands.resume(args)
+        elif cmd == "/changed-files" or cmd == "/changes":
+            self.session_commands.changed_files()
         elif cmd == "/mode":
             result = self.mode_commands.switch_mode(args)
             # Sync agent after mode switch

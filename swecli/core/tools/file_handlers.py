@@ -54,8 +54,25 @@ class FileToolHandler:
             operation=operation,
         )
 
-        if write_result.success and context.undo_manager:
-            context.undo_manager.record_operation(operation)
+        if write_result.success:
+            if context.undo_manager:
+                context.undo_manager.record_operation(operation)
+
+            # Track file change in session
+            if context.session_manager:
+                from swecli.models.file_change import FileChange, FileChangeType
+                from pathlib import Path
+
+                session = context.session_manager.get_current_session()
+                if session:
+                    file_change = FileChange(
+                        type=FileChangeType.CREATED,
+                        file_path=file_path,
+                        lines_added=len(content.split("\n")),
+                        description=f"Created {Path(file_path).name}",
+                        session_id=session.id
+                    )
+                    session.add_file_change(file_change)
 
         return {
             "success": write_result.success,
@@ -114,8 +131,26 @@ class FileToolHandler:
             backup=True,
         )
 
-        if edit_result.success and context.undo_manager:
-            context.undo_manager.record_operation(operation)
+        if edit_result.success:
+            if context.undo_manager:
+                context.undo_manager.record_operation(operation)
+
+            # Track file change in session
+            if context.session_manager:
+                from swecli.models.file_change import FileChange, FileChangeType
+                from pathlib import Path
+
+                session = context.session_manager.get_current_session()
+                if session:
+                    file_change = FileChange(
+                        type=FileChangeType.MODIFIED,
+                        file_path=file_path,
+                        lines_added=edit_result.lines_added,
+                        lines_removed=edit_result.lines_removed,
+                        description=f"Modified {Path(file_path).name} (+{edit_result.lines_added}/-{edit_result.lines_removed})",
+                        session_id=session.id
+                    )
+                    session.add_file_change(file_change)
 
         return {
             "success": edit_result.success,
