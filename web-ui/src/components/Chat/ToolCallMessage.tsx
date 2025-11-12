@@ -124,11 +124,11 @@ export function ToolCallMessage({ message }: ToolCallMessageProps) {
     }
 
     // Parse the content into lines
-    const lines = cleanContent.split('\n').filter(line => line.trim());
+    const lines = cleanContent.split('\n').filter((line: string) => line.trim());
 
     return (
       <div className="animate-slide-up my-1 px-6">
-        {lines.map((line, index) => (
+        {lines.map((line: string, index: number) => (
           <div key={index} className="font-mono text-sm">
             <span className="text-gray-400">⎿ </span>
             <span className={
