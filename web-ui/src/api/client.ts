@@ -28,6 +28,13 @@ class APIClient {
     return response.json();
   }
 
+  // Generic GET method for any endpoint
+  async get<T = any>(endpoint: string): Promise<T> {
+    const response = await fetch(`${API_BASE}${endpoint}`);
+    if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+    return response.json();
+  }
+
   async interruptTask(): Promise<{ status: string; message: string }> {
     const response = await fetch(`${API_BASE}/chat/interrupt`, {
       method: 'POST',

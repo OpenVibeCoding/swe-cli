@@ -275,7 +275,7 @@ export function ToolCallMessage({ message }: ToolCallMessageProps) {
       }
     }
 
-    
+
     // Get result summary
     let summaryLines: string[] = [];
     try {
@@ -298,64 +298,60 @@ export function ToolCallMessage({ message }: ToolCallMessageProps) {
     const hasExpandableContent = fullOutput && fullOutput.length > 200;
 
     return (
-      <div className="animate-slide-up my-3 px-6">
-        <div className="max-w-3xl">
-          <div className="bg-slate-100 border border-slate-300 rounded-lg px-4 py-3 shadow-sm">
-            {/* Tool action header */}
-            <div className="flex items-center gap-3 mb-2">
-              <span className="text-slate-600 font-mono text-sm">▶</span>
-              <span className="font-medium text-slate-900">
-                {verb}
-              </span>
-              {summary && (
-                <span className="text-slate-700 text-sm bg-white px-2 py-1 rounded border border-slate-400 font-mono">
-                  {summary}
-                </span>
-              )}
-            </div>
-
-            {/* Tool result summary with proper colors */}
-            {summaryLines.length > 0 && (
-              <div className="ml-4 pl-3 border-l-2 border-slate-300">
-                {summaryLines.map((line: string, index: number) => {
-                  // Check if this line indicates success or failure
-                  const isSuccess = line.includes('Read') || line.includes('Created') || line.includes('Updated') ||
-                                   line.includes('Changes') || line.includes('Packages installed') || line.includes('completed');
-                  const isError = line.includes('Error') || line.includes('Failed') || line.includes('interrupted') || line.includes('Exit code');
-
-                  return (
-                    <div key={index} className={`font-mono text-sm mb-1 ${
-                      isError ? 'text-red-600' :
-                      isSuccess ? 'text-green-600' :
-                      'text-slate-600'
-                    }`}>
-                      {line}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Expand button */}
-            {hasExpandableContent && (
-              <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="ml-4 text-xs text-slate-500 hover:text-slate-700 font-medium mt-2"
-              >
-                {isExpanded ? 'Hide details' : 'Show details'}
-              </button>
-            )}
-
-            {/* Expanded content */}
-            {hasExpandableContent && isExpanded && (
-              <div className="ml-4 mt-3 pl-3 border-t border-slate-300 pt-3">
-                <pre className="text-xs text-slate-600 font-mono bg-white border border-slate-300 rounded p-3 overflow-x-auto max-h-96">
-                  {typeof fullOutput === 'string' ? fullOutput : JSON.stringify(fullOutput, null, 2)}
-                </pre>
-              </div>
-            )}
-          </div>
+      <div className="bg-slate-100 border border-slate-300 rounded-lg px-4 py-3 shadow-sm">
+        {/* Tool action header */}
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-slate-600 font-mono text-sm leading-6 flex-shrink-0">▶</span>
+          <span className="font-medium text-slate-900 text-sm leading-6">
+            {verb}
+          </span>
+          {summary && (
+            <span className="text-slate-700 text-sm bg-white px-2 py-1 rounded border border-slate-400 font-mono leading-6">
+              {summary}
+            </span>
+          )}
         </div>
+
+        {/* Tool result summary with proper colors */}
+        {summaryLines.length > 0 && (
+          <div className="ml-4 pl-3 border-l-2 border-slate-300">
+            {summaryLines.map((line: string, index: number) => {
+              // Check if this line indicates success or failure
+              const isSuccess = line.includes('Read') || line.includes('Created') || line.includes('Updated') ||
+                               line.includes('Changes') || line.includes('Packages installed') || line.includes('completed');
+              const isError = line.includes('Error') || line.includes('Failed') || line.includes('interrupted') || line.includes('Exit code');
+
+              return (
+                <div key={index} className={`font-mono text-sm mb-1 leading-6 ${
+                  isError ? 'text-red-600' :
+                  isSuccess ? 'text-green-600' :
+                  'text-slate-600'
+                }`}>
+                  {line}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Expand button */}
+        {hasExpandableContent && (
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="ml-4 text-sm text-slate-500 hover:text-slate-700 font-medium mt-2 leading-6"
+          >
+            {isExpanded ? 'Hide details' : 'Show details'}
+          </button>
+        )}
+
+        {/* Expanded content */}
+        {hasExpandableContent && isExpanded && (
+          <div className="ml-4 mt-3 pl-3 border-t border-slate-300 pt-3">
+            <pre className="text-sm text-slate-600 font-mono bg-white border border-slate-300 rounded p-3 overflow-x-auto max-h-96 leading-6">
+              {typeof fullOutput === 'string' ? fullOutput : JSON.stringify(fullOutput, null, 2)}
+            </pre>
+          </div>
+        )}
       </div>
     );
   }

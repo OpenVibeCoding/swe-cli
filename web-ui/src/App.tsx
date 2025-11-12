@@ -8,7 +8,7 @@ function App() {
       {/* Left Sidebar - Sessions */}
       <SessionsSidebar />
 
-      {/* Right Panel - Chat */}
+      {/* Main Chat Area - Now uses full available space */}
       <main className="flex-1 flex flex-col overflow-hidden bg-white">
         <ChatInterface />
       </main>

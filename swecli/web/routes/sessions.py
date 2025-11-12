@@ -50,7 +50,7 @@ async def create_session(request: CreateSessionRequest) -> Dict[str, Any]:
         print("[DEBUG] Session created")
 
         # Note: Session will be auto-saved when first message is added
-        # Don't save empty sessions to avoid cluttering the session list
+        # Empty sessions are not saved to disk to avoid cluttering the session list
 
         session = state.session_manager.get_current_session()
         print(f"[DEBUG] Got current session: {session.id}")
@@ -144,6 +144,14 @@ async def resume_session(session_id: str) -> Dict[str, str]:
     try:
         print(f"[DEBUG] Resuming session {session_id}")
         state = get_state()
+
+        # Check if this is the current session (newly created but not yet saved)
+        current = state.session_manager.get_current_session()
+        if current and current.id == session_id:
+            print(f"[DEBUG] Session {session_id} is already the current session (not yet saved)")
+            return {"status": "success", "message": f"Session {session_id} already active"}
+
+        # Try to load from disk
         success = state.resume_session(session_id)
 
         if not success:

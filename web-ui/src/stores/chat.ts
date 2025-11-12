@@ -260,13 +260,24 @@ wsClient.on('tool_call', (message) => {
 });
 
 wsClient.on('tool_result', (message) => {
-  // Add tool result message
-  const toolResultMessage: Message = {
-    role: 'tool_result',
-    content: message.data.result || 'Tool completed',
-    tool_name: message.data.tool_name,
-    tool_result: message.data.output,
-    timestamp: new Date().toISOString(),
-  };
-  useChatStore.getState().addMessage(toolResultMessage);
+  // Update the existing tool_call message with the result
+  const { messages } = useChatStore.getState();
+  const toolName = message.data.tool_name;
+
+  // Find the most recent tool_call message with this tool name that doesn't have a result yet
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === 'tool_call' && messages[i].tool_name === toolName && !messages[i].tool_result) {
+      // Update this message with the result
+      const updatedMessages = [...messages];
+      updatedMessages[i] = {
+        ...messages[i],
+        tool_result: message.data.output,
+      };
+      useChatStore.setState({ messages: updatedMessages });
+      return;
+    }
+  }
+
+  // If no matching tool_call found, log a warning
+  console.warn(`Received tool_result for ${toolName} but no matching tool_call found`);
 });
