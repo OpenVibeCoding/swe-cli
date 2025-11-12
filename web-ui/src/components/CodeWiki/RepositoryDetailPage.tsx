@@ -1,6 +1,10 @@
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeftIcon, FolderIcon, CheckCircleIcon, ExclamationCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
-import { DocumentationViewer } from './DocumentationViewer';
+import { FolderIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { CodeWikiNavBar } from './CodeWikiNavBar';
+import { RepositoryHero } from './RepositoryHero';
+import { WikiSidebar } from './WikiSidebar';
+import { DocumentationContent } from './DocumentationContent';
 import { Repository } from './RepositoryExplorer';
 
 // Mock function to get repository by name
@@ -48,6 +52,82 @@ const getRepositoryByName = (name: string): Repository | null => {
   return mockRepositories.find(repo => repo.name === name) || null;
 };
 
+// Mock wiki pages for the repository
+const mockWikiPages = [
+  {
+    id: 'overview',
+    title: 'Architecture Overview',
+    type: 'overview' as const,
+    description: 'High-level architecture and design principles',
+    lastModified: '2 hours ago',
+    content: `# Architecture Overview
+
+This document provides a comprehensive overview of the repository architecture and design principles.
+
+## Core Components
+
+### 1. Frontend Layer
+- React-based UI with TypeScript
+- Modern component architecture
+- Real-time updates via WebSockets
+
+### 2. Backend Services
+- RESTful API endpoints
+- WebSocket server for real-time communication
+- Database integration with PostgreSQL
+
+### 3. Agent System
+- Multi-agent coordination
+- Tool execution framework
+- Context-aware processing`,
+    relatedFiles: ['src/core/agent.py', 'src/web/server.py'],
+    relatedPages: ['agent-system', 'api-reference'],
+    tags: ['architecture', 'overview', 'core']
+  },
+  {
+    id: 'agent-system',
+    title: 'Agent System',
+    type: 'architecture' as const,
+    parent: 'overview',
+    description: 'Detailed breakdown of the agent execution system',
+    lastModified: '3 hours ago',
+    content: `# Agent System Architecture
+
+The agent system provides intelligent task execution through coordinated multi-agent workflows.
+
+## Agent Types
+
+- **Code Agent**: Handles code generation and modification
+- **Debug Agent**: Analyzes and fixes errors
+- **Test Agent**: Writes and runs tests
+- **Research Agent**: Gathers information`,
+    relatedFiles: ['src/agents/base.py', 'src/agents/code.py'],
+    relatedPages: ['overview'],
+    tags: ['agents', 'architecture']
+  },
+  {
+    id: 'api-reference',
+    title: 'API Reference',
+    type: 'api' as const,
+    description: 'Complete API endpoint documentation',
+    lastModified: '1 day ago',
+    content: `# API Reference
+
+## REST Endpoints
+
+### Chat API
+- \`POST /api/chat/message\` - Send a message
+- \`GET /api/chat/history\` - Get chat history
+
+### Sessions API
+- \`GET /api/sessions\` - List all sessions
+- \`POST /api/sessions\` - Create new session
+- \`DELETE /api/sessions/:id\` - Delete session`,
+    relatedFiles: ['src/web/routes/chat.py', 'src/web/routes/sessions.py'],
+    relatedPages: ['overview'],
+    tags: ['api', 'reference', 'endpoints']
+  }
+];
 
 interface RepositoryDetailPageProps {
   searchQuery?: string;
@@ -56,17 +136,10 @@ interface RepositoryDetailPageProps {
 export function RepositoryDetailPage({ searchQuery = '' }: RepositoryDetailPageProps) {
   const { repoName } = useParams<{ repoName: string }>();
   const repository = getRepositoryByName(repoName || '');
+  const [selectedPageId, setSelectedPageId] = useState<string | null>('overview');
+  const [search, setSearch] = useState(searchQuery);
 
-  const getStatusIcon = (status: Repository['status']) => {
-    switch (status) {
-      case 'indexed':
-        return <CheckCircleIcon className="w-4 h-4 text-green-500" />;
-      case 'indexing':
-        return <ArrowPathIcon className="w-4 h-4 text-blue-500 animate-spin" />;
-      case 'error':
-        return <ExclamationCircleIcon className="w-4 h-4 text-red-500" />;
-    }
-  };
+  const selectedPage = mockWikiPages.find(page => page.id === selectedPageId);
 
   if (!repository) {
     return (
@@ -89,61 +162,46 @@ export function RepositoryDetailPage({ searchQuery = '' }: RepositoryDetailPageP
     );
   }
 
-  
+  void search;
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Simplified Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          {/* Breadcrumb Navigation */}
-          <nav className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-            <Link to="/codewiki" className="hover:text-gray-700 transition-colors">
-              CodeWiki
-            </Link>
-            <span>/</span>
-            <span className="text-gray-900 font-medium">{repository.name}</span>
-          </nav>
+      {/* Fixed Navigation Bar */}
+      <CodeWikiNavBar
+        repoName={repository.name}
+        onSearch={setSearch}
+      />
 
-          {/* Repository Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {/* Repository Icon */}
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-600 rounded-lg flex items-center justify-center">
-                <FolderIcon className="w-5 h-5 text-white" />
+      {/* Main Content - Below Fixed Nav (mt-16 accounts for fixed nav height) */}
+      <div className="pt-16">
+        {/* Repository Hero Section */}
+        <RepositoryHero repository={repository} />
+
+        {/* 3-Column Layout */}
+        <div className="flex">
+          {/* Left Sidebar - Wiki Navigation */}
+          <WikiSidebar
+            wikiPages={mockWikiPages}
+            selectedPageId={selectedPageId}
+            onPageSelect={setSelectedPageId}
+          />
+
+          {/* Main Content Area */}
+          <main className="flex-1 bg-white min-h-screen">
+            {selectedPage ? (
+              <DocumentationContent wikiPage={selectedPage} />
+            ) : (
+              <div className="flex items-center justify-center h-96">
+                <div className="text-center">
+                  <FolderIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Select a page</h3>
+                  <p className="text-gray-600">Choose a wiki page from the sidebar to view its content</p>
+                </div>
               </div>
-
-              {/* Repository Info */}
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">{repository.name}</h1>
-                <p className="text-gray-600">{repository.fullName}</p>
-              </div>
-            </div>
-
-            {/* Status and Back Button */}
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-full">
-                {getStatusIcon(repository.status)}
-                <span className="text-sm font-medium text-gray-700 capitalize">{repository.status}</span>
-              </div>
-
-              <Link
-                to="/codewiki"
-                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ArrowLeftIcon className="w-4 h-4" />
-                Back
-              </Link>
-            </div>
-          </div>
+            )}
+          </main>
         </div>
       </div>
-
-      {/* Documentation Content - Full Width */}
-      <DocumentationViewer
-        selectedRepo={repository.id}
-        searchQuery={searchQuery}
-        onIndexingChange={() => {}}
-      />
     </div>
   );
 }
