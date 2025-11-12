@@ -13,7 +13,6 @@ interface Config {
 
 export function ChatInterface() {
   const error = useChatStore(state => state.error);
-  const messages = useChatStore(state => state.messages);
   const currentSessionId = useChatStore(state => state.currentSessionId);
   const hasActiveSession = !!currentSessionId;
   const [config, setConfig] = useState<Config | null>(null);

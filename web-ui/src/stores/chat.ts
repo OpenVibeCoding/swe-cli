@@ -24,7 +24,7 @@ interface ChatState {
   setHasWorkspace: (hasWorkspace: boolean) => void;
 }
 
-export const useChatStore = create<ChatState>((set, get) => ({
+export const useChatStore = create<ChatState>((set) => ({
   messages: [],
   isLoading: false,
   error: null,
@@ -204,7 +204,7 @@ wsClient.on('disconnected', () => {
   useChatStore.getState().setConnected(false);
 });
 
-wsClient.on('user_message', (message) => {
+wsClient.on('user_message', () => {
   // Message already added optimistically
 });
 

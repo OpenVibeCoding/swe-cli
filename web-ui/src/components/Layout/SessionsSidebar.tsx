@@ -26,7 +26,7 @@ interface WorkspaceGroup {
 }
 
 export function SessionsSidebar() {
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const [_sessions, setSessions] = useState<Session[]>([]);
   const [workspaces, setWorkspaces] = useState<WorkspaceGroup[]>([]);
   const [expandedWorkspaces, setExpandedWorkspaces] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);

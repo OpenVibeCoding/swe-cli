@@ -102,9 +102,11 @@ export function MessageList() {
                 <div className="prose prose-sm max-w-none">
                   <ReactMarkdown
                     components={{
-                      code({ node, inline, className, children, ...props }) {
-                        const match = /language-(\w+)/.exec(className || '');
-                        return inline ? (
+                      code({ node, className, children, ...props }) {
+                        const isInline = (props as any)?.inline;
+                        const languageMatch = /language-(\w+)/.exec(className || '');
+                        const language = languageMatch ? languageMatch[1] : null;
+                        return isInline ? (
                           <code className={`text-sm px-1.5 py-0.5 rounded font-mono ${
                             isUser ? 'bg-gray-800 text-gray-100' : 'bg-gray-200 text-gray-800'
                           }`} {...props}>
@@ -114,7 +116,7 @@ export function MessageList() {
                           <pre className={`rounded-lg p-3 overflow-x-auto my-2 ${
                             isUser ? 'bg-gray-800 text-gray-100' : 'bg-white border border-gray-200'
                           }`}>
-                            <code className={className} {...props}>
+                            <code className={className} data-language={language} {...props}>
                               {children}
                             </code>
                           </pre>
