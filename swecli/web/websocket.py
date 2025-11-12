@@ -74,14 +74,17 @@ class WebSocketManager:
     async def handle_message(self, websocket: WebSocket, data: Dict[str, Any]):
         """Handle incoming WebSocket message."""
         msg_type = data.get("type")
+        logger.info(f"📨 Received WebSocket message: type={msg_type}")
 
         if msg_type == "query":
             await self._handle_query(websocket, data)
         elif msg_type == "approve":
+            logger.info("Routing to _handle_approval")
             await self._handle_approval(websocket, data)
         elif msg_type == "ping":
             await self.send_message(websocket, {"type": "pong"})
         else:
+            logger.warning(f"Unknown message type: {msg_type}")
             await self.send_message(
                 websocket,
                 {"type": "error", "data": {"message": f"Unknown message type: {msg_type}"}}
