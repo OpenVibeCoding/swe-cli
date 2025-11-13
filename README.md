@@ -4,16 +4,12 @@
 
 <h1 align="center">SWE-CLI</h1>
 
-<p align="center">
-  <strong><a href="https://modelcontextprotocol.io/">MCP</a></strong> • <strong><a href="#-quick-start">Quick Start</a></strong> • <strong><a href="#-features">Features</a></strong> • <strong><a href="https://github.com/swe-cli/swe-cli/stargazers">Give us a star!</a></strong>
-</p>
 
 <p align="center">
 One-Stop, Cost-Effective CLI-based Coding Agent for Modern Software Engineering
 </p>
 
 <p align="center">
-  <a href="https://github.com/swe-cli/swe-cli/actions"><img alt="CI" src="https://github.com/swe-cli/swe-cli/actions/workflows/ci.yml/badge.svg" /></a>
   <a href="https://pypi.org/project/swe-cli/"><img alt="PyPI version" src="https://img.shields.io/pypi/v/swe-cli?style=flat-square" /></a>
   <a href="https://python.org/"><img alt="Python version" src="https://img.shields.io/badge/python-%3E%3D3.10-brightgreen?style=flat-square" /></a>
   <a href="./LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" /></a>
@@ -28,7 +24,7 @@ One-Stop, Cost-Effective CLI-based Coding Agent for Modern Software Engineering
   <a href="https://modelcontextprotocol.io/"><strong>MCP</strong></a>
 </p>
 
----
+<!-- ---
 
 ### 🎬 Demo
 
@@ -38,9 +34,9 @@ One-Stop, Cost-Effective CLI-based Coding Agent for Modern Software Engineering
 
 <p align="center">
   <em>Interactive coding assistant in action</em>
-</p>
+</p> -->
 
----
+<!-- --- -->
 
 ## 📖 Overview
 
