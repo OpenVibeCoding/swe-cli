@@ -39,6 +39,7 @@ class HelpCommand(CommandHandler):
 - `/clear` - Clear current session context
 - `/sessions` - List all saved sessions
 - `/resume <id>` - Resume a previous session
+- `/changed-files` or `/changes` - Show files changed in current session
 
 ## Configuration
 - `/models` - Interactive model/provider selector (use ↑/↓ arrows to choose)

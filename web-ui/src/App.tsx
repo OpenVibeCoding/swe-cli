@@ -1,21 +1,25 @@
-import { SessionsSidebar } from './components/Layout/SessionsSidebar';
-import { ChatInterface } from './components/Chat/ChatInterface';
-import { ApprovalDialog } from './components/ApprovalDialog';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AppNavBar } from './components/Layout/AppNavBar';
+import { ChatPage } from './pages/ChatPage';
+import { CodeWikiPage } from './pages/CodeWikiPage';
+import { RepositoryDetailPage } from './components/CodeWiki/RepositoryDetailPage';
 
 function App() {
   return (
-    <div className="h-screen flex bg-cream">
-      {/* Left Sidebar - Sessions */}
-      <SessionsSidebar />
+    <Router>
+      {/* Global Navigation Bar - appears on all pages */}
+      <AppNavBar />
 
-      {/* Right Panel - Chat */}
-      <main className="flex-1 flex flex-col overflow-hidden bg-white">
-        <ChatInterface />
-      </main>
-
-      {/* Modals */}
-      <ApprovalDialog />
-    </div>
+      {/* Main Content - with top padding for fixed navbar */}
+      <div className="pt-14">
+        <Routes>
+          <Route path="/chat" element={<ChatPage />} />
+          <Route path="/codewiki" element={<CodeWikiPage />} />
+          <Route path="/codewiki/:repoName" element={<RepositoryDetailPage />} />
+          <Route path="/" element={<Navigate to="/chat" replace />} />
+        </Routes>
+      </div>
+    </Router>
   );
 }
 

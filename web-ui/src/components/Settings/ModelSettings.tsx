@@ -135,7 +135,7 @@ function ModelSlot({
 
 export function ModelSettings() {
   const [providers, setProviders] = useState<Provider[]>([]);
-  const [config, setConfig] = useState<Config | null>(null);
+  const [_config, setConfig] = useState<Config | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);

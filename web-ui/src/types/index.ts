@@ -5,6 +5,7 @@ export interface ToolCallInfo {
   parameters: Record<string, any>;
   result?: string | null;
   error?: string | null;
+  result_summary?: string | null;
   approved?: boolean | null;
 }
 
@@ -13,9 +14,14 @@ export interface Message {
   role: 'user' | 'assistant' | 'system' | 'tool_call' | 'tool_result';
   content: string;
   timestamp?: string;
+  tool_call_id?: string;
   tool_name?: string;
   tool_args?: Record<string, any>;
   tool_result?: any;
+  tool_args_display?: string | null;
+  tool_summary?: string | string[] | null;
+  tool_success?: boolean;
+  tool_error?: string | null;
   tool_calls?: ToolCallInfo[];
 }
 
@@ -56,7 +62,7 @@ export interface Provider {
 
 // WebSocket event types
 export interface WSMessage {
-  type: 'user_message' | 'message_start' | 'message_chunk' | 'message_complete' | 'tool_call' | 'tool_result' | 'approval_required' | 'approval_resolved' | 'error' | 'pong' | 'mcp_status_update' | 'mcp_servers_update';
+  type: 'user_message' | 'message_start' | 'message_chunk' | 'message_complete' | 'tool_call' | 'tool_result' | 'approval_required' | 'approval_resolved' | 'error' | 'pong' | 'mcp_status_update' | 'mcp_servers_update' | 'connected' | 'disconnected';
   data: any;
 }
 

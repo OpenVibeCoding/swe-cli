@@ -1,24 +1,15 @@
 """Interactive REPL for SWE-CLI."""
 
-import json
-import os
-import random
-import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 from prompt_toolkit import PromptSession
-from prompt_toolkit.formatted_text import FormattedText
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.styles import Style
 from rich.console import Console
-from rich.markdown import Markdown
 from rich.panel import Panel
-from rich.syntax import Syntax
-from rich.table import Table
-from rich.text import Text
 
 from swecli.core.approval import ApprovalManager
 from swecli.core.management import (
@@ -28,7 +19,7 @@ from swecli.core.management import (
     SessionManager,
     UndoManager,
 )
-from swecli.core.monitoring import ErrorHandler, TaskMonitor
+from swecli.core.monitoring import ErrorHandler
 from swecli.core.services import RuntimeService
 from swecli.models.message import ChatMessage, Role
 from swecli.models.operation import Operation, OperationType
@@ -37,13 +28,10 @@ from swecli.tools.file_ops import FileOperations
 from swecli.tools.write_tool import WriteTool
 from swecli.tools.edit_tool import EditTool
 from swecli.tools.bash_tool import BashTool
-from swecli.ui.components.animations import Spinner, FlashingSymbol, ProgressIndicator
-from swecli.ui.components.task_progress import TaskProgressDisplay
-from swecli.ui.components.status_line import StatusLine
-from swecli.ui.autocomplete import SwecliCompleter
-from swecli.ui.formatters_internal.output_formatter import OutputFormatter
-from swecli.ui.components.notifications import NotificationCenter
-from swecli.ui.formatters_internal.markdown_formatter import markdown_to_plain_text
+from swecli.ui_textual.components.console_animations import Spinner
+from swecli.ui_textual.components import StatusLine, NotificationCenter
+from swecli.ui_textual.autocomplete import SwecliCompleter
+from swecli.ui_textual.formatters_internal.output_formatter import OutputFormatter
 
 # Command handlers
 from swecli.repl.commands import (
@@ -371,7 +359,7 @@ class REPL:
 
     def _print_welcome(self) -> None:
         """Print compact welcome banner using shared welcome module."""
-        from swecli.ui.components.welcome import WelcomeMessage
+        from swecli.ui_textual.components import WelcomeMessage
 
         # Generate welcome content using shared module
         welcome_lines = WelcomeMessage.generate_full_welcome(
@@ -429,6 +417,36 @@ class REPL:
         # Update state from query processor results
         self._last_operation_summary, self._last_error, self._last_latency_ms = result
 
+    def _process_query_with_callback(self, query: str, ui_callback) -> None:
+        """Process a user query with AI using ReAct pattern with UI callback for real-time updates.
+
+        Args:
+            query: User query
+            ui_callback: UI callback for real-time tool display
+        """
+        # Delegate to query processor with callback
+        if hasattr(self.query_processor, 'process_query_with_callback'):
+            result = self.query_processor.process_query_with_callback(
+                query,
+                self.agent,
+                self.tool_registry,
+                self.approval_manager,
+                self.undo_manager,
+                ui_callback,
+            )
+        else:
+            # Fallback to normal processing if callback method doesn't exist
+            result = self.query_processor.process_query(
+                query,
+                self.agent,
+                self.tool_registry,
+                self.approval_manager,
+                self.undo_manager,
+            )
+
+        # Update state from query processor results
+        self._last_operation_summary, self._last_error, self._last_latency_ms = result
+
     def _handle_command(self, command: str) -> None:
         """Handle slash commands.
 
@@ -450,6 +468,8 @@ class REPL:
             self.session_commands.list_sessions()
         elif cmd == "/resume":
             self.session_commands.resume(args)
+        elif cmd == "/changed-files" or cmd == "/changes":
+            self.session_commands.changed_files()
         elif cmd == "/mode":
             result = self.mode_commands.switch_mode(args)
             # Sync agent after mode switch
@@ -593,7 +613,6 @@ class REPL:
 
     def _connect_mcp_servers(self) -> None:
         """Connect to enabled MCP servers on startup asynchronously."""
-        import asyncio
         import threading
 
         def connect_in_background():
@@ -615,10 +634,9 @@ class REPL:
 
     def _cleanup(self) -> None:
         """Cleanup resources."""
-        # Disconnect from MCP servers
-        import asyncio
+        # Disconnect from MCP servers using manager's shared loop
         try:
-            asyncio.run(self.mcp_manager.disconnect_all())
+            self.mcp_manager.disconnect_all_sync()
         except Exception as e:
             self.console.print(f"[yellow]Warning: Error disconnecting MCP servers: {e}[/yellow]")
 

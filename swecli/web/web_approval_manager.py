@@ -9,6 +9,7 @@ from typing import Any, Optional, Union
 
 from swecli.models.operation import Operation
 from swecli.web.state import get_state
+from swecli.web.logging_config import logger
 
 
 class ApprovalResult:
@@ -94,6 +95,7 @@ class WebApprovalManager:
         )
 
         # Broadcast approval request via WebSocket
+        logger.info(f"🔔 Requesting approval for {tool_name}: {approval_request}")
         future = asyncio.run_coroutine_threadsafe(
             self.ws_manager.broadcast({
                 "type": "approval_required",
@@ -105,8 +107,9 @@ class WebApprovalManager:
         # Wait for broadcast to complete
         try:
             future.result(timeout=5)
+            logger.info(f"✓ Approval request broadcasted successfully: {approval_id}")
         except Exception as e:
-            print(f"Failed to broadcast approval request: {e}")
+            logger.error(f"❌ Failed to broadcast approval request: {e}")
             self.state.clear_approval(approval_id)
             return ApprovalResult(approved=False, choice="deny", cancelled=True)
 
@@ -114,6 +117,7 @@ class WebApprovalManager:
         wait_timeout = timeout if timeout else 300  # 5 minutes default
         start_time = time.time()
 
+        logger.info(f"⏳ Waiting for approval response (timeout: {wait_timeout}s)...")
         while time.time() - start_time < wait_timeout:
             approval = self.state.get_pending_approval(approval_id)
             if approval and approval["resolved"]:
@@ -122,13 +126,19 @@ class WebApprovalManager:
                 auto_approve = approval.get("auto_approve", False)
                 self.state.clear_approval(approval_id)
                 choice = "approve_all" if (approved and auto_approve) else ("approve" if approved else "deny")
+                logger.info(f"✓ Approval resolved: {approval_id} - {'approved' if approved else 'denied'}")
                 return ApprovalResult(approved=approved, choice=choice, apply_to_all=auto_approve)
 
             # Sleep briefly to avoid busy waiting
             time.sleep(0.1)
 
+            # Log every 5 seconds to show we're still waiting
+            elapsed = time.time() - start_time
+            if int(elapsed) % 5 == 0 and elapsed > 0:
+                logger.debug(f"Still waiting for approval {approval_id}... ({int(elapsed)}s elapsed)")
+
         # Timeout - default to deny
-        print(f"Approval request {approval_id} timed out")
+        logger.warning(f"⏱️  Approval request {approval_id} timed out after {wait_timeout}s")
         self.state.clear_approval(approval_id)
         return ApprovalResult(approved=False, choice="deny", cancelled=True)
 

@@ -2,17 +2,21 @@
 
 import argparse
 import sys
+import warnings
 from pathlib import Path
+
+# Suppress transformers warning about missing ML frameworks
+# SWE-CLI uses LLM APIs directly and doesn't need local models
+warnings.filterwarnings("ignore", message=".*None of PyTorch, TensorFlow.*found.*")
 
 from rich.console import Console
 
 from swecli.core.approval import ApprovalManager
-from swecli.core.management import ConfigManager, ModeManager, OperationMode, SessionManager, UndoManager
+from swecli.core.management import ConfigManager, ModeManager, SessionManager, UndoManager
 from swecli.core.services import RuntimeService
 from swecli.models.agent_deps import AgentDependencies
 from swecli.models.message import ChatMessage, Role
-from swecli.repl.repl import REPL
-from swecli.repl.repl_chat import create_repl_chat
+from swecli.ui_textual.runner import launch_textual_cli
 from swecli.setup import run_setup_wizard
 from swecli.setup.wizard import config_exists
 from swecli.tools.bash_tool import BashTool
@@ -304,19 +308,20 @@ Examples:
                 session_dir = Path(config.session_dir).expanduser()
                 session_manager = SessionManager(session_dir)
                 session_manager.load_session(resume_id)
-        elif not resume_id:
-            session_manager.create_session(working_directory=str(working_dir))
 
         # Non-interactive mode
         if args.prompt:
+            if not resume_id:
+                session_manager.create_session(working_directory=str(working_dir))
             _run_non_interactive(config_manager, session_manager, args.prompt)
             return
 
-        # Interactive REPL mode with chat UI (web server NOT started automatically)
-        # Check if continuing/resuming a session
-        is_continuation = bool(args.resume or args.continue_session)
-        chat_app = create_repl_chat(config_manager, session_manager, is_continuation=is_continuation)
-        chat_app.run()
+        launch_textual_cli(
+            working_dir=working_dir,
+            resume_session=resume_id,
+            continue_session=args.continue_session if not resume_id else False,
+        )
+        return
 
     except KeyboardInterrupt:
         console.print("\n[yellow]Interrupted.[/yellow]")
@@ -451,7 +456,6 @@ def _handle_mcp_command(args) -> None:
         args: Parsed command-line arguments
     """
     from swecli.mcp.manager import MCPManager
-    from swecli.mcp.models import MCPServerConfig
     from rich.table import Table
 
     console = Console()
@@ -568,7 +572,6 @@ def _handle_run_command(args) -> None:
     Args:
         args: Parsed command-line arguments
     """
-    import subprocess
     import webbrowser
     import time
     from pathlib import Path
@@ -581,122 +584,94 @@ def _handle_run_command(args) -> None:
 
     if args.run_command == "ui":
         try:
-            # Start the backend API server in the background
-            console.print("[cyan]🚀 Starting backend API server...[/cyan]")
+            # Show spinner while starting up
+            with console.status("[cyan]Starting Web UI…[/cyan]", spinner="dots"):
+                # Initialize managers for backend
+                from swecli.core.management import ConfigManager, ModeManager, SessionManager, UndoManager
+                from swecli.core.approval import ApprovalManager
+                from swecli.mcp.manager import MCPManager
+                import webbrowser
 
-            # Initialize managers for backend
-            from swecli.core.management import ConfigManager, ModeManager, SessionManager, UndoManager
-            from swecli.core.approval import ApprovalManager
-            from swecli.mcp.manager import MCPManager
+                working_dir = Path.cwd()
+                config_manager = ConfigManager(working_dir)
+                config = config_manager.load_config()
+                session_manager = SessionManager(Path(config.session_dir).expanduser())
+                mode_manager = ModeManager()
+                approval_manager = ApprovalManager(console)
+                undo_manager = UndoManager(config.max_undo_history)
+                mcp_manager = MCPManager(working_dir)
 
-            working_dir = Path.cwd()
-            config_manager = ConfigManager(working_dir)
-            config = config_manager.load_config()
-            session_manager = SessionManager(Path(config.session_dir).expanduser())
-            mode_manager = ModeManager()
-            approval_manager = ApprovalManager(console)
-            undo_manager = UndoManager(config.max_undo_history)
-            mcp_manager = MCPManager(working_dir)
+                # Get port and host from args
+                preferred_port = getattr(args, 'ui_port', 8080)
+                backend_host = getattr(args, 'ui_host', '127.0.0.1')
 
-            # Don't create session on startup - let user create via UI
+                # Find an available port
+                from swecli.web.port_utils import find_available_port
+                backend_port = find_available_port(backend_host, preferred_port, max_attempts=10)
 
-            # Get port and host from args
-            preferred_port = getattr(args, 'ui_port', 8080)
-            backend_host = getattr(args, 'ui_host', '127.0.0.1')
-
-            # Find an available port
-            from swecli.web.port_utils import find_available_port
-            backend_port = find_available_port(backend_host, preferred_port, max_attempts=10)
-
-            if backend_port is None:
-                console.print(f"[red]Error: Could not find available port starting from {preferred_port}[/red]")
-                console.print(f"[yellow]Try ports {preferred_port} to {preferred_port + 9} are all in use[/yellow]")
-                sys.exit(1)
-
-            if backend_port != preferred_port:
-                console.print(f"[yellow]⚠ Port {preferred_port} is in use, using port {backend_port} instead[/yellow]")
-
-            try:
-                from swecli.web import start_server
-
-                web_server_thread = start_server(
-                    config_manager=config_manager,
-                    session_manager=session_manager,
-                    mode_manager=mode_manager,
-                    approval_manager=approval_manager,
-                    undo_manager=undo_manager,
-                    mcp_manager=mcp_manager,
-                    host=backend_host,
-                    port=backend_port,
-                    open_browser=False,
-                )
-
-                # Wait for backend to be ready
-                time.sleep(1.0)
-
-                # Verify server is running by checking the thread
-                if web_server_thread.is_alive():
-                    console.print(f"[green]✓ Backend API server running at http://{backend_host}:{backend_port}[/green]")
-                    console.print(f"[dim]   API docs: http://{backend_host}:{backend_port}/docs[/dim]\n")
-                else:
-                    console.print("[red]Error: Backend server thread terminated unexpectedly[/red]")
+                if backend_port is None:
+                    console.print(f"[red]Error: Could not find available port starting from {preferred_port}[/red]")
                     sys.exit(1)
 
-            except ImportError as e:
-                console.print("[red]Error: Web dependencies not installed[/red]")
-                console.print(f"[dim]{str(e)}[/dim]")
-                console.print("[yellow]Install with: pip install 'swe-cli[web]'[/yellow]")
-                sys.exit(1)
-            except Exception as e:
-                console.print(f"[red]Error starting backend server: {str(e)}[/red]")
-                import traceback
-                console.print(f"[dim]{traceback.format_exc()}[/dim]")
-                sys.exit(1)
-            # Instead of looking for a development web-ui directory, we'll serve the built static files
-            # The backend server already serves the static frontend files
-            from swecli.web import find_static_directory
-            static_dir = find_static_directory()
+                # Check for static files
+                from swecli.web import find_static_directory
+                static_dir = find_static_directory()
 
-            if not static_dir or not static_dir.exists():
-                console.print("[red]Error: Built web UI static files not found[/red]")
-                console.print("\nThis could mean:")
-                console.print("• The package was not built with web UI assets")
-                console.print("• You're using a development version")
-                console.print("\nSolutions:")
-                console.print("• Install the full package: pip install swe-cli>=0.1.6")
-                console.print("• Or build from source with web UI included")
-                sys.exit(1)
+                if not static_dir or not static_dir.exists():
+                    console.print("[red]Error: Built web UI static files not found[/red]")
+                    sys.exit(1)
 
-            console.print(f"[cyan]✓ Using built web UI from: {static_dir}[/cyan]")
+                try:
+                    from swecli.web import start_server
 
-            # Open browser to the backend URL (which serves the static frontend)
-            def open_browser_delayed():
-                time.sleep(1.5)  # Wait for backend to be ready
+                    web_server_thread = start_server(
+                        config_manager=config_manager,
+                        session_manager=session_manager,
+                        mode_manager=mode_manager,
+                        approval_manager=approval_manager,
+                        undo_manager=undo_manager,
+                        mcp_manager=mcp_manager,
+                        host=backend_host,
+                        port=backend_port,
+                        open_browser=False,
+                    )
+
+                    # Wait for backend to be ready
+                    time.sleep(1.5)
+
+                    # Verify server is running
+                    if not web_server_thread.is_alive():
+                        console.print("[red]Error: Backend server thread terminated unexpectedly[/red]")
+                        sys.exit(1)
+
+                except ImportError as e:
+                    console.print("[red]Error: Web dependencies not installed[/red]")
+                    console.print("[yellow]Install with: pip install 'swe-cli[web]'[/yellow]")
+                    sys.exit(1)
+                except Exception as e:
+                    console.print(f"[red]Error starting backend server: {str(e)}[/red]")
+                    sys.exit(1)
+
                 url = f"http://{backend_host}:{backend_port}"
-                console.print(f"[green]✓ Opening browser at {url}[/green]\n")
-                webbrowser.open(url)
 
-            import threading
-            browser_thread = threading.Thread(target=open_browser_delayed, daemon=True)
-            browser_thread.start()
+                # Open browser in background
+                import threading
+                def open_browser():
+                    webbrowser.open(url)
+                threading.Thread(target=open_browser, daemon=True).start()
 
-            console.print("[green]✓ Web UI is running![/green]")
-            console.print("[dim]Backend API and frontend are served from the same port[/dim]")
-            console.print("[dim]Press Ctrl+C to stop the server[/dim]\n")
+            # Simple success message
+            console.print(f"[green]✓ Web UI available at [cyan]{url}[/cyan][/green]\n")
 
             # Keep the main thread alive and serve until interrupted
             try:
                 while True:
                     time.sleep(1)
             except KeyboardInterrupt:
-                console.print("\n[yellow]Stopping server...[/yellow]")
+                console.print("\n[yellow]Stopping Web UI…[/yellow]")
 
         except KeyboardInterrupt:
-            console.print("\n[yellow]Stopping dev server...[/yellow]")
-        except FileNotFoundError:
-            console.print("[red]Error: npm not found. Please install Node.js and npm.[/red]")
-            console.print("Visit: https://nodejs.org/")
-            sys.exit(1)
+            console.print("\n[yellow]Startup cancelled.[/yellow]")
         except Exception as e:
             console.print(f"[red]Error: {str(e)}[/red]")
             sys.exit(1)
@@ -775,7 +750,22 @@ def _run_non_interactive(
     session_manager.add_message(user_msg, config.auto_save_interval)
 
     assistant_content = result.get("content", "") or ""
-    assistant_msg = ChatMessage(role=Role.ASSISTANT, content=assistant_content)
+    raw_assistant_content = assistant_content
+    history = result.get("messages") or []
+    for msg in reversed(history):
+        if msg.get("role") == "assistant":
+            raw_assistant_content = msg.get("content", raw_assistant_content)
+            break
+
+    metadata = {}
+    if raw_assistant_content is not None:
+        metadata["raw_content"] = raw_assistant_content
+
+    assistant_msg = ChatMessage(
+        role=Role.ASSISTANT,
+        content=assistant_content,
+        metadata=metadata,
+    )
     session_manager.add_message(assistant_msg, config.auto_save_interval)
     session_manager.save_session()
 

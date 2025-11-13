@@ -17,10 +17,17 @@ class WebSocketClient {
       return;
     }
 
+    // Use proxy in development, or direct connection in production
+    const isDev = import.meta.env.DEV;
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
 
-    console.log('Connecting to WebSocket:', wsUrl);
+    // In dev, connect directly to backend to avoid Vite HMR WebSocket conflicts
+    // In prod, use the same host (since static files are served by backend)
+    const wsUrl = isDev
+      ? 'ws://localhost:8080/ws'  // Direct connection in dev
+      : `${protocol}//${window.location.host}/ws`;  // Relative in prod
+
+    console.log('Connecting to WebSocket:', wsUrl, `(dev mode: ${isDev})`);
 
     try {
       this.ws = new WebSocket(wsUrl);
@@ -77,6 +84,10 @@ class WebSocketClient {
     } else {
       console.warn('WebSocket is not connected');
     }
+  }
+
+  ping() {
+    this.send({ type: 'ping', data: { timestamp: Date.now() } });
   }
 
   on(eventType: string, handler: WSEventHandler) {

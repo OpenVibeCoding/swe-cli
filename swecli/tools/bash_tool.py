@@ -4,7 +4,7 @@ import re
 import subprocess
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from swecli.models.config import AppConfig
 from swecli.models.operation import BashResult, Operation
@@ -69,6 +69,7 @@ class BashTool(BaseTool):
         env: Optional[dict] = None,
         background: bool = False,
         operation: Optional[Operation] = None,
+        task_monitor: Optional[Any] = None,
     ) -> BashResult:
         """Execute a bash command.
 
@@ -80,6 +81,7 @@ class BashTool(BaseTool):
             env: Environment variables
             background: Run in background (not implemented yet)
             operation: Operation object for tracking
+            task_monitor: Optional TaskMonitor for interrupt support
 
         Returns:
             BashResult with execution details
@@ -210,36 +212,115 @@ class BashTool(BaseTool):
                     operation_id=operation.id if operation else None,
                 )
 
-            # Regular synchronous execution
-            result = subprocess.run(
+            # Regular synchronous execution with interrupt support
+            process = subprocess.Popen(
                 command,
                 shell=True,
-                capture_output=capture_output,
+                stdout=subprocess.PIPE if capture_output else None,
+                stderr=subprocess.PIPE if capture_output else None,
                 text=True,
-                timeout=timeout,
                 cwd=str(work_dir),
                 env=env,
             )
+
+            # Poll process with interrupt checking
+            stdout_lines = []
+            stderr_lines = []
+            poll_interval = 0.1  # Check every 100ms
+            time_elapsed = 0.0
+
+            while process.poll() is None:
+                # Check for interrupt
+                if task_monitor is not None:
+                    should_interrupt = False
+                    if hasattr(task_monitor, "should_interrupt"):
+                        should_interrupt = task_monitor.should_interrupt()
+                    elif hasattr(task_monitor, "is_interrupted"):
+                        should_interrupt = task_monitor.is_interrupted()
+
+                    if should_interrupt:
+                        # User pressed ESC - terminate the process
+                        try:
+                            process.terminate()
+                            process.wait(timeout=2)
+                        except subprocess.TimeoutExpired:
+                            process.kill()
+                            process.wait()
+
+                        duration = time.time() - start_time
+                        error = "Command interrupted by user"
+                        if operation:
+                            operation.mark_failed(error)
+
+                        return BashResult(
+                            success=False,
+                            command=command,
+                            exit_code=-1,
+                            stdout="",
+                            stderr=error,
+                            duration=duration,
+                            error=error,
+                            operation_id=operation.id if operation else None,
+                        )
+
+                # Check timeout
+                time.sleep(poll_interval)
+                time_elapsed += poll_interval
+                if time_elapsed >= timeout:
+                    # Timeout - kill process
+                    process.kill()
+                    process.wait()
+                    duration = time.time() - start_time
+                    error = f"Command timed out after {timeout} seconds"
+
+                    # Try to get partial output
+                    partial_stdout = ""
+                    partial_stderr = ""
+                    if capture_output:
+                        try:
+                            partial_stdout, partial_stderr = process.communicate(timeout=0.1)
+                        except Exception:
+                            pass
+
+                    if operation:
+                        operation.mark_failed(error)
+
+                    return BashResult(
+                        success=False,
+                        command=command,
+                        exit_code=-1,
+                        stdout=partial_stdout,
+                        stderr=partial_stderr,
+                        duration=duration,
+                        error=error,
+                        operation_id=operation.id if operation else None,
+                    )
+
+            # Process finished - collect output
+            if capture_output:
+                stdout_text, stderr_text = process.communicate()
+            else:
+                stdout_text, stderr_text = "", ""
 
             # Calculate duration
             duration = time.time() - start_time
 
             # Check exit code
-            success = result.returncode == 0
+            success = process.returncode == 0
 
             # Mark operation status
             if operation:
                 if success:
                     operation.mark_success()
                 else:
-                    operation.mark_failed(f"Command failed with exit code {result.returncode}")
+                    operation.mark_failed(f"Command failed with exit code {process.returncode}")
 
             return BashResult(
                 success=success,
                 command=command,
-                exit_code=result.returncode,
-                stdout=result.stdout if capture_output else "",
-                stderr=result.stderr if capture_output else "",
+                exit_code=process.returncode,
+                stdout=stdout_text or "",
+                stderr=stderr_text or "",
                 duration=duration,
                 operation_id=operation.id if operation else None,
             )

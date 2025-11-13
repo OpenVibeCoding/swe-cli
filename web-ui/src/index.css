@@ -85,3 +85,52 @@ pre {
 .prose blockquote {
   @apply border-l-4 border-gray-300 pl-4 italic text-gray-700;
 }
+
+/* Extra small prose for our new compact UI */
+.prose-xs {
+  @apply text-gray-900 text-xs;
+}
+
+.prose-xs p {
+  @apply mb-1.5 leading-5 last:mb-0;
+}
+
+.prose-xs ul, .prose-xs ol {
+  @apply mb-1.5 pl-4;
+}
+
+.prose-xs li {
+  @apply mb-0.5 leading-5;
+}
+
+.prose-xs strong {
+  @apply font-semibold text-gray-900 text-xs;
+}
+
+.prose-xs a {
+  @apply text-blue-600 hover:text-blue-800 underline text-xs;
+}
+
+.prose-xs blockquote {
+  @apply border-l-4 border-gray-300 pl-3 italic text-gray-700 text-xs;
+}
+
+.prose-xs h1, .prose-xs h2, .prose-xs h3, .prose-xs h4, .prose-xs h5, .prose-xs h6 {
+  @apply font-semibold text-gray-900 text-xs mb-1.5 leading-5;
+}
+
+.prose-xs h1 {
+  @apply text-base;
+}
+
+.prose-xs h2 {
+  @apply text-sm;
+}
+
+.prose-xs pre {
+  @apply bg-gray-50 rounded-lg p-3 overflow-x-auto border border-gray-200 text-xs leading-5;
+}
+
+.prose-xs code {
+  @apply font-mono text-xs bg-gray-100 px-1 py-0.5 rounded text-gray-800 border border-gray-300 leading-5;
+}

@@ -8,9 +8,10 @@ from uuid import uuid4
 from pydantic import BaseModel, ConfigDict, Field
 
 from swecli.models.message import ChatMessage
+from swecli.models.file_change import FileChange, FileChangeType
 
 if TYPE_CHECKING:
-    from swecli.core.context_management import SessionPlaybook
+    from swecli.core.context_management import Playbook
 
 
 class SessionMetadata(BaseModel):
@@ -29,8 +30,8 @@ class SessionMetadata(BaseModel):
 class Session(BaseModel):
     """Represents a conversation session.
 
-    The session now includes a playbook for storing learned strategies
-    extracted from tool executions, inspired by ACE (Agentic Context Engine).
+    The session uses ACE (Agentic Context Engine) Playbook for storing
+    learned strategies extracted from tool executions.
     """
 
     id: str = Field(default_factory=lambda: uuid4().hex[:12])
@@ -40,22 +41,33 @@ class Session(BaseModel):
     context_files: list[str] = Field(default_factory=list)
     working_directory: Optional[str] = None
     metadata: dict[str, Any] = Field(default_factory=dict)
-    playbook: Optional[dict] = Field(default_factory=dict)  # Serialized SessionPlaybook
+    playbook: Optional[dict] = Field(default_factory=dict)  # Serialized ACE Playbook
+    file_changes: list[FileChange] = Field(default_factory=list)  # Track file changes in this session
 
     model_config = ConfigDict(
         json_encoders={datetime: lambda v: v.isoformat()}
     )
 
-    def get_playbook(self) -> "SessionPlaybook":
-        """Get the session's playbook, creating if needed."""
-        from swecli.core.context_management import SessionPlaybook
+    def get_playbook(self) -> "Playbook":
+        """Get the session's ACE playbook, creating if needed.
+
+        Returns:
+            ACE Playbook instance loaded from session data
+        """
+        from swecli.core.context_management import Playbook
 
         if not self.playbook:
-            self.playbook = {}
-        return SessionPlaybook.from_dict(self.playbook)
+            return Playbook()
 
-    def update_playbook(self, playbook: "SessionPlaybook") -> None:
-        """Update the session's playbook."""
+        # Load from serialized dict
+        return Playbook.from_dict(self.playbook)
+
+    def update_playbook(self, playbook: "Playbook") -> None:
+        """Update the session's ACE playbook.
+
+        Args:
+            playbook: ACE Playbook instance to save
+        """
         self.playbook = playbook.to_dict()
         self.updated_at = datetime.now()
 
@@ -63,6 +75,49 @@ class Session(BaseModel):
         """Add a message to the session."""
         self.messages.append(message)
         self.updated_at = datetime.now()
+
+    def add_file_change(self, file_change: FileChange) -> None:
+        """Add a file change to the session."""
+        # Check if this is a modification of an existing file
+        for i, existing_change in enumerate(self.file_changes):
+            if (existing_change.file_path == file_change.file_path and 
+                existing_change.type == FileChangeType.MODIFIED and
+                file_change.type == FileChangeType.MODIFIED):
+                # Merge with existing change
+                self.file_changes[i].lines_added += file_change.lines_added
+                self.file_changes[i].lines_removed += file_change.lines_removed
+                self.file_changes[i].timestamp = file_change.timestamp
+                self.file_changes[i].description = file_change.description
+                return
+        
+        # Remove any previous change for the same file (for non-modifications)
+        self.file_changes = [fc for fc in self.file_changes if fc.file_path != file_change.file_path]
+        
+        # Add the new change
+        file_change.session_id = self.id
+        self.file_changes.append(file_change)
+        self.updated_at = datetime.now()
+
+    def get_file_changes_summary(self) -> dict:
+        """Get a summary of file changes in this session."""
+        created = len([fc for fc in self.file_changes if fc.type == FileChangeType.CREATED])
+        modified = len([fc for fc in self.file_changes if fc.type == FileChangeType.MODIFIED])
+        deleted = len([fc for fc in self.file_changes if fc.type == FileChangeType.DELETED])
+        renamed = len([fc for fc in self.file_changes if fc.type == FileChangeType.RENAMED])
+        total_lines_added = sum(fc.lines_added for fc in self.file_changes)
+        total_lines_removed = sum(fc.lines_removed for fc in self.file_changes)
+        
+        return {
+            "total": len(self.file_changes),
+            "created": created,
+            "modified": modified,
+            "deleted": deleted,
+            "renamed": renamed,
+            "total_lines_added": total_lines_added,
+            "total_lines_removed": total_lines_removed,
+            "net_lines": total_lines_added - total_lines_removed
+        }
+
 
     def total_tokens(self) -> int:
         """Calculate total token count."""
@@ -86,10 +141,14 @@ class Session(BaseModel):
 
         Args:
             window_size: If provided, only include last N interactions (user+assistant pairs).
-                        Following ACE architecture: use small window (3-5) instead of full history.
+                        For ACE compatibility, use small window (1 interaction) or none.
 
         Returns:
-            List of API messages with tool_calls and tool results preserved.
+            List of API messages with tool_calls and concise result summaries.
+
+        Note:
+            Tool results use concise summaries (e.g., "✓ Read file (100 lines)")
+            instead of full results to prevent context bloat.
         """
         # Select messages based on window size
         messages_to_convert = self.messages
@@ -112,7 +171,14 @@ class Session(BaseModel):
         # Convert selected messages to API format
         result = []
         for msg in messages_to_convert:
-            api_msg = {"role": msg.role.value, "content": msg.content}
+            raw_content = None
+            if msg.metadata and "raw_content" in msg.metadata:
+                raw_content = msg.metadata["raw_content"]
+
+            api_msg = {
+                "role": msg.role.value,
+                "content": raw_content if raw_content is not None else msg.content,
+            }
             # Include tool_calls if present
             if msg.tool_calls:
                 api_msg["tool_calls"] = [
@@ -130,10 +196,24 @@ class Session(BaseModel):
                 result.append(api_msg)
 
                 # Add tool result messages for each tool call
+                # Use concise summaries instead of full results to prevent context bloat
                 for tc in msg.tool_calls:
-                    tool_content = tc.error if tc.error else (tc.result or "")
-                    if tc.error:
-                        tool_content = f"Error: {tool_content}"
+                    # Prefer result_summary (concise 1-2 line summary)
+                    if tc.result_summary:
+                        tool_content = tc.result_summary
+                    else:
+                        # Fallback: generate summary on-the-fly if not available
+                        if tc.error:
+                            tool_content = f"❌ Error: {str(tc.error)[:200]}"
+                        elif tc.result:
+                            result_str = str(tc.result)
+                            if len(result_str) > 200:
+                                tool_content = f"✓ Success ({len(result_str)} chars)"
+                            else:
+                                tool_content = f"✓ {result_str}"
+                        else:
+                            tool_content = "✓ Success"
+
                     result.append({
                         "role": "tool",
                         "tool_call_id": tc.id,

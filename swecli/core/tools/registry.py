@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Union
 
 from swecli.core.management import OperationMode
 from swecli.core.tools.context import ToolExecutionContext
@@ -37,7 +37,7 @@ class ToolRegistry:
         open_browser_tool: Union[Any, None] = None,
         vlm_tool: Union[Any, None] = None,
         web_screenshot_tool: Union[Any, None] = None,
-        mcp_manager: Union[Any, None] = None,
+        mcp_manager: Union[Any, None] = None
     ) -> None:
         self.file_ops = file_ops
         self.write_tool = write_tool
@@ -73,12 +73,26 @@ class ToolRegistry:
             "analyze_image": self._analyze_image,
             "capture_web_screenshot": self._capture_web_screenshot,
             "list_web_screenshots": lambda args: self._list_web_screenshots(),
-            "clear_web_screenshots": self._clear_web_screenshots,
+            "clear_web_screenshots": self._clear_web_screenshots
         }
 
     def get_schemas(self) -> list[dict[str, Any]]:
         """Compatibility hook (schemas generated elsewhere)."""
         return []
+
+    def get_langchain_tools(self) -> list[Any]:
+        """Return LangChain-compatible tool instances.
+
+        Returns:
+            List of LangChain BaseTool instances wrapping SWE-CLI tools
+        """
+        try:
+            from swecli.core.agents.components.langchain.tools import ToolRegistryAdapter
+            adapter = ToolRegistryAdapter(self)
+            return adapter.get_langchain_tools()
+        except ImportError:
+            # LangChain not available, return empty list
+            return []
 
     def execute_tool(
         self,
@@ -88,6 +102,8 @@ class ToolRegistry:
         mode_manager: Union[Any, None] = None,
         approval_manager: Union[Any, None] = None,
         undo_manager: Union[Any, None] = None,
+        task_monitor: Union[Any, None] = None,
+        session_manager: Union[Any, None] = None,
     ) -> dict[str, Any]:
         """Execute a tool by delegating to registered handlers."""
         if tool_name.startswith("mcp__"):
@@ -100,6 +116,8 @@ class ToolRegistry:
             mode_manager=mode_manager,
             approval_manager=approval_manager,
             undo_manager=undo_manager,
+            task_monitor=task_monitor,
+            session_manager=session_manager,
         )
 
         if self._is_plan_blocked(tool_name, context):
@@ -201,13 +219,21 @@ class ToolRegistry:
                 f"Screenshot captured: {result.get('screenshot_path')}",
                 f"URL: {result.get('url')}",
             ]
+            if result.get("pdf_path"):
+                output_lines.append(f"PDF captured: {result.get('pdf_path')}")
             if result.get("warning"):
                 output_lines.append(f"Warning: {result['warning']}")
-            return {
+            if result.get("pdf_warning"):
+                output_lines.append(f"PDF Warning: {result['pdf_warning']}")
+
+            response = {
                 "success": True,
                 "output": "\n".join(output_lines),
                 "screenshot_path": result.get("screenshot_path"),
             }
+            if result.get("pdf_path"):
+                response["pdf_path"] = result.get("pdf_path")
+            return response
         else:
             return {
                 "success": False,

@@ -33,6 +33,20 @@
       "serverless": true,
       "tunable": true
     },
+    "minimax-m2": {
+      "id": "accounts/fireworks/models/minimax-m2",
+      "name": "MiniMax M2",
+      "provider": "MiniMax",
+      "pricing": {
+        "input": 0.35,
+        "output": 1.40,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": ["text"],
+      "serverless": true,
+      "tunable": true
+    },
     "deepseek-v3.1": {
       "id": "accounts/fireworks/models/deepseek-v3-1",
       "name": "DeepSeek V3.1",
@@ -118,24 +132,10 @@
       "tunable": true,
       "recommended": true
     },
-    "kimi-k2-instruct": {
-      "id": "accounts/fireworks/models/kimi-k2-instruct",
-      "name": "Kimi K2 Instruct",
-      "provider": "Moonshot AI",
-      "pricing": {
-        "input": 0.60,
-        "output": 2.50,
-        "unit": "per million tokens"
-      },
-      "context_length": 128000,
-      "capabilities": ["text"],
-      "serverless": true,
-      "tunable": true
-    },
-    "glm-4.5": {
-      "id": "accounts/fireworks/models/glm-4-5",
-      "name": "GLM-4.5",
-      "provider": "Z.ai",
+    "glm-4.6": {
+      "id": "accounts/fireworks/models/glm-4p6",
+      "name": "GLM 4.6",
+      "provider": "Zhipu AI",
       "pricing": {
         "input": 0.55,
         "output": 2.19,

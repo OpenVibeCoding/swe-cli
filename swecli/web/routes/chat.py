@@ -1,6 +1,6 @@
 """Chat and query API endpoints."""
 
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -24,6 +24,7 @@ class ToolCallInfo(BaseModel):
     parameters: Dict
     result: str | None = None
     error: str | None = None
+    result_summary: str | None = None
     approved: bool | None = None
 
 
@@ -101,6 +102,7 @@ async def get_messages() -> List[MessageResponse]:
                         parameters=tc.parameters,
                         result=tc.result,
                         error=tc.error,
+                        result_summary=tc.result_summary,
                         approved=tc.approved
                     )
                     for tc in msg.tool_calls

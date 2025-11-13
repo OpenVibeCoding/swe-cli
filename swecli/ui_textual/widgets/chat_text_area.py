@@ -1,0 +1,442 @@
+"""Custom TextArea widget used by the Textual chat app."""
+
+from __future__ import annotations
+
+import inspect
+from dataclasses import dataclass
+from typing import Any, Optional
+
+from prompt_toolkit.completion import Completer
+from prompt_toolkit.document import Document as PTDocument
+from textual.events import Key, Paste
+from textual.message import Message
+from textual.widgets import TextArea
+
+
+class ChatTextArea(TextArea):
+    """Multi-line text area that sends on Enter and inserts newline on Shift+Enter."""
+
+    def __init__(
+        self,
+        *args,
+        paste_threshold: int = 200,
+        completer: Optional[Completer] = None,
+        **kwargs,
+    ) -> None:
+        self._completer: Optional[Completer] = completer
+        self._completions: list[Any] = []
+        self._completion_entries: list[tuple[str, str]] = []
+        self._highlight_index: int | None = None
+        super().__init__(*args, **kwargs)
+        self._paste_threshold = paste_threshold
+        self._paste_counter = 0
+        self._large_paste_cache: dict[str, str] = {}
+        self._suppress_next_autocomplete = False
+
+    @dataclass
+    class Submitted(Message):
+        """Message emitted when the user submits the chat input."""
+
+        text_area: "ChatTextArea"
+        value: str
+
+        @property
+        def control(self) -> "ChatTextArea":
+            """Compatibility alias matching Textual input events."""
+            return self.text_area
+
+    def set_completer(self, completer: Optional[Completer]) -> None:
+        """Assign a prompt-toolkit completer for @ mentions and / commands."""
+
+        self._completer = completer
+        self.update_suggestion()
+
+    def update_suggestion(self) -> None:
+        """Populate the inline suggestion using the configured completer."""
+
+        super().update_suggestion()
+
+        if getattr(self, "_suppress_next_autocomplete", False):
+            self._suppress_next_autocomplete = False
+            self._clear_completions()
+            return
+
+        if not self._completer:
+            self._clear_completions()
+            return
+
+        if self.selection.start != self.selection.end:
+            self._clear_completions()
+            return
+
+        text = self.text or ""
+        if not text:
+            self._clear_completions()
+            return
+
+        try:
+            cursor_index = self.document.get_index_from_location(self.cursor_location)
+        except Exception:
+            self._clear_completions()
+            return
+
+        document = PTDocument(text=text, cursor_position=cursor_index)
+        try:
+            completions = list(self._completer.get_completions(document, None))
+        except Exception:
+            self._clear_completions()
+            return
+
+        self._completions = completions
+        self._completion_entries = [
+            (
+                getattr(item, "display_text", item.text),
+                getattr(item, "display_meta_text", "") or "",
+            )
+            for item in completions
+        ]
+
+        if self._completions:
+            self._set_highlight_index(0)
+        else:
+            self._set_highlight_index(None)
+
+        self._notify_autocomplete()
+
+    def _notify_autocomplete(self) -> None:
+        """Inform the parent app about available autocomplete entries."""
+
+        try:
+            app = self.app  # type: ignore[attr-defined]
+        except Exception:
+            app = None
+
+        if app and hasattr(app, "update_autocomplete"):
+            try:
+                selected = self._highlight_index if self._highlight_index is not None else None
+                app.update_autocomplete(self._completion_entries, selected)
+            except Exception:
+                pass
+
+    def _clear_completions(self) -> None:
+        """Reset completion tracking and hide popup."""
+
+        self._completions = []
+        self._completion_entries = []
+        self._highlight_index = None
+        self.suggestion = ""
+        self._notify_autocomplete()
+
+    def _set_highlight_index(self, index: int | None) -> None:
+        """Update active selection and inline suggestion."""
+
+        if not self._completions or index is None:
+            self._highlight_index = None
+            self.suggestion = ""
+            return
+
+        clamped = max(0, min(index, len(self._completions) - 1))
+        self._highlight_index = clamped
+        details = self._compute_completion_details(self._completions[clamped])
+        if details:
+            self.suggestion = details["remainder"]
+        else:
+            self.suggestion = ""
+
+    def _compute_completion_details(self, completion: Any) -> dict[str, Any] | None:
+        """Compute replacement metadata for the given completion."""
+
+        try:
+            cursor_index = self.document.get_index_from_location(self.cursor_location)
+        except Exception:
+            return None
+
+        text = self.text or ""
+        start_pos = getattr(completion, "start_position", 0) or 0
+        replace_start = max(0, cursor_index + start_pos)
+        replace_end = cursor_index
+        if replace_start > replace_end:
+            replace_start = replace_end
+
+        existing = text[replace_start:replace_end]
+        completion_text = getattr(completion, "text", "") or ""
+        if existing and not completion_text.startswith(existing):
+            return None
+
+        remainder = completion_text[len(existing) :] if existing else completion_text
+        return {
+            "remainder": remainder,
+            "replace_start": replace_start,
+            "replace_end": replace_end,
+            "completion_text": completion_text,
+        }
+
+    def _move_completion_selection(self, delta: int) -> None:
+        """Move the highlighted completion entry up or down."""
+
+        if not self._completions:
+            return
+
+        current = self._highlight_index or 0
+        new_index = (current + delta) % len(self._completions)
+        self._set_highlight_index(new_index)
+        self._notify_autocomplete()
+
+    def _accept_completion_selection(self) -> bool:
+        """Apply the currently selected completion into the text area."""
+
+        if not self._completions:
+            return False
+
+        index = self._highlight_index or 0
+        index = max(0, min(index, len(self._completions) - 1))
+        completion = self._completions[index]
+        details = self._compute_completion_details(completion)
+        if not details:
+            return False
+
+        completion_text = details["completion_text"]
+        replace_start = details["replace_start"]
+        replace_end = details["replace_end"]
+
+        start_location = self.document.get_location_from_index(replace_start)
+        end_location = self.document.get_location_from_index(replace_end)
+
+        result = self._replace_via_keyboard(completion_text, start_location, end_location)
+        if result is not None:
+            self.cursor_location = result.end_location
+
+        self._clear_completions()
+        self._suppress_next_autocomplete = True
+        self.update_suggestion()
+        return True
+
+    async def _on_key(self, event: Key) -> None:
+        """Intercept Enter to submit while preserving Shift+Enter for new lines."""
+
+        app = getattr(self, "app", None)
+        approval_controller = getattr(app, "_approval_controller", None)
+        approval_mode = bool(approval_controller and getattr(approval_controller, "active", False))
+
+        if approval_mode:
+            if event.key == "up":
+                event.stop()
+                event.prevent_default()
+                if hasattr(app, "_approval_move"):
+                    app._approval_move(-1)
+                return
+            if event.key == "down":
+                event.stop()
+                event.prevent_default()
+                if hasattr(app, "_approval_move"):
+                    app._approval_move(1)
+                return
+            if event.key in {"escape", "ctrl+c"}:
+                event.stop()
+                event.prevent_default()
+                if hasattr(app, "_approval_cancel"):
+                    app._approval_cancel()
+                return
+            if event.key in {"enter", "return"} and "+" not in event.key:
+                event.stop()
+                event.prevent_default()
+                if hasattr(app, "_approval_confirm"):
+                    app._approval_confirm()
+                return
+
+        model_picker = getattr(app, "_model_picker", None)
+        picker_active = bool(model_picker and getattr(model_picker, "active", False))
+
+        if picker_active:
+            if event.key == "up":
+                event.stop()
+                event.prevent_default()
+                if hasattr(app, "_model_picker_move"):
+                    app._model_picker_move(-1)
+                return
+            if event.key == "down":
+                event.stop()
+                event.prevent_default()
+                if hasattr(app, "_model_picker_move"):
+                    app._model_picker_move(1)
+                return
+            if event.key in {"enter", "return"} and "+" not in event.key:
+                event.stop()
+                event.prevent_default()
+                confirm = getattr(app, "_model_picker_confirm", None)
+                if confirm is not None:
+                    result = confirm()
+                    if inspect.isawaitable(result):
+                        await result
+                return
+            if event.key in {"escape", "ctrl+c"}:
+                event.stop()
+                event.prevent_default()
+                if hasattr(app, "_model_picker_cancel"):
+                    app._model_picker_cancel()
+                return
+            if event.character and event.character.lower() == "b":
+                event.stop()
+                event.prevent_default()
+                if hasattr(app, "_model_picker_back"):
+                    app._model_picker_back()
+                return
+
+        if event.key in {"pageup", "pagedown"}:
+            event.stop()
+            event.prevent_default()
+            if hasattr(app, "action_scroll_up") and event.key == "pageup":
+                app.action_scroll_up()
+            elif hasattr(app, "action_scroll_down") and event.key == "pagedown":
+                app.action_scroll_down()
+            return
+
+        if self._should_insert_newline(event):
+            event.stop()
+            event.prevent_default()
+            self._insert_newline()
+            return
+
+        if event.key == "up":
+            if self._completions:
+                event.stop()
+                event.prevent_default()
+                self._move_completion_selection(-1)
+                return
+            event.stop()
+            event.prevent_default()
+            if hasattr(self.app, "action_history_up"):
+                self.app.action_history_up()
+            return
+
+        if event.key == "down":
+            if self._completions:
+                event.stop()
+                event.prevent_default()
+                self._move_completion_selection(1)
+                return
+            event.stop()
+            event.prevent_default()
+            if hasattr(self.app, "action_history_down"):
+                self.app.action_history_down()
+            return
+
+        if event.key == "shift+tab":
+            event.stop()
+            event.prevent_default()
+            if hasattr(self.app, "action_cycle_mode"):
+                self.app.action_cycle_mode()
+            return
+
+        if event.key == "tab":
+            event.stop()
+            event.prevent_default()
+            if self._accept_completion_selection():
+                return
+            if self.suggestion:
+                self.insert(self.suggestion)
+                return
+
+            await super()._on_key(event)
+            return
+
+        if event.key in {"enter", "return"} and "+" not in event.key:
+            if self._completions and self._accept_completion_selection():
+                event.stop()
+                event.prevent_default()
+                return
+            event.stop()
+            event.prevent_default()
+            self.post_message(self.Submitted(self, self.text))
+            return
+
+        await super()._on_key(event)
+
+        if approval_mode and hasattr(app, "_render_approval_prompt"):
+            app._render_approval_prompt()
+
+    def on_paste(self, event: Paste) -> None:
+        """Handle paste events, collapsing large blocks into placeholders."""
+
+        paste_text = event.text
+        event.stop()
+        event.prevent_default()  # Prevent default paste behavior to avoid double paste
+
+        if len(paste_text) > self._paste_threshold:
+            token = self._register_large_paste(paste_text)
+            self._replace_via_keyboard(token, *self.selection)
+            self.update_suggestion()
+            return
+
+        self._replace_via_keyboard(paste_text, *self.selection)
+        self.update_suggestion()
+        app = getattr(self, "app", None)
+        if getattr(app, "_approval_active", False) and hasattr(app, "_render_approval_prompt"):
+            app._render_approval_prompt()
+
+    @staticmethod
+    def _should_insert_newline(event: Key) -> bool:
+        """Return True if the key event should produce a newline."""
+
+        newline_keys = {
+            "shift+enter",
+            "ctrl+j",
+            "ctrl+shift+enter",
+            "newline",
+        }
+
+        if event.key in newline_keys:
+            return True
+
+        if any(alias in newline_keys for alias in event.aliases):
+            return True
+
+        return event.character == "\n"
+
+    def _insert_newline(self) -> None:
+        """Insert a newline at the current cursor position, preserving selection."""
+
+        start, end = self.selection
+        self._replace_via_keyboard("\n", start, end)
+        self.update_suggestion()
+
+    def resolve_large_pastes(self, text: str) -> str:
+        """Expand placeholder tokens back to the original pasted content."""
+
+        for token, content in self._large_paste_cache.items():
+            text = text.replace(token, content)
+        return text
+
+    def clear_large_pastes(self) -> None:
+        """Clear cached large paste payloads after submission."""
+
+        self._large_paste_cache.clear()
+
+    def _register_large_paste(self, content: str) -> str:
+        """Store large paste content and return the placeholder token."""
+
+        self._paste_counter += 1
+        token = f"[[PASTE-{self._paste_counter}:{len(content)} chars]]"
+        self._large_paste_cache[token] = content
+        return token
+
+    def move_cursor_to_end(self) -> None:
+        """Position the cursor at the end of the current text content."""
+
+        if not self.text:
+            self.cursor_location = (0, 0)
+            return
+
+        lines = self.text.split("\n")
+        if self.text.endswith("\n"):
+            row = len(lines)
+            column = 0
+        else:
+            row = len(lines) - 1
+            column = len(lines[-1])
+
+        self.cursor_location = (row, column)
+        self.update_suggestion()
+
+
+__all__ = ["ChatTextArea"]

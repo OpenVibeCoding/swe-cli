@@ -24,7 +24,7 @@ interface ChatState {
   setHasWorkspace: (hasWorkspace: boolean) => void;
 }
 
-export const useChatStore = create<ChatState>((set, get) => ({
+export const useChatStore = create<ChatState>((set) => ({
   messages: [],
   isLoading: false,
   error: null,
@@ -74,23 +74,22 @@ export const useChatStore = create<ChatState>((set, get) => ({
             });
           }
 
-          // Add each tool call and its result
+          // Add unified tool call + result messages
           for (const tc of msg.tool_calls) {
-            // Add tool call message
+            const toolResult = tc.error
+              ? { success: false, error: tc.error }
+              : tc.result ?? '';
             expandedMessages.push({
               role: 'tool_call',
               content: `Calling ${tc.name}`,
+              tool_call_id: tc.id,
               tool_name: tc.name,
               tool_args: tc.parameters,
-              timestamp: msg.timestamp,
-            });
-
-            // Add tool result message
-            expandedMessages.push({
-              role: 'tool_result',
-              content: tc.error ? 'Failed' : 'Success',
-              tool_name: tc.name,
-              tool_result: tc.error || tc.result || '',
+              tool_args_display: undefined,
+              tool_result: toolResult,
+              tool_summary: tc.result_summary || null,
+              tool_success: !tc.error,
+              tool_error: tc.error || null,
               timestamp: msg.timestamp,
             });
           }
@@ -204,7 +203,7 @@ wsClient.on('disconnected', () => {
   useChatStore.getState().setConnected(false);
 });
 
-wsClient.on('user_message', (message) => {
+wsClient.on('user_message', () => {
   // Message already added optimistically
 });
 
@@ -213,6 +212,7 @@ wsClient.on('message_start', () => {
 });
 
 wsClient.on('message_chunk', (message) => {
+  console.log('[Frontend] Received message_chunk:', message.data.content.substring(0, 100));
   const { messages } = useChatStore.getState();
   const lastMessage = messages[messages.length - 1];
 
@@ -237,6 +237,7 @@ wsClient.on('message_chunk', (message) => {
 });
 
 wsClient.on('message_complete', () => {
+  console.log('[Frontend] Received message_complete');
   useChatStore.setState({ isLoading: false });
 });
 
@@ -248,6 +249,7 @@ wsClient.on('error', (message) => {
 });
 
 wsClient.on('approval_required', (message) => {
+  console.log('[Frontend] Received approval_required:', message.data);
   useChatStore.getState().setPendingApproval(message.data as ApprovalRequest);
 });
 
@@ -261,21 +263,42 @@ wsClient.on('tool_call', (message) => {
   const toolCallMessage: Message = {
     role: 'tool_call',
     content: message.data.description || `Calling ${message.data.tool_name}`,
+    tool_call_id: message.data.tool_call_id,
     tool_name: message.data.tool_name,
     tool_args: message.data.arguments,
+    tool_args_display: message.data.arguments_display || null,
     timestamp: new Date().toISOString(),
   };
   useChatStore.getState().addMessage(toolCallMessage);
 });
 
 wsClient.on('tool_result', (message) => {
-  // Add tool result message
-  const toolResultMessage: Message = {
-    role: 'tool_result',
-    content: message.data.result || 'Tool completed',
-    tool_name: message.data.tool_name,
-    tool_result: message.data.output,
-    timestamp: new Date().toISOString(),
-  };
-  useChatStore.getState().addMessage(toolResultMessage);
+  // Update the existing tool_call message with the result
+  const { messages } = useChatStore.getState();
+  const callId = message.data.tool_call_id;
+
+  // Find the most recent tool_call message with this call id that doesn't have a result yet
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (
+      messages[i].role === 'tool_call' &&
+      messages[i].tool_call_id === callId &&
+      !messages[i].tool_result
+    ) {
+      // Update this message with the result
+      const updatedMessages = [...messages];
+      updatedMessages[i] = {
+        ...messages[i],
+        tool_result: message.data.raw_result ?? message.data.output,
+        tool_summary: message.data.summary,
+        tool_success: message.data.success,
+        tool_error: message.data.error || null,
+      };
+      useChatStore.setState({ messages: updatedMessages });
+      return;
+    }
+  }
+
+  // If no matching tool_call found, log a warning
+  console.warn(`Received tool_result for ${message.data.tool_name} but no matching tool_call found`);
 });
+

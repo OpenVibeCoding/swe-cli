@@ -388,6 +388,10 @@ function ServerRow({
 }: ServerRowProps) {
   const isConnected = server.status === 'connected';
 
+  const handleTest = () => {
+    onTest(server.name);
+  };
+
   return (
     <tr className="hover:bg-gray-50 transition-colors">
       {/* Name + Action Buttons */}
@@ -414,6 +418,15 @@ function ServerRow({
               className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
             >
               Disconnect
+            </button>
+
+            {/* Test Button */}
+            <button
+              onClick={handleTest}
+              disabled={isProcessing}
+              className="px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+              Test
             </button>
 
             {/* Tools Button */}

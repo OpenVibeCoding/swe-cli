@@ -1,13 +1,12 @@
 """MCP (Model Context Protocol) commands for REPL."""
 
-import asyncio
 from typing import TYPE_CHECKING, Optional, Callable
 
 from rich.console import Console
 from rich.table import Table
 
 from swecli.repl.commands.base import CommandHandler, CommandResult
-from swecli.ui.modals_internal.mcp_viewer_modal import show_mcp_server
+from swecli.ui_textual.modals.mcp_viewer_modal import show_mcp_server
 
 if TYPE_CHECKING:
     from swecli.mcp.manager import MCPManager
@@ -103,7 +102,7 @@ class MCPCommands(CommandHandler):
             self.print_warning("No MCP servers configured")
             return CommandResult(success=True, message="No servers")
 
-        table = Table(title="MCP Servers", show_header=True, header_style="bold cyan")
+        table = Table(title=None, show_header=True, header_style="bold cyan")
         table.add_column("Name", style="cyan")
         table.add_column("Status", justify="center")
         table.add_column("Command")

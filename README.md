@@ -49,6 +49,7 @@ Built on **SOLID principles** with **dependency injection** and **interface-driv
 
 ### ✅ Ready Features
 - **Interactive Coding Agent that Understand Codebase**
+- **Multi-Provider LLM Support** (Fireworks, OpenAI, and Anthropic via native HTTP clients)
 - **Basic Access to Shell Commands and Control Them Through LLMs**
 - **Context Management**
 - **Compact Context Automatically**
@@ -57,11 +58,10 @@ Built on **SOLID principles** with **dependency injection** and **interface-driv
 - **Switch between Plan Mode and Normal Mode**
 
 ### 🔄 In-Progress
-- **Compatible with Multiple Providers** (OpenAI, Anthropic, OpenRouter, Fireworks AI, Z.ai, DeepSeek, Alibaba Cloud)
-- **Coding Rules**
 - **LSP for Accurate Codebase Understanding**
 - **Github Issues Resolve** (across scaffolds: SWE-Agent, Agentless, HyperAgent)
 - **UI Management**
+- **Coding Rules**
 
 ### 📋 In-Plan
 - **Sub-Agents**
@@ -76,14 +76,14 @@ Built on **SOLID principles** with **dependency injection** and **interface-driv
 
 ### Installation
 
-**macOS (Homebrew)**
-```bash
-brew install swe-cli
-```
-
 **pip**
 ```bash
 pip install swe-cli
+```
+
+**macOS (Homebrew)**
+```bash
+brew install swe-cli
 ```
 
 **From source**
@@ -112,6 +112,16 @@ Configure your settings in `~/.swecli/settings.json`:
 ```
 
 For more details, see the [documentation](./docs).
+
+### Provider Support
+
+SWE-CLI ships with first-class support for the following providers:
+
+- **Fireworks** – OpenAI-compatible chat completions endpoint
+- **OpenAI** – standard Chat Completions API
+- **Anthropic** – native Messages API adapter with tool-use support
+
+Select the provider via `model_provider` (`fireworks`, `openai`, or `anthropic`) and supply the corresponding API key through environment variables or config.
 
 ---
 

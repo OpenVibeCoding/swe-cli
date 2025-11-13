@@ -1,21 +1,47 @@
-"""Context management system for swecli.
+"""Native swecli ACE (Agentic Context Engine) implementation.
 
-This module implements an ACE-inspired context management system that maintains
-useful learnings across sessions without accumulating noisy conversation history.
+This module provides a complete native re-implementation of the ACE framework
+within swecli, without external dependencies.
 
-Key Components:
-    - Playbook: Structured storage for learned strategies
-    - Reflector: Extracts patterns from tool executions
-    - Strategy: Individual learned best practice
+ACE Components:
+    - Playbook: Structured storage for learned strategies (Bullet objects)
+    - Generator: Produces answers using playbook strategies
+    - Reflector: Analyzes execution outcomes (LLM-powered)
+    - Curator: Evolves playbook through delta operations
+    - Delta operations: ADD, UPDATE, TAG, REMOVE mutations
 
-Inspired by: Agentic Context Engine (ACE)
+Based on: Agentic Context Engine (ACE)
 Paper: https://arxiv.org/abs/2510.04618
+Repository: https://github.com/kayba-ai/agentic-context-engine
 """
 
+# Import native ACE components
+from swecli.core.context_management.playbook import Playbook, Bullet
+from swecli.core.context_management.delta import DeltaOperation, DeltaBatch
+from swecli.core.context_management.roles import (
+    AgentResponse,
+    Reflector,
+    Curator,
+    ReflectorOutput,
+    CuratorOutput,
+)
+
+# Legacy imports for backwards compatibility (deprecated)
 from swecli.core.context_management.playbook import SessionPlaybook, Strategy
 from swecli.core.context_management.reflection import ExecutionReflector, ReflectionResult
 
 __all__ = [
+    # Native ACE Components (recommended)
+    "Playbook",
+    "Bullet",
+    "AgentResponse",
+    "Reflector",
+    "Curator",
+    "ReflectorOutput",
+    "CuratorOutput",
+    "DeltaOperation",
+    "DeltaBatch",
+    # Legacy (deprecated, for backwards compatibility)
     "SessionPlaybook",
     "Strategy",
     "ExecutionReflector",

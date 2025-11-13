@@ -10,7 +10,7 @@ from swecli.repl.ui.text_utils import truncate_text
 
 if TYPE_CHECKING:
     from swecli.core.management import ModeManager, SessionManager, ConfigManager
-    from swecli.ui.components.notifications import NotificationCenter
+    from swecli.ui_textual.components import NotificationCenter
 
 
 class ContextDisplay:

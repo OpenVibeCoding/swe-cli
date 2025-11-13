@@ -41,6 +41,18 @@ class SwecliAgent(BaseAgent):
         self._working_dir = working_dir
         super().__init__(config, tool_registry, mode_manager)
 
+        # Integrate with LangChain tools if enabled
+        self._setup_langchain_tools()
+
+    def _setup_langchain_tools(self) -> None:
+        """Set up LangChain tools if LangChain is enabled."""
+        import os
+        if os.getenv("SWECO_LANGCHAIN_ENABLED", "false").lower() == "true":
+            # Check if the HTTP client is a LangChain adapter
+            from swecli.core.agents.components.langchain.langchain_adapter import LangChainLLMAdapter
+            if isinstance(self._http_client, LangChainLLMAdapter):
+                self._http_client.set_tool_registry(self.tool_registry)
+
     def build_system_prompt(self) -> str:
         return SystemPromptBuilder(self.tool_registry, self._working_dir).build()
 
@@ -77,7 +89,7 @@ class SwecliAgent(BaseAgent):
         message_data = choice["message"]
 
         raw_content = message_data.get("content")
-        cleaned_content = self._response_cleaner.clean(raw_content)
+        cleaned_content = self._response_cleaner.clean(raw_content) if raw_content else None
 
         if task_monitor and "usage" in response_data:
             usage = response_data["usage"]
@@ -127,7 +139,6 @@ class SwecliAgent(BaseAgent):
                 "max_tokens": self.config.max_tokens,
             }
 
-            # Create interrupt monitor if web_state is available
             monitor = None
             if hasattr(self, 'web_state'):
                 monitor = WebInterruptMonitor(self.web_state)
@@ -155,11 +166,11 @@ class SwecliAgent(BaseAgent):
             message_data = choice["message"]
 
             raw_content = message_data.get("content")
-            cleaned_content = self._response_cleaner.clean(raw_content)
+            cleaned_content = self._response_cleaner.clean(raw_content) if raw_content else None
 
             assistant_msg: dict[str, Any] = {
                 "role": "assistant",
-                "content": cleaned_content,
+                "content": raw_content or "",
             }
             if "tool_calls" in message_data and message_data["tool_calls"]:
                 assistant_msg["tool_calls"] = message_data["tool_calls"]

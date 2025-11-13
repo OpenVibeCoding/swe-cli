@@ -1,7 +1,6 @@
 """Configuration management with hierarchical loading."""
 
 import json
-import os
 from pathlib import Path
 from typing import Optional
 
@@ -30,12 +29,18 @@ class ConfigManager:
         """
         # Start with defaults
         config_data: dict = {}
+        global_data: dict = {}
+        local_data: dict = {}
 
         # Load global config
         global_config = Path.home() / ".swecli" / "settings.json"
         if global_config.exists():
             with open(global_config) as f:
                 global_data = json.load(f)
+                _, global_changed = self._normalize_fireworks_models(global_data)
+                if global_changed:
+                    with open(global_config, "w") as target:
+                        json.dump(global_data, target, indent=2)
                 config_data.update(global_data)
 
         # Load local project config
@@ -43,7 +48,13 @@ class ConfigManager:
         if local_config.exists():
             with open(local_config) as f:
                 local_data = json.load(f)
+                _, local_changed = self._normalize_fireworks_models(local_data)
+                if local_changed:
+                    with open(local_config, "w") as target:
+                        json.dump(local_data, target, indent=2)
                 config_data.update(local_data)
+
+        self._normalize_fireworks_models(config_data)
 
         # Create AppConfig with merged data
         self._config = AppConfig(**config_data)
@@ -129,3 +140,31 @@ class ConfigManager:
             current = current.parent
 
         return contexts
+
+    @staticmethod
+    def _normalize_fireworks_models(data: dict) -> tuple[dict, bool]:
+        """Normalize Fireworks model identifiers to full registry IDs."""
+        changed = False
+        mapping = [
+            ("model_provider", "model"),
+            ("model_thinking_provider", "model_thinking"),
+            ("model_vlm_provider", "model_vlm"),
+        ]
+
+        for provider_key, model_key in mapping:
+            provider_id = data.get(provider_key)
+            model_id = data.get(model_key)
+            if provider_id != "fireworks":
+                continue
+            if not isinstance(model_id, str) or not model_id.strip():
+                continue
+            normalized = model_id.strip()
+            if normalized.startswith("accounts/"):
+                continue
+            slug = normalized.split("/")[-1]
+            corrected = f"accounts/fireworks/models/{slug}"
+            if normalized != corrected:
+                data[model_key] = corrected
+                changed = True
+
+        return data, changed

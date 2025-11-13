@@ -27,18 +27,10 @@ DEFAULT_SLASH_COMMANDS = [
     SlashCommand("history", "show command history"),
     SlashCommand("sessions", "list all saved sessions"),
     SlashCommand("resume", "resume a previous session"),
-    SlashCommand("model", "switch active AI model"),
-    SlashCommand("mention", "insert a workspace mention"),
-    SlashCommand("context", "toggle context overview"),
-
-    # File operations
-    SlashCommand("tree", "show directory tree structure"),
-
+    SlashCommand("models", "switch active AI model"),
     # Execution
     SlashCommand("run", "run a bash command"),
     SlashCommand("mode", "switch between NORMAL and PLAN mode"),
-    SlashCommand("undo", "undo the last operation"),
-
     # Advanced
     SlashCommand("init", "initialize codebase with AGENTS.md"),
     SlashCommand("mcp", "manage MCP servers and tools"),

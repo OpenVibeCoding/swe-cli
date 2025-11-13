@@ -1,4 +1,4 @@
-import type { Message, Session, Config, Provider } from '../types';
+import type { Message, Session } from '../types';
 
 const API_BASE = '/api';
 
@@ -24,6 +24,13 @@ class APIClient {
     const response = await fetch(`${API_BASE}/chat/clear`, {
       method: 'DELETE',
     });
+    if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+    return response.json();
+  }
+
+  // Generic GET method for any endpoint
+  async get<T = any>(endpoint: string): Promise<T> {
+    const response = await fetch(`${API_BASE}${endpoint}`);
     if (!response.ok) throw new Error(`API error: ${response.statusText}`);
     return response.json();
   }

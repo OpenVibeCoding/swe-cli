@@ -21,6 +21,7 @@ class ConfigUpdate(BaseModel):
     model_vlm: str | None = None
     temperature: float | None = None
     max_tokens: int | None = None
+    enable_bash: bool | None = None
 
 
 @router.get("")
@@ -97,6 +98,11 @@ async def update_config(update: ConfigUpdate) -> Dict[str, str]:
             config.temperature = update.temperature
         if update.max_tokens is not None:
             config.max_tokens = update.max_tokens
+        if update.enable_bash is not None:
+            config.enable_bash = update.enable_bash
+            # Also update permissions.bash.enabled for consistency
+            if hasattr(config, 'permissions'):
+                config.permissions.bash.enabled = update.enable_bash
 
         # Save configuration with the updated config object
         state.config_manager.save_config(config, global_config=True)

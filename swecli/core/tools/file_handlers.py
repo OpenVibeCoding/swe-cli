@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime
+from pathlib import Path
 from typing import Union, Any
 
 from swecli.core.tools.context import ToolExecutionContext
@@ -53,8 +54,25 @@ class FileToolHandler:
             operation=operation,
         )
 
-        if write_result.success and context.undo_manager:
-            context.undo_manager.record_operation(operation)
+        if write_result.success:
+            if context.undo_manager:
+                context.undo_manager.record_operation(operation)
+
+            # Track file change in session
+            if context.session_manager:
+                from swecli.models.file_change import FileChange, FileChangeType
+                from pathlib import Path
+
+                session = context.session_manager.get_current_session()
+                if session:
+                    file_change = FileChange(
+                        type=FileChangeType.CREATED,
+                        file_path=file_path,
+                        lines_added=len(content.split("\n")),
+                        description=f"Created {Path(file_path).name}",
+                        session_id=session.id
+                    )
+                    session.add_file_change(file_change)
 
         return {
             "success": write_result.success,
@@ -113,8 +131,26 @@ class FileToolHandler:
             backup=True,
         )
 
-        if edit_result.success and context.undo_manager:
-            context.undo_manager.record_operation(operation)
+        if edit_result.success:
+            if context.undo_manager:
+                context.undo_manager.record_operation(operation)
+
+            # Track file change in session
+            if context.session_manager:
+                from swecli.models.file_change import FileChange, FileChangeType
+                from pathlib import Path
+
+                session = context.session_manager.get_current_session()
+                if session:
+                    file_change = FileChange(
+                        type=FileChangeType.MODIFIED,
+                        file_path=file_path,
+                        lines_added=edit_result.lines_added,
+                        lines_removed=edit_result.lines_removed,
+                        description=f"Modified {Path(file_path).name} (+{edit_result.lines_added}/-{edit_result.lines_removed})",
+                        session_id=session.id
+                    )
+                    session.add_file_change(file_change)
 
         return {
             "success": edit_result.success,
@@ -145,20 +181,41 @@ class FileToolHandler:
         if not self._file_ops:
             return {"success": False, "error": "FileOperations not available"}
 
-        path = sanitize_path(args.get("path", "."))
+        raw_path = args.get("path")
+        path = sanitize_path(raw_path) if raw_path is not None else "."
         pattern = args.get("pattern")
         max_results = args.get("max_results", 100)
 
         try:
-            if pattern:
-                path_prefix = path if not path or path.endswith("/") else f"{path}/"
-                full_pattern = f"{path_prefix}{pattern}" if path and path != "." else pattern
-                files = self._file_ops.glob_files(full_pattern, max_results=max_results)
-                output = "\n".join(files) if files else "No files found"
-            else:
-                output = self._file_ops.list_directory(path)
+            base_path = Path(path)
+            if not base_path.is_absolute():
+                base_path = (self._file_ops.working_dir / base_path).resolve()
+        except Exception as exc:
+            return {"success": False, "error": f"Invalid path: {exc}", "output": None}
 
-            return {"success": True, "output": output, "error": None}
+        try:
+            entries: list[str] | None = None
+            if pattern:
+                search_root = base_path if base_path.is_dir() else base_path.parent
+                if not search_root.exists():
+                    return {
+                        "success": True,
+                        "output": f"Directory not found: {search_root}",
+                        "error": None,
+                    }
+                files = self._file_ops.glob_files(
+                    pattern,
+                    max_results=max_results,
+                    base_path=search_root,
+                )
+                output = "\n".join(files) if files else "No files found"
+                entries = files
+            else:
+                output = self._file_ops.list_directory(str(base_path))
+                if output and not output.startswith(("Directory not found", "Not a directory")):
+                    entries = [line for line in output.splitlines() if line.strip()]
+
+            return {"success": True, "output": output, "entries": entries, "error": None}
         except Exception as exc:  # noqa: BLE001
             return {"success": False, "error": str(exc), "output": None}
 
@@ -264,12 +321,19 @@ class FileToolHandler:
         try:
             asyncio.get_running_loop()
         except RuntimeError:
-            return asyncio.run(
-                approval_manager.request_approval(
-                    operation=operation,
-                    preview=preview,
-                    **extra_kwargs,
-                )
+            # Check if request_approval already returned a result (WebApprovalManager) or needs to be awaited
+            approval_result = approval_manager.request_approval(
+                operation=operation,
+                preview=preview,
+                **extra_kwargs,
             )
+
+            # If it's already a result object, use it directly
+            if hasattr(approval_result, 'approved'):
+                return approval_result
+            else:
+                # If it's a coroutine, run it
+                return asyncio.run(approval_result)
+
         operation.approved = True
         return None

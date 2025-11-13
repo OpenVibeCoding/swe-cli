@@ -1,7 +1,7 @@
 """Init command for codebase analysis and memory creation."""
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 from pydantic import BaseModel
 
 from rich.console import Console

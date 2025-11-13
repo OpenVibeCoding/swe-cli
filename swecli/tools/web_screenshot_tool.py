@@ -1,6 +1,8 @@
-"""Web screenshot tool using Playwright for high-quality full-page captures."""
+"""Web screenshot tool using Crawl4AI for high-quality full-page captures."""
 
+import asyncio
 import tempfile
+from base64 import b64decode
 from pathlib import Path
 from typing import Optional, Dict, Any
 
@@ -8,7 +10,7 @@ from swecli.models.config import AppConfig
 
 
 class WebScreenshotTool:
-    """Tool for capturing full-page screenshots of web pages using Playwright."""
+    """Tool for capturing full-page screenshots and PDFs of web pages using Crawl4AI."""
 
     def __init__(self, config: AppConfig, working_dir: Path):
         """Initialize web screenshot tool.
@@ -22,67 +24,84 @@ class WebScreenshotTool:
         self.screenshot_dir = Path(tempfile.gettempdir()) / "swecli_web_screenshots"
         self.screenshot_dir.mkdir(parents=True, exist_ok=True)
 
-    def is_playwright_available(self) -> bool:
-        """Check if Playwright is installed and browsers are available.
+    def is_crawl4ai_available(self) -> bool:
+        """Check if Crawl4AI is installed.
 
         Returns:
-            True if Playwright is available, False otherwise
+            True if Crawl4AI is available, False otherwise
         """
         try:
-            from playwright.sync_api import sync_playwright
+            from crawl4ai import AsyncWebCrawler
             return True
         except ImportError:
             return False
+
+    def _normalize_url(self, url: str) -> str:
+        """Normalize URL to ensure it has proper format.
+
+        Args:
+            url: URL to normalize
+
+        Returns:
+            Normalized URL with proper protocol and slashes
+        """
+        url = url.strip()
+
+        # Fix common malformations: https:/domain.com → https://https://domain.com
+        if url.startswith("https:/") and not url.startswith("https://"):
+            url = url.replace("https:/", "https://", 1)
+        elif url.startswith("http:/") and not url.startswith("http://"):
+            url = url.replace("http:/", "http://", 1)
+
+        # Add https:// if no protocol specified
+        if not url.startswith(("http://", "https://")):
+            url = f"https://{url}"
+
+        return url
 
     def capture_web_screenshot(
         self,
         url: str,
         output_path: Optional[str] = None,
-        wait_until: str = "networkidle",
-        timeout_ms: int = 30000,
-        full_page: bool = True,
+        capture_pdf: bool = False,
+        timeout_ms: int = 90000,
         viewport_width: int = 1920,
         viewport_height: int = 1080,
-        clip_to_content: bool = True,
-        max_height: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """Capture a full-page screenshot of a web page.
+        """Capture a full-page screenshot (and optionally PDF) of a web page using Crawl4AI.
 
         Args:
             url: URL of the web page to capture
             output_path: Path to save screenshot (relative to working_dir or absolute).
                         If None, saves to temp directory with auto-generated name.
-            wait_until: When to consider navigation complete:
-                       - "load": wait for load event
-                       - "domcontentloaded": wait for DOMContentLoaded event
-                       - "networkidle": wait until no network requests for 500ms (recommended)
+            capture_pdf: If True, also capture a PDF version of the page
             timeout_ms: Maximum time to wait for page load (milliseconds)
-            full_page: Whether to capture full scrollable page (True) or just viewport (False)
             viewport_width: Browser viewport width in pixels
             viewport_height: Browser viewport height in pixels
-            clip_to_content: If True, automatically detect actual content height and clip
-                            to avoid excessive whitespace (only works with full_page=True)
-            max_height: Maximum screenshot height in pixels (prevents extremely tall screenshots)
 
         Returns:
-            Dictionary with success, screenshot_path, and optional error
+            Dictionary with success, screenshot_path, pdf_path (if requested), and optional error
         """
-        # Check if Playwright is available
-        if not self.is_playwright_available():
+        # Normalize URL to fix common malformations
+        url = self._normalize_url(url)
+
+        # Check if Crawl4AI is available
+        if not self.is_crawl4ai_available():
             return {
                 "success": False,
                 "error": (
-                    "Playwright is not installed. Install it with:\n"
-                    "  pip install playwright\n"
-                    "  playwright install chromium"
+                    "Crawl4AI is not installed. Install it with:\n"
+                    "  pip install crawl4ai\n"
+                    "  crawl4ai-setup"
                 ),
                 "screenshot_path": None,
+                "pdf_path": None,
             }
 
         try:
-            from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
+            from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig, CacheMode
 
-            # Determine output path
+            # Determine output paths
             if output_path:
                 screenshot_path = Path(output_path)
                 if not screenshot_path.is_absolute():
@@ -99,203 +118,136 @@ class WebScreenshotTool:
             # Ensure parent directory exists
             screenshot_path.parent.mkdir(parents=True, exist_ok=True)
 
-            # Capture screenshot with Playwright
-            with sync_playwright() as p:
-                # Launch headless Chromium
-                browser = p.chromium.launch(headless=True)
-                context = browser.new_context(
-                    viewport={"width": viewport_width, "height": viewport_height}
-                )
-                page = context.new_page()
+            # Generate PDF path if requested
+            pdf_path = None
+            if capture_pdf:
+                pdf_path = screenshot_path.with_suffix('.pdf')
 
-                try:
-                    # Navigate to URL and wait for page to be ready
-                    page.goto(url, wait_until=wait_until, timeout=timeout_ms)
+            # Run async crawler in sync context
+            result = asyncio.run(self._async_capture(
+                url=url,
+                screenshot_path=screenshot_path,
+                pdf_path=pdf_path,
+                timeout_ms=timeout_ms,
+                viewport_width=viewport_width,
+                viewport_height=viewport_height,
+            ))
 
-                    # Determine screenshot options
-                    screenshot_options = {"path": str(screenshot_path)}
-
-                    if full_page and clip_to_content:
-                        # First, scroll through the page to trigger lazy-loaded content
-                        # Get total scrollable height
-                        total_height = page.evaluate("document.body.scrollHeight")
-                        viewport_height = page.evaluate("window.innerHeight")
-
-                        # Scroll down in steps to trigger lazy loading
-                        current_position = 0
-                        scroll_step = viewport_height
-
-                        while current_position < total_height:
-                            page.evaluate(f"window.scrollTo(0, {current_position})")
-                            page.wait_for_timeout(100)  # Small delay for lazy content
-                            current_position += scroll_step
-                            # Update total height in case new content loaded
-                            new_height = page.evaluate("document.body.scrollHeight")
-                            if new_height > total_height:
-                                total_height = new_height
-
-                        # Scroll back to top
-                        page.evaluate("window.scrollTo(0, 0)")
-                        page.wait_for_timeout(200)
-
-                        # Detect actual content height intelligently
-                        content_height = page.evaluate("""
-                            () => {
-                                // Find the last element with meaningful content
-                                const body = document.body;
-                                const html = document.documentElement;
-
-                                let lastContentBottom = 0;
-                                const elements = Array.from(document.querySelectorAll('*'));
-
-                                for (const el of elements) {
-                                    // Skip structural/container elements
-                                    if (el.tagName === 'HTML' || el.tagName === 'BODY' || el.tagName === 'HEAD') {
-                                        continue;
-                                    }
-
-                                    // Skip hidden, empty, or whitespace-only elements
-                                    const style = window.getComputedStyle(el);
-                                    if (style.display === 'none' ||
-                                        style.visibility === 'hidden' ||
-                                        style.opacity === '0') {
-                                        continue;
-                                    }
-
-                                    // Check if element has meaningful content
-                                    const hasText = el.textContent?.trim().length > 0;
-                                    const hasImage = el.tagName === 'IMG' || el.tagName === 'SVG';
-                                    const hasCanvas = el.tagName === 'CANVAS';
-                                    const hasVideo = el.tagName === 'VIDEO';
-                                    const hasBackgroundImage = style.backgroundImage &&
-                                                               style.backgroundImage !== 'none';
-
-                                    // Check if element has visible dimensions
-                                    const rect = el.getBoundingClientRect();
-                                    const hasVisibleSize = rect.width > 0 && rect.height > 0;
-
-                                    if (hasVisibleSize && (hasText || hasImage || hasCanvas ||
-                                                          hasVideo || hasBackgroundImage)) {
-                                        // Calculate absolute position from top of document
-                                        // Use offsetTop for more reliable absolute positioning
-                                        let offsetTop = 0;
-                                        let element = el;
-                                        while (element) {
-                                            offsetTop += element.offsetTop || 0;
-                                            element = element.offsetParent;
-                                        }
-                                        const bottom = offsetTop + el.offsetHeight;
-
-                                        if (bottom > lastContentBottom) {
-                                            lastContentBottom = bottom;
-                                        }
-                                    }
-                                }
-
-                                // Add some padding to ensure we don't clip too aggressively
-                                const padding = 100;
-                                let finalHeight = lastContentBottom + padding;
-
-                                // Also check document height as fallback
-                                const docHeight = Math.max(
-                                    body.scrollHeight,
-                                    body.offsetHeight,
-                                    html.scrollHeight,
-                                    html.offsetHeight
-                                );
-
-                                // If detected content height is very close to document height,
-                                // use document height (likely a legitimately long page)
-                                if (finalHeight > docHeight * 0.9) {
-                                    finalHeight = docHeight;
-                                } else {
-                                    // Only apply minimum height if content is reasonably tall
-                                    // Otherwise keep the detected content height to remove whitespace
-                                    const minHeight = window.innerHeight;
-                                    if (finalHeight < minHeight && finalHeight > docHeight * 0.5) {
-                                        // Content is between 50-90% of page, use viewport as minimum
-                                        finalHeight = minHeight;
-                                    }
-                                    // If content is < 50% of page height, keep detected height (whitespace page)
-                                }
-
-                                return finalHeight;
-                            }
-                        """)
-
-                        # Get document height for comparison
-                        doc_height = page.evaluate("document.body.scrollHeight")
-
-                        # Apply max_height limit if specified
-                        if max_height and content_height > max_height:
-                            content_height = max_height
-
-                        # Always use full_page to capture scrollable content
-                        screenshot_options["full_page"] = True
-                        page.screenshot(**screenshot_options)
-
-                        # If content height is significantly less than document height,
-                        # crop the image to remove excessive whitespace
-                        if content_height < doc_height * 0.95:  # More than 5% whitespace
-                            from PIL import Image
-                            img = Image.open(str(screenshot_path))
-                            # Crop to content height
-                            cropped = img.crop((0, 0, img.width, int(content_height)))
-                            cropped.save(str(screenshot_path))
-
-                    elif full_page:
-                        screenshot_options["full_page"] = True
-                        page.screenshot(**screenshot_options)
-                    else:
-                        page.screenshot(**screenshot_options)
-
-                    return {
-                        "success": True,
-                        "screenshot_path": str(screenshot_path),
-                        "url": url,
-                        "full_page": full_page,
-                        "clipped": clip_to_content and full_page,
-                        "viewport": f"{viewport_width}x{viewport_height}",
-                        "error": None,
-                    }
-
-                except PlaywrightTimeout:
-                    # Timeout - try to capture what we have anyway with a simple screenshot
-                    try:
-                        # Use simple full_page screenshot for timeout case
-                        page.screenshot(path=str(screenshot_path), full_page=full_page)
-                        return {
-                            "success": True,
-                            "screenshot_path": str(screenshot_path),
-                            "url": url,
-                            "warning": f"Page took longer than {timeout_ms/1000}s to load, captured partial screenshot",
-                            "error": None,
-                        }
-                    except Exception as e:
-                        return {
-                            "success": False,
-                            "error": f"Timeout after {timeout_ms/1000}s and failed to capture partial screenshot: {str(e)}",
-                            "screenshot_path": None,
-                        }
-
-                finally:
-                    browser.close()
+            return result
 
         except ImportError:
             return {
                 "success": False,
                 "error": (
-                    "Playwright is not installed. Install it with:\n"
-                    "  pip install playwright\n"
-                    "  playwright install chromium"
+                    "Crawl4AI is not installed. Install it with:\n"
+                    "  pip install crawl4ai\n"
+                    "  crawl4ai-setup"
                 ),
+                "url": url,  # Include normalized URL even on error
                 "screenshot_path": None,
+                "pdf_path": None,
             }
         except Exception as e:
             return {
                 "success": False,
                 "error": f"Failed to capture screenshot: {str(e)}",
+                "url": url,  # Include normalized URL even on error
                 "screenshot_path": None,
+                "pdf_path": None,
+            }
+
+    async def _async_capture(
+        self,
+        url: str,
+        screenshot_path: Path,
+        pdf_path: Optional[Path],
+        timeout_ms: int,
+        viewport_width: int,
+        viewport_height: int,
+    ) -> Dict[str, Any]:
+        """Async helper to capture screenshot and PDF using Crawl4AI.
+
+        Args:
+            url: URL to capture
+            screenshot_path: Path to save screenshot
+            pdf_path: Optional path to save PDF
+            timeout_ms: Timeout in milliseconds
+            viewport_width: Viewport width
+            viewport_height: Viewport height
+
+        Returns:
+            Dictionary with success status and paths
+        """
+        from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig, CacheMode
+
+        # Configure browser
+        browser_config = BrowserConfig(
+            headless=True,
+            viewport_width=viewport_width,
+            viewport_height=viewport_height,
+        )
+
+        # Configure crawler run
+        run_config = CrawlerRunConfig(
+            cache_mode=CacheMode.BYPASS,
+            screenshot=True,
+            pdf=pdf_path is not None,
+            page_timeout=timeout_ms,
+            wait_until="networkidle",
+        )
+
+        try:
+            async with AsyncWebCrawler(config=browser_config) as crawler:
+                result = await crawler.arun(url=url, config=run_config)
+
+                if not result.success:
+                    return {
+                        "success": False,
+                        "error": result.error_message or "Failed to capture page",
+                        "url": url,  # Include normalized URL even on error
+                        "screenshot_path": None,
+                        "pdf_path": None,
+                    }
+
+                response_data = {
+                    "success": True,
+                    "url": url,
+                    "viewport": f"{viewport_width}x{viewport_height}",
+                    "error": None,
+                }
+
+                # Save screenshot if available
+                if result.screenshot:
+                    screenshot_bytes = b64decode(result.screenshot)
+                    with open(screenshot_path, "wb") as f:
+                        f.write(screenshot_bytes)
+                    response_data["screenshot_path"] = str(screenshot_path)
+                    response_data["screenshot_size_kb"] = round(len(screenshot_bytes) / 1024, 1)
+                else:
+                    response_data["screenshot_path"] = None
+                    response_data["warning"] = "Screenshot data not available"
+
+                # Save PDF if requested and available
+                if pdf_path and result.pdf:
+                    with open(pdf_path, "wb") as f:
+                        f.write(result.pdf)
+                    response_data["pdf_path"] = str(pdf_path)
+                    response_data["pdf_size_kb"] = round(len(result.pdf) / 1024, 1)
+                elif pdf_path:
+                    response_data["pdf_path"] = None
+                    response_data["pdf_warning"] = "PDF data not available"
+                else:
+                    response_data["pdf_path"] = None
+
+                return response_data
+
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Crawl4AI error: {str(e)}",
+                "url": url,  # Include normalized URL even on error
+                "screenshot_path": None,
+                "pdf_path": None,
             }
 
     def list_web_screenshots(self) -> Dict[str, Any]:

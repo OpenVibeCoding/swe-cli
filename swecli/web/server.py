@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import webbrowser
 from pathlib import Path
 from threading import Thread
@@ -219,6 +218,7 @@ def start_server(
     host: str = "127.0.0.1",
     port: int = 8080,
     open_browser: bool = True,
+    background: bool = False,
 ) -> Thread:
     """Start the web server in a background thread.
 
@@ -232,6 +232,7 @@ def start_server(
         host: Host to bind to
         port: Port to listen on
         open_browser: Whether to open browser automatically
+        background: If True, run as non-daemon thread (keeps process alive)
 
     Returns:
         Thread running the server
@@ -320,7 +321,7 @@ def start_server(
             sys.stdout.write(traceback.format_exc())
             sys.stdout.flush()
 
-    server_thread = Thread(target=run_server, daemon=True)
+    server_thread = Thread(target=run_server, daemon=not background)
     server_thread.start()
 
     return server_thread

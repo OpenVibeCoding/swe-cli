@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+
+logger = logging.getLogger(__name__)
 
 
 class RuleAction(Enum):
@@ -112,7 +116,7 @@ class ApprovalRulesManager:
                 data = json.loads(self.rules_file.read_text())
                 self.rules = [ApprovalRule.from_dict(r) for r in data]
             except Exception as exc:
-                print(f"Warning: Failed to load approval rules: {exc}")
+                logger.warning("Failed to load approval rules: %s", exc)
                 self.rules = []
 
     def _save_rules(self) -> None:
@@ -120,15 +124,20 @@ class ApprovalRulesManager:
             data = [r.to_dict() for r in self.rules]
             self.rules_file.write_text(json.dumps(data, indent=2))
         except Exception as exc:
-            print(f"Warning: Failed to save approval rules: {exc}")
+            logger.warning("Failed to save approval rules: %s", exc)
 
     def _load_history(self) -> None:
         if self.history_file.exists():
             try:
-                data = json.loads(self.history_file.read_text())
+                content = self.history_file.read_text().strip()
+                # Handle empty file
+                if not content:
+                    self.history = []
+                    return
+                data = json.loads(content)
                 self.history = [CommandHistory.from_dict(h) for h in data[-1000:]]
             except Exception as exc:
-                print(f"Warning: Failed to load command history: {exc}")
+                logger.warning("Failed to load command history: %s", exc)
                 self.history = []
 
     def _save_history(self) -> None:
@@ -136,7 +145,7 @@ class ApprovalRulesManager:
             data = [h.to_dict() for h in self.history[-1000:]]
             self.history_file.write_text(json.dumps(data, indent=2))
         except Exception as exc:
-            print(f"Warning: Failed to save command history: {exc}")
+            logger.warning("Failed to save command history: %s", exc)
 
     def _initialize_default_rules(self) -> None:
         if self.rules:

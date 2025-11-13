@@ -1,6 +1,5 @@
 """Tool for editing existing files."""
 
-import re
 import shutil
 from pathlib import Path
 from typing import Optional

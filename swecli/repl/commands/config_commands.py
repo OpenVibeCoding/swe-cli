@@ -55,7 +55,6 @@ class ConfigCommands(CommandHandler):
             return CommandResult(success=False, message="Chat app not available")
 
         # Import here to avoid circular imports
-        from swecli.ui.components.category_selector_message import create_category_selector_message
 
         # Loop to allow configuring multiple models
         while True:
@@ -109,7 +108,7 @@ class ConfigCommands(CommandHandler):
         Returns:
             Selected category ("normal", "thinking", "vlm") or None if cancelled
         """
-        from swecli.ui.components.category_selector_message import (
+        from swecli.ui_textual.components.category_selector_message import (
             create_category_selector_message,
             get_category_items
         )
@@ -197,7 +196,6 @@ class ConfigCommands(CommandHandler):
 
         # Check API key for new provider (silently - user will get error when they try to use it)
         if provider_id != config.model_provider:
-            import os
             provider_info = registry.get_provider(provider_id)
             env_var = provider_info.api_key_env
             # Skip warning - let them discover missing API key when they try to use it
@@ -227,13 +225,11 @@ class ConfigCommands(CommandHandler):
         try:
             self.config_manager.save_config(config, global_config=True)
 
-            # Update chat app context monitor if mode is normal
-            if mode == "normal" and self.chat_app and hasattr(self.chat_app, 'context_monitor'):
-                self.chat_app.context_monitor.context_limit = config.max_context_tokens
-
             # Refresh the UI (footer will show new model)
-            if self.chat_app and hasattr(self.chat_app, 'app'):
-                self.chat_app.app.invalidate()
+            if self.chat_app:
+                refresher = getattr(self.chat_app, "refresh", None)
+                if callable(refresher):
+                    refresher()
 
             mode_name = mode_names.get(mode, mode)
             return CommandResult(

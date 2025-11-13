@@ -64,7 +64,7 @@ class PlanningAgent(BaseAgent):
         message_data = choice["message"]
 
         raw_content = message_data.get("content")
-        cleaned_content = self._response_cleaner.clean(raw_content)
+        cleaned_content = self._response_cleaner.clean(raw_content) if raw_content else None
 
         if task_monitor and "usage" in response_data:
             usage = response_data["usage"]
@@ -85,6 +85,7 @@ class PlanningAgent(BaseAgent):
         message: str,
         deps: Any,
         message_history: Optional[list[dict]] = None,
+        ui_callback: Optional[Any] = None,
     ) -> dict:
         del deps  # Planning agent does not execute tools.
 
@@ -124,17 +125,17 @@ class PlanningAgent(BaseAgent):
         message_data = choice["message"]
 
         raw_content = message_data.get("content")
-        cleaned_content = self._response_cleaner.clean(raw_content)
+        cleaned_content = self._response_cleaner.clean(raw_content) if raw_content else None
 
         messages.append(
             {
                 "role": "assistant",
-                "content": cleaned_content,
+                "content": raw_content or "",
             }
         )
 
         return {
-            "content": cleaned_content or "",
+            "content": cleaned_content or raw_content or "",
             "messages": messages,
             "success": True,
         }

@@ -2,6 +2,7 @@ import { useState, KeyboardEvent, useRef, useEffect } from 'react';
 import { useChatStore } from '../../stores/chat';
 import { apiClient } from '../../api/client';
 import { FileMentionDropdown } from './FileMentionDropdown';
+import { FileChangesButton } from './FileChangesButton';
 
 interface FileItem {
   path: string;
@@ -146,8 +147,8 @@ export function InputBox() {
 
   return (
     <div className="border-t border-gray-200 bg-white p-4">
-      <div className="max-w-4.5xl mx-auto relative">
-        <div className="flex gap-2">
+      <div className="w-full relative">
+        <div className="flex gap-2 mb-2">
           <textarea
             ref={textareaRef}
             value={input}
@@ -187,8 +188,15 @@ export function InputBox() {
             )}
           </button>
         </div>
-        <div className="mt-2 text-xs text-gray-500 px-1">
-          Press <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-xs">@</kbd> to mention files · <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-xs">Enter</kbd> to send · <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-xs">Shift + Enter</kbd> for new line · <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-xs">Esc</kbd> to stop
+
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-gray-500 px-1">
+            Press <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-xs">@</kbd> to mention files · <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-xs">Enter</kbd> to send · <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-xs">Shift + Enter</kbd> for new line · <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-xs">Esc</kbd> to stop
+          </div>
+
+          {hasActiveSession && (
+            <FileChangesButton />
+          )}
         </div>
 
         {showFileMention && (

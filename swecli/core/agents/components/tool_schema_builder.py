@@ -235,7 +235,7 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
         "type": "function",
         "function": {
             "name": "fetch_url",
-            "description": "Fetch content from a URL. Useful for reading documentation, APIs, or web pages. Automatically extracts text from HTML.",
+            "description": "Fetch content from a URL or perform a deep crawl across linked pages. Useful for reading documentation, APIs, or entire site sections. Automatically extracts text from HTML.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -253,8 +253,152 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
                         "description": "Maximum content length in characters (default: 50000)",
                         "default": 50000,
                     },
+                    "deep_crawl": {
+                        "type": "boolean",
+                        "description": "Follow links and crawl multiple pages starting from the seed URL.",
+                        "default": False,
+                    },
+                    "crawl_strategy": {
+                        "type": "string",
+                        "enum": ["bfs", "dfs", "best_first"],
+                        "description": "Traversal strategy when deep_crawl is true. best_first (default) prioritizes relevance, bfs covers broadly, dfs follows a single branch.",
+                        "default": "best_first",
+                    },
+                    "max_depth": {
+                        "type": "integer",
+                        "description": "Maximum depth (beyond the seed page) to crawl when deep_crawl is enabled. Depth 0 is the starting page. Defaults to 1.",
+                        "default": 1,
+                    },
+                    "include_external": {
+                        "type": "boolean",
+                        "description": "Allow crawling links that leave the starting domain when deep_crawl is enabled.",
+                        "default": False,
+                    },
+                    "max_pages": {
+                        "type": "integer",
+                        "description": "Optional cap on the total number of pages to crawl when deep_crawl is enabled.",
+                    },
+                    "allowed_domains": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional allow-list of domains to keep while deep crawling.",
+                    },
+                    "blocked_domains": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional block-list of domains to skip while deep crawling.",
+                    },
+                    "url_patterns": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional glob-style URL patterns the crawler must match (e.g., '*docs*').",
+                    },
+                    "stream": {
+                        "type": "boolean",
+                        "description": "When true (and deep_crawl is enabled) stream pages as they are discovered before aggregation.",
+                        "default": False,
+                    },
                 },
                 "required": ["url"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_todo",
+            "description": "Create a new to-do entry that appears in the live inline plan. Always call this before executing a new step.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "Human-readable summary of the step you are about to perform.",
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": ["todo", "doing", "done"],
+                        "description": "Optional initial state. Defaults to todo.",
+                        "default": "todo",
+                    },
+                    "log": {
+                        "type": "string",
+                        "description": "Optional log entry describing additional context for this task.",
+                    },
+                    "expanded": {
+                        "type": "boolean",
+                        "description": "Whether to show log entries under this task in the panel.",
+                        "default": True,
+                    },
+                },
+                "required": ["title"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "update_todo",
+            "description": "Update the status/title/log/expanded state of an existing to-do item.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "ID of the to-do to update (shown in the panel).",
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "New title for this to-do item.",
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": ["todo", "doing", "done"],
+                        "description": "Set to 'doing' when you start, 'done' when you finish.",
+                    },
+                    "log": {
+                        "type": "string",
+                        "description": "Append a log entry while working on this task.",
+                    },
+                    "expanded": {
+                        "type": "boolean",
+                        "description": "Show or hide logs beneath this to-do.",
+                    },
+                },
+                "required": ["id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "complete_todo",
+            "description": "Mark a to-do item as done and optionally append a final log entry.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "ID of the to-do item to mark complete.",
+                    },
+                    "log": {
+                        "type": "string",
+                        "description": "Optional completion note.",
+                    },
+                },
+                "required": ["id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_todos",
+            "description": "Render the current to-do panel inside the console output.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": [],
             },
         },
     },
@@ -366,7 +510,7 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
         "type": "function",
         "function": {
             "name": "capture_web_screenshot",
-            "description": "Capture a full-page screenshot of a web page using Playwright. Better than capture_screenshot for web pages as it waits for page load, handles dynamic content, and captures full scrollable pages. Automatically clips to actual content height to avoid excessive whitespace. Use this when user wants to screenshot a website or web application.",
+            "description": "Capture a full-page screenshot (and optionally PDF) of a web page using Crawl4AI. Uses advanced web crawling with Playwright under the hood. Waits for page load, handles dynamic content, and captures full scrollable pages reliably. More robust than Playwright alone for complex pages. Use this when user wants to screenshot a website or web application.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -376,23 +520,17 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
                     },
                     "output_path": {
                         "type": "string",
-                        "description": "Optional path to save screenshot (relative to working directory or absolute). If not provided, auto-generates filename in temp directory.",
+                        "description": "Optional path to save screenshot (relative to working directory or absolute). If not provided, auto-generates filename in temp directory. For PDF, the .pdf extension will be automatically used.",
                     },
-                    "wait_until": {
-                        "type": "string",
-                        "description": "When to consider page loaded: 'load' (load event), 'domcontentloaded' (DOM ready), or 'networkidle' (no requests for 500ms, recommended). Default: 'networkidle'",
-                        "enum": ["load", "domcontentloaded", "networkidle"],
-                        "default": "networkidle",
+                    "capture_pdf": {
+                        "type": "boolean",
+                        "description": "If true, also capture a PDF version of the page. PDF is more reliable for very long pages. Both screenshot and PDF will be saved if enabled. Default: false",
+                        "default": False,
                     },
                     "timeout_ms": {
                         "type": "integer",
-                        "description": "Maximum time to wait for page load in milliseconds. Default: 30000 (30 seconds)",
-                        "default": 30000,
-                    },
-                    "full_page": {
-                        "type": "boolean",
-                        "description": "Whether to capture full scrollable page (true) or just viewport (false). Default: true",
-                        "default": True,
+                        "description": "Maximum time to wait for page load in milliseconds. Default: 90000 (90 seconds). Complex sites with heavy JavaScript (like SaaS platforms, dashboards) may need 120000-180000ms.",
+                        "default": 90000,
                     },
                     "viewport_width": {
                         "type": "integer",
@@ -403,15 +541,6 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
                         "type": "integer",
                         "description": "Browser viewport height in pixels. Default: 1080",
                         "default": 1080,
-                    },
-                    "clip_to_content": {
-                        "type": "boolean",
-                        "description": "If true, automatically detect actual content height and clip to avoid excessive whitespace. Only works with full_page=true. Default: true. Set to false if you need the full scrollable area including whitespace.",
-                        "default": True,
-                    },
-                    "max_height": {
-                        "type": "integer",
-                        "description": "Optional maximum screenshot height in pixels. Prevents extremely tall screenshots. If content height exceeds this, screenshot will be clipped to this height.",
                     },
                 },
                 "required": ["url"],

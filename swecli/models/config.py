@@ -34,9 +34,9 @@ class PermissionConfig(BaseModel):
     file_read: ToolPermission = Field(default_factory=ToolPermission)
     bash: ToolPermission = Field(
         default_factory=lambda: ToolPermission(
-            enabled=False,  # Disabled by default for safety
+            enabled=True,  # Enabled for development
             always_allow=False,
-            deny_patterns=["rm -rf /", "sudo *", "chmod -R 777"],
+            deny_patterns=["rm -rf /", "sudo rm -rf /*", "chmod -R 777 /*"],
         )
     )
     git: ToolPermission = Field(default_factory=ToolPermission)
@@ -61,6 +61,42 @@ class OperationConfig(BaseModel):
     allowed_extensions: list[str] = Field(default_factory=list)  # Empty = all allowed
 
 
+class PlaybookScoringWeights(BaseModel):
+    """Scoring weights for ACE playbook bullet selection."""
+
+    effectiveness: float = Field(default=0.5, ge=0.0, le=1.0)
+    recency: float = Field(default=0.3, ge=0.0, le=1.0)
+    semantic: float = Field(default=0.2, ge=0.0, le=1.0)
+
+    @field_validator("effectiveness", "recency", "semantic")
+    @classmethod
+    def validate_weight(cls, v: float) -> float:
+        """Ensure weights are between 0 and 1."""
+        if not 0.0 <= v <= 1.0:
+            raise ValueError("Weight must be between 0.0 and 1.0")
+        return v
+
+    def to_dict(self) -> dict[str, float]:
+        """Convert to dictionary format for BulletSelector."""
+        return {
+            "effectiveness": self.effectiveness,
+            "recency": self.recency,
+            "semantic": self.semantic,
+        }
+
+
+class PlaybookConfig(BaseModel):
+    """ACE playbook configuration."""
+
+    max_strategies: int = Field(default=30, ge=1)
+    use_selection: bool = True
+    embedding_model: str = "text-embedding-3-small"
+    embedding_provider: str = "openai"
+    scoring_weights: PlaybookScoringWeights = Field(default_factory=PlaybookScoringWeights)
+    cache_embeddings: bool = True  # Phase 4: Enable embedding persistence
+    cache_file: Optional[str] = None  # Path to embedding cache file (None = session-based default)
+
+
 class AppConfig(BaseModel):
     """Application configuration."""
 
@@ -69,7 +105,7 @@ class AppConfig(BaseModel):
     # AI Provider settings - Three model system
     # Normal model: For standard coding tasks
     model_provider: str = "fireworks"
-    model: str = "accounts/fireworks/models/qwen3-235b-a22b-instruct-2507"
+    model: str = "accounts/fireworks/models/kimi-k2-instruct-0905"
 
     # Thinking model: For complex reasoning tasks (optional, falls back to normal if not set)
     model_thinking: Optional[str] = None
@@ -97,11 +133,14 @@ class AppConfig(BaseModel):
     permissions: PermissionConfig = Field(default_factory=PermissionConfig)
 
     # Phase 2: Operation settings
-    enable_bash: bool = False  # Require explicit enable for bash execution
+    enable_bash: bool = True  # Enable bash execution for development
     bash_timeout: int = 30  # Timeout in seconds for bash commands
     auto_mode: AutoModeConfig = Field(default_factory=AutoModeConfig)
     operation: OperationConfig = Field(default_factory=OperationConfig)
     max_undo_history: int = 50  # Maximum operations to track for undo
+
+    # ACE Playbook settings
+    playbook: PlaybookConfig = Field(default_factory=PlaybookConfig)
 
     # Paths
     swecli_dir: str = "~/.swecli"
@@ -113,9 +152,11 @@ class AppConfig(BaseModel):
     @classmethod
     def validate_provider(cls, v: str) -> str:
         """Validate model provider."""
-        allowed = ["fireworks", "anthropic", "openai"]
-        if v not in allowed:
-            raise ValueError(f"model_provider must be one of {allowed}")
+        supported = ["fireworks", "anthropic", "openai"]
+        if v not in supported:
+            raise ValueError(
+                f"Unsupported provider '{v}'. Supported providers: {', '.join(supported)}"
+            )
         return v
 
     def get_api_key(self) -> str:

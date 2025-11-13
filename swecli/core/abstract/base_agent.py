@@ -50,5 +50,5 @@ class BaseAgent(ABC):
         """Execute a language model call using the supplied messages."""
 
     @abstractmethod
-    def run_sync(self, message: str, *, deps: Union[Any, None] = None) -> Response:
+    def run_sync(self, message: str, *, deps: Union[Any, None] = None, ui_callback: Union[Any, None] = None) -> Response:
         """Run a synchronous interaction for CLI commands."""

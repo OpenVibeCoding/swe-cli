@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import asyncio
-import json
 from typing import Any, Dict
 
 from fastapi import WebSocket, WebSocketDisconnect
 
 from swecli.web.state import get_state
+from swecli.web.logging_config import logger
 from swecli.models.message import ChatMessage, Role
 
 
@@ -36,16 +35,36 @@ class WebSocketManager:
         """Send a message to a specific client."""
         try:
             await websocket.send_json(message)
-        except Exception:
+        except Exception as e:
+            logger.error(f"Failed to send WebSocket message: {e}")
+            logger.error(f"Message type: {message.get('type')}")
             self.disconnect(websocket)
 
     async def broadcast(self, message: Dict[str, Any]):
         """Broadcast a message to all connected clients."""
+        # Validate message is JSON-serializable before broadcasting
+        try:
+            import json
+            json.dumps(message)
+            logger.debug(f"Broadcasting: {message.get('type')}")
+        except (TypeError, ValueError) as e:
+            logger.error(f"❌ Message is not JSON-serializable: {e}")
+            logger.error(f"Message type: {message.get('type')}")
+            logger.error(f"Message keys: {list(message.keys())}")
+            # Try to send error message instead
+            error_message = {
+                "type": "error",
+                "data": {"message": f"Internal serialization error: {str(e)}"}
+            }
+            message = error_message
+
         disconnected = []
         for connection in self.active_connections:
             try:
                 await connection.send_json(message)
-            except Exception:
+            except Exception as e:
+                logger.error(f"Failed to broadcast to connection: {e}")
+                logger.error(f"Message type: {message.get('type')}")
                 disconnected.append(connection)
 
         # Clean up disconnected clients
@@ -55,6 +74,7 @@ class WebSocketManager:
     async def handle_message(self, websocket: WebSocket, data: Dict[str, Any]):
         """Handle incoming WebSocket message."""
         msg_type = data.get("type")
+        logger.debug(f"Received WebSocket message: type={msg_type}")
 
         if msg_type == "query":
             await self._handle_query(websocket, data)
@@ -63,6 +83,7 @@ class WebSocketManager:
         elif msg_type == "ping":
             await self.send_message(websocket, {"type": "pong"})
         else:
+            logger.warning(f"Unknown message type: {msg_type}")
             await self.send_message(
                 websocket,
                 {"type": "error", "data": {"message": f"Unknown message type: {msg_type}"}}
@@ -95,20 +116,27 @@ class WebSocketManager:
             }
         })
 
-        # Execute query with agent
+        # Execute query with agent in background task
         from swecli.web.agent_executor import AgentExecutor
 
         executor = AgentExecutor(state)
-        await executor.execute_query(message, self)
+
+        # Create background task so WebSocket handler can continue processing messages
+        import asyncio
+        asyncio.create_task(executor.execute_query(message, self))
 
     async def _handle_approval(self, websocket: WebSocket, data: Dict[str, Any]):
         """Handle an approval response from the web UI."""
+        logger.info(f"Received approval response: {data}")
         approval_data = data.get("data", {})
         approval_id = approval_data.get("approvalId")
         approved = approval_data.get("approved")
         auto_approve = approval_data.get("autoApprove", False)
 
+        logger.info(f"Approval: id={approval_id}, approved={approved}, auto={auto_approve}")
+
         if approval_id is None or approved is None:
+            logger.error(f"Invalid approval data: {approval_data}")
             await self.send_message(
                 websocket,
                 {"type": "error", "data": {"message": "Invalid approval data"}}
@@ -120,12 +148,14 @@ class WebSocketManager:
         success = state.resolve_approval(approval_id, approved, auto_approve)
 
         if not success:
+            logger.error(f"Approval {approval_id} not found in state")
             await self.send_message(
                 websocket,
                 {"type": "error", "data": {"message": f"Approval {approval_id} not found"}}
             )
             return
 
+        logger.info(f"✓ Approval {approval_id} resolved successfully")
         # Broadcast the resolution to all clients
         await self.broadcast({
             "type": "approval_resolved",
@@ -142,18 +172,23 @@ ws_manager = WebSocketManager()
 
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint handler."""
+    logger.info("New WebSocket connection established")
     await ws_manager.connect(websocket)
 
     try:
         while True:
             # Receive message from client
             data = await websocket.receive_json()
+            logger.debug(f"Raw message received: {data}")
 
             # Handle the message
             await ws_manager.handle_message(websocket, data)
 
     except WebSocketDisconnect:
+        logger.info("WebSocket disconnected normally")
         ws_manager.disconnect(websocket)
     except Exception as e:
-        print(f"WebSocket error: {e}")
+        logger.error(f"❌ WebSocket error: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         ws_manager.disconnect(websocket)
