@@ -1,33 +1,44 @@
-<div align="center">
-
-<img src="logo/swe-cli-high-resolution-logo-grayscale-transparent.png" alt="SWE-CLI Logo" width="300"/>
-
-# SWE-CLI: One-Stop, Cost Effective CLI-based Coding Agent for Modern Software Engineering
-
-<p>
-  <a href="https://github.com/swe-cli/swe-cli/stargazers"><img src="https://img.shields.io/github/stars/swe-cli/swe-cli?style=for-the-badge&logo=star&logoColor=white&labelColor=1a1a2e&color=00d9ff" /></a>
-  <img src="https://img.shields.io/badge/Python-3.10+-4ecdc4?style=for-the-badge&logo=python&logoColor=white&labelColor=1a1a2e">
-  <img src="https://img.shields.io/badge/License-MIT-ff6b6b?style=for-the-badge&logo=opensourceinitiative&logoColor=white&labelColor=1a1a2e">
+<p align="center">
+  <img src="logo/swe-cli-high-resolution-logo-grayscale-transparent.png" alt="SWE-CLI Logo" width="400" style="border: 2px solid #e1e4e8; border-radius: 12px; padding: 20px;"/>
 </p>
 
-<p>
-  <img src="https://img.shields.io/badge/Architecture-SOLID-9b59b6?style=for-the-badge&logoColor=white&labelColor=1a1a2e">
-  <img src="https://img.shields.io/badge/Status-Active-00b894?style=for-the-badge&logoColor=white&labelColor=1a1a2e">
+<h1 align="center">SWE-CLI</h1>
+
+<p align="center">
+  <strong><a href="https://modelcontextprotocol.io/">MCP</a></strong> • <strong><a href="#-quick-start">Quick Start</a></strong> • <strong><a href="#-features">Features</a></strong> • <strong><a href="https://github.com/swe-cli/swe-cli/stargazers">Give us a star!</a></strong>
 </p>
 
-<p>
-  <img src="https://img.shields.io/badge/📄_Technical_Report-Coming_Soon-ffa726?style=for-the-badge&logoColor=white&labelColor=1a1a2e">
+<p align="center">
+One-Stop, Cost-Effective CLI-based Coding Agent for Modern Software Engineering
+</p>
+
+<p align="center">
+  <a href="https://github.com/swe-cli/swe-cli/actions"><img alt="CI" src="https://github.com/swe-cli/swe-cli/actions/workflows/ci.yml/badge.svg" /></a>
+  <a href="https://pypi.org/project/swe-cli/"><img alt="PyPI version" src="https://img.shields.io/pypi/v/swe-cli?style=flat-square" /></a>
+  <a href="https://python.org/"><img alt="Python version" src="https://img.shields.io/badge/python-%3E%3D3.10-brightgreen?style=flat-square" /></a>
+  <a href="./LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" /></a>
+  <a href="https://github.com/swe-cli/swe-cli/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/swe-cli/swe-cli?style=flat-square" /></a>
+</p>
+
+<p align="center">
+  <a href="#-quick-start"><strong>Quick Start</strong></a> •
+  <a href="#-demo"><strong>Demo</strong></a> •
+  <a href="#-features"><strong>Features</strong></a> •
+  <a href="#-architecture"><strong>Architecture</strong></a> •
+  <a href="https://modelcontextprotocol.io/"><strong>MCP</strong></a>
 </p>
 
 ---
 
 ### 🎬 Demo
 
-![SWE-CLI Demo](demo_video/swecli_demo.gif)
+<p align="center">
+  <img src="demo_video/swecli_demo.gif" alt="SWE-CLI Demo" width="800" style="border: 1px solid #e1e4e8; border-radius: 8px;"/>
+</p>
 
-*Interactive coding assistant in action*
-
-</div>
+<p align="center">
+  <em>Interactive coding assistant in action</em>
+</p>
 
 ---
 
