@@ -152,3 +152,4 @@ Thumbs.db
 .swecli/
 history.txt
 tmp_sessions/
+.claude/settings.local.json
