@@ -152,3 +152,7 @@ Thumbs.db
 .swecli/
 history.txt
 tmp_sessions/
+opencode/
+agent-squad/
+any-llm/
+claude-code-mcp/
