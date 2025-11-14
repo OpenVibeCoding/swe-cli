@@ -143,7 +143,7 @@ class AppConfig(BaseModel):
     playbook: PlaybookConfig = Field(default_factory=PlaybookConfig)
 
     # Agent settings
-    agent_type: str = "deep_langchain"  # Options: "deep_langchain" (default) or "swecli"
+    agent_type: str = "swecli"  # Options: "swecli" (default) or "deep_langchain"
 
     # Paths
     swecli_dir: str = "~/.swecli"

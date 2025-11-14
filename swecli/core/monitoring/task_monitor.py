@@ -89,6 +89,15 @@ class TaskMonitor:
             self._current_tokens = current_tokens
             self._token_delta = current_tokens - self._initial_tokens
 
+    def update_description(self, description: str) -> None:
+        """Update task description dynamically.
+
+        Args:
+            description: New task description
+        """
+        with self._lock:
+            self._task_description = description
+
     def request_interrupt(self) -> None:
         """Request interruption of current task (called by ESC key handler)."""
         with self._lock:

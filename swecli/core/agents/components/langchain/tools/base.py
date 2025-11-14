@@ -104,10 +104,37 @@ class SWECLIToolWrapper(BaseTool):
     async def _arun(
         self,
         *args: Any,
+        mode_manager: Optional[Any] = None,
+        approval_manager: Optional[Any] = None,
+        undo_manager: Optional[Any] = None,
         **kwargs: Any,
     ) -> str:
-        """Async execution - not supported by SWE-CLI tools."""
-        return f"Error: {self.tool_name} does not support async execution"
+        """Async execution - runs sync tool in thread pool."""
+        import asyncio
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.info(f"[ASYNC] Executing {self._swetool_name} asynchronously")
+
+        try:
+            # Run the synchronous _run method in a thread pool
+            # This prevents blocking the async event loop
+            result = await asyncio.to_thread(
+                self._run,
+                *args,
+                mode_manager=mode_manager,
+                approval_manager=approval_manager,
+                undo_manager=undo_manager,
+                **kwargs
+            )
+            logger.info(f"[ASYNC] {self._swetool_name} completed successfully")
+            return result
+
+        except Exception as e:
+            import traceback
+            error_trace = traceback.format_exc()
+            logger.error(f"[ASYNC] Tool execution error for {self._swetool_name}: {e}\n{error_trace}")
+            return f"Error executing {self._swetool_name}: {str(e)}"
 
     def _format_result(self, result: Dict[str, Any]) -> str:
         """Format SWE-CLI tool result for LangChain consumption.
