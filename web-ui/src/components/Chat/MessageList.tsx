@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { useChatStore } from '../../stores/chat';
 import { ToolCallMessage } from './ToolCallMessage';
 import { SPINNER_FRAMES, THINKING_VERBS, SPINNER_COLORS } from '../../constants/spinner';
+import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 
 export function MessageList() {
   const messages = useChatStore(state => state.messages);
@@ -69,9 +70,7 @@ export function MessageList() {
       <div className="flex items-center justify-center h-full px-6 bg-cream">
         <div className="text-center">
           <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-beige-200 flex items-center justify-center">
-            <svg className="w-8 h-8 text-beige-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-            </svg>
+            <ChatBubbleLeftRightIcon className="w-8 h-8 text-beige-500" />
           </div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Welcome to SWE-CLI</h2>
           <p className="text-sm text-gray-600">Start a conversation with your AI coding assistant</p>

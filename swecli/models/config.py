@@ -142,6 +142,9 @@ class AppConfig(BaseModel):
     # ACE Playbook settings
     playbook: PlaybookConfig = Field(default_factory=PlaybookConfig)
 
+    # Agent settings
+    agent_type: str = "swecli"  # Options: "swecli" (default) or "deep_langchain"
+
     # Paths
     swecli_dir: str = "~/.swecli"
     session_dir: str = "~/.swecli/sessions"

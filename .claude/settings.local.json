@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git push:*)",
+      "Bash(python:*)",
+      "WebFetch(domain:docs.langchain.com)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

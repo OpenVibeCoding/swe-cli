@@ -120,6 +120,8 @@ Configure your settings in `~/.swecli/settings.json`:
 
 For more details, see the [documentation](./docs).
 
+> **API keys:** The Deep Agent picks the model specified by `model_provider` (`fireworks`, `openai`, or `anthropic`). Export the matching environment variable (`FIREWORKS_API_KEY`, `OPENAI_API_KEY`, or `ANTHROPIC_API_KEY`) before launching `swecli`, or set `api_key` in your config file.
+
 ### Provider Support
 
 SWE-CLI ships with first-class support for the following providers:

@@ -1,10 +1,15 @@
-import { useState, useEffect } from 'react';
-import { ChevronDownIcon, Cog6ToothIcon, Bars3Icon, XMarkIcon, FolderIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { ChevronDownIcon, Cog6ToothIcon, Bars3Icon, XMarkIcon, FolderIcon, PlusIcon, TrashIcon, MagnifyingGlassIcon, EllipsisVerticalIcon, DocumentDuplicateIcon } from '@heroicons/react/24/outline';
 import { useChatStore } from '../../stores/chat';
 import { SettingsModal } from '../Settings/SettingsModal';
 import { NewSessionModal } from './NewSessionModal';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { apiClient } from '../../api/client';
+import { Modal } from '../ui/Modal';
+import { Button } from '../ui/Button';
+import { IconButton } from '../ui/IconButton';
+import { Input } from '../ui/Input';
+import { SegmentedControl } from '../ui/SegmentedControl';
 
 interface Session {
   id: string;
@@ -35,10 +40,44 @@ export function SessionsSidebar() {
   const [deleteWorkspace, setDeleteWorkspace] = useState<WorkspaceGroup | null>(null);
   const [deleteSessionId, setDeleteSessionId] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filter, setFilter] = useState<'all' | 'active' | 'recent'>('all');
+  const [menuWorkspacePath, setMenuWorkspacePath] = useState<string | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const [focusedWorkspacePath, setFocusedWorkspacePath] = useState<string | null>(null);
 
-  // Get loadSession from chat store
+  // Get loadSession from chat store (must be declared before useMemo below)
   const loadSession = useChatStore(state => state.loadSession);
   const currentSessionId = useChatStore(state => state.currentSessionId);
+
+  const visibleWorkspaces = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    const list = workspaces
+      .filter(ws => !q || ws.path.toLowerCase().includes(q))
+      .filter(ws => filter === 'active' ? ws.sessions.some(s => s.id === currentSessionId) : true);
+    if (filter === 'recent') {
+      return [...list].sort((a, b) => new Date(b.mostRecent.updated_at).getTime() - new Date(a.mostRecent.updated_at).getTime());
+    }
+    return list;
+  }, [workspaces, searchQuery, filter, currentSessionId]);
+
+  const rowIdForPath = (p: string) => 'ws-' + p.replace(/[^a-zA-Z0-9_-]/g, '-');
+
+  useEffect(() => {
+    // Reset focus to first visible when filters/search change
+    if (visibleWorkspaces.length > 0) {
+      setFocusedWorkspacePath(visibleWorkspaces[0].path);
+    } else {
+      setFocusedWorkspacePath(null);
+    }
+  }, [visibleWorkspaces]);
+
+  useEffect(() => {
+    if (!focusedWorkspacePath) return;
+    const el = document.getElementById(rowIdForPath(focusedWorkspacePath));
+    el?.scrollIntoView({ block: 'nearest' });
+  }, [focusedWorkspacePath]);
+
 
   useEffect(() => {
     fetchSessions();
@@ -54,7 +93,88 @@ export function SessionsSidebar() {
     };
 
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+
+    const handleFocusSearch = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        if (isCollapsed) {
+          setIsCollapsed(false);
+          setTimeout(() => searchRef.current?.focus(), 120);
+        } else {
+          searchRef.current?.focus();
+        }
+      }
+      if (e.key === 'Escape') {
+        setMenuWorkspacePath(null);
+      }
+    };
+    document.addEventListener('keydown', handleFocusSearch);
+
+    const handleListNavigation = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const tag = target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (target as any)?.isContentEditable) return;
+      if (isCollapsed) return; // navigation only when expanded
+      if (visibleWorkspaces.length === 0) return;
+
+      const currentIndex = focusedWorkspacePath
+        ? visibleWorkspaces.findIndex(w => w.path === focusedWorkspacePath)
+        : -1;
+
+      const prevent = () => { e.preventDefault(); setMenuWorkspacePath(null); };
+
+      if (e.key === 'ArrowDown') {
+        prevent();
+        const next = currentIndex < 0 ? 0 : Math.min(currentIndex + 1, visibleWorkspaces.length - 1);
+        setFocusedWorkspacePath(visibleWorkspaces[next].path);
+      } else if (e.key === 'ArrowUp') {
+        prevent();
+        const prev = currentIndex < 0 ? 0 : Math.max(currentIndex - 1, 0);
+        setFocusedWorkspacePath(visibleWorkspaces[prev].path);
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        if (focusedWorkspacePath) {
+          prevent();
+          setExpandedWorkspaces(prev => {
+            const next = new Set(prev);
+            if (next.has(focusedWorkspacePath)) next.delete(focusedWorkspacePath);
+            else next.add(focusedWorkspacePath);
+            return next;
+          });
+        }
+      } else if (e.key === 'ArrowRight') {
+        if (focusedWorkspacePath) {
+          prevent();
+          setExpandedWorkspaces(prev => {
+            const next = new Set(prev);
+            next.add(focusedWorkspacePath);
+            return next;
+          });
+        }
+      } else if (e.key === 'ArrowLeft') {
+        if (focusedWorkspacePath) {
+          prevent();
+          setExpandedWorkspaces(prev => {
+            const next = new Set(prev);
+            next.delete(focusedWorkspacePath);
+            return next;
+          });
+        }
+      }
+    };
+    document.addEventListener('keydown', handleListNavigation);
+
+    const handleClickAway = (e: MouseEvent) => {
+      // Close menu on outside click
+      setMenuWorkspacePath(null);
+    };
+    document.addEventListener('click', handleClickAway);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keydown', handleFocusSearch);
+      document.removeEventListener('keydown', handleListNavigation);
+      document.removeEventListener('click', handleClickAway);
+    };
   }, []);
 
   const fetchSessions = async () => {
@@ -229,50 +349,62 @@ export function SessionsSidebar() {
     <aside className={`h-full bg-gradient-to-b from-gray-50 to-white border-r border-gray-200 flex flex-col shadow-sm transition-all duration-300 ease-in-out ${
       isCollapsed ? 'w-16' : 'w-80'
     } relative`}>
-      {/* Logo and Brand - Centered */}
-      <div className={`border-b border-gray-200 flex flex-col items-center ${isCollapsed ? 'p-3' : 'p-6'}`}>
-        {/* Toggle Button */}
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className={`p-2 rounded-lg transition-all ${
-            isCollapsed 
-              ? 'hover:bg-gray-200 bg-white shadow-sm' 
-              : 'hover:bg-gray-100 self-end'
-          }`}
-          title={`${isCollapsed ? 'Expand' : 'Collapse'} sidebar (Ctrl/Cmd+B)`}
-        >
-          {isCollapsed ? (
-            <Bars3Icon className="w-5 h-5 text-gray-600" />
-          ) : (
-            <XMarkIcon className="w-5 h-5 text-gray-600" />
+      {/* Sidebar Header */}
+      <div className={`sticky top-0 z-10 border-b border-gray-200 ${isCollapsed ? 'p-3' : 'p-3'} bg-white/90 backdrop-blur`}>        
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className={`p-2 rounded-lg transition-colors ${
+              isCollapsed ? 'hover:bg-gray-200 bg-white shadow-sm' : 'hover:bg-gray-100'
+            }`}
+            title={`${isCollapsed ? 'Expand' : 'Collapse'} sidebar (Ctrl/Cmd+B)`}
+          >
+            {isCollapsed ? (
+              <Bars3Icon className="w-5 h-5 text-gray-600" />
+            ) : (
+              <XMarkIcon className="w-5 h-5 text-gray-600" />
+            )}
+          </button>
+          {!isCollapsed && (
+            <span className="text-sm font-semibold text-gray-900">Workspaces</span>
           )}
-        </button>
-
-        {!isCollapsed && (
-          <>
-        <div className="flex flex-col items-center gap-2 mb-2">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-md">
-            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-            </svg>
-          </div>
-          <div className="text-center">
-            <h1 className="text-lg font-bold text-gray-900">SWE-CLI</h1>
-            <p className="text-xs text-gray-500">AI Coding Assistant</p>
-          </div>
+          {!isCollapsed ? (
+            <IconButton
+              aria-label="New workspace"
+              title="New workspace"
+              onClick={handleNewWorkspace}
+              variant="subtle"
+              size="sm"
+            >
+              <PlusIcon className="w-5 h-5" />
+            </IconButton>
+          ) : (
+            <span className="w-5" />
+          )}
         </div>
 
-        {/* New Workspace Button */}
-        <button
-          onClick={handleNewWorkspace}
-          className="w-full mt-3 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          <span>New Workspace</span>
-        </button>
-          </>
+        {!isCollapsed && (
+          <div className="mt-3 space-y-2">
+            <Input
+              ref={searchRef}
+              placeholder="Search workspaces…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              leftIcon={<MagnifyingGlassIcon className="w-4 h-4" />}
+            />
+            <div className="flex items-center justify-between">
+              <SegmentedControl
+                options={[
+                  { label: 'All', value: 'all' },
+                  { label: 'Active', value: 'active' },
+                  { label: 'Recent', value: 'recent' },
+                ]}
+                value={filter}
+                onChange={setFilter}
+              />
+              <span className="text-xs text-gray-400">{visibleWorkspaces.length} items</span>
+            </div>
+          </div>
         )}
       </div>
 
@@ -280,23 +412,17 @@ export function SessionsSidebar() {
       {/* Workspaces Header */}
       {!isCollapsed && (
       <>
-        <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Workspaces</h2>
-        </div>
-
         {/* Workspaces List */}
         <div className="flex-1 overflow-y-auto px-3 py-2">
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-12 px-4">
+          <div className="flex flex-col items-center justify-center py-10 px-4">
             <div className="w-8 h-8 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin mb-3" />
             <p className="text-sm text-gray-500">Loading workspaces...</p>
           </div>
         ) : workspaces.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
             <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-              <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-              </svg>
+              <FolderIcon className="w-8 h-8 text-gray-400" />
             </div>
             <h3 className="text-sm font-medium text-gray-900 mb-1">No workspaces yet</h3>
             <p className="text-xs text-gray-500 max-w-[200px]">
@@ -305,15 +431,16 @@ export function SessionsSidebar() {
           </div>
         ) : (
           <div className="space-y-2">
-            {workspaces.map((workspace) => {
+            {visibleWorkspaces.map((workspace) => {
               const isExpanded = expandedWorkspaces.has(workspace.path);
-              // Check if any session in this workspace is currently active
               const hasActiveSession = workspace.sessions.some(s => s.id === currentSessionId);
+              const isFocused = focusedWorkspacePath === workspace.path;
 
               return (
                 <div
                   key={workspace.path}
-                  className="relative w-full rounded-lg transition-all duration-200 bg-white border border-gray-200 hover:border-gray-300 hover:shadow-sm"
+                  id={rowIdForPath(workspace.path)}
+                  className={`relative w-full rounded-lg transition-all duration-200 bg-white border ${isFocused ? 'border-blue-400 ring-2 ring-blue-200' : 'border-gray-200'} hover:border-gray-300 hover:shadow-sm`}
                 >
                   {/* Workspace Header - Clickable to expand/collapse */}
                   <button
@@ -333,9 +460,7 @@ export function SessionsSidebar() {
 
                       {/* Folder Icon */}
                       <div className="mt-0.5 w-4 h-4 rounded flex-shrink-0 flex items-center justify-center bg-gray-100 group-hover:bg-gray-200">
-                        <svg className="w-2.5 h-2.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                        </svg>
+                        <FolderIcon className="w-3.5 h-3.5 text-gray-500" />
                       </div>
 
                       {/* Workspace Info */}
@@ -359,19 +484,51 @@ export function SessionsSidebar() {
                     </div>
                   </button>
 
-                  {/* Delete Button - Positioned absolutely */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteWorkspace(workspace, e);
-                    }}
-                    className="absolute top-3 right-3 w-7 h-7 rounded-md flex items-center justify-center hover:bg-red-100 transition-colors text-gray-400 hover:text-red-600 bg-white shadow-sm z-10"
-                    title="Delete workspace"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
+                  {/* Row actions: overflow menu */}
+                  <div className="absolute top-2 right-2 z-20">
+                    <IconButton
+                      aria-label="More"
+                      title="More"
+                      variant="subtle"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuWorkspacePath(prev => prev === workspace.path ? null : workspace.path);
+                      }}
+                    >
+                      <EllipsisVerticalIcon className="w-5 h-5" />
+                    </IconButton>
+
+                    {menuWorkspacePath === workspace.path && (
+                      <div
+                        className="absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={(e) => handleNewSessionInWorkspace(workspace.path, e)}
+                        >
+                          <PlusIcon className="w-4 h-4 text-gray-500" />
+                          New session
+                        </button>
+                        <button
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => navigator.clipboard?.writeText(workspace.path)}
+                        >
+                          <DocumentDuplicateIcon className="w-4 h-4 text-gray-500" />
+                          Copy path
+                        </button>
+                        <div className="my-1 h-px bg-gray-200" />
+                        <button
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                          onClick={(e) => handleDeleteWorkspace(workspace, e)}
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                          Delete workspace
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Sessions List (Expanded) */}
                   {isExpanded && (
@@ -381,9 +538,7 @@ export function SessionsSidebar() {
                         onClick={(e) => handleNewSessionInWorkspace(workspace.path, e)}
                         className="w-full px-3 py-2 rounded-md text-left transition-colors cursor-pointer bg-gray-100 hover:bg-gray-200 border border-dashed border-gray-300 hover:border-blue-400 flex items-center gap-2 text-gray-600 hover:text-blue-600"
                       >
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
+                        <PlusIcon className="w-3.5 h-3.5" />
                         <span className="text-xs font-medium">New Session</span>
                       </button>
 
@@ -426,9 +581,7 @@ export function SessionsSidebar() {
                               className="absolute top-1.5 right-1.5 w-6 h-6 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-100 transition-all text-gray-400 hover:text-red-600 z-10"
                               title="Delete session"
                             >
-                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
+                              <TrashIcon className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         );
@@ -447,7 +600,7 @@ export function SessionsSidebar() {
       {/* Collapsed State - Minimal Workspace Indicators */}
       {isCollapsed && (
         <div className="flex-1 overflow-y-auto px-2 py-3 space-y-2">
-          {workspaces.slice(0, 5).map((workspace) => {
+          {workspaces.map((workspace) => {
             const hasActiveSession = workspace.sessions.some(s => s.id === currentSessionId);
             
             return (
@@ -545,75 +698,24 @@ export function SessionsSidebar() {
       />
 
       {/* Delete Session Confirmation Modal */}
-      {deleteSessionId && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            zIndex: 99999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-          onClick={() => setDeleteSessionId(null)}
-        >
-          <div
-            style={{
-              backgroundColor: 'white',
-              padding: '24px',
-              borderRadius: '12px',
-              minWidth: '400px',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 style={{ margin: '0 0 12px 0', fontSize: '18px', fontWeight: '600', color: '#1f2937' }}>
-              Delete Session
-            </h3>
-            <p style={{ margin: '0 0 20px 0', fontSize: '14px', color: '#6b7280' }}>
-              Are you sure you want to delete session <strong>{deleteSessionId.substring(0, 8)}</strong>?
-              <br />
-              This action cannot be undone.
-            </p>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-              <button
-                onClick={() => setDeleteSessionId(null)}
-                style={{
-                  padding: '8px 16px',
-                  border: '1px solid #d1d5db',
-                  backgroundColor: 'white',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  color: '#374151'
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDeleteSession}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#ef4444',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500'
-                }}
-              >
-                Delete
-              </button>
-            </div>
+      <Modal
+        isOpen={!!deleteSessionId}
+        onClose={() => setDeleteSessionId(null)}
+        title="Delete Session"
+        footer={
+          <div className="flex gap-3 justify-end">
+            <Button variant="secondary" onClick={() => setDeleteSessionId(null)}>Cancel</Button>
+            <Button variant="danger" onClick={confirmDeleteSession}>Delete</Button>
           </div>
-        </div>
-      )}
+        }
+      >
+        {deleteSessionId && (
+          <p className="text-sm text-gray-700">
+            Are you sure you want to delete session <strong>{deleteSessionId.substring(0, 8)}</strong>?<br />
+            This action cannot be undone.
+          </p>
+        )}
+      </Modal>
     </aside>
   );
 }

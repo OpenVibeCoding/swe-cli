@@ -143,8 +143,6 @@ class ChatTextArea(TextArea):
                 app.update_autocomplete([], None)
             except Exception:
                 pass
-        self.suggestion = ""
-        self._notify_autocomplete()
 
     def _set_highlight_index(self, index: int | None) -> None:
         """Update active selection and inline suggestion."""
@@ -225,7 +223,7 @@ class ChatTextArea(TextArea):
         if result is not None:
             self.cursor_location = result.end_location
 
-        self._clear_completions()
+        self._dismiss_autocomplete()
         self._suppress_next_autocomplete = True
         self.update_suggestion()
         return True

@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { MagnifyingGlassIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { Button } from '../ui/Button';
 
 export function AppNavBar() {
   const location = useLocation();
@@ -27,23 +28,23 @@ export function AppNavBar() {
           </Link>
 
           {/* Navigation Links */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <Link
               to="/chat"
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              className={`px-1.5 pb-1.5 text-sm font-medium border-b-2 transition-colors ${
                 isActive('/chat')
-                  ? 'bg-purple-100 text-purple-900'
-                  : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                  ? 'text-gray-900 border-gray-900'
+                  : 'text-gray-600 border-transparent hover:text-gray-900 hover:border-gray-300'
               }`}
             >
               Chat
             </Link>
             <Link
               to="/codewiki"
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              className={`px-1.5 pb-1.5 text-sm font-medium border-b-2 transition-colors ${
                 isActive('/codewiki')
-                  ? 'bg-purple-100 text-purple-900'
-                  : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                  ? 'text-gray-900 border-gray-900'
+                  : 'text-gray-600 border-transparent hover:text-gray-900 hover:border-gray-300'
               }`}
             >
               CodeWiki
@@ -53,18 +54,24 @@ export function AppNavBar() {
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2">
-          <button
-            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+          <Button
+            variant="subtle"
+            size="sm"
             title="Search"
+            aria-label="Search"
+            className="p-2 h-auto"
           >
-            <MagnifyingGlassIcon className="w-5 h-5" />
-          </button>
-          <button
-            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+            <MagnifyingGlassIcon className="w-5 h-5 text-gray-600" />
+          </Button>
+          <Button
+            variant="subtle"
+            size="sm"
             title="Settings"
+            aria-label="Settings"
+            className="p-2 h-auto"
           >
-            <Cog6ToothIcon className="w-5 h-5" />
-          </button>
+            <Cog6ToothIcon className="w-5 h-5 text-gray-600" />
+          </Button>
         </div>
       </div>
     </nav>

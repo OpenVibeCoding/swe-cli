@@ -3,6 +3,7 @@ import { useChatStore } from '../../stores/chat';
 import { MessageList } from './MessageList';
 import { InputBox } from './InputBox';
 import { apiClient } from '../../api/client';
+import { ComputerDesktopIcon, ChatBubbleLeftRightIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 
 interface Config {
   model_provider: string;
@@ -54,9 +55,7 @@ export function ChatInterface() {
         <div className="border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white px-6 py-3">
           <div className="flex items-center gap-3">
             <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-sm">
-              <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
+              <ComputerDesktopIcon className="w-3.5 h-3.5 text-white" />
             </div>
             <div className="flex items-center gap-2 text-sm">
               <span className="font-semibold text-gray-900 capitalize">
@@ -85,9 +84,7 @@ export function ChatInterface() {
         <div className="absolute inset-0 bg-white/95 backdrop-blur-sm flex items-center justify-center z-40">
           <div className="text-center max-w-md px-6">
             <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-xl">
-              <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-              </svg>
+              <ChatBubbleLeftRightIcon className="w-10 h-10 text-white" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-3">
               No Session Selected
@@ -96,9 +93,7 @@ export function ChatInterface() {
               To start chatting, please select an existing session from the sidebar or create a new workspace.
             </p>
             <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <InformationCircleIcon className="w-4 h-4" />
               <span>Click a session or "New Workspace" to get started</span>
             </div>
           </div>
