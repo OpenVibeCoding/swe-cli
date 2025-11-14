@@ -125,6 +125,25 @@ class ChatTextArea(TextArea):
         self._completion_entries = []
         self._highlight_index = None
         self.suggestion = ""
+
+    def _dismiss_autocomplete(self) -> None:
+        """Hide autocomplete suggestions and notify parent app."""
+
+        if not self._completions and not self.suggestion:
+            return
+
+        self._clear_completions()
+        try:
+            app = self.app  # type: ignore[attr-defined]
+        except Exception:
+            app = None
+
+        if app and hasattr(app, "update_autocomplete"):
+            try:
+                app.update_autocomplete([], None)
+            except Exception:
+                pass
+        self.suggestion = ""
         self._notify_autocomplete()
 
     def _set_highlight_index(self, index: int | None) -> None:
@@ -295,6 +314,12 @@ class ChatTextArea(TextArea):
             event.stop()
             event.prevent_default()
             self._insert_newline()
+            return
+
+        if event.key == "escape" and self._completions:
+            event.stop()
+            event.prevent_default()
+            self._dismiss_autocomplete()
             return
 
         if event.key == "up":
