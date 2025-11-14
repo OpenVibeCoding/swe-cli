@@ -51,24 +51,31 @@
 
 ### Current State
 
-- **✅ DeepLangChainAgent is fully functional and production-ready**
-- **SwecliAgent remains the default** for backward compatibility
+- **✅ DeepLangChainAgent is now the DEFAULT agent** 🎉
+- **✅ Fully functional and production-ready**
+- SwecliAgent available for backward compatibility (opt-out)
 - Both agents coexist in `AgentFactory`
 - Easy switching via config flag
 - **All 22+ tools work perfectly** with Deep Agents
 
-### How to Use Deep Agent
+**As of January 14, 2025, Deep Agents are the default!**
 
-**Method 1: Config File**
-```python
-# In your config
-agent_type = "deep_langchain"  # Options: "swecli" (default) or "deep_langchain"
+### How to Use
+
+**Deep Agents are now the default!** Just run `swecli` - no config needed.
+
+**To opt-out to traditional SwecliAgent:**
+```json
+{
+  "agent_type": "swecli"
+}
 ```
 
-**Method 2: Environment/CLI**
-```bash
-# Set in your configuration before starting SWE-CLI
-export SWECLI_AGENT_TYPE="deep_langchain"
+**To explicitly enable Deep Agent (optional):**
+```json
+{
+  "agent_type": "deep_langchain"
+}
 ```
 
 **What You Get:**

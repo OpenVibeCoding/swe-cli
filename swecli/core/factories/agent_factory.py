@@ -40,17 +40,28 @@ class AgentFactory:
         """Instantiate both normal and planning agents.
 
         Agent type can be controlled via config.agent_type:
-        - "swecli" (default): Traditional SwecliAgent
-        - "deep_langchain": LangChain Deep Agents implementation
+        - "deep_langchain" (default): LangChain Deep Agents implementation
+        - "swecli": Traditional SwecliAgent (opt-out)
         """
+        # Get agent type, with safe fallback
+        agent_type = getattr(self._config, 'agent_type', 'deep_langchain')
+
         # Select agent class based on config
-        if self._config.agent_type == "deep_langchain":
+        if agent_type == "deep_langchain":
             normal = DeepLangChainAgent(
                 self._config, self._tool_registry, self._mode_manager, self._working_dir
             )
-        else:
-            # Default to traditional SwecliAgent
+        elif agent_type == "swecli":
+            # Traditional SwecliAgent for backward compatibility
             normal = SwecliAgent(
+                self._config, self._tool_registry, self._mode_manager, self._working_dir
+            )
+        else:
+            # Unknown agent type - default to Deep Agent with warning
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Unknown agent_type '{agent_type}', defaulting to deep_langchain")
+            normal = DeepLangChainAgent(
                 self._config, self._tool_registry, self._mode_manager, self._working_dir
             )
 

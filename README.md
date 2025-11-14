@@ -161,10 +161,15 @@ Add to your `~/.swecli/settings.json`:
 
 ### Agent Types
 
-- **`"swecli"`** (default) - Traditional agent, proven and stable
-- **`"deep_langchain"`** - LangChain Deep Agents with advanced planning
+- **`"deep_langchain"`** (default) - LangChain Deep Agents with advanced planning ✨
+- **`"swecli"`** - Traditional agent (opt-out for compatibility)
 
-Switch anytime by changing `agent_type` in your config!
+**Deep Agents are now the default!** To use the traditional agent, add to config:
+```json
+{
+  "agent_type": "swecli"
+}
+```
 
 ### Documentation
 
