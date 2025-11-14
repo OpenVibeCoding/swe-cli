@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Optional, Tuple
 
+from rich.console import Group
+from rich.table import Table
 from rich.text import Text
 from textual.widgets import Static
 
@@ -63,40 +65,33 @@ class AutocompletePopupController:
             self.popup.styles.display = "block"
             return
 
-        text = Text()
+        table = Table.grid(padding=(0, 1))
+        table.expand = True
+        table.add_column(justify="left", width=2, no_wrap=True)
+        table.add_column(justify="left", ratio=3, overflow="fold")
+        table.add_column(justify="right", ratio=2, no_wrap=True)
+
+        header_text = Text("Mention a file · Enter to insert\n", style="bold grey70")
+
         for index, (label, meta) in enumerate(rows):
             is_active = index == window_active
-
-            # Detect if this is a directory
-            is_dir = "📁" in label or label.endswith("/")
-
-            # Get appropriate color for this file type
             file_color = FileTypeColors.get_color_from_icon_label(label)
 
-            # Enhanced pointer styling
-            pointer = "▸ " if is_active else "  "
-            pointer_style = f"bold {file_color}" if is_active else "dim"
+            pointer_char = "▸" if is_active else "•"
+            pointer_style = f"bold {file_color}" if is_active else "dim grey50"
+            pointer_render = Text(pointer_char, style=pointer_style)
 
-            # Apply file-type-specific colors
-            if is_active:
-                # Selected item: bold + file-type color
-                label_style = f"bold {file_color}"
-            else:
-                # Non-selected: file-type color with slight dim
-                label_style = file_color
+            label_style = f"bold {file_color}" if is_active else file_color
+            label_render = Text(label, style=label_style, overflow="ellipsis")
 
-            text.append(pointer, style=pointer_style)
-            text.append(label, style=label_style)
+            meta_style = "bold #e5e7eb" if is_active else "grey58"
+            meta_render = Text(meta, style=meta_style, overflow="ellipsis")
 
-            # Meta info (file size, description)
-            if meta:
-                text.append("  ")
-                meta_style = "white" if is_active else "grey70"
-                text.append(meta, style=meta_style)
+            row_style = "on #1f2a37" if is_active else None
+            table.add_row(pointer_render, label_render, meta_render, style=row_style)
 
-            if index < len(rows) - 1:
-                text.append("\n")
+        renderable = Group(header_text, table)
 
-        self.popup.update(text)
+        self.popup.update(renderable)
         self.popup.styles.display = "block"
         self._last_state = state
