@@ -63,29 +63,42 @@ class SWECLIToolWrapper(BaseTool):
 
         Args:
             *args: Positional arguments (unused for SWE-CLI tools)
-            mode_manager: Operation mode manager
-            approval_manager: Approval workflow manager
-            undo_manager: Undo/redo manager
+            mode_manager: Operation mode manager (optional, uses registry's if None)
+            approval_manager: Approval workflow manager (optional)
+            undo_manager: Undo/redo manager (optional)
             **kwargs: Tool arguments
 
         Returns:
             Formatted tool result as string
         """
         try:
+            # Prepare execution arguments - only include managers if provided
+            exec_kwargs = {
+                "tool_name": self._swetool_name,
+                "arguments": kwargs,
+            }
+
+            # Add optional managers only if provided
+            if mode_manager is not None:
+                exec_kwargs["mode_manager"] = mode_manager
+            if approval_manager is not None:
+                exec_kwargs["approval_manager"] = approval_manager
+            if undo_manager is not None:
+                exec_kwargs["undo_manager"] = undo_manager
+
             # Execute the tool through SWE-CLI's tool registry
-            result = self._swetool_registry.execute_tool(
-                tool_name=self._swetool_name,
-                arguments=kwargs,
-                mode_manager=mode_manager,
-                approval_manager=approval_manager,
-                undo_manager=undo_manager,
-            )
+            result = self._swetool_registry.execute_tool(**exec_kwargs)
 
             # Format the result for LangChain
             return self._format_result(result)
 
         except Exception as e:
             # Handle any unexpected errors
+            import traceback
+            error_trace = traceback.format_exc()
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Tool execution error for {self._swetool_name}: {e}\n{error_trace}")
             return f"Error executing {self._swetool_name}: {str(e)}"
 
     async def _arun(
