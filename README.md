@@ -57,6 +57,7 @@ Built on **SOLID principles** with **dependency injection** and **interface-driv
 ### ✅ Ready Features
 - **Interactive Coding Agent that Understand Codebase**
 - **Multi-Provider LLM Support** (Fireworks, OpenAI, and Anthropic via native HTTP clients)
+- **LangChain Deep Agents Integration** - Advanced planning and task decomposition with LangGraph
 - **Basic Access to Shell Commands and Control Them Through LLMs**
 - **Context Management**
 - **Compact Context Automatically**
@@ -131,6 +132,43 @@ SWE-CLI ships with first-class support for the following providers:
 - **Anthropic** – native Messages API adapter with tool-use support
 
 Select the provider via `model_provider` (`fireworks`, `openai`, or `anthropic`) and supply the corresponding API key through environment variables or config.
+
+---
+
+## 🧠 Deep Agents (LangChain Integration)
+
+SWE-CLI now supports **LangChain Deep Agents** for advanced task planning and execution!
+
+### What are Deep Agents?
+
+Deep Agents use LangGraph-powered workflows that provide:
+- **Automatic task decomposition** - Complex tasks broken into manageable steps
+- **Built-in planning** - Agents create and follow execution plans
+- **Enhanced reasoning** - Better context management and decision-making
+- **All existing tools** - Seamless integration with 22+ SWE-CLI tools
+
+### Enable Deep Agents
+
+Add to your `~/.swecli/settings.json`:
+
+```json
+{
+  "agent_type": "deep_langchain",
+  "model_provider": "fireworks",
+  "model": "accounts/fireworks/models/llama-v3p1-70b-instruct"
+}
+```
+
+### Agent Types
+
+- **`"swecli"`** (default) - Traditional agent, proven and stable
+- **`"deep_langchain"`** - LangChain Deep Agents with advanced planning
+
+Switch anytime by changing `agent_type` in your config!
+
+### Documentation
+
+See [Deep Agents Migration Plan](./docs/DEEP_AGENTS_MIGRATION_PLAN.md) for technical details.
 
 ---
 
