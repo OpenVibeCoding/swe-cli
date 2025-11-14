@@ -205,8 +205,11 @@ class DeepLangChainAgent(BaseAgent):
 
     def _initialize_components(self) -> None:
         """Initialize deep agent components."""
+        import logging
+        logger = logging.getLogger(__name__)
+
         if not _DEEPAGENTS_AVAILABLE:
-            print("Warning: deepagents library not available, Deep Agent functionality disabled")
+            logger.warning("deepagents library not available, Deep Agent functionality disabled")
             return
 
         try:
@@ -218,23 +221,19 @@ class DeepLangChainAgent(BaseAgent):
 
             # Get tools
             tools = self._tool_adapter.get_langchain_tools()
-            print(f"[DEBUG] Initializing Deep Agent with {len(tools)} tools:")
-            for tool in tools[:5]:  # Show first 5
-                print(f"  - {tool.name}: {tool.description[:60]}...")
 
             # Create the deep agent with model and tools
             deep_agent = create_deep_agent(
                 model=model,
                 tools=tools
             )
-            print(f"[DEBUG] Deep Agent created successfully")
 
             # Wrap with interruptible support
             self._interrupt_monitor = DeepAgentInterruptMonitor()
             self._deep_agent = InterruptibleDeepAgent(deep_agent, self._interrupt_monitor)
 
         except Exception as e:
-            print(f"Warning: Failed to initialize Deep Agent: {e}")
+            logger.error(f"Failed to initialize Deep Agent: {e}", exc_info=True)
             self._deep_agent = None
 
     def _create_model(self) -> BaseChatModel:
@@ -570,6 +569,9 @@ class DeepLangChainAgent(BaseAgent):
             # Re-initialize the deep agent with fresh tools
             if self._deep_agent and _DEEPAGENTS_AVAILABLE:
                 try:
+                    import logging
+                    logger = logging.getLogger(__name__)
+
                     model = self._create_model()
                     fresh_tools = self._tool_adapter.get_langchain_tools()
                     self._deep_agent = create_deep_agent(
@@ -577,7 +579,9 @@ class DeepLangChainAgent(BaseAgent):
                         tools=fresh_tools
                     )
                 except Exception as e:
-                    print(f"Warning: Failed to refresh deep agent tools: {e}")
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Failed to refresh deep agent tools: {e}", exc_info=True)
 
     def get_available_tools(self) -> list[str]:
         """Get list of available tool names.
@@ -648,12 +652,27 @@ class DeepLangChainAgent(BaseAgent):
         Returns:
             Response dictionary with content and metadata
         """
+        import logging
+        logger = logging.getLogger(__name__)
+
+        # Validate agent availability
         if not self._deep_agent:
+            logger.error("Deep Agent not initialized")
             return {
                 "content": "Deep Agent not initialized",
                 "messages": [],
                 "success": False,
                 "error": "Deep Agent not available",
+            }
+
+        # Validate input
+        if not message or not isinstance(message, str):
+            logger.error(f"Invalid message input: {type(message)}")
+            return {
+                "content": "Invalid message input",
+                "messages": message_history or [],
+                "success": False,
+                "error": "Message must be a non-empty string",
             }
 
         # Build message history
@@ -667,17 +686,21 @@ class DeepLangChainAgent(BaseAgent):
         messages.append({"role": "user", "content": message})
 
         # Convert to LangChain format
-        langchain_messages = self._convert_messages_to_langchain(messages)
-
-        print(f"[DEBUG] DeepAgent: Starting stream with {len(langchain_messages)} messages")
-        print(f"[DEBUG] DeepAgent: Last message: {messages[-1]}")
+        try:
+            langchain_messages = self._convert_messages_to_langchain(messages)
+        except Exception as e:
+            logger.error(f"Failed to convert messages to LangChain format: {e}", exc_info=True)
+            return {
+                "content": f"Message conversion error: {str(e)}",
+                "messages": messages,
+                "success": False,
+                "error": f"Message conversion failed: {str(e)}",
+            }
 
         try:
             # Use Deep Agent's stream method
             # We're using the raw deep_agent (not the interruptible wrapper yet)
             payload = {"messages": langchain_messages}
-
-            print("[DEBUG] DeepAgent: Calling deep_agent.stream()...")
 
             # Collect stream events and track all messages
             collected_content = []
@@ -685,62 +708,73 @@ class DeepLangChainAgent(BaseAgent):
             final_ai_message = None
             tool_calls_made = []
 
-            for chunk in self._deep_agent.deep_agent.stream(payload):
-                print(f"[DEBUG] DeepAgent: Stream chunk keys: {chunk.keys() if isinstance(chunk, dict) else type(chunk)}")
+            try:
+                for chunk in self._deep_agent.deep_agent.stream(payload):
+                    if isinstance(chunk, dict):
+                        # Check for model responses
+                        if "model" in chunk and "messages" in chunk["model"]:
+                            for msg in chunk["model"]["messages"]:
+                                all_stream_messages.append(msg)
 
-                if isinstance(chunk, dict):
-                    # Check for model responses
-                    if "model" in chunk and "messages" in chunk["model"]:
-                        for msg in chunk["model"]["messages"]:
-                            all_stream_messages.append(msg)
+                                # Extract content
+                                if hasattr(msg, "content") and msg.content:
+                                    collected_content.append(str(msg.content))
+                                    final_ai_message = msg
 
-                            # Extract content
-                            if hasattr(msg, "content") and msg.content:
-                                collected_content.append(str(msg.content))
-                                final_ai_message = msg
+                                # Check for tool calls
+                                if hasattr(msg, "tool_calls") and msg.tool_calls:
+                                    for tc in msg.tool_calls:
+                                        tool_calls_made.append(tc)
 
-                            # Check for tool calls
-                            if hasattr(msg, "tool_calls") and msg.tool_calls:
-                                print(f"[DEBUG] DeepAgent: Tool calls detected: {len(msg.tool_calls)}")
-                                for tc in msg.tool_calls:
-                                    tool_calls_made.append(tc)
-                                    print(f"[DEBUG] DeepAgent: Tool call - {tc.get('name', 'unknown')}")
+                        # Check for tool execution results
+                        elif "tools" in chunk and "messages" in chunk["tools"]:
+                            for msg in chunk["tools"]["messages"]:
+                                all_stream_messages.append(msg)
 
-                    # Check for tool execution results
-                    elif "tools" in chunk and "messages" in chunk["tools"]:
-                        print(f"[DEBUG] DeepAgent: Tool execution results received")
-                        for msg in chunk["tools"]["messages"]:
-                            all_stream_messages.append(msg)
-                            if hasattr(msg, "content"):
-                                print(f"[DEBUG] DeepAgent: Tool result preview: {str(msg.content)[:100]}...")
+                        # Also check direct messages
+                        elif "messages" in chunk:
+                            messages_value = chunk["messages"]
+                            # Handle Overwrite wrapper
+                            if hasattr(messages_value, "value"):
+                                messages_value = messages_value.value
 
-                    # Also check direct messages
-                    elif "messages" in chunk:
-                        messages_value = chunk["messages"]
-                        # Handle Overwrite wrapper
-                        if hasattr(messages_value, "value"):
-                            messages_value = messages_value.value
+                            if isinstance(messages_value, list):
+                                for msg in messages_value:
+                                    if hasattr(msg, "__class__") and msg.__class__.__name__ == "AIMessage":
+                                        if hasattr(msg, "content") and msg.content:
+                                            collected_content.append(str(msg.content))
+                                            final_ai_message = msg
 
-                        if isinstance(messages_value, list):
-                            for msg in messages_value:
-                                if hasattr(msg, "__class__") and msg.__class__.__name__ == "AIMessage":
-                                    if hasattr(msg, "content") and msg.content:
-                                        collected_content.append(str(msg.content))
-                                        final_ai_message = msg
-
-            print(f"[DEBUG] DeepAgent: Stream completed")
-            print(f"[DEBUG] DeepAgent: - Collected {len(collected_content)} content pieces")
-            print(f"[DEBUG] DeepAgent: - Tool calls made: {len(tool_calls_made)}")
-            print(f"[DEBUG] DeepAgent: - Total stream messages: {len(all_stream_messages)}")
+            except StopIteration:
+                # Stream completed normally
+                pass
+            except KeyboardInterrupt:
+                # User interrupted
+                logger.info("Deep Agent execution interrupted by user")
+                return {
+                    "content": "Execution interrupted by user",
+                    "messages": messages,
+                    "success": False,
+                    "interrupted": True,
+                }
 
             # Build final response
-            final_content = "\n\n".join(collected_content) if collected_content else "No content received"
+            final_content = "\n\n".join(collected_content) if collected_content else ""
+
+            # Handle case where no content was generated
+            if not final_content:
+                logger.warning("Deep Agent returned no content")
+                final_content = "No response generated"
 
             # Add all the stream messages to our message history
             for msg in all_stream_messages:
-                swe_msg = self._convert_message_from_langchain(msg)
-                if swe_msg:
-                    messages.append(swe_msg)
+                try:
+                    swe_msg = self._convert_message_from_langchain(msg)
+                    if swe_msg:
+                        messages.append(swe_msg)
+                except Exception as e:
+                    logger.warning(f"Failed to convert message to SWE format: {e}")
+                    # Continue processing other messages
 
             return {
                 "content": final_content,
@@ -752,8 +786,11 @@ class DeepLangChainAgent(BaseAgent):
         except Exception as e:
             import traceback
             error_trace = traceback.format_exc()
-            print(f"[DEBUG] DeepAgent: Error occurred: {e}")
-            print(f"[DEBUG] DeepAgent: Traceback:\n{error_trace}")
+
+            # Log error for debugging
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Deep Agent error: {e}\n{error_trace}")
 
             return {
                 "content": f"Deep Agent error: {str(e)}",
