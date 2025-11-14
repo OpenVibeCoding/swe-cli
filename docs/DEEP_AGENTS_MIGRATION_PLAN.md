@@ -23,16 +23,62 @@
 | 3 | **Parity & Enhancements** | Add interrupt propagation, streaming hooks, and richer telemetry; align planning agent / mode manager with Deep Agent behaviors. |
 | 4 | **Default Rollout** | After validation, flip the default to Deep Agents and ultimately retire the legacy HTTP client. |
 
-## Current Status
+## Current Status (Updated 2025-01-XX)
 
-- Phase 1 is complete: `DeepLangChainAgent` is now the default normal agent and the legacy `SwecliAgent`/HTTP path has been removed.
-- Phase 0/1 artifacts (dependencies, tool adapters) are merged; remaining work focuses on feature parity (interrupts, approvals, config-driven model selection).
+### ✅ Completed Steps (1-13)
 
-## Immediate Next Steps
+**Phase 0 - Foundation:**
+- Steps 1-6: Created `DeepLangChainAgent` skeleton with message conversion, tool integration, and interrupt handling
+- Successfully integrated with existing `ToolRegistryAdapter` (22+ tools)
+- Implemented basic `call_llm()` method
 
-1. Thread mode/approval/undo managers through the LangChain tool adapters so Deep Agents honor plan-mode and approval flows.
-2. Propagate task monitors / interrupt hooks into the LangGraph runtime (streaming or cooperative cancellation) to regain stop support.
-3. Add regression tests ensuring provider-specific model construction works (Fireworks/OpenAI/Anthropic) and document the configuration knobs in the README.
+**Phase 1 - Feature Flag & Streaming:**
+- Step 7: Added `agent_type` config flag ("swecli" or "deep_langchain")
+- `AgentFactory` now supports both agent types
+- Step 8-11: Implemented streaming with Deep Agent's `.stream()` API
+- Proper message history management and tool call tracking
+- Tested with simple queries ✅ and tool calls ✅
+
+**Phase 2 - Production Ready:**
+- Step 12: Replaced debug prints with proper Python logging
+- Step 13: Added comprehensive error handling (input validation, interrupts, empty responses)
+
+### Current State
+
+- **DeepLangChainAgent is fully functional** and available via config
+- **SwecliAgent remains the default** for stability
+- Both agents coexist peacefully in `AgentFactory`
+- Users can switch by setting `config.agent_type = "deep_langchain"`
+
+### How to Use Deep Agent
+
+**Method 1: Config File**
+```python
+# In your config
+agent_type = "deep_langchain"  # Options: "swecli" (default) or "deep_langchain"
+```
+
+**Method 2: Environment/CLI**
+```bash
+# Set in your configuration before starting SWE-CLI
+export SWECLI_AGENT_TYPE="deep_langchain"
+```
+
+**What You Get:**
+- Advanced task planning with LangGraph
+- Built-in file system operations
+- All 22+ existing SWE-CLI tools
+- Robust error handling and logging
+- Interrupt support
+
+### Remaining Work
+
+1. **Optional**: Switch default to Deep Agent after more real-world testing
+2. **Optional**: Remove SwecliAgent entirely (full migration)
+3. Continue enhancing Deep Agent features:
+   - Streaming progress updates to UI
+   - Advanced interrupt propagation
+   - Approval flow integration
 
 ## API Keys
 
