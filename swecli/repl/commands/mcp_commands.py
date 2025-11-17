@@ -70,7 +70,8 @@ class MCPCommands(CommandHandler):
         if subcmd in subcommand_map:
             return subcommand_map[subcmd]()
         else:
-            self.print_error(f"Unknown MCP subcommand: {subcmd}")
+            # Format in unified style: just show error under user's command
+            self.console.print(f"[red]  ⎿ Unknown MCP subcommand: {subcmd}[/red]")
             return CommandResult(success=False, message=f"Unknown subcommand: {subcmd}")
 
     def _show_usage(self) -> None:
@@ -91,7 +92,7 @@ class MCPCommands(CommandHandler):
 
     def _error_no_server_name(self) -> CommandResult:
         """Return error for missing server name."""
-        self.print_error("Error: Server name required")
+        self.console.print(f"[red]  ⎿ Server name required[/red]")
         return CommandResult(success=False, message="Server name required")
 
     def list_servers(self) -> CommandResult:

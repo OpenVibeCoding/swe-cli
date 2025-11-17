@@ -11,7 +11,7 @@ class WebToolHandler:
     def __init__(self, web_fetch_tool: Any) -> None:
         self._web_fetch_tool = web_fetch_tool
 
-    def fetch_url(self, args: dict[str, Any]) -> dict[str, Any]:
+    def fetch_url(self, args: dict[str, Any], context: Any = None) -> dict[str, Any]:
         if not self._web_fetch_tool:
             return {"success": False, "error": "WebFetchTool not available"}
 
@@ -28,6 +28,9 @@ class WebToolHandler:
         url_patterns = args.get("url_patterns")
         stream = args.get("stream", False)
 
+        # Get task_monitor from context
+        task_monitor = getattr(context, 'task_monitor', None) if context else None
+
         try:
             result = self._web_fetch_tool.fetch_url(
                 url=url,
@@ -42,6 +45,7 @@ class WebToolHandler:
                 blocked_domains=blocked_domains,
                 url_patterns=url_patterns,
                 stream=stream,
+                task_monitor=task_monitor,
             )
 
             if not result["success"]:

@@ -107,7 +107,7 @@ class ToolRegistry:
     ) -> dict[str, Any]:
         """Execute a tool by delegating to registered handlers."""
         if tool_name.startswith("mcp__"):
-            return self._mcp_handler.execute(tool_name, arguments)
+            return self._mcp_handler.execute(tool_name, arguments, task_monitor)
 
         if tool_name not in self._handlers:
             return {"success": False, "error": f"Unknown tool: {tool_name}", "output": None}
@@ -123,9 +123,18 @@ class ToolRegistry:
         if self._is_plan_blocked(tool_name, context):
             return self._plan_blocked_result(tool_name, arguments)
 
+        # Check for interrupt before executing tool
+        if task_monitor and task_monitor.should_interrupt():
+            return {
+                "success": False,
+                "error": "Operation cancelled by user",
+                "output": None,
+                "interrupted": True,
+            }
+
         handler = self._handlers[tool_name]
         try:
-            if tool_name in {"write_file", "edit_file", "run_command"}:
+            if tool_name in {"write_file", "edit_file", "run_command", "fetch_url"}:
                 # Handlers requiring context
                 return handler(arguments, context)
 

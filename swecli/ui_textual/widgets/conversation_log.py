@@ -92,11 +92,14 @@ class ConversationLog(RichLog):
         self.write(Text(message, style="dim italic"))
 
     def add_error(self, message: str) -> None:
-        """Render an error message with a red bullet and clear any active spinner."""
+        """Render an error message with unified style and clear any active spinner."""
         self.stop_spinner()
-        bullet = Text("⦿ ", style="bold red")
-        bullet.append(message, style="red")
-        self.write(bullet)
+        # Just show error detail under user's command with ⎿
+        line = Text("  ⎿ ", style="red")
+        line.append(message, style="red")
+        self.write(line)
+        # Add blank line for spacing
+        self.write(Text(""))
         self.write(Text(""))
 
     def add_tool_call(self, display: Text | str, *_: Any) -> None:

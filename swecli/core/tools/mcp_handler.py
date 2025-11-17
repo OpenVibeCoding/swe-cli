@@ -11,7 +11,16 @@ class McpToolHandler:
     def __init__(self, mcp_manager: Any) -> None:
         self._mcp_manager = mcp_manager
 
-    def execute(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
+    def execute(self, tool_name: str, args: dict[str, Any], task_monitor: Any = None) -> dict[str, Any]:
+        # Check for interrupt before executing MCP tool
+        if task_monitor and task_monitor.should_interrupt():
+            return {
+                "success": False,
+                "error": "Operation cancelled by user",
+                "output": None,
+                "interrupted": True,
+            }
+
         if not self._mcp_manager:
             return {
                 "success": False,

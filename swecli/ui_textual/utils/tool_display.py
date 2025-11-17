@@ -219,6 +219,37 @@ def build_tool_call_text(tool_name: str, tool_args: Mapping[str, Any]) -> Text:
 
 
 def format_tool_call(tool_name: str, tool_args: Mapping[str, Any]) -> str:
+    # Enhanced formatting for MCP tools - show as MCP(tool=server/function, params...)
+    if tool_name.startswith("mcp__"):
+        parts = tool_name.split("__", 2)
+        if len(parts) == 3:
+            server_name = parts[1]
+            function_name = parts[2]
+
+            # Start with tool parameter
+            params = [f'tool={server_name}/{function_name}']
+
+            # Add other arguments
+            if tool_args:
+                for key, value in tool_args.items():
+                    if isinstance(value, str):
+                        # Truncate very long strings
+                        if len(value) > 100:
+                            value = value[:97] + "..."
+                        params.append(f'{key}="{value}"')
+                    elif isinstance(value, (int, float, bool)):
+                        params.append(f'{key}={value}')
+                    elif value is None:
+                        params.append(f'{key}=None')
+                    else:
+                        # For complex types, show truncated repr
+                        value_str = str(value)
+                        if len(value_str) > 50:
+                            value_str = value_str[:47] + "..."
+                        params.append(f'{key}={value_str}')
+
+            return f"MCP({', '.join(params)})"
+
     # Enhanced formatting for Search tool
     if tool_name == "search" and tool_args:
         params = []

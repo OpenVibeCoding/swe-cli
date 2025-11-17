@@ -14,9 +14,13 @@ from rich.text import Text
 from swecli.core.management import ConfigManager, OperationMode, SessionManager
 from swecli.models.message import ChatMessage, Role
 from swecli.repl.repl import REPL
-from swecli.ui_textual.managers.approval_manager import ChatApprovalManager
 from swecli.ui_textual.chat_app import create_chat_app
 from swecli.ui_textual.constants import TOOL_ERROR_SENTINEL
+from swecli.ui_textual.controllers.mcp_command_controller import MCPCommandController
+from swecli.ui_textual.managers.approval_manager import ChatApprovalManager
+from swecli.ui_textual.managers.console_output_manager import ConsoleOutputManager
+from swecli.ui_textual.managers.session_history_manager import SessionHistoryManager
+from swecli.ui_textual.renderers.response_renderer import ResponseRenderer
 from swecli.ui_textual.utils import build_tool_call_text
 
 
@@ -88,8 +92,7 @@ class TextualRunner:
         }
         if self._auto_connect_mcp:
             create_kwargs["on_ready"] = self._start_mcp_connect_thread
-        else:
-            create_kwargs["on_ready"] = self._notify_manual_mcp_connect
+        # Don't show MCP notification - user can manually connect with /mcp connect
         create_kwargs["on_ready"] = self._wrap_on_ready_callback(create_kwargs.get("on_ready"))
 
         try:
@@ -110,39 +113,69 @@ class TextualRunner:
 
         self._pending: asyncio.Queue[str] = asyncio.Queue()
         self._console_queue: asyncio.Queue[str] = asyncio.Queue()
-        self._ansi_decoder = AnsiDecoder()
-        self._install_console_bridge()
         self._loop = asyncio.new_event_loop()
         self._message_task: asyncio.Task[None] | None = None
         self._console_task: asyncio.Task[None] | None = None
         self._connect_inflight = False
+
+        # Initialize managers and controllers for modular architecture
+        self._response_renderer = ResponseRenderer(self.app)
+        self._console_output_manager = ConsoleOutputManager(self.app, self._console_queue, self._loop)
+        self._session_history_manager = SessionHistoryManager(
+            self.app,
+            self.session_manager,
+            self._response_renderer.render_stored_tool_calls
+        )
+        self._mcp_controller = MCPCommandController(self.app, self.repl)
+
+        # Set up console bridge through manager
+        self._console_output_manager.install_console_bridge(self.repl.console)
+
+        # Set initial messages for history hydration
+        self._session_history_manager.set_initial_messages(self._initial_messages)
+
+        # Legacy variables for compatibility - delegate to managers
         self._last_console_line: str | None = None
         self._last_assistant_message: str | None = None
         self._suppress_console_duplicate = False
         self._last_assistant_message_normalized: str | None = None
 
+    @property
+    def _original_console_print(self):
+        """Access original console print - delegated to ConsoleOutputManager."""
+        return self._console_output_manager._original_console_print
+
+    @property
+    def _original_console_log(self):
+        """Access original console log - delegated to ConsoleOutputManager."""
+        return self._console_output_manager._original_console_log
+
     def _snapshot_session_history(self) -> list[ChatMessage]:
-        """Capture a copy of existing session messages for later hydration."""
-        manager = getattr(self, "session_manager", None)
-        if manager is None:
-            return []
-        session = manager.get_current_session()
-        if session is None or not session.messages:
-            return []
-        return [message.model_copy(deep=True) for message in session.messages]
+        """Capture session history - delegated to SessionHistoryManager if available."""
+        # During init, manager may not exist yet, so do it directly
+        if not hasattr(self, '_session_history_manager'):
+            manager = getattr(self, "session_manager", None)
+            if manager is None:
+                return []
+            session = manager.get_current_session()
+            if session is None or not session.messages:
+                return []
+            return [message.model_copy(deep=True) for message in session.messages]
+        return self._session_history_manager.snapshot_session_history()
 
     def _wrap_on_ready_callback(
         self,
         downstream: Optional[Callable[[], None]],
     ) -> Callable[[], None]:
-        """Ensure history hydration runs before any existing on_ready hook."""
-
-        def _callback() -> None:
-            self._hydrate_conversation_history()
-            if downstream:
-                downstream()
-
-        return _callback
+        """Wrap on_ready callback - delegated to SessionHistoryManager if available."""
+        # During init, manager may not exist yet, so do it directly
+        if not hasattr(self, '_session_history_manager'):
+            def _callback() -> None:
+                self._hydrate_conversation_history()
+                if downstream:
+                    downstream()
+            return _callback
+        return self._session_history_manager.wrap_on_ready_callback(downstream)
 
     def _build_model_slots(self) -> dict[str, tuple[str, str]]:
         """Prepare formatted model slot information for the footer."""
@@ -192,127 +225,13 @@ class TextualRunner:
             self.app.update_model_slots(self._build_model_slots())
 
     def _hydrate_conversation_history(self) -> None:
-        """Replay the persisted session transcript into the Textual conversation log."""
-
-        if self._history_restored:
-            return
-
-        if not self._initial_messages:
-            self._history_restored = True
-            return
-
-        conversation = getattr(self.app, "conversation", None)
-        if conversation is None:
-            return
-
-        conversation.clear()
-        history = getattr(self.app, "_history", None)
-        record_assistant = getattr(self.app, "record_assistant_message", None)
-
-        for message in self._initial_messages:
-            content = (message.content or "").strip()
-            if message.role == Role.USER:
-                if not content:
-                    continue
-                conversation.add_user_message(content)
-                if history is not None and hasattr(history, "record"):
-                    history.record(content)
-            elif message.role == Role.ASSISTANT:
-                if content:
-                    conversation.add_assistant_message(content)
-                    if callable(record_assistant):
-                        record_assistant(content)
-                if getattr(message, "tool_calls", None):
-                    self._render_stored_tool_calls(conversation, message.tool_calls)
-                elif not content:
-                    continue
-            elif message.role == Role.SYSTEM:
-                if not content:
-                    continue
-                conversation.add_system_message(content)
-
+        """Hydrate conversation history - delegated to SessionHistoryManager."""
+        self._session_history_manager.hydrate_conversation_history()
         self._history_restored = True
 
     def _render_stored_tool_calls(self, conversation, tool_calls: list[Any]) -> None:
-        """Replay historical tool calls and results."""
-
-        if not tool_calls:
-            return
-
-        for tool_call in tool_calls:
-            try:
-                parameters = self._coerce_tool_parameters(getattr(tool_call, "parameters", {}))
-            except Exception:
-                parameters = {}
-
-            display = build_tool_call_text(getattr(tool_call, "name", "tool"), parameters)
-            conversation.add_tool_call(display)
-            if hasattr(conversation, "stop_tool_execution"):
-                conversation.stop_tool_execution()
-
-            lines = self._format_tool_history_lines(tool_call)
-            if lines:
-                conversation.add_tool_result("\n".join(lines))
-
-    @staticmethod
-    def _coerce_tool_parameters(raw: Any) -> dict[str, Any]:
-        if isinstance(raw, dict):
-            return raw
-        return {}
-
-    def _format_tool_history_lines(self, tool_call: Any) -> list[str]:
-        """Convert stored ToolCall data into RichLog-friendly summary lines."""
-
-        lines: list[str] = []
-        seen: set[str] = set()
-
-        def add_line(value: str) -> None:
-            normalized = value.strip()
-            if not normalized or normalized in seen:
-                return
-            lines.append(normalized)
-            seen.add(normalized)
-
-        error = getattr(tool_call, "error", None)
-        if error:
-            add_line(f"{TOOL_ERROR_SENTINEL} {str(error).strip()}")
-
-        summary = getattr(tool_call, "result_summary", None)
-        if summary:
-            add_line(str(summary).strip())
-
-        raw_result = getattr(tool_call, "result", None)
-        snippet = self._truncate_tool_output(raw_result)
-        if snippet:
-            add_line(snippet)
-
-        if not lines:
-            add_line("✓ Tool completed")
-        return lines
-
-    @staticmethod
-    def _truncate_tool_output(raw_result: Any, max_lines: int = 6, max_chars: int = 400) -> str:
-        """Trim long stored tool outputs for concise replay."""
-
-        if raw_result is None:
-            return ""
-
-        text = str(raw_result).strip()
-        if not text:
-            return ""
-
-        lines = [line.rstrip() for line in text.splitlines()]
-        truncated = False
-        if len(lines) > max_lines:
-            lines = lines[:max_lines]
-            truncated = True
-        snippet = "\n".join(lines)
-        if len(snippet) > max_chars:
-            snippet = snippet[:max_chars].rstrip()
-            truncated = True
-        if truncated:
-            snippet = f"{snippet}\n... (truncated)"
-        return snippet.strip()
+        """Replay historical tool calls - delegated to ResponseRenderer."""
+        self._response_renderer.render_stored_tool_calls(conversation, tool_calls)
 
     def _get_model_config_snapshot(self) -> dict[str, dict[str, str]]:
         """Return current model configuration details for the UI."""
@@ -549,324 +468,12 @@ class TextualRunner:
         self._refresh_ui_config()
 
     def _handle_mcp_view_command(self, command: str) -> None:
-        """Handle /mcp view command with Textual-native modal.
-
-        Args:
-            command: The full command (e.g., "/mcp view server_name")
-        """
-        import shlex
-        from io import StringIO
-        from rich.console import Console as RichConsole
-
-        def _emit_error(message: str) -> None:
-            """Render a Rich-styled error message into the conversation."""
-            string_io = StringIO()
-            temp_console = RichConsole(file=string_io, force_terminal=True)
-            temp_console.print(message)
-            self._enqueue_console_text(string_io.getvalue())
-
-        try:
-            raw_parts = shlex.split(command)
-        except ValueError:
-            raw_parts = command.strip().split()
-
-        if len(raw_parts) < 3:
-            _emit_error("[red]Error: Server name required for /mcp view[/red]")
-            return
-
-        server_name = " ".join(raw_parts[2:]).strip()
-        if not server_name:
-            _emit_error("[red]Error: Server name required for /mcp view[/red]")
-            return
-
-        mcp_manager = getattr(self.repl, "mcp_manager", None)
-        if mcp_manager is None:
-            _emit_error("[red]Error: MCP manager is not available in this session[/red]")
-            return
-
-        try:
-            servers = mcp_manager.list_servers()
-        except Exception as exc:  # pragma: no cover - defensive
-            _emit_error(f"[red]Error: Unable to load MCP servers ({exc})[/red]")
-            return
-
-        if server_name not in servers:
-            _emit_error(f"[red]Error: Server '{server_name}' not found in configuration[/red]")
-            return
-
-        server_config = servers[server_name]
-        is_connected = mcp_manager.is_connected(server_name)
-        tools = mcp_manager.get_server_tools(server_name) if is_connected else []
-
-        # Build elegant panel content for the conversation log
-        from rich import box
-        from rich.panel import Panel
-        from rich.table import Table
-        from rich.text import Text
-
-        info_table = Table(show_header=False, box=None, padding=(0, 1))
-        info_table.add_column("Property", style="cyan", no_wrap=True)
-        info_table.add_column("Value")
-
-        status_text = (
-            Text("Connected", style="bold green")
-            if is_connected
-            else Text("Disconnected", style="dim")
-        )
-        info_table.add_row("Status", status_text)
-
-        cmd_text = server_config.command or "unknown"
-        info_table.add_row("Command", cmd_text)
-
-        if server_config.args:
-            args_text = " ".join(server_config.args)
-            if len(args_text) > 80:
-                args_text = args_text[:77] + "..."
-            info_table.add_row("Args", args_text)
-
-        transport_text = server_config.transport or "stdio"
-        info_table.add_row("Transport", transport_text)
-
-        from swecli.mcp.config import get_config_path, get_project_config_path
-
-        config_location = ""
-        try:
-            project_config = get_project_config_path(getattr(mcp_manager, "working_dir", None))
-        except Exception:
-            project_config = None
-
-        if project_config:
-            config_location = f"{project_config} [project]"
-        else:
-            try:
-                config_location = str(get_config_path())
-            except Exception:
-                config_location = "Unknown"
-
-        info_table.add_row("Config", Text(config_location, style="dim"))
-
-        capabilities: list[str] = []
-        if is_connected and tools:
-            capabilities.append("tools")
-        if capabilities:
-            info_table.add_row("Capabilities", " · ".join(capabilities))
-
-        enabled_text = (
-            Text("Yes", style="green")
-            if server_config.enabled
-            else Text("No", style="red")
-        )
-        info_table.add_row("Enabled", enabled_text)
-
-        auto_start_text = (
-            Text("Yes", style="green")
-            if server_config.auto_start
-            else Text("No", style="dim")
-        )
-        info_table.add_row("Auto-start", auto_start_text)
-
-        if server_config.env:
-            env_lines = "\n".join(f"{key}={value}" for key, value in server_config.env.items())
-            info_table.add_row("Environment", env_lines)
-
-        if is_connected:
-            info_table.add_row("Tools", f"{len(tools)} available")
-
-        tools_content = None
-        if is_connected and tools:
-            tools_table = Table(show_header=True, box=box.SIMPLE, padding=(0, 1))
-            tools_table.add_column("Tool Name", style="cyan")
-            tools_table.add_column("Description", style="white")
-
-            for tool in tools[:10]:
-                tool_name = tool.get("name", "unknown")
-                tool_desc = tool.get("description", "")
-                if len(tool_desc) > 60:
-                    tool_desc = tool_desc[:57] + "..."
-                tools_table.add_row(tool_name, tool_desc)
-
-            if len(tools) > 10:
-                tools_table.add_row(f"... and {len(tools) - 10} more", "", style="dim")
-
-            tools_content = tools_table
-
-        title = f"MCP Server: {server_name}"
-        main_panel = Panel(
-            info_table,
-            title=title,
-            title_align="left",
-            border_style="bright_cyan",
-            box=box.ROUNDED,
-            padding=(1, 2),
-        )
-
-        self._enqueue_console_text("\n")
-
-        string_io = StringIO()
-        temp_console = RichConsole(file=string_io, force_terminal=True, width=100)
-        temp_console.print(main_panel)
-
-        if tools_content:
-            temp_console.print("\n")
-            tools_panel = Panel(
-                tools_content,
-                title="Available Tools",
-                title_align="left",
-                border_style="green",
-                box=box.ROUNDED,
-                padding=(1, 2),
-            )
-            temp_console.print(tools_panel)
-
-        temp_console.print("\n[dim]Available actions:[/dim]")
-        if is_connected:
-            temp_console.print(f"  [cyan]/mcp disconnect {server_name}[/cyan] - Disconnect from server")
-            temp_console.print(f"  [cyan]/mcp tools {server_name}[/cyan] - List all tools")
-        else:
-            temp_console.print(f"  [cyan]/mcp connect {server_name}[/cyan] - Connect to server")
-
-        if server_config.enabled:
-            temp_console.print(f"  [cyan]/mcp disable {server_name}[/cyan] - Disable auto-start")
-        else:
-            temp_console.print(f"  [cyan]/mcp enable {server_name}[/cyan] - Enable auto-start")
-
-        output = string_io.getvalue()
-        self._enqueue_console_text(output)
+        """Handle /mcp view command - delegated to MCPCommandController."""
+        self._mcp_controller.handle_view(command)
 
     def _handle_mcp_connect_command(self, command: str) -> None:
-        """Handle /mcp connect command asynchronously with spinner.
-
-        Args:
-            command: The full command (e.g., "/mcp connect github")
-        """
-        import shlex
-        import time
-        from rich.text import Text
-
-        try:
-            parts = shlex.split(command)
-        except ValueError:
-            parts = command.strip().split()
-
-        if len(parts) < 3:
-            self.app.conversation.add_error("Usage: /mcp connect <server_name>")
-            return
-
-        server_name = parts[2]
-        mcp_manager = getattr(self.repl, "mcp_manager", None)
-
-        if not mcp_manager:
-            self.app.conversation.add_error("MCP manager not available")
-            return
-
-        # Check if already connected
-        if mcp_manager.is_connected(server_name):
-            tools = mcp_manager.get_server_tools(server_name)
-            # Create tool call display with green bullet
-            display = Text()
-            display.append("⏺", style="green bold")
-            display.append(f" MCP ({server_name}) (0s)")
-            self.app.conversation.add_tool_call(display)
-            self.app.conversation.stop_tool_execution()
-            self.app.conversation.add_tool_result(f"Already connected to {server_name} ({len(tools)} tools available)")
-            return
-
-        # Add tool call and start spinner (must block to ensure timer is set up)
-        from concurrent.futures import Future
-
-        def start_tool_call():
-            display = Text(f"MCP ({server_name})")
-            self.app.conversation.add_tool_call(display)
-            self.app.conversation.start_tool_execution()
-
-        # Use blocking call to ensure spinner timer is fully set up before continuing
-        future = Future()
-        def wrapper():
-            try:
-                start_tool_call()
-                future.set_result(None)
-            except Exception as e:
-                future.set_exception(e)
-
-        if hasattr(self.app, 'call_from_thread'):
-            self.app.call_from_thread(wrapper)
-            try:
-                future.result(timeout=5.0)
-            except Exception:
-                pass
-        else:
-            start_tool_call()
-
-        # Run connection using MCP manager's async connect
-        def handle_result(success: bool):
-            """Handle connection result in main thread."""
-            def finalize():
-                # Stop spinner first
-                if hasattr(self.app.conversation, 'stop_tool_execution'):
-                    self.app.conversation.stop_tool_execution()
-
-                # Then show result
-                elapsed = int(time.monotonic() - start_time)
-                if success:
-                    tools = mcp_manager.get_server_tools(server_name)
-                    # Green checkmark for success
-                    result_text = f"✓ Connected to {server_name} ({len(tools)} tools available)"
-                    self.app.conversation.add_tool_result(result_text)
-                else:
-                    # Red X for failure
-                    result_text = f"❌ Failed to connect to {server_name}"
-                    self.app.conversation.add_tool_result(result_text)
-
-            # Stop spinner and show result
-            if hasattr(self, 'app') and hasattr(self.app, 'call_from_thread'):
-                self.app.call_from_thread(finalize)
-            elif hasattr(self, '_loop'):
-                self._loop.call_soon_threadsafe(finalize)
-            else:
-                finalize()
-
-            # Refresh runtime tooling AFTER showing result (don't block spinner)
-            if success and hasattr(self.repl, '_refresh_runtime_tooling'):
-                self.repl._refresh_runtime_tooling()
-
-        start_time = time.monotonic()
-
-        # Use MCP manager's connect_async if available, otherwise use sync in thread
-        if hasattr(mcp_manager, 'connect_async'):
-            # Use async connect with callback
-            import asyncio
-            asyncio.create_task(self._async_mcp_connect_helper(server_name, mcp_manager, handle_result))
-        else:
-            # Fall back to threaded sync connect
-            import threading
-            def connect_thread():
-                try:
-                    success = mcp_manager.connect_sync(server_name)
-                    handle_result(success)
-                except Exception as e:
-                    # Stop spinner on error
-                    def stop_and_error():
-                        if hasattr(self.app.conversation, 'stop_tool_execution'):
-                            self.app.conversation.stop_tool_execution()
-                        elapsed = int(time.monotonic() - start_time)
-                        result_text = f"❌ Error: {str(e)}"
-                        self.app.conversation.add_tool_result(result_text)
-
-                    if hasattr(self, 'app') and hasattr(self.app, 'call_from_thread'):
-                        self.app.call_from_thread(stop_and_error)
-                    else:
-                        stop_and_error()
-
-            thread = threading.Thread(target=connect_thread, daemon=True)
-            thread.start()
-
-    async def _async_mcp_connect_helper(self, server_name: str, mcp_manager, callback):
-        """Helper for async MCP connection."""
-        try:
-            success = await mcp_manager.connect_async(server_name)
-            callback(success)
-        except Exception:
-            callback(False)
+        """Handle /mcp connect command - delegated to MCPCommandController."""
+        self._mcp_controller.handle_connect(command)
 
     def _handle_interrupt(self) -> bool:
         """Handle interrupt request from UI (ESC key press).
@@ -899,143 +506,17 @@ class TextualRunner:
         return new_mode.value
 
     def _render_responses(self, messages: list[ChatMessage]) -> None:
-        """Render new session messages inside the Textual conversation log."""
-
-        buffer_started = False
-        assistant_text_rendered = False
-
-        for msg in messages:
-            if msg.role == Role.ASSISTANT:
-                if hasattr(self.app, "_stop_local_spinner"):
-                    self.app._stop_local_spinner()
-
-                if hasattr(self.app, "start_console_buffer"):
-                    self.app.start_console_buffer()
-                    buffer_started = True
-
-                content = msg.content.strip()
-                if hasattr(self.app, "_normalize_paragraph"):
-                    normalized = self.app._normalize_paragraph(content)
-                    if normalized:
-                        self.app._pending_assistant_normalized = normalized
-                        self._last_assistant_message_normalized = normalized
-                else:
-                    self._last_assistant_message_normalized = content if content else None
-
-                # Only render assistant messages that DON'T have tool calls
-                # Messages with tool calls were already displayed in real-time by callbacks
-                has_tool_calls = getattr(msg, "tool_calls", None) and len(msg.tool_calls) > 0
-
-                if content and not has_tool_calls:
-                    self.app.conversation.add_assistant_message(msg.content)
-                    if hasattr(self.app, "record_assistant_message"):
-                        self.app.record_assistant_message(msg.content)
-                    if hasattr(self.app, "_last_rendered_assistant"):
-                        self.app._last_rendered_assistant = content
-                    self._last_assistant_message = content
-                    self._suppress_console_duplicate = True
-                    assistant_text_rendered = True
-
-                # Skip rendering messages with tool calls - already shown in real-time
-            elif msg.role == Role.SYSTEM:
-                self.app.conversation.add_system_message(msg.content)
-            # Skip USER messages - they're already displayed by the UI when user types them
-
-        if buffer_started and hasattr(self.app, "stop_console_buffer"):
-            self.app.stop_console_buffer()
+        """Render responses - delegated to ResponseRenderer."""
+        self._response_renderer.render_responses(messages)
+        # Sync state from renderer
+        self._last_assistant_message = self._response_renderer._last_assistant_message
+        self._last_assistant_message_normalized = self._response_renderer._last_assistant_message_normalized
+        self._suppress_console_duplicate = self._response_renderer._suppress_console_duplicate
 
     def _render_console_output(self, text: str) -> None:
-        """Render console output captured from REPL commands/processings."""
+        """Render console output - delegated to ConsoleOutputManager."""
+        self._console_output_manager.render_console_output(text)
 
-        normalized = self._normalize_console_text(text)
-        renderables = list(self._ansi_decoder.decode(normalized))
-        if not renderables:
-            return
-        for renderable in renderables:
-            if isinstance(renderable, Text):
-                plain = renderable.plain.strip()
-                if not plain:
-                    continue
-                if self._is_spinner_text(plain) or self._is_spinner_tip(plain):
-                    continue
-                normalized_plain = plain.strip()
-                if hasattr(self.app, "_normalize_paragraph"):
-                    normalized_plain = self.app._normalize_paragraph(plain)
-                pending = getattr(self.app, "_pending_assistant_normalized", None)
-                targets = [value for value in (pending, self._last_assistant_message_normalized) if value]
-                if self._suppress_console_duplicate and normalized_plain and targets:
-                    if any(normalized_plain == target for target in targets):
-                        continue
-                if plain == self._last_console_line:
-                    continue
-                self._last_console_line = plain
-            else:
-                self._last_console_line = None
-
-            if hasattr(self.app, "render_console_output"):
-                self.app.render_console_output(renderable)
-            else:
-                self.app.conversation.write(renderable)
-        if not isinstance(renderables[-1], Text):
-            self._last_console_line = None
-        if self._suppress_console_duplicate:
-            self._suppress_console_duplicate = False
-
-        if hasattr(self.app, "stop_console_buffer"):
-            self.app.stop_console_buffer()
-
-    @staticmethod
-    def _normalize_console_text(text: str) -> str:
-        """Collapse carriage-return spinner updates into a single line."""
-
-        if "\r" not in text:
-            return text
-
-        lines = text.split("\n")
-        for index, line in enumerate(lines):
-            if "\r" in line:
-                lines[index] = line.split("\r")[-1]
-        return "\n".join(lines)
-
-    @staticmethod
-    def _clean_tool_summary(summary: str) -> str:
-        """Normalize tool summary text for assistant follow-up."""
-
-        cleaned = summary.strip()
-        if not cleaned:
-            return ""
-
-        if cleaned.lower().startswith("found") and ":" in cleaned:
-            cleaned = cleaned.split(":", 1)[1].strip()
-
-        cleaned = cleaned.strip(". ")
-        if cleaned:
-            return cleaned
-        return summary.strip()
-
-    @staticmethod
-    def _is_spinner_text(plain: str) -> bool:
-        """Return True if the console line appears to be a spinner update."""
-
-        if not plain:
-            return False
-
-        first = plain[0]
-        # Braille spinner characters live in the Unicode Braille block.
-        if 0x2800 <= ord(first) <= 0x28FF:
-            return True
-
-        return False
-
-    @staticmethod
-    def _is_spinner_tip(plain: str) -> bool:
-        """Return True if line looks like a spinner tip."""
-
-        if not plain:
-            return False
-
-        normalized = plain.replace("⎿", "").strip().lower()
-        return normalized.startswith("tip:")
 
     def run(self) -> None:
         """Launch the Textual application and background consumer."""
@@ -1067,149 +548,24 @@ class TextualRunner:
                 await asyncio.gather(*tasks, return_exceptions=True)
 
     def _notify_manual_mcp_connect(self) -> None:
-        """Inform users how to connect MCP servers when auto-connect is disabled."""
-        manager = getattr(self.repl, "mcp_manager", None)
-        has_servers = False
-        if manager is not None:
-            try:
-                has_servers = bool(manager.list_servers())
-            except Exception:
-                has_servers = False
-        if not has_servers:
-            return
-
-        message = (
-            "Tip: MCP servers are not auto-connected. "
-            "Run /mcp autoconnect to connect in the background "
-            "or /mcp connect <name> for a specific server."
-        )
-        self._enqueue_console_text(message)
+        """Inform users how to connect MCP servers - delegated to MCPCommandController."""
+        self._mcp_controller.notify_manual_connect(self._enqueue_console_text)
 
     def _start_mcp_connect_thread(self, force: bool = False) -> None:
-        """Queue MCP auto-connect after the UI has rendered."""
-        if (not self._auto_connect_mcp and not force) or self._connect_inflight:
-            return
-
-        self._connect_inflight = True
-
-        delay = 0.5 if not force else 0.0
-        try:
-            if delay > 0:
-                self._loop.call_later(delay, self._launch_mcp_autoconnect)
-            else:
-                self._loop.call_soon(self._launch_mcp_autoconnect)
-        except RuntimeError:
-            self._launch_mcp_autoconnect()
+        """Queue MCP auto-connect - delegated to MCPCommandController."""
+        self._mcp_controller.start_auto_connect_thread(force)
 
     def _launch_mcp_autoconnect(self) -> None:
-        """Trigger MCP auto-connect using the manager's background loop."""
-        manager = getattr(self.repl, "mcp_manager", None)
-        if manager is None:
-            self._connect_inflight = False
-            return
-
-        def handle_completion(result: Optional[dict[str, bool]]) -> None:
-            def finalize() -> None:
-                self._connect_inflight = False
-                if result is None:
-                    self._enqueue_console_text(
-                        "[yellow]Warning: MCP auto-connect failed.[/yellow]"
-                    )
-                    return
-                if not result:
-                    self._enqueue_console_text(
-                        "[dim]MCP auto-connect completed; no enabled servers were found.[/dim]"
-                    )
-                    return
-
-                if result:
-                    successes = [name for name, ok in result.items() if ok]
-                    failures = [name for name, ok in result.items() if not ok]
-                    lines: list[str] = []
-                    if successes:
-                        lines.append(
-                            "[green]✓ Connected MCP servers:[/green] "
-                            + ", ".join(successes)
-                        )
-                    if failures:
-                        lines.append(
-                            "[red]✗ Failed MCP servers:[/red] "
-                            + ", ".join(failures)
-                        )
-                    if lines:
-                        self._enqueue_console_text("\n".join(lines))
-
-                    refresh_cb = getattr(self.repl, "_refresh_runtime_tooling", None)
-                    if callable(refresh_cb):
-                        refresh_cb()
-                    self._refresh_ui_config()
-
-            self._loop.call_soon_threadsafe(finalize)
-
-        try:
-            manager.connect_enabled_servers_background(on_complete=handle_completion)
-        except Exception as exc:  # pragma: no cover - defensive
-            self._connect_inflight = False
-            self._enqueue_console_text(
-                f"[yellow]Warning: MCP auto-connect could not start ({exc}).[/yellow]"
-            )
-
-    def _install_console_bridge(self) -> None:
-        """Mirror console prints/logs into the Textual conversation."""
-
-        console = self.repl.console
-        self._original_console_print = getattr(console, "print")
-        self._original_console_log = getattr(console, "log", None)
-
-        def bridge_print(*args, **kwargs):
-            with console.capture() as capture:
-                self._original_console_print(*args, **kwargs)
-            text = capture.get()
-            if text.strip():
-                self._enqueue_console_text(text)
-
-        console.print = bridge_print  # type: ignore[assignment]
-
-        if self._original_console_log is not None:
-            def bridge_log(*args, **kwargs):
-                with console.capture() as capture:
-                    self._original_console_log(*args, **kwargs)
-                text = capture.get()
-                if text.strip():
-                    self._enqueue_console_text(text)
-
-            console.log = bridge_log  # type: ignore[assignment]
+        """Trigger MCP auto-connect - delegated to MCPCommandController."""
+        self._mcp_controller._launch_auto_connect()
 
     def _enqueue_console_text(self, text: str) -> None:
-        if not text:
-            return
-
-        if hasattr(self.app, "_normalize_paragraph"):
-            normalized = self.app._normalize_paragraph(text)
-            last_assistant = getattr(self.app, "_last_assistant_normalized", None)
-            if normalized and last_assistant and normalized == last_assistant:
-                return
-
-        try:
-            running_loop = asyncio.get_running_loop()
-        except RuntimeError:
-            running_loop = None
-
-        if running_loop is self._loop:
-            self._console_queue.put_nowait(text)
-        elif self._loop.is_running():
-            self._loop.call_soon_threadsafe(self._console_queue.put_nowait, text)
-        else:
-            self._console_queue.put_nowait(text)
+        """Enqueue console text - delegated to ConsoleOutputManager."""
+        self._console_output_manager.enqueue_console_text(text)
 
     async def _drain_console_queue(self) -> None:
-        try:
-            while True:
-                text = await self._console_queue.get()
-                self._render_console_output(text)
-                self._console_queue.task_done()
-        except asyncio.CancelledError:  # pragma: no cover - task shutdown
-            return
+        """Drain console queue - delegated to ConsoleOutputManager."""
+        await self._console_output_manager.drain_console_queue()
 
 
 def launch_textual_cli(message=None, **kwargs) -> None:

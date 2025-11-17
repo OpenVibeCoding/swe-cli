@@ -65,8 +65,9 @@ class ModeCommands(CommandHandler):
             elif mode_name == "plan":
                 new_mode = OperationMode.PLAN
             else:
-                self.print_error(f"Unknown mode: {mode_name}")
-                self.console.print("[dim]Available modes: normal, plan[/dim]")
+                # Format in unified style: just show error under user's command
+                self.console.print(f"[red]  ⎿ Unknown mode[/red]")
+                self.console.print("[dim]  ⎿ Available modes: normal, plan[/dim]")
                 return CommandResult(success=False, message=f"Unknown mode: {mode_name}")
 
             self.mode_manager.set_mode(new_mode)

@@ -20,8 +20,9 @@ class TaskMonitor:
         self._current_tokens: int = 0
         self._token_delta: int = 0
 
-        # Interruption
+        # Interruption - use Event for immediate signaling
         self._interrupt_requested: bool = False
+        self._interrupt_event = threading.Event()
         self._is_running: bool = False
 
     def start(self, task_description: str, initial_tokens: int = 0) -> None:
@@ -39,6 +40,7 @@ class TaskMonitor:
             self._current_tokens = initial_tokens
             self._token_delta = 0
             self._interrupt_requested = False
+            self._interrupt_event.clear()  # Clear the event for new task
             self._is_running = True
 
     def stop(self) -> dict:
@@ -102,6 +104,8 @@ class TaskMonitor:
         """Request interruption of current task (called by ESC key handler)."""
         with self._lock:
             self._interrupt_requested = True
+        # Signal the event immediately for instant wake-up
+        self._interrupt_event.set()
 
     def should_interrupt(self) -> bool:
         """Check if interruption has been requested.
@@ -111,6 +115,19 @@ class TaskMonitor:
         """
         with self._lock:
             return self._interrupt_requested
+
+    def wait_for_interrupt(self, timeout: float = 0.01) -> bool:
+        """Wait for interrupt event with timeout.
+
+        This is more efficient than polling should_interrupt() in a loop.
+
+        Args:
+            timeout: Maximum time to wait in seconds
+
+        Returns:
+            True if interrupt was signaled, False if timeout occurred
+        """
+        return self._interrupt_event.wait(timeout=timeout)
 
     def is_running(self) -> bool:
         """Check if task is currently running.

@@ -68,7 +68,7 @@ class REPL:
         self.config_manager = config_manager
         self.session_manager = session_manager
         self.config = config_manager.get_config()
-        self.console = Console()
+        self.console = Console(force_terminal=True)
 
         # Initialize tools and managers
         self._init_tools()
@@ -490,8 +490,9 @@ class REPL:
         elif cmd == "/run":
             self._run_command(args)
         else:
-            self.console.print(f"[red]Unknown command: {cmd}[/red]")
-            self.console.print("Type /help for available commands.")
+            # Format in unified style: just show error under user's command
+            self.console.print(f"[red]  ⎿ Unknown command[/red]")
+            self.console.print("[dim]  ⎿ Type /help for available commands[/dim]")
 
     def _init_codebase(self, command: str) -> None:
         """Handle /init command to analyze codebase and generate AGENTS.md.

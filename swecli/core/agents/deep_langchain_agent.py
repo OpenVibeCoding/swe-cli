@@ -111,25 +111,41 @@ class InterruptibleDeepAgent:
         with ThreadPoolExecutor(max_workers=1) as executor:
             future = executor.submit(run_deep_agent)
 
-            # Check for interrupts while Deep Agent runs
+            # Check for interrupts while Deep Agent runs using event-based waiting
             while future.running():
-                # Check interrupt status from monitor
-                if hasattr(self.interrupt_monitor, 'task_monitor') and self.interrupt_monitor.task_monitor:
-                    should_interrupt = self.interrupt_monitor.task_monitor.should_interrupt()
-                elif hasattr(self.interrupt_monitor, 'should_interrupt'):
-                    should_interrupt = self.interrupt_monitor.should_interrupt()
+                # Use event-based waiting for instant interrupt response
+                task_monitor = None
+                if hasattr(self.interrupt_monitor, 'task_monitor'):
+                    task_monitor = self.interrupt_monitor.task_monitor
 
-                if should_interrupt:
-                    # Cancel the future (best effort)
-                    future.cancel()
-                    return {
-                        "success": False,
-                        "error": "Interrupted by user",
-                        "interrupted": True,
-                    }
+                if task_monitor and hasattr(task_monitor, 'wait_for_interrupt'):
+                    # Wait for interrupt event - wakes up IMMEDIATELY on interrupt
+                    interrupted = task_monitor.wait_for_interrupt(timeout=0.01)
+                    if interrupted:
+                        # Cancel the future (best effort)
+                        future.cancel()
+                        return {
+                            "success": False,
+                            "error": "Interrupted by user",
+                            "interrupted": True,
+                        }
+                else:
+                    # Fallback to polling
+                    should_interrupt = False
+                    if hasattr(self.interrupt_monitor, 'task_monitor') and self.interrupt_monitor.task_monitor:
+                        should_interrupt = self.interrupt_monitor.task_monitor.should_interrupt()
+                    elif hasattr(self.interrupt_monitor, 'should_interrupt'):
+                        should_interrupt = self.interrupt_monitor.should_interrupt()
 
-                # Sleep briefly to avoid busy waiting
-                time.sleep(0.1)
+                    if should_interrupt:
+                        # Cancel the future (best effort)
+                        future.cancel()
+                        return {
+                            "success": False,
+                            "error": "Interrupted by user",
+                            "interrupted": True,
+                        }
+                    time.sleep(0.01)
 
             # Get the result (will raise any exceptions)
             try:
