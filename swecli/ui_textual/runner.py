@@ -740,7 +740,6 @@ class TextualRunner:
             command: The full command (e.g., "/mcp connect github")
         """
         import shlex
-        import threading
         import time
 
         try:
@@ -763,56 +762,87 @@ class TextualRunner:
         if mcp_manager.is_connected(server_name):
             tools = mcp_manager.get_server_tools(server_name)
             self._enqueue_console_text(
-                f"⏺ MCP ({server_name}) (0s)\n  ⎿ Already connected to {server_name} ({len(tools)} tools available)"
+                f"[green]⏺[/green] MCP ({server_name}) (0s)\n  ⎿ Already connected to {server_name} ({len(tools)} tools available)"
             )
             return
 
-        # Start spinner
-        if hasattr(self, 'app') and hasattr(self.app, '_start_local_spinner'):
-            self.app._start_local_spinner(f"Connecting to {server_name}")
+        # Start spinner in main thread
+        def start_spinner():
+            if hasattr(self, 'app') and hasattr(self.app, '_start_local_spinner'):
+                self.app._start_local_spinner(f"Connecting to {server_name}")
 
-        # Run connection in background thread
-        def connect_thread():
-            start_time = time.monotonic()
-            try:
-                success = mcp_manager.connect_sync(server_name)
-                elapsed = int(time.monotonic() - start_time)
+        if hasattr(self, '_loop'):
+            self._loop.call_soon_threadsafe(start_spinner)
+        else:
+            start_spinner()
 
-                # Stop spinner
+        # Run connection using MCP manager's async connect
+        def handle_result(success: bool):
+            """Handle connection result in main thread."""
+            def finalize():
+                # Stop spinner first
                 if hasattr(self, 'app') and hasattr(self.app, '_stop_local_spinner'):
-                    if hasattr(self.app, 'call_from_thread'):
-                        self.app.call_from_thread(self.app._stop_local_spinner)
-                    else:
-                        self.app._stop_local_spinner()
+                    self.app._stop_local_spinner()
 
+                # Then show result
+                elapsed = int(time.monotonic() - start_time)
                 if success:
                     tools = mcp_manager.get_server_tools(server_name)
-                    message = f"⏺ MCP ({server_name}) ({elapsed}s)\n  ⎿ Connected to {server_name} ({len(tools)} tools available)"
+                    message = f"[green]⏺[/green] MCP ({server_name}) ({elapsed}s)\n  ⎿ Connected to {server_name} ({len(tools)} tools available)"
                     self._enqueue_console_text(message)
 
                     # Refresh runtime tooling
                     if hasattr(self, '_refresh_runtime_tooling'):
                         self._refresh_runtime_tooling()
                 else:
-                    message = f"⏺ MCP ({server_name}) ({elapsed}s)\n  ⎿ ❌ Failed to connect to {server_name}"
+                    message = f"[red]⏺[/red] MCP ({server_name}) ({elapsed}s)\n  ⎿ ❌ Failed to connect to {server_name}"
                     self._enqueue_console_text(message)
 
-            except Exception as e:
-                elapsed = int(time.monotonic() - start_time)
+            if hasattr(self, 'app') and hasattr(self.app, 'call_from_thread'):
+                self.app.call_from_thread(finalize)
+            elif hasattr(self, '_loop'):
+                self._loop.call_soon_threadsafe(finalize)
+            else:
+                finalize()
 
-                # Stop spinner on error
-                if hasattr(self, 'app') and hasattr(self.app, '_stop_local_spinner'):
-                    if hasattr(self.app, 'call_from_thread'):
-                        self.app.call_from_thread(self.app._stop_local_spinner)
+        start_time = time.monotonic()
+
+        # Use MCP manager's connect_async if available, otherwise use sync in thread
+        if hasattr(mcp_manager, 'connect_async'):
+            # Use async connect with callback
+            import asyncio
+            asyncio.create_task(self._async_mcp_connect_helper(server_name, mcp_manager, handle_result))
+        else:
+            # Fall back to threaded sync connect
+            import threading
+            def connect_thread():
+                try:
+                    success = mcp_manager.connect_sync(server_name)
+                    handle_result(success)
+                except Exception as e:
+                    # Stop spinner on error
+                    def stop_and_error():
+                        if hasattr(self, 'app') and hasattr(self.app, '_stop_local_spinner'):
+                            self.app._stop_local_spinner()
+                        elapsed = int(time.monotonic() - start_time)
+                        message = f"[red]⏺[/red] MCP ({server_name}) ({elapsed}s)\n  ⎿ ❌ Error: {str(e)}"
+                        self._enqueue_console_text(message)
+
+                    if hasattr(self, 'app') and hasattr(self.app, 'call_from_thread'):
+                        self.app.call_from_thread(stop_and_error)
                     else:
-                        self.app._stop_local_spinner()
+                        stop_and_error()
 
-                message = f"⏺ MCP ({server_name}) ({elapsed}s)\n  ⎿ ❌ Error: {str(e)}"
-                self._enqueue_console_text(message)
+            thread = threading.Thread(target=connect_thread, daemon=True)
+            thread.start()
 
-        # Start the background thread
-        thread = threading.Thread(target=connect_thread, daemon=True)
-        thread.start()
+    async def _async_mcp_connect_helper(self, server_name: str, mcp_manager, callback):
+        """Helper for async MCP connection."""
+        try:
+            success = await mcp_manager.connect_async(server_name)
+            callback(success)
+        except Exception:
+            callback(False)
 
     def _handle_interrupt(self) -> bool:
         """Handle interrupt request from UI (ESC key press).
