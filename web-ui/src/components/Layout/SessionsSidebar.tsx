@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { ChevronDownIcon, Cog6ToothIcon, Bars3Icon, XMarkIcon, FolderIcon, PlusIcon, TrashIcon, MagnifyingGlassIcon, EllipsisVerticalIcon, DocumentDuplicateIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon, Cog6ToothIcon, Bars3Icon, XMarkIcon, FolderIcon, PlusIcon, TrashIcon, MagnifyingGlassIcon, EllipsisVerticalIcon, DocumentDuplicateIcon, ArrowsUpDownIcon } from '@heroicons/react/24/outline';
 import { useChatStore } from '../../stores/chat';
 import { SettingsModal } from '../Settings/SettingsModal';
 import { NewSessionModal } from './NewSessionModal';
@@ -45,6 +45,9 @@ export function SessionsSidebar() {
   const [menuWorkspacePath, setMenuWorkspacePath] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const [focusedWorkspacePath, setFocusedWorkspacePath] = useState<string | null>(null);
+  const [focusedSessionIndex, setFocusedSessionIndex] = useState<number | null>(null);
+  const [isCompact, setIsCompact] = useState(false);
+  const listSpacingCls = isCompact ? 'space-y-1.5' : 'space-y-2';
 
   // Get loadSession from chat store (must be declared before useMemo below)
   const loadSession = useChatStore(state => state.loadSession);
@@ -62,21 +65,26 @@ export function SessionsSidebar() {
   }, [workspaces, searchQuery, filter, currentSessionId]);
 
   const rowIdForPath = (p: string) => 'ws-' + p.replace(/[^a-zA-Z0-9_-]/g, '-');
+  const rowIdForSession = (p: string, i: number) => `${rowIdForPath(p)}-s-${i}`;
 
   useEffect(() => {
     // Reset focus to first visible when filters/search change
     if (visibleWorkspaces.length > 0) {
       setFocusedWorkspacePath(visibleWorkspaces[0].path);
+      setFocusedSessionIndex(null);
     } else {
       setFocusedWorkspacePath(null);
+      setFocusedSessionIndex(null);
     }
   }, [visibleWorkspaces]);
 
   useEffect(() => {
     if (!focusedWorkspacePath) return;
-    const el = document.getElementById(rowIdForPath(focusedWorkspacePath));
+    const el = focusedSessionIndex !== null
+      ? document.getElementById(rowIdForSession(focusedWorkspacePath, focusedSessionIndex))
+      : document.getElementById(rowIdForPath(focusedWorkspacePath));
     el?.scrollIntoView({ block: 'nearest' });
-  }, [focusedWorkspacePath]);
+  }, [focusedWorkspacePath, focusedSessionIndex]);
 
 
   useEffect(() => {
@@ -123,36 +131,80 @@ export function SessionsSidebar() {
 
       const prevent = () => { e.preventDefault(); setMenuWorkspacePath(null); };
 
+      const currentWs = currentIndex >= 0 ? visibleWorkspaces[currentIndex] : null;
+      const isExpanded = currentWs ? expandedWorkspaces.has(currentWs.path) : false;
+      const sessionCount = currentWs ? currentWs.sessions.length : 0;
+
       if (e.key === 'ArrowDown') {
         prevent();
-        const next = currentIndex < 0 ? 0 : Math.min(currentIndex + 1, visibleWorkspaces.length - 1);
-        setFocusedWorkspacePath(visibleWorkspaces[next].path);
+        if (isExpanded && sessionCount > 0) {
+          if (focusedSessionIndex === null) {
+            setFocusedSessionIndex(0);
+            return;
+          }
+          if (focusedSessionIndex < sessionCount - 1) {
+            setFocusedSessionIndex(focusedSessionIndex + 1);
+            return;
+          }
+          // move to next workspace
+          const next = Math.min(currentIndex + 1, visibleWorkspaces.length - 1);
+          setFocusedWorkspacePath(visibleWorkspaces[next].path);
+          setFocusedSessionIndex(null);
+        } else {
+          const next = currentIndex < 0 ? 0 : Math.min(currentIndex + 1, visibleWorkspaces.length - 1);
+          setFocusedWorkspacePath(visibleWorkspaces[next].path);
+          setFocusedSessionIndex(null);
+        }
       } else if (e.key === 'ArrowUp') {
         prevent();
+        if (focusedSessionIndex !== null) {
+          if (focusedSessionIndex > 0) {
+            setFocusedSessionIndex(focusedSessionIndex - 1);
+            return;
+          }
+          // move focus back to workspace header
+          setFocusedSessionIndex(null);
+          return;
+        }
         const prev = currentIndex < 0 ? 0 : Math.max(currentIndex - 1, 0);
         setFocusedWorkspacePath(visibleWorkspaces[prev].path);
+        setFocusedSessionIndex(null);
       } else if (e.key === 'Enter' || e.key === ' ') {
-        if (focusedWorkspacePath) {
+        if (focusedWorkspacePath && currentWs) {
           prevent();
-          setExpandedWorkspaces(prev => {
-            const next = new Set(prev);
-            if (next.has(focusedWorkspacePath)) next.delete(focusedWorkspacePath);
-            else next.add(focusedWorkspacePath);
-            return next;
-          });
+          if (focusedSessionIndex === null) {
+            setExpandedWorkspaces(prev => {
+              const next = new Set(prev);
+              if (next.has(focusedWorkspacePath)) next.delete(focusedWorkspacePath);
+              else next.add(focusedWorkspacePath);
+              return next;
+            });
+          } else {
+            const session = currentWs.sessions[focusedSessionIndex];
+            if (session) {
+              // trigger session load
+              loadSession(session.id);
+            }
+          }
         }
       } else if (e.key === 'ArrowRight') {
         if (focusedWorkspacePath) {
           prevent();
-          setExpandedWorkspaces(prev => {
-            const next = new Set(prev);
-            next.add(focusedWorkspacePath);
-            return next;
-          });
+          if (focusedSessionIndex === null) {
+            setExpandedWorkspaces(prev => {
+              const next = new Set(prev);
+              next.add(focusedWorkspacePath);
+              return next;
+            });
+          }
         }
       } else if (e.key === 'ArrowLeft') {
         if (focusedWorkspacePath) {
           prevent();
+          if (focusedSessionIndex !== null) {
+            setFocusedSessionIndex(null);
+            return;
+          }
           setExpandedWorkspaces(prev => {
             const next = new Set(prev);
             next.delete(focusedWorkspacePath);
@@ -369,15 +421,26 @@ export function SessionsSidebar() {
             <span className="text-sm font-semibold text-gray-900">Workspaces</span>
           )}
           {!isCollapsed ? (
-            <IconButton
-              aria-label="New workspace"
-              title="New workspace"
-              onClick={handleNewWorkspace}
-              variant="subtle"
-              size="sm"
-            >
-              <PlusIcon className="w-5 h-5" />
-            </IconButton>
+            <div className="flex items-center gap-1">
+              <IconButton
+                aria-label="Toggle density"
+                title="Toggle density"
+                variant="subtle"
+                size="sm"
+                onClick={() => setIsCompact(v => !v)}
+              >
+                <ArrowsUpDownIcon className="w-5 h-5" />
+              </IconButton>
+              <IconButton
+                aria-label="New workspace"
+                title="New workspace"
+                onClick={handleNewWorkspace}
+                variant="subtle"
+                size="sm"
+              >
+                <PlusIcon className="w-5 h-5" />
+              </IconButton>
+            </div>
           ) : (
             <span className="w-5" />
           )}
@@ -430,17 +493,17 @@ export function SessionsSidebar() {
             </p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className={listSpacingCls}>
             {visibleWorkspaces.map((workspace) => {
               const isExpanded = expandedWorkspaces.has(workspace.path);
               const hasActiveSession = workspace.sessions.some(s => s.id === currentSessionId);
-              const isFocused = focusedWorkspacePath === workspace.path;
+              const isFocusedWorkspace = focusedWorkspacePath === workspace.path && focusedSessionIndex === null;
 
               return (
                 <div
                   key={workspace.path}
                   id={rowIdForPath(workspace.path)}
-                  className={`relative w-full rounded-lg transition-all duration-200 bg-white border ${isFocused ? 'border-blue-400 ring-2 ring-blue-200' : 'border-gray-200'} hover:border-gray-300 hover:shadow-sm`}
+                  className={`relative w-full rounded-lg transition-all duration-200 bg-white border ${isFocusedWorkspace ? 'border-blue-400 ring-2 ring-blue-200' : 'border-gray-200'} hover:border-gray-300 hover:shadow-sm`}
                 >
                   {/* Workspace Header - Clickable to expand/collapse */}
                   <button
@@ -448,7 +511,7 @@ export function SessionsSidebar() {
                       e.stopPropagation();
                       toggleWorkspace(workspace.path, e);
                     }}
-                    className="w-full px-3 py-3 text-left group cursor-pointer hover:bg-gray-50 transition-colors rounded-t-lg"
+                    className={`w-full px-3 ${isCompact ? 'py-2' : 'py-3'} text-left group cursor-pointer hover:bg-gray-50 transition-colors rounded-t-lg`}
                   >
                     <div className="flex items-start gap-2 pr-10">
                       {/* Expand/Collapse Chevron */}
@@ -543,14 +606,15 @@ export function SessionsSidebar() {
                       </button>
 
                       {/* Sessions List */}
-                      {workspace.sessions.map((session) => {
+                      {workspace.sessions.map((session, idx) => {
                         const isActiveSession = currentSessionId === session.id;
+                        const isFocusedSession = focusedWorkspacePath === workspace.path && focusedSessionIndex === idx;
 
                         return (
-                          <div key={session.id} className="relative group">
+                          <div id={rowIdForSession(workspace.path, idx)} key={session.id} className={`relative group ${isFocusedSession ? 'ring-2 ring-blue-200 border-blue-400 rounded-md' : ''}`}>
                             <button
                               onClick={(e) => handleSessionClick(session, e)}
-                              className={`w-full px-3 py-2.5 pr-10 rounded-md text-left transition-all cursor-pointer ${
+                              className={`w-full px-3 ${isCompact ? 'py-2' : 'py-2.5'} pr-10 rounded-md text-left transition-all cursor-pointer ${
                                 isActiveSession
                                   ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-400 shadow-sm'
                                   : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-blue-300 hover:shadow-sm'
@@ -645,7 +709,7 @@ export function SessionsSidebar() {
               setIsCollapsed(false);
               setTimeout(() => setIsNewSessionOpen(true), 100);
             }}
-            className="w-full aspect-square rounded-lg flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-colors"
+            className="w-full aspect-square rounded-lg flex items-center justify-center bg-gray-50 hover:bg-gray-100 border border-dashed border-gray-300 hover:border-blue-400 text-gray-600 hover:text-blue-600 transition-colors"
             title="New Workspace"
           >
             <PlusIcon className="w-5 h-5" />
