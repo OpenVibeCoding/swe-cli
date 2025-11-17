@@ -52,11 +52,6 @@ class CommandRouter:
             self.app.exit()
             return True
 
-        # Handle MCP commands asynchronously to avoid blocking
-        if cmd == "/mcp":
-            await self._handle_mcp_command(command)
-            return True
-
         return False
 
     def _render_help(self, conversation) -> None:
@@ -120,109 +115,6 @@ class CommandRouter:
                 )
         conversation.add_system_message("")
         conversation.add_assistant_message("✓ Done! Try scrolling up with mouse wheel or Page Up.")
-
-    async def _handle_mcp_command(self, command: str) -> None:
-        """Handle MCP commands asynchronously with proper UI formatting.
-
-        Args:
-            command: The full MCP command (e.g., "/mcp connect github")
-        """
-        import shlex
-
-        conversation = getattr(self.app, "conversation", None)
-        if conversation is None:
-            return
-
-        try:
-            parts = shlex.split(command)
-        except ValueError:
-            parts = command.strip().split()
-
-        if len(parts) < 2:
-            conversation.add_system_message("Usage: /mcp <subcommand> [args]")
-            return
-
-        subcommand = parts[1].lower()
-
-        # Handle connect subcommand asynchronously
-        if subcommand == "connect":
-            if len(parts) < 3:
-                conversation.add_system_message("Usage: /mcp connect <server_name>")
-                return
-
-            server_name = parts[2]
-            await self._async_mcp_connect(server_name, conversation)
-        else:
-            # For other MCP subcommands, fall back to backend processing
-            if hasattr(self.app, 'on_message') and self.app.on_message:
-                self.app.on_message(command)
-
-    async def _async_mcp_connect(self, server_name: str, conversation) -> None:
-        """Connect to MCP server asynchronously with spinner.
-
-        Args:
-            server_name: Name of the MCP server to connect to
-            conversation: Conversation log to display results
-        """
-        start_time = time.monotonic()
-
-        # Start spinner
-        if hasattr(self.app, '_start_local_spinner'):
-            self.app._start_local_spinner()
-
-        try:
-            # Get MCP manager from the app or runner
-            mcp_manager = None
-            if hasattr(self.app, 'runner') and hasattr(self.app.runner, 'repl'):
-                mcp_manager = getattr(self.app.runner.repl, 'mcp_manager', None)
-            elif hasattr(self.app, 'mcp_manager'):
-                mcp_manager = self.app.mcp_manager
-
-            if not mcp_manager:
-                conversation.add_system_message("❌ MCP manager not available")
-                return
-
-            # Add initial status message
-            elapsed = int(time.monotonic() - start_time)
-            status_msg = f"⏺ MCP ({server_name}) ({elapsed}s)\n  ⎿ Connecting to {server_name}..."
-            conversation.add_system_message(status_msg)
-
-            # Run connection in background thread to avoid blocking
-            loop = asyncio.get_event_loop()
-            success = await loop.run_in_executor(None, mcp_manager.connect_sync, server_name)
-
-            if success:
-                tools = mcp_manager.get_server_tools(server_name)
-                elapsed = int(time.monotonic() - start_time)
-
-                # Success message with proper formatting
-                result_msg = f"⏺ MCP ({server_name}) ({elapsed}s)\n  ⎿ Connected to {server_name} ({len(tools)} tools available)"
-                conversation.add_system_message(result_msg)
-
-                # Refresh runtime tooling if callback is available
-                refresh_callback = None
-                if hasattr(self.app, 'runner') and hasattr(self.app.runner, '_refresh_runtime_tooling'):
-                    refresh_callback = self.app.runner._refresh_runtime_tooling
-                elif hasattr(self.app, 'refresh_runtime'):
-                    refresh_callback = self.app.refresh_runtime
-
-                if refresh_callback:
-                    await loop.run_in_executor(None, refresh_callback)
-
-            else:
-                elapsed = int(time.monotonic() - start_time)
-                error_msg = f"⏺ MCP ({server_name}) ({elapsed}s)\n  ⎿ ❌ Failed to connect to {server_name}"
-                conversation.add_system_message(error_msg)
-
-        except Exception as e:
-            elapsed = int(time.monotonic() - start_time)
-            error_msg = f"⏺ MCP ({server_name}) ({elapsed}s)\n  ⎿ ❌ Error connecting to {server_name}: {str(e)}"
-            conversation.add_system_message(error_msg)
-
-        finally:
-            # Stop spinner
-            if hasattr(self.app, '_stop_local_spinner'):
-                self.app._stop_local_spinner()
 
 
 __all__ = ["CommandRouter"]

@@ -48,15 +48,15 @@ async def test_mcp_connect_handling():
 
     print("2. Checking method calls...")
 
-    # First check what messages were sent
+    # Verify spinner was started and stopped with correct message
+    mock_app._start_local_spinner.assert_called_once_with("Connecting to github")
+    mock_app._stop_local_spinner.assert_called_once()
+
+    # Check what messages were sent
     calls = mock_conversation.add_system_message.call_args_list
     print(f"   Number of system messages: {len(calls)}")
     for i, call in enumerate(calls):
         print(f"   Message {i+1}: {call[0][0]}")
-
-    # Verify spinner was started and stopped
-    mock_app._start_local_spinner.assert_called_once()
-    mock_app._stop_local_spinner.assert_called_once()
 
     # Verify MCP manager was called
     print(f"   connect_sync call count: {mock_mcp_manager.connect_sync.call_count}")
@@ -70,8 +70,8 @@ async def test_mcp_connect_handling():
     # Check the messages sent to conversation
     calls = mock_conversation.add_system_message.call_args_list
 
-    # Should have at least 2 messages: initial status and final result
-    assert len(calls) >= 2, f"Expected at least 2 messages, got {len(calls)}"
+    # Should have at least 1 message: final result
+    assert len(calls) >= 1, f"Expected at least 1 message, got {len(calls)}"
 
     # Check the messages contain the expected format
     messages = [call[0][0] for call in calls]
