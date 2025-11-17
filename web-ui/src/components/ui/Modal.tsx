@@ -1,53 +1,59 @@
 import React, { useEffect } from 'react';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 
 interface ModalProps {
   isOpen: boolean;
-  title?: string;
   onClose: () => void;
+  title: string;
   children: React.ReactNode;
-  footer?: React.ReactNode;
-  closeOnOverlayClick?: boolean;
+  className?: string;
 }
 
-export function Modal({
-  isOpen,
-  title,
-  onClose,
-  children,
-  footer,
-  closeOnOverlayClick = true,
-}: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, className = '' }: ModalProps) {
   useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
     };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [isOpen, onClose]);
+    window.addEventListener('keydown', handleEsc);
+    return () => {
+      window.removeEventListener('keydown', handleEsc);
+    };
+  }, [onClose]);
 
-  if (!isOpen) return null;
-
-  const handleOverlayClick = () => {
-    if (closeOnOverlayClick) onClose();
-  };
+  if (!isOpen) {
+    return null;
+  }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in" onClick={handleOverlayClick}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-hidden animate-slide-up" onClick={(e) => e.stopPropagation()}>
-        {title && (
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-          </div>
-        )}
-        <div className="px-6 py-5 overflow-y-auto">
-          {children}
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm transition-opacity duration-300"
+      aria-labelledby="modal-title"
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+    >
+      <div
+        className={`relative bg-white rounded-lg shadow-xl w-full max-w-md m-4 ${className}`}
+        onClick={(e) => e.stopPropagation()} // Prevent closing modal when clicking inside
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <h2 id="modal-title" className="text-lg font-semibold text-gray-900">
+            {title}
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+            aria-label="Close modal"
+          >
+            <XMarkIcon className="w-6 h-6" />
+          </button>
         </div>
-        {footer && (
-          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-            {footer}
-          </div>
-        )}
+
+        {/* Content */}
+        <div className="p-6">{children}</div>
       </div>
     </div>
   );
