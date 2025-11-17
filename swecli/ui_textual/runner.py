@@ -792,8 +792,8 @@ class TextualRunner:
                     self._enqueue_console_text(message)
 
                     # Refresh runtime tooling
-                    if hasattr(self, '_refresh_runtime_tooling'):
-                        self._refresh_runtime_tooling()
+                    if hasattr(self.repl, '_refresh_runtime_tooling'):
+                        self.repl._refresh_runtime_tooling()
                 else:
                     message = f"[red]⏺[/red] MCP ({server_name}) ({elapsed}s)\n  ⎿ ❌ Failed to connect to {server_name}"
                     self._enqueue_console_text(message)
