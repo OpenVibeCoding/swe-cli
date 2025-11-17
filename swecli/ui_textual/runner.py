@@ -741,6 +741,7 @@ class TextualRunner:
         """
         import shlex
         import time
+        from rich.text import Text
 
         try:
             parts = shlex.split(command)
@@ -748,62 +749,85 @@ class TextualRunner:
             parts = command.strip().split()
 
         if len(parts) < 3:
-            self._enqueue_console_text("[red]Usage: /mcp connect <server_name>[/red]")
+            self.app.conversation.add_error("Usage: /mcp connect <server_name>")
             return
 
         server_name = parts[2]
         mcp_manager = getattr(self.repl, "mcp_manager", None)
 
         if not mcp_manager:
-            self._enqueue_console_text("[red]Error: MCP manager not available[/red]")
+            self.app.conversation.add_error("MCP manager not available")
             return
 
         # Check if already connected
         if mcp_manager.is_connected(server_name):
             tools = mcp_manager.get_server_tools(server_name)
-            self._enqueue_console_text(
-                f"[green]⏺[/green] MCP ({server_name}) (0s)\n  ⎿ Already connected to {server_name} ({len(tools)} tools available)"
-            )
+            # Create tool call display with green bullet
+            display = Text()
+            display.append("⏺", style="green bold")
+            display.append(f" MCP ({server_name}) (0s)")
+            self.app.conversation.add_tool_call(display)
+            self.app.conversation.stop_tool_execution()
+            self.app.conversation.add_tool_result(f"Already connected to {server_name} ({len(tools)} tools available)")
             return
 
-        # Start spinner in main thread
-        def start_spinner():
-            if hasattr(self, 'app') and hasattr(self.app, '_start_local_spinner'):
-                self.app._start_local_spinner(f"Connecting to {server_name}")
+        # Add tool call and start spinner (must block to ensure timer is set up)
+        from concurrent.futures import Future
 
-        if hasattr(self, '_loop'):
-            self._loop.call_soon_threadsafe(start_spinner)
+        def start_tool_call():
+            display = Text(f"MCP ({server_name})")
+            self.app.conversation.add_tool_call(display)
+            self.app.conversation.start_tool_execution()
+
+        # Use blocking call to ensure spinner timer is fully set up before continuing
+        future = Future()
+        def wrapper():
+            try:
+                start_tool_call()
+                future.set_result(None)
+            except Exception as e:
+                future.set_exception(e)
+
+        if hasattr(self.app, 'call_from_thread'):
+            self.app.call_from_thread(wrapper)
+            try:
+                future.result(timeout=5.0)
+            except Exception:
+                pass
         else:
-            start_spinner()
+            start_tool_call()
 
         # Run connection using MCP manager's async connect
         def handle_result(success: bool):
             """Handle connection result in main thread."""
             def finalize():
                 # Stop spinner first
-                if hasattr(self, 'app') and hasattr(self.app, '_stop_local_spinner'):
-                    self.app._stop_local_spinner()
+                if hasattr(self.app.conversation, 'stop_tool_execution'):
+                    self.app.conversation.stop_tool_execution()
 
                 # Then show result
                 elapsed = int(time.monotonic() - start_time)
                 if success:
                     tools = mcp_manager.get_server_tools(server_name)
-                    message = f"[green]⏺[/green] MCP ({server_name}) ({elapsed}s)\n  ⎿ Connected to {server_name} ({len(tools)} tools available)"
-                    self._enqueue_console_text(message)
-
-                    # Refresh runtime tooling
-                    if hasattr(self.repl, '_refresh_runtime_tooling'):
-                        self.repl._refresh_runtime_tooling()
+                    # Green checkmark for success
+                    result_text = f"✓ Connected to {server_name} ({len(tools)} tools available)"
+                    self.app.conversation.add_tool_result(result_text)
                 else:
-                    message = f"[red]⏺[/red] MCP ({server_name}) ({elapsed}s)\n  ⎿ ❌ Failed to connect to {server_name}"
-                    self._enqueue_console_text(message)
+                    # Red X for failure
+                    result_text = f"❌ Failed to connect to {server_name}"
+                    self.app.conversation.add_tool_result(result_text)
 
+            # Stop spinner and show result
             if hasattr(self, 'app') and hasattr(self.app, 'call_from_thread'):
                 self.app.call_from_thread(finalize)
             elif hasattr(self, '_loop'):
                 self._loop.call_soon_threadsafe(finalize)
             else:
                 finalize()
+
+            # Refresh runtime tooling AFTER showing result (don't block spinner)
+            if success and hasattr(self.repl, '_refresh_runtime_tooling'):
+                self.repl._refresh_runtime_tooling()
 
         start_time = time.monotonic()
 
@@ -822,11 +846,11 @@ class TextualRunner:
                 except Exception as e:
                     # Stop spinner on error
                     def stop_and_error():
-                        if hasattr(self, 'app') and hasattr(self.app, '_stop_local_spinner'):
-                            self.app._stop_local_spinner()
+                        if hasattr(self.app.conversation, 'stop_tool_execution'):
+                            self.app.conversation.stop_tool_execution()
                         elapsed = int(time.monotonic() - start_time)
-                        message = f"[red]⏺[/red] MCP ({server_name}) ({elapsed}s)\n  ⎿ ❌ Error: {str(e)}"
-                        self._enqueue_console_text(message)
+                        result_text = f"❌ Error: {str(e)}"
+                        self.app.conversation.add_tool_result(result_text)
 
                     if hasattr(self, 'app') and hasattr(self.app, 'call_from_thread'):
                         self.app.call_from_thread(stop_and_error)
