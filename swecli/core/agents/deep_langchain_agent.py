@@ -177,11 +177,28 @@ class DeepLangChainAgent(BaseAgent):
         self._working_dir = working_dir or os.getcwd()  # Default to current directory
         self._deep_agent = None
         self._tool_adapter = None
+        self._fallback_agent = None  # Fallback to regular agent when Deep Agent fails
 
         super().__init__(config, tool_registry, mode_manager)
 
         # Initialize Deep Agent components AFTER base class initialization
         self._initialize_components()
+
+    def _get_fallback_agent(self):
+        """Create and return a fallback SwecliAgent if needed."""
+        if self._fallback_agent is None:
+            # Import SwecliAgent locally to avoid circular imports
+            from swecli.core.agents.swecli_agent import SwecliAgent
+            self._fallback_agent = SwecliAgent(
+                self.config,  # Fix: use self.config instead of self._config
+                self.tool_registry,  # Fix: use self.tool_registry instead of self._tool_registry
+                self.mode_manager,  # Fix: use self.mode_manager instead of self._mode_manager
+                self._working_dir
+            )
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info("[DEEP_AGENT] Created fallback SwecliAgent due to schema compatibility issues")
+        return self._fallback_agent
 
     def _initialize_components(self) -> None:
         """Initialize deep agent components."""
@@ -212,6 +229,16 @@ class DeepLangChainAgent(BaseAgent):
             tools = self._tool_adapter.get_langchain_tools()
             logger.info(f"Got {len(tools)} tools for Deep Agent")
 
+            # Don't filter tools - they can work with kwargs-based approach
+            # Even tools without args_schema should work fine with parameter extraction
+            logger.info(f"Using all {len(tools)} tools (kwargs-based approach)")
+
+            # Debug: Print tool details
+            github_tools = [tool for tool in tools if 'github' in tool.name.lower()]
+            logger.info(f"GitHub tools: {len(github_tools)}")
+            if github_tools:
+                logger.info(f"GitHub tool names: {[tool.name for tool in github_tools[:5]]}")
+
             # Get tool names for interrupt_on config
             tool_names = [tool.name for tool in tools]
 
@@ -219,11 +246,22 @@ class DeepLangChainAgent(BaseAgent):
             # CRITICAL: Use interrupt_on to prevent automatic tool execution
             # This makes Deep Agent behave like a regular LLM that just returns tool_calls
             interrupt_config = {tool_name: True for tool_name in tool_names}
-            deep_agent = create_deep_agent(
-                model=model,
-                tools=tools,
-                interrupt_on=interrupt_config
-            )
+
+            logger.info(f"Creating deep agent with {len(tools)} tools...")
+            try:
+                deep_agent = create_deep_agent(
+                    model=model,
+                    tools=tools,
+                    interrupt_on=interrupt_config
+                )
+                logger.info("Deep agent created successfully")
+            except Exception as e:
+                logger.error(f"Failed to create deep agent: {e}")
+                logger.error(f"Tools passed: {len(tools)}")
+                if tools:
+                    logger.error(f"First 5 tool types: {[type(t).__name__ for t in tools[:5]]}")
+                    logger.error(f"First 5 tool names: {[t.name for t in tools[:5]]}")
+                raise
 
             # Wrap with interruptible support
             self._interrupt_monitor = DeepAgentInterruptMonitor()
@@ -291,10 +329,11 @@ class DeepLangChainAgent(BaseAgent):
         """Build tool schemas for Deep Agent.
 
         Returns:
-            List of tool schemas
+            List of tool schemas including MCP tools
         """
-        # Deep Agent handles its own tools via ToolRegistryAdapter
-        return []
+        # Use the same ToolSchemaBuilder as SwecliAgent to include MCP tools
+        from swecli.core.agents.components import ToolSchemaBuilder
+        return ToolSchemaBuilder(self.tool_registry).build()
 
     def call_llm(
         self,
@@ -347,6 +386,18 @@ class DeepLangChainAgent(BaseAgent):
                     "error": "Interrupted by user",
                     "interrupted": True,
                 }
+            elif "JSON Schema not supported" in error_msg or "could not understand the instance `{}`" in error_msg:
+                # This is the deepagents + Fireworks compatibility issue
+                logger.error(f"[DEEP_AGENT] JSON Schema compatibility error: {e}")
+                logger.info("[DEEP_AGENT] This is a known issue with deepagents library. Falling back to SwecliAgent.")
+
+                # Create fallback agent and use it instead
+                fallback_agent = self._get_fallback_agent()
+                logger.info("[DEEP_AGENT] Using fallback SwecliAgent for this request")
+
+                # Call the fallback agent with the same messages
+                fallback_response = fallback_agent.call_llm(messages, task_monitor)
+                return fallback_response
             else:
                 # Log and return other errors
                 logger.error(f"[DEEP_AGENT] Error: {e}", exc_info=True)
@@ -569,7 +620,25 @@ class DeepLangChainAgent(BaseAgent):
         """Refresh tools from registry."""
         if self._tool_adapter:
             try:
+                # Refresh the tool adapter cache to pick up new MCP tools
                 self._tool_adapter.refresh_tools()
+
+                # Rebuild tool schemas to include updated MCP tools
+                # This is critical for the agent to see newly connected MCP tools
+                self.tool_schemas = self.build_tool_schemas()
+
+                # Rebuild system prompt to include updated MCP tools
+                self.system_prompt = self.build_system_prompt()
+
+                # CRITICAL: Recreate the deep agent with updated tools
+                # The old _deep_agent still has the old cached tools
+                self._initialize_components()
+
+                import logging
+                logger = logging.getLogger(__name__)
+                github_count = sum(1 for t in self.tool_schemas if 'mcp__github' in t.get('function', {}).get('name', ''))
+                logger.info(f"DeepLangChainAgent tools refreshed: {len(self.tool_schemas)} schemas ({github_count} GitHub tools)")
+
             except Exception as e:
                 import logging
                 logger = logging.getLogger(__name__)

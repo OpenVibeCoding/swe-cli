@@ -269,17 +269,26 @@ class ToolRegistryAdapter:
         """
         self.tool_registry = tool_registry
         self._langchain_tools: Optional[list[BaseTool]] = None
+        self._mcp_adapter = None
+        self._mcp_tools_created = False
 
-    def get_langchain_tools(self) -> list[BaseTool]:
+    def get_langchain_tools(self, force_refresh: bool = False) -> list[BaseTool]:
         """Get LangChain-compatible tools from the SWE-CLI registry.
+
+        Args:
+            force_refresh: If True, force recreation of tools even if cached
 
         Returns:
             List of LangChain BaseTool instances
         """
-        if self._langchain_tools is None:
+        if force_refresh or self._langchain_tools is None:
             self._langchain_tools = self._create_langchain_tools()
 
         return self._langchain_tools
+
+    def refresh_tools(self) -> None:
+        """Force refresh of cached tools to pick up updated ordering."""
+        self._langchain_tools = None
 
     def _create_langchain_tools(self) -> list[BaseTool]:
         """Create LangChain tool instances from SWE-CLI registry.
@@ -308,7 +317,8 @@ class ToolRegistryAdapter:
             CreateTodoTool, UpdateTodoTool, CompleteTodoTool, ListTodosTool
         )
 
-        tools = [
+        # Create base tools first
+        base_tools = [
             # File operations
             WriteFileTool(self.tool_registry),
             EditFileTool(self.tool_registry),
@@ -344,45 +354,75 @@ class ToolRegistryAdapter:
             ListTodosTool(self.tool_registry),
         ]
 
-        # Add MCP tools if available
+        # Create MCP tools
         mcp_tools = self._create_mcp_tools()
-        if mcp_tools:
-            tools.extend(mcp_tools)
 
-        return tools
+        # 🔧 IMPORTANT: Put MCP tools FIRST to ensure LLM sees specific API tools before generic ones
+        # This fixes the issue where LLM chooses generic 'search' over GitHub-specific tools
+        if mcp_tools:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Placing {len(mcp_tools)} MCP tools first, followed by {len(base_tools)} base tools")
+            return mcp_tools + base_tools
+        else:
+            return base_tools
 
     def _create_mcp_tools(self) -> list[BaseTool]:
-        """Create LangChain tools for MCP tools.
+        """Create LangChain tools for MCP tools using langchain-mcp-adapters.
 
         Returns:
             List of MCP tool wrappers or empty list
         """
         if not hasattr(self.tool_registry, 'mcp_manager') or not self.tool_registry.mcp_manager:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.debug("No MCP manager available")
             return []
 
         mcp_tools = []
         try:
-            mcp_tool_list = self.tool_registry.mcp_manager.get_all_tools()
-            for mcp_tool in mcp_tools:
+            # Use the existing approach but with better error handling
+            mcp_manager = self.tool_registry.mcp_manager
+            import logging
+            logger = logging.getLogger(__name__)
+
+            # Debug: Check MCP manager state
+            if hasattr(mcp_manager, 'clients'):
+                logger.debug(f"MCP clients: {list(mcp_manager.clients.keys())}")
+            if hasattr(mcp_manager, 'server_tools'):
+                logger.debug(f"MCP server_tools: {list(mcp_manager.server_tools.keys())}")
+
+            all_tools = mcp_manager.get_all_tools()
+            logger.debug(f"Found {len(all_tools)} MCP tools from manager")
+
+            for mcp_tool in all_tools:
                 tool_name = mcp_tool.get("name")
                 tool_description = mcp_tool.get("description", "")
+                mcp_server = mcp_tool.get("mcp_server")
+                mcp_tool_name = mcp_tool.get("mcp_tool_name")
 
-                # Create a dynamic wrapper for each MCP tool
-                mcp_wrapper = type(
-                    f"MCP{tool_name.title()}Tool",
-                    (SWECLIToolWrapper,),
-                    {
-                        "name": tool_name,
-                        "description": tool_description,
-                    }
+                if not mcp_server or not mcp_tool_name:
+                    continue
+
+                # Create individual tool wrappers for each MCP tool
+                # This is what worked before and what the Deep Agent expects
+                from .mcp.langchain_individual_tool import MCPLangChainIndividualTool
+
+                mcp_tool_wrapper = MCPLangChainIndividualTool(
+                    server_name=mcp_server,
+                    mcp_tool_name=mcp_tool_name,
+                    mcp_tool_info=mcp_tool,
+                    mcp_manager=self.tool_registry.mcp_manager,
+                    tool_registry=self.tool_registry,
+                    description=tool_description,
                 )
 
-                mcp_tools.append(mcp_wrapper(
-                    tool_name=tool_name,
-                    description=tool_description,
-                    tool_registry=self.tool_registry,
-                ))
-        except Exception:
+                mcp_tools.append(mcp_tool_wrapper)
+
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to create MCP tools: {e}", exc_info=True)
             # If MCP tools can't be loaded, just skip them
             pass
 
