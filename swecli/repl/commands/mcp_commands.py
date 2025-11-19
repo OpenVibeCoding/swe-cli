@@ -70,9 +70,10 @@ class MCPCommands(CommandHandler):
         if subcmd in subcommand_map:
             return subcommand_map[subcmd]()
         else:
-            # Format in unified style: just show error under user's command
-            self.console.print(f"[red]  ⎿ Unknown MCP subcommand: {subcmd}[/red]")
-            return CommandResult(success=False, message=f"Unknown subcommand: {subcmd}")
+            return {
+                "level": "error",
+                "primary": f"Unknown MCP subcommand: {subcmd}",
+            }
 
     def _show_usage(self) -> None:
         """Show MCP command usage."""

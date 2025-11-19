@@ -447,11 +447,14 @@ class REPL:
         # Update state from query processor results
         self._last_operation_summary, self._last_error, self._last_latency_ms = result
 
-    def _handle_command(self, command: str) -> None:
+    def _handle_command(self, command: str) -> Optional[dict]:
         """Handle slash commands.
 
         Args:
             command: Command string (including /)
+        
+        Returns:
+            A dictionary with message details for the UI, or None if the command prints its own output.
         """
         parts = command.split(maxsplit=1)
         cmd = parts[0].lower()
@@ -459,11 +462,11 @@ class REPL:
 
         # Route to command handlers
         if cmd == "/help":
-            self.help_command.handle(args)
+            return self.help_command.handle(args)
         elif cmd == "/exit" or cmd == "/quit":
             self.running = False
         elif cmd == "/clear":
-            self.session_commands.clear()
+            return self.session_commands.clear()
         elif cmd == "/sessions":
             self.session_commands.list_sessions()
         elif cmd == "/resume":
@@ -484,15 +487,18 @@ class REPL:
         elif cmd == "/models":
             self.config_commands.show_model_selector()
         elif cmd == "/mcp":
-            self.mcp_commands.handle(args)
+            return self.mcp_commands.handle(args)
         elif cmd == "/init":
             self._init_codebase(command)
         elif cmd == "/run":
             self._run_command(args)
         else:
-            # Format in unified style: just show error under user's command
-            self.console.print(f"[red]  ⎿ Unknown command[/red]")
-            self.console.print("[dim]  ⎿ Type /help for available commands[/dim]")
+            return {
+                "level": "error",
+                "primary": "Unknown command",
+                "secondary": "Type /help for available commands",
+            }
+        return None
 
     def _init_codebase(self, command: str) -> None:
         """Handle /init command to analyze codebase and generate AGENTS.md.

@@ -20,6 +20,7 @@ from swecli.ui_textual.controllers.mcp_command_controller import MCPCommandContr
 from swecli.ui_textual.managers.approval_manager import ChatApprovalManager
 from swecli.ui_textual.managers.console_output_manager import ConsoleOutputManager
 from swecli.ui_textual.managers.session_history_manager import SessionHistoryManager
+from swecli.ui_textual.formatters.display_formatter import DisplayFormatter
 from swecli.ui_textual.renderers.response_renderer import ResponseRenderer
 from swecli.ui_textual.utils import build_tool_call_text
 
@@ -117,6 +118,9 @@ class TextualRunner:
         self._message_task: asyncio.Task[None] | None = None
         self._console_task: asyncio.Task[None] | None = None
         self._connect_inflight = False
+
+        # Initialize formatters
+        self._display_formatter = DisplayFormatter()
 
         # Initialize managers and controllers for modular architecture
         self._response_renderer = ResponseRenderer(self.app)
@@ -432,40 +436,72 @@ class TextualRunner:
             return []
 
     def _run_command(self, command: str) -> None:
-        """Execute a slash command and capture console output."""
-
+        """Execute a slash command and display its result."""
         stripped = command.strip()
         lowered = stripped.lower()
 
         # Background auto-connect trigger
         if lowered.startswith("/mcp autoconnect"):
             if self._connect_inflight:
-                self._enqueue_console_text(
-                    "[dim]MCP auto-connect already running...[/dim]"
-                )
+                self.display_message("info", "MCP auto-connect already running...")
             else:
-                self._enqueue_console_text(
-                    "[cyan]Starting MCP auto-connect in the background...[/cyan]"
-                )
+                self.display_message("info", "Starting MCP auto-connect in the background...")
                 self._start_mcp_connect_thread(force=True)
             return
 
-        # Special handling for /mcp view command - use Textual modal instead of prompt_toolkit
-        if lowered.startswith("/mcp view "):
+        # Special handling for /mcp view command - use Textual modal
+        if lowered.startswith("/mcp view"):
             self._handle_mcp_view_command(command)
             return
 
         # Special handling for /mcp connect command - async non-blocking
-        if lowered.startswith("/mcp connect "):
+        if lowered.startswith("/mcp connect"):
             self._handle_mcp_connect_command(command)
             return
 
+        # Capture output for backward compatibility with commands that still print
         with self.repl.console.capture() as capture:
-            self.repl._handle_command(command)
-        output = capture.get()
-        if output.strip():
-            self._enqueue_console_text(output)
+            result = self.repl._handle_command(command)
+
+        # If the command returned a structured result, use the new formatter
+        if isinstance(result, dict):
+            self.display_message(
+                level=result.get("level", "info"),
+                primary=result.get("primary", ""),
+                secondary=result.get("secondary"),
+                is_markdown=result.get("is_markdown", False),
+            )
+        # Otherwise, display the captured output from old-style commands
+        else:
+            output = capture.get()
+            if output.strip():
+                self._enqueue_console_text(output)
+        
         self._refresh_ui_config()
+
+    def display_message(
+        self,
+        level: str,
+        primary: str,
+        secondary: Optional[str] = None,
+        is_markdown: bool = False,
+    ) -> None:
+        """Format and display a message in the conversation log."""
+        if not primary:
+            return
+
+        if is_markdown:
+            from rich.markdown import Markdown
+            from rich.panel import Panel
+            self.app.conversation.write(Panel(Markdown(primary), border_style="green", title="Help"))
+            return
+
+        formatter_method = getattr(self._display_formatter, f"format_{level}", None)
+        if not formatter_method:
+            formatter_method = self._display_formatter.format_info
+
+        message_text = formatter_method(primary, secondary)
+        self.app.conversation.write(message_text)
 
     def _handle_mcp_view_command(self, command: str) -> None:
         """Handle /mcp view command - delegated to MCPCommandController."""

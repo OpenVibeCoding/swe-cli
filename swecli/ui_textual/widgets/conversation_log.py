@@ -57,7 +57,9 @@ class ConversationLog(RichLog):
 
     def add_user_message(self, message: str) -> None:
         self.write(Text(f"› {message}", style="bold white"))
-        self.write(Text(""))
+        # Only add a blank line if it's not a command
+        if not message.strip().startswith("/"):
+            self.write(Text(""))
 
     def add_assistant_message(self, message: str) -> None:
         normalized = self._normalize_text(message)

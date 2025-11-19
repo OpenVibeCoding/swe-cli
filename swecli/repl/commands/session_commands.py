@@ -39,22 +39,27 @@ class SessionCommands(CommandHandler):
         """Handle session command (not used, individual methods called directly)."""
         raise NotImplementedError("Use specific methods: clear(), list_sessions(), resume()")
 
-    def clear(self) -> CommandResult:
+    def clear(self) -> dict:
         """Clear current session and create a new one.
 
         Returns:
-            CommandResult indicating success
+            A dictionary with the result message.
         """
         if self.session_manager.current_session:
             self.session_manager.save_session()
             self.session_manager.create_session(
                 working_directory=str(self.config_manager.working_dir)
             )
-            self.print_success("Session cleared. Previous session saved.")
-            return CommandResult(success=True, message="Session cleared")
+            return {
+                "level": "info",
+                "primary": "Session cleared",
+                "secondary": "Previous session saved.",
+            }
         else:
-            self.print_warning("No active session to clear.")
-            return CommandResult(success=False, message="No active session")
+            return {
+                "level": "warning",
+                "primary": "No active session to clear.",
+            }
 
     def list_sessions(self) -> CommandResult:
         """List all saved sessions.

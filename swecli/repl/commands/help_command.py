@@ -25,8 +25,8 @@ class HelpCommand(CommandHandler):
         super().__init__(console)
         self.mode_manager = mode_manager
 
-    def handle(self, args: str) -> CommandResult:
-        """Show help message."""
+    def handle(self, args: str) -> dict:
+        """Return help message content."""
         help_text = """
 # Available Commands
 
@@ -67,6 +67,4 @@ class HelpCommand(CommandHandler):
             self.mode_manager.current_mode.value.upper(),
             self.mode_manager.get_mode_description()
         )
-
-        self.console.print(Panel(Markdown(help_text), title="Help", border_style="green"))
-        return CommandResult(success=True)
+        return {"level": "info", "primary": help_text, "is_markdown": True}
