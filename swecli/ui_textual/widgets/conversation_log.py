@@ -105,6 +105,7 @@ class ConversationLog(RichLog):
         self.write(Text(""))
 
     def add_tool_call(self, display: Text | str, *_: Any) -> None:
+        self.write(Text("")) # Add a blank line for consistent spacing before tool output
         if isinstance(display, Text):
             self._tool_display = display.copy()
         else:
