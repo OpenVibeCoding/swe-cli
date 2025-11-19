@@ -35,9 +35,9 @@ class SWECLIChatApp(App):
 
 
     BINDINGS = [
-        Binding("ctrl+c", "quit", "Quit", priority=True),
-        Binding("ctrl+l", "clear_conversation", "Clear"),
-        Binding("escape", "interrupt", "Interrupt"),
+        Binding("ctrl+c", "quit", "", show=False, priority=True),
+        Binding("ctrl+l", "clear_conversation", "", show=False),
+        Binding("escape", "interrupt", "", show=False),
         Binding("pageup", "scroll_up", "Scroll Up", show=False),
         Binding("pagedown", "scroll_down", "Scroll Down", show=False),
         Binding("up", "scroll_up_line", "Scroll Up One Line", show=False),
@@ -58,6 +58,7 @@ class SWECLIChatApp(App):
         get_model_config: Optional[Callable[[], Mapping[str, Any]]] = None,
         on_ready: Optional[Callable[[], None]] = None,
         on_interrupt: Optional[Callable[[], bool]] = None,
+        working_dir: Optional[str] = None,
         **kwargs,
     ):
         """Initialize chat application.
@@ -71,6 +72,7 @@ class SWECLIChatApp(App):
             get_model_config: Callback returning current model configuration details
             on_ready: Callback invoked once the UI finishes its first layout pass
             on_interrupt: Callback for when user presses ESC to interrupt
+            working_dir: Working directory path for repo display
         """
         # Set color system to inherit from terminal
         kwargs.setdefault("ansi_color", "auto")
@@ -84,6 +86,7 @@ class SWECLIChatApp(App):
         self.on_model_selected = on_model_selected
         self.get_model_config = get_model_config
         self._on_ready = on_ready
+        self.working_dir = working_dir or ""
         self.autocomplete_popup: Static | None = None
         self._autocomplete_controller: AutocompletePopupController | None = None
         self.footer: ModelFooter | None = None
@@ -130,9 +133,9 @@ class SWECLIChatApp(App):
                 )
 
             # Status bar
-            yield StatusBar(model=self.model, id="status-bar")
+            yield StatusBar(model=self.model, working_dir=self.working_dir, id="status-bar")
 
-        yield ModelFooter(self.model_slots, id="model-footer")
+        yield ModelFooter(self.model_slots, normal_model=self.model, id="model-footer")
 
     def on_mount(self) -> None:
         """Initialize the app on mount."""
@@ -176,10 +179,13 @@ class SWECLIChatApp(App):
             self.footer.update_models(self.model_slots)
 
     def update_primary_model(self, model: str) -> None:
-        """Update the primary model label shown in the status bar."""
+        """Update the primary model label shown in the status bar and footer."""
         self.model = model
         if hasattr(self, "status_bar"):
             self.status_bar.set_model_name(model)
+        # Also update the footer to show the normal model
+        if hasattr(self, "footer"):
+            self.footer.set_normal_model(model)
 
 
     def update_autocomplete(
@@ -513,6 +519,7 @@ def create_chat_app(
     get_model_config: Optional[Callable[[], Mapping[str, Any]]] = None,
     on_ready: Optional[Callable[[], None]] = None,
     on_interrupt: Optional[Callable[[], bool]] = None,
+    working_dir: Optional[str] = None,
 ) -> SWECLIChatApp:
     """Create and return a new chat application instance.
 
@@ -525,6 +532,7 @@ def create_chat_app(
         get_model_config: Callback returning current model configuration details
         on_ready: Callback invoked once the UI completes its first render pass
         on_interrupt: Callback for when user presses ESC to interrupt
+        working_dir: Working directory path for repo display
 
     Returns:
         Configured SWECLIChatApp instance
@@ -539,6 +547,7 @@ def create_chat_app(
         get_model_config=get_model_config,
         on_ready=on_ready,
         on_interrupt=on_interrupt,
+        working_dir=working_dir,
     )
 
 

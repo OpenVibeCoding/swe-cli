@@ -40,6 +40,9 @@ class CommandRouter:
             return True
 
         if cmd == "/models":
+            # Show current models first
+            self._show_current_models(conversation)
+            # Then open model picker
             await self.app._start_model_picker()
             return True
 
@@ -53,6 +56,68 @@ class CommandRouter:
             return True
 
         return False
+
+    def _show_current_models(self, conversation) -> None:
+        """Show current model configuration."""
+        if conversation is None:
+            return
+
+        from rich.text import Text
+
+        # Create header
+        header = Text()
+        header.append("🤖 Current Model Configuration\n", style="bold blue")
+        conversation.add_system_message(str(header))
+
+        # Get model config from app
+        if hasattr(self.app, 'get_model_config'):
+            model_config = self.app.get_model_config()
+
+            # Normal model
+            normal_model = self.app.model if hasattr(self.app, 'model') else "Unknown"
+            normal_text = Text()
+            normal_text.append("Normal: ", style="bold #6a6a6a")
+            normal_text.append(self._get_short_model_display(normal_model), style="green")
+            conversation.add_system_message(str(normal_text))
+
+            # Thinking and Vision models (if available)
+            if hasattr(self.app, 'model_slots') and self.app.model_slots:
+                for slot_name, slot_value in self.app.model_slots.items():
+                    if slot_value:
+                        provider, model = slot_value
+                        slot_text = Text()
+                        slot_text.append(f"{slot_name.title()}: ", style="bold #6a6a6a")
+                        slot_text.append(self._get_short_model_display(f"{provider}/{model}" if provider else model),
+                                      style="cyan" if slot_name == "thinking" else "magenta")
+                        conversation.add_system_message(str(slot_text))
+                    else:
+                        slot_text = Text()
+                        slot_text.append(f"{slot_name.title()}: ", style="bold #6a6a6a")
+                        slot_text.append("Not configured", style="italic #5a5a5a")
+                        conversation.add_system_message(str(slot_text))
+
+            # Separator
+            conversation.add_system_message("")
+
+        # Instructions
+        info_text = Text()
+        info_text.append("ℹ️  ", style="blue")
+        info_text.append("Opening model selector to change configuration...", style="#6a6a6a")
+        conversation.add_system_message(str(info_text))
+
+    def _get_short_model_display(self, model_name: str) -> str:
+        """Get short display name for model."""
+        if not model_name:
+            return "Not set"
+
+        # Extract just the model name part
+        if "/" in model_name:
+            model_name = model_name.split("/")[-1]
+
+        # Remove common suffixes
+        model_name = model_name.replace("-instruct", "").replace("-latest", "")
+
+        return model_name
 
     def _render_help(self, conversation) -> None:
         conversation.add_system_message("Available commands:")
