@@ -193,28 +193,11 @@ class DeepLangChainAgent(BaseAgent):
         self._working_dir = working_dir or os.getcwd()  # Default to current directory
         self._deep_agent = None
         self._tool_adapter = None
-        self._fallback_agent = None  # Fallback to regular agent when Deep Agent fails
 
         super().__init__(config, tool_registry, mode_manager)
 
         # Initialize Deep Agent components AFTER base class initialization
         self._initialize_components()
-
-    def _get_fallback_agent(self):
-        """Create and return a fallback SwecliAgent if needed."""
-        if self._fallback_agent is None:
-            # Import SwecliAgent locally to avoid circular imports
-            from swecli.core.agents.swecli_agent import SwecliAgent
-            self._fallback_agent = SwecliAgent(
-                self.config,  # Fix: use self.config instead of self._config
-                self.tool_registry,  # Fix: use self.tool_registry instead of self._tool_registry
-                self.mode_manager,  # Fix: use self.mode_manager instead of self._mode_manager
-                self._working_dir
-            )
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.info("[DEEP_AGENT] Created fallback SwecliAgent due to schema compatibility issues")
-        return self._fallback_agent
 
     def _initialize_components(self) -> None:
         """Initialize deep agent components."""
@@ -433,17 +416,16 @@ class DeepLangChainAgent(BaseAgent):
                     "interrupted": True,
                 }
             elif "JSON Schema not supported" in error_msg or "could not understand the instance `{}`" in error_msg:
-                # This is the deepagents + Fireworks compatibility issue
+                # This is a JSON Schema compatibility issue with certain providers/models
                 logger.error(f"[DEEP_AGENT] JSON Schema compatibility error: {e}")
-                logger.info("[DEEP_AGENT] This is a known issue with deepagents library. Falling back to SwecliAgent.")
-
-                # Create fallback agent and use it instead
-                fallback_agent = self._get_fallback_agent()
-                logger.info("[DEEP_AGENT] Using fallback SwecliAgent for this request")
-
-                # Call the fallback agent with the same messages
-                fallback_response = fallback_agent.call_llm(messages, task_monitor)
-                return fallback_response
+                logger.error("[DEEP_AGENT] The current model/provider combination has JSON schema compatibility issues.")
+                logger.info("[DEEP_AGENT] Try using a different model or provider (e.g., OpenAI, Anthropic).")
+                return {
+                    "success": False,
+                    "content": "JSON Schema compatibility error. Please try a different model or provider.",
+                    "error": str(e),
+                    "messages": messages,
+                }
             else:
                 # Log and return other errors
                 logger.error(f"[DEEP_AGENT] Error: {e}", exc_info=True)

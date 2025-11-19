@@ -7,12 +7,13 @@ The LangChain Deep Agents integration for SWE-CLI is **complete and production-r
 ## 📊 What Was Delivered
 
 ### Core Implementation
-- ✅ **DeepLangChainAgent** - Full-featured agent class with streaming support
-- ✅ **Feature Flag System** - Easy switching via `agent_type` config
+- ✅ **DeepLangChainAgent** - Full-featured agent class with streaming support (ONLY agent)
+- ✅ **Single Agent Architecture** - DeepLangChainAgent is always used
 - ✅ **Tool Integration** - All 22+ SWE-CLI tools work seamlessly
 - ✅ **Message Conversion** - Bidirectional SWE-CLI ↔ LangChain format
 - ✅ **Error Handling** - Comprehensive validation and recovery
 - ✅ **Production Ready** - Proper logging, no debug prints
+- ✅ **PlanningAgent Migration** - Now uses DeepLangChainAgent internally
 
 ### Critical Fixes
 - ✅ **Tool Execution** - Made managers optional for Deep Agent compatibility
@@ -23,8 +24,14 @@ The LangChain Deep Agents integration for SWE-CLI is **complete and production-r
 
 ### Core Implementation
 - `swecli/core/agents/deep_langchain_agent.py` - Complete Deep Agent (648 lines)
-- `swecli/models/config.py` - Added `agent_type` field
-- `swecli/core/factories/agent_factory.py` - Feature flag support
+- `swecli/models/config.py` - Removed `agent_type` field (migration complete)
+- `swecli/core/factories/agent_factory.py` - Simplified to always use DeepLangChainAgent
+- `swecli/core/agents/planning_agent.py` - Migrated to use DeepLangChainAgent internally
+
+### Removed Files (Migration Complete)
+- `swecli/core/agents/swecli_agent.py` - Removed (replaced by DeepLangChainAgent)
+- `swecli/core/agents/components/http_client.py` - AgentHttpClient removed (kept HttpResult)
+- `swecli/core/agents/components/response_processing.py` - ResponseCleaner removed
 
 ### Tool Integration
 - `swecli/core/agents/components/langchain/tools/base.py` - Optional managers fix
@@ -44,9 +51,9 @@ The LangChain Deep Agents integration for SWE-CLI is **complete and production-r
 ```
 User Request
     ↓
-AgentFactory (checks config.agent_type)
+AgentFactory (always creates DeepLangChainAgent)
     ↓
-DeepLangChainAgent (if "deep_langchain")
+DeepLangChainAgent
     ↓
 deepagents.create_deep_agent()
     ↓
@@ -93,25 +100,18 @@ Result:
 
 ## 🚀 Usage
 
-### Enable Deep Agents
-Edit `~/.swecli/settings.json`:
+### Deep Agents Are Always Active
+Deep Agents are now the **only** agent implementation in SWE-CLI. No configuration needed!
+
+Simply configure your model in `~/.swecli/settings.json`:
 ```json
 {
-  "agent_type": "deep_langchain",
   "model_provider": "fireworks",
   "model": "accounts/fireworks/models/llama-v3p1-70b-instruct"
 }
 ```
 
-### Disable Deep Agents
-Change or remove the `agent_type` field:
-```json
-{
-  "agent_type": "swecli",
-  ...
-}
-```
-Or simply omit `agent_type` (defaults to "swecli").
+The `agent_type` field has been removed - DeepLangChainAgent is always used.
 
 ## 📦 Git History
 
@@ -171,7 +171,7 @@ This integration brings state-of-the-art agentic capabilities to SWE-CLI while m
 
 ---
 
-**Status**: ✅ Complete and Production Ready
-**Date**: January 14, 2025
-**Integration Level**: Fully Functional
-**Recommended**: Ready for production use with `agent_type = "deep_langchain"`
+**Status**: ✅ Migration Fully Complete - DeepLangChainAgent is the Only Agent
+**Date**: Post-January 14, 2025 (Full Migration)
+**Integration Level**: Complete - SwecliAgent Removed
+**Recommended**: DeepLangChainAgent is always used (no configuration needed)

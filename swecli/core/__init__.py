@@ -14,7 +14,6 @@ warnings.filterwarnings("ignore", message=".*Models won't be available.*")
 __all__ = [
     "ConfigManager",
     "SessionManager",
-    "SwecliAgent",
     "ModeManager",
     "OperationMode",
     "ApprovalManager",
@@ -27,7 +26,6 @@ __all__ = [
 ]
 
 _EXPORTS: Dict[str, Tuple[str, str]] = {
-    "SwecliAgent": ("swecli.core.agents", "SwecliAgent"),
     "ConfigManager": ("swecli.core.management", "ConfigManager"),
     "SessionManager": ("swecli.core.management", "SessionManager"),
     "ModeManager": ("swecli.core.management", "ModeManager"),

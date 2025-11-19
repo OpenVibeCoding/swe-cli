@@ -33,6 +33,8 @@ class SWECLIChatApp(App):
 
     CSS_PATH = "styles/chat.tcss"
 
+    # Disable mouse support to allow natural terminal text selection
+    ENABLE_MOUSE = False
 
     BINDINGS = [
         Binding("ctrl+c", "quit", "", show=False, priority=True),

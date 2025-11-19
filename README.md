@@ -147,33 +147,26 @@ Deep Agents use LangGraph-powered workflows that provide:
 - **Enhanced reasoning** - Better context management and decision-making
 - **All existing tools** - Seamless integration with 22+ SWE-CLI tools
 
-### Enable Deep Agents
+### Agent Architecture
 
-Add to your `~/.swecli/settings.json`:
+SWE-CLI uses **LangChain Deep Agents** with advanced planning capabilities for all interactions. The Deep Agents framework provides:
+
+- ✨ Advanced planning and reasoning
+- 🔧 Seamless tool integration
+- 🚀 Optimized performance
+
+Configure your model in `~/.swecli/settings.json`:
 
 ```json
 {
-  "agent_type": "deep_langchain",
   "model_provider": "fireworks",
   "model": "accounts/fireworks/models/llama-v3p1-70b-instruct"
 }
 ```
 
-### Agent Types
-
-- **`"deep_langchain"`** (default) - LangChain Deep Agents with advanced planning ✨
-- **`"swecli"`** - Traditional agent (opt-out for compatibility)
-
-**Deep Agents are now the default!** To use the traditional agent, add to config:
-```json
-{
-  "agent_type": "swecli"
-}
-```
-
 ### Documentation
 
-See [Deep Agents Migration Plan](./docs/DEEP_AGENTS_MIGRATION_PLAN.md) for technical details.
+See [Deep Agents Summary](./docs/DEEP_AGENTS_SUMMARY.md) for technical details about the agent architecture.
 
 ---
 

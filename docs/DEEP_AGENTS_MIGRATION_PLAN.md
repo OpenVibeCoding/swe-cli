@@ -34,8 +34,8 @@
 - ✅ Implemented `call_llm()` and interrupt handling
 
 **Phase 1 - Feature Flag & Streaming (Steps 7-11):**
-- ✅ Added `agent_type` config flag ("swecli" or "deep_langchain")
-- ✅ `AgentFactory` supports both agent types seamlessly
+- ✅ Added `agent_type` config flag ("swecli" or "deep_langchain") [LATER REMOVED]
+- ✅ `AgentFactory` supports both agent types seamlessly [LATER SIMPLIFIED]
 - ✅ Implemented streaming with Deep Agent's `.stream()` API
 - ✅ Message history management and tool call tracking
 - ✅ Tested with simple queries and tool calls
@@ -51,30 +51,24 @@
 
 ### Current State
 
-- **✅ DeepLangChainAgent is now the DEFAULT agent** 🎉
+- **✅ DeepLangChainAgent is the ONLY agent** 🎉
 - **✅ Fully functional and production-ready**
-- SwecliAgent available for backward compatibility (opt-out)
-- Both agents coexist in `AgentFactory`
-- Easy switching via config flag
+- **✅ SwecliAgent has been completely removed**
+- **✅ PlanningAgent now uses DeepLangChainAgent internally**
+- **✅ agent_type config field removed** - no more switching needed
 - **All 22+ tools work perfectly** with Deep Agents
 
-**As of January 14, 2025, Deep Agents are the default!**
+**As of this migration (post-January 14, 2025), the migration is FULLY COMPLETE!**
 
 ### How to Use
 
-**Deep Agents are now the default!** Just run `swecli` - no config needed.
+**Deep Agents are always used** - just run `swecli`, no configuration needed!
 
-**To opt-out to traditional SwecliAgent:**
+Simply configure your model in `~/.swecli/settings.json`:
 ```json
 {
-  "agent_type": "swecli"
-}
-```
-
-**To explicitly enable Deep Agent (optional):**
-```json
-{
-  "agent_type": "deep_langchain"
+  "model_provider": "fireworks",
+  "model": "accounts/fireworks/models/llama-v3p1-70b-instruct"
 }
 ```
 
@@ -84,15 +78,22 @@
 - All 22+ existing SWE-CLI tools
 - Robust error handling and logging
 - Interrupt support
+- Consistent agent architecture across all modes
 
-### Remaining Work
+### Migration Complete
 
-1. **Optional**: Switch default to Deep Agent after more real-world testing
-2. **Optional**: Remove SwecliAgent entirely (full migration)
-3. Continue enhancing Deep Agent features:
-   - Streaming progress updates to UI
-   - Advanced interrupt propagation
-   - Approval flow integration
+1. ✅ SwecliAgent removed entirely
+2. ✅ AgentHttpClient removed (kept only HttpResult type)
+3. ✅ ResponseCleaner removed
+4. ✅ agent_type config field removed
+5. ✅ PlanningAgent migrated to use DeepLangChainAgent
+6. ✅ Tests updated to reflect new architecture
+7. ✅ Documentation updated
+
+**Future enhancements:**
+- Streaming progress updates to UI
+- Advanced interrupt propagation
+- Approval flow integration
 
 ## API Keys
 

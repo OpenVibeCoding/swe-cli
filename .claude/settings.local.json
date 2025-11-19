@@ -4,7 +4,11 @@
       "Bash(git push:*)",
       "Bash(python:*)",
       "WebFetch(domain:docs.langchain.com)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(python3:*)",
+      "Bash(uv run python:*)",
+      "Bash(export FIREWORKS_API_KEY=fw_3Zm8B8jFpjsuw4rDJMJn2PoH:*)",
+      "Bash(uv tool install:*)"
     ],
     "deny": [],
     "ask": []

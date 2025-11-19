@@ -1,4 +1,4 @@
-"""Test AgentFactory default behavior after switching to Deep Agent."""
+"""Test AgentFactory behavior after full migration to Deep Agent."""
 
 import os
 import sys
@@ -12,22 +12,23 @@ from swecli.core.tools.registry import ToolRegistry
 from swecli.models.config import AppConfig
 
 
-def test_default_is_deep_agent():
-    """Test that default agent is Deep Agent when agent_type not specified."""
+def test_always_creates_deep_agent():
+    """Test that AgentFactory always creates DeepLangChainAgent."""
     print("\n" + "="*80)
-    print("TEST 1: Default agent (no agent_type specified)")
+    print("TEST: AgentFactory always creates DeepLangChainAgent")
     print("="*80 + "\n")
 
-    # Create config without agent_type
+    # Create config
     config = AppConfig(
         model_provider="fireworks",
         model="accounts/fireworks/models/llama-v3p1-8b-instruct",
         api_key=os.getenv("FIREWORKS_API_KEY", "dummy"),
     )
 
-    # Verify default
-    print(f"Config agent_type: {getattr(config, 'agent_type', 'NOT SET')}")
-    assert config.agent_type == "deep_langchain", "Default should be deep_langchain"
+    # Verify agent_type field no longer exists
+    has_agent_type = hasattr(config, 'agent_type')
+    print(f"Config has agent_type field: {has_agent_type}")
+    assert not has_agent_type, "agent_type field should be removed from config"
 
     # Create factory
     tool_registry = ToolRegistry()
@@ -37,54 +38,25 @@ def test_default_is_deep_agent():
     # Create agents
     suite = factory.create_agents()
 
-    # Check type
-    agent_type = type(suite.normal).__name__
-    print(f"Created agent type: {agent_type}")
+    # Check normal agent type
+    normal_agent_type = type(suite.normal).__name__
+    print(f"Normal agent type: {normal_agent_type}")
+    assert normal_agent_type == "DeepLangChainAgent", f"Expected DeepLangChainAgent, got {normal_agent_type}"
 
-    assert agent_type == "DeepLangChainAgent", f"Expected DeepLangChainAgent, got {agent_type}"
-    print("✅ Default is Deep Agent\n")
-    return True
+    # Check planning agent type
+    planning_agent_type = type(suite.planning).__name__
+    print(f"Planning agent type: {planning_agent_type}")
+    assert planning_agent_type == "PlanningAgent", f"Expected PlanningAgent, got {planning_agent_type}"
 
-
-def test_swecli_opt_out():
-    """Test that SwecliAgent works when explicitly set."""
-    print("="*80)
-    print("TEST 2: Opt-out to SwecliAgent (agent_type='swecli')")
-    print("="*80 + "\n")
-
-    # Create config WITH agent_type = "swecli"
-    config = AppConfig(
-        agent_type="swecli",  # Explicit opt-out
-        model_provider="fireworks",
-        model="accounts/fireworks/models/llama-v3p1-8b-instruct",
-        api_key=os.getenv("FIREWORKS_API_KEY", "dummy"),
-    )
-
-    print(f"Config agent_type: {config.agent_type}")
-
-    # Create factory
-    tool_registry = ToolRegistry()
-    mode_manager = ModeManager()
-    factory = AgentFactory(config, tool_registry, mode_manager)
-
-    # Create agents
-    suite = factory.create_agents()
-
-    # Check type
-    agent_type = type(suite.normal).__name__
-    print(f"Created agent type: {agent_type}")
-
-    assert agent_type == "SwecliAgent", f"Expected SwecliAgent, got {agent_type}"
-    print("✅ Opt-out to SwecliAgent works\n")
+    print("✅ AgentFactory always creates DeepLangChainAgent (with PlanningAgent)\n")
     return True
 
 
 if __name__ == "__main__":
     try:
-        success1 = test_default_is_deep_agent()
-        success2 = test_swecli_opt_out()
+        success = test_always_creates_deep_agent()
 
-        if success1 and success2:
+        if success:
             print("="*80)
             print("✅ ALL TESTS PASSED")
             print("="*80)
