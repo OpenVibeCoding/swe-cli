@@ -288,16 +288,51 @@ class DeepLangChainAgent(BaseAgent):
             self._deep_agent = None
 
     def _create_model(self) -> BaseChatModel:
-        """Create LangChain model based on configuration."""
+        """Create LangChain model based on configuration and provider files."""
         provider = getattr(self.config, 'model_provider', 'fireworks')
         model_name = getattr(self.config, 'model', 'accounts/fireworks/models/llama-v3p1-8b-instruct')
         temperature = getattr(self.config, 'temperature', 0.7)
         max_tokens = getattr(self.config, 'max_tokens', 4096)
 
-        if provider == 'fireworks' or 'fireworks' in model_name:
-            api_key = getattr(self.config, 'fireworks_api_key', None) or getattr(self.config, 'api_key', None) or os.getenv('FIREWORKS_API_KEY')
-            base_url = getattr(self.config, 'api_base_url', None) or "https://api.fireworks.ai/inference/v1"
+        # Load provider configuration from JSON files
+        from swecli.config.models import ModelRegistry
+        model_registry = ModelRegistry()
 
+        # Find provider for this model
+        provider_id = None
+        provider_info = None
+        for pid, pinfo in model_registry.providers.items():
+            if pid == provider:
+                provider_id = pid
+                provider_info = pinfo
+                break
+
+        if not provider_info:
+            # Fallback to detection logic
+            if 'fireworks' in model_name.lower() or provider == 'fireworks':
+                provider_id = 'fireworks'
+            elif 'gpt' in model_name.lower() or provider == 'openai':
+                provider_id = 'openai'
+            elif 'claude' in model_name.lower() or provider == 'anthropic':
+                provider_id = 'anthropic'
+            else:
+                raise ValueError(f"Unsupported provider: {provider}")
+
+            provider_info = model_registry.providers.get(provider_id)
+            if not provider_info:
+                raise ValueError(f"Provider configuration not found: {provider_id}")
+
+        # Get API key from environment or config
+        api_key_env = provider_info.api_key_env
+        api_key = getattr(self.config, 'api_key', None) or os.getenv(api_key_env)
+        if not api_key:
+            raise ValueError(f"API key required. Set {api_key_env} environment variable.")
+
+        # Get base URL (override if set in config)
+        base_url = getattr(self.config, 'api_base_url', None) or provider_info.api_base_url
+
+        # Create model based on provider
+        if provider_id == 'fireworks':
             from langchain_fireworks import ChatFireworks
             return ChatFireworks(
                 model=model_name,
@@ -306,21 +341,16 @@ class DeepLangChainAgent(BaseAgent):
                 temperature=temperature,
                 max_tokens=max_tokens,
             )
-        elif provider == 'openai' or 'gpt' in model_name.lower():
-            api_key = getattr(self.config, 'openai_api_key', None) or getattr(self.config, 'api_key', None) or os.getenv('OPENAI_API_KEY')
-            base_url = getattr(self.config, 'api_base_url', None) or "https://api.openai.com/v1"
-
+        elif provider_id == 'openai':
             from langchain_openai import ChatOpenAI
             return ChatOpenAI(
                 model=model_name,
                 api_key=api_key,
-                base_url=base_url,
+                base_url=base_url or "https://api.openai.com/v1",
                 temperature=temperature,
                 max_tokens=max_tokens,
             )
-        elif provider == 'anthropic' or 'claude' in model_name.lower():
-            api_key = getattr(self.config, 'anthropic_api_key', None) or getattr(self.config, 'api_key', None) or os.getenv('ANTHROPIC_API_KEY')
-
+        elif provider_id == 'anthropic':
             from langchain_anthropic import ChatAnthropic
             return ChatAnthropic(
                 model=model_name,
@@ -329,7 +359,7 @@ class DeepLangChainAgent(BaseAgent):
                 max_tokens=max_tokens,
             )
         else:
-            raise ValueError(f"Unsupported provider: {provider}")
+            raise ValueError(f"Unsupported provider: {provider_id}")
 
     def build_system_prompt(self) -> str:
         """Build system prompt for Deep Agent.
