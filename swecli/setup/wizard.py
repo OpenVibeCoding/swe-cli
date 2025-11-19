@@ -12,6 +12,7 @@ from rich.table import Table
 
 from .providers import get_provider_config, get_provider_choices, get_provider_models
 from .validator import validate_api_key
+from .interactive_menu import InteractiveMenu
 
 
 console = Console()
@@ -91,33 +92,28 @@ def run_setup_wizard() -> bool:
 
 
 def select_provider() -> Optional[str]:
-    """Display provider selection menu and get user choice."""
-    table = Table(title="Available AI Providers", show_header=True, header_style="bold cyan")
-    table.add_column("#", style="dim", width=3)
-    table.add_column("Provider", style="cyan")
-    table.add_column("Description", style="white")
-
+    """Display provider selection menu and get user choice with arrow key navigation."""
     choices = get_provider_choices()
-    for idx, (provider_id, name, description) in enumerate(choices, 1):
-        table.add_row(str(idx), name, description)
 
-    console.print(table)
     console.print()
+    menu = InteractiveMenu(
+        items=choices,
+        title="Select AI Provider",
+        window_size=9,
+    )
 
-    while True:
-        choice = Prompt.ask(
-            "[yellow]Select your AI provider[/yellow]",
-            choices=[str(i) for i in range(1, len(choices) + 1)],
-            default="1",
+    provider_id = menu.show()
+
+    if provider_id:
+        # Find the provider name for confirmation message
+        provider_name = next(
+            (name for pid, name, _ in choices if pid == provider_id), provider_id
         )
+        console.print(f"\n[green]✓[/green] Selected: {provider_name}")
+        return provider_id
 
-        try:
-            idx = int(choice) - 1
-            provider_id = choices[idx][0]
-            console.print(f"[green]✓[/green] Selected: {choices[idx][1]}")
-            return provider_id
-        except (ValueError, IndexError):
-            console.print("[red]Invalid choice. Please try again.[/red]")
+    console.print("\n[yellow]Provider selection cancelled[/yellow]")
+    return None
 
 
 def get_api_key(provider_id: str, provider_config: dict) -> Optional[str]:
@@ -168,45 +164,42 @@ def validate_key(provider_id: str, api_key: str) -> bool:
 
 
 def select_model(provider_id: str, provider_config: dict) -> Optional[str]:
-    """Display model selection menu and get user choice."""
+    """Display model selection menu and get user choice with arrow key navigation."""
     models = get_provider_models(provider_id)
 
+    # Convert models to menu format and add custom option
+    model_choices = [
+        (model["id"], model["name"], model["description"]) for model in models
+    ]
+    model_choices.append(("__custom__", "Custom Model", "Enter a custom model ID"))
+
     console.print()
-    table = Table(title="Available Models", show_header=True, header_style="bold cyan")
-    table.add_column("#", style="dim", width=3)
-    table.add_column("Model", style="cyan")
-    table.add_column("Description", style="white")
+    menu = InteractiveMenu(
+        items=model_choices,
+        title=f"Select Model for {provider_config['name']}",
+        window_size=9,
+    )
 
-    for idx, model in enumerate(models, 1):
-        table.add_row(str(idx), model["name"], model["description"])
+    model_id = menu.show()
 
-    # Add custom option
-    table.add_row(str(len(models) + 1), "Custom", "Enter custom model ID")
+    if not model_id:
+        console.print("\n[yellow]Model selection cancelled[/yellow]")
+        return None
 
-    console.print(table)
-    console.print()
+    # Handle custom model input
+    if model_id == "__custom__":
+        console.print()
+        custom_id = Prompt.ask("[yellow]Enter custom model ID[/yellow]")
+        if custom_id:
+            console.print(f"[green]✓[/green] Custom model: {custom_id}")
+            return custom_id
+        console.print("[yellow]No custom model ID provided[/yellow]")
+        return None
 
-    while True:
-        choice = Prompt.ask(
-            "[yellow]Select a model[/yellow]",
-            choices=[str(i) for i in range(1, len(models) + 2)],
-            default="1",
-        )
-
-        try:
-            idx = int(choice) - 1
-            if idx < len(models):
-                model_id = models[idx]["id"]
-                console.print(f"[green]✓[/green] Selected: {models[idx]['name']}")
-                return model_id
-            else:
-                # Custom model
-                model_id = Prompt.ask("[yellow]Enter custom model ID[/yellow]")
-                if model_id:
-                    console.print(f"[green]✓[/green] Custom model: {model_id}")
-                    return model_id
-        except (ValueError, IndexError):
-            console.print("[red]Invalid choice. Please try again.[/red]")
+    # Find the model name for confirmation message
+    model_name = next((name for mid, name, _ in model_choices if mid == model_id), model_id)
+    console.print(f"\n[green]✓[/green] Selected: {model_name}")
+    return model_id
 
 
 def configure_advanced_settings() -> dict:
