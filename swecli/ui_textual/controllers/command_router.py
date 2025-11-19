@@ -6,6 +6,8 @@ import asyncio
 import time
 from typing import TYPE_CHECKING
 
+from swecli.ui_textual.renderers.welcome_panel import render_welcome_panel
+
 if TYPE_CHECKING:  # pragma: no cover
     from swecli.ui_textual.chat_app import SWECLIChatApp
 
@@ -31,7 +33,10 @@ class CommandRouter:
         if cmd == "/clear":
             if conversation is not None:
                 conversation.clear()
-                conversation.add_system_message("Conversation cleared.")
+                render_welcome_panel(
+                    conversation,
+                    real_integration=bool(self.app.on_message)
+                )
             return True
 
         if cmd == "/demo":
