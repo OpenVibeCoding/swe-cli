@@ -1,0 +1,119 @@
+{
+  "id": "modelscope",
+  "name": "ModelScope",
+  "description": "ModelScope AI models and services",
+  "api_key_env": "MODELSCOPE_API_KEY",
+  "api_base_url": "https://api-inference.modelscope.cn/v1",
+  "models": {
+    "ZhipuAI/GLM-4.5": {
+      "id": "ZhipuAI/GLM-4.5",
+      "name": "GLM-4.5",
+      "provider": "ModelScope",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": true
+    },
+    "ZhipuAI/GLM-4.6": {
+      "id": "ZhipuAI/GLM-4.6",
+      "name": "GLM-4.6",
+      "provider": "ModelScope",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 202752,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "Qwen/Qwen3-30B-A3B-Thinking-2507": {
+      "id": "Qwen/Qwen3-30B-A3B-Thinking-2507",
+      "name": "Qwen3 30B A3B Thinking 2507",
+      "provider": "ModelScope",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "Qwen/Qwen3-235B-A22B-Instruct-2507": {
+      "id": "Qwen/Qwen3-235B-A22B-Instruct-2507",
+      "name": "Qwen3 235B A22B Instruct 2507",
+      "provider": "ModelScope",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "Qwen/Qwen3-Coder-30B-A3B-Instruct": {
+      "id": "Qwen/Qwen3-Coder-30B-A3B-Instruct",
+      "name": "Qwen3 Coder 30B A3B Instruct",
+      "provider": "ModelScope",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "Qwen/Qwen3-30B-A3B-Instruct-2507": {
+      "id": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+      "name": "Qwen3 30B A3B Instruct 2507",
+      "provider": "ModelScope",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "Qwen/Qwen3-235B-A22B-Thinking-2507": {
+      "id": "Qwen/Qwen3-235B-A22B-Thinking-2507",
+      "name": "Qwen3-235B-A22B-Thinking-2507",
+      "provider": "ModelScope",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    }
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "id": "vultr",
+  "name": "Vultr",
+  "description": "Vultr AI models and services",
+  "api_key_env": "VULTR_API_KEY",
+  "api_base_url": "https://api.vultrinference.com/v1",
+  "models": {
+    "deepseek-r1-distill-qwen-32b": {
+      "id": "deepseek-r1-distill-qwen-32b",
+      "name": "DeepSeek R1 Distill Qwen 32B",
+      "provider": "Vultr",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 121808,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": true
+    },
+    "qwen2.5-coder-32b-instruct": {
+      "id": "qwen2.5-coder-32b-instruct",
+      "name": "Qwen2.5 Coder 32B Instruct",
+      "provider": "Vultr",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 12952,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "kimi-k2-instruct": {
+      "id": "kimi-k2-instruct",
+      "name": "Kimi K2 Instruct",
+      "provider": "Vultr",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 58904,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "deepseek-r1-distill-llama-70b": {
+      "id": "deepseek-r1-distill-llama-70b",
+      "name": "DeepSeek R1 Distill Llama 70B",
+      "provider": "Vultr",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 121808,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "gpt-oss-120b": {
+      "id": "gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "provider": "Vultr",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 121808,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    }
+  }
+}

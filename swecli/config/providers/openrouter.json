@@ -1,0 +1,2087 @@
+{
+  "id": "openrouter",
+  "name": "OpenRouter",
+  "description": "OpenRouter AI models and services",
+  "api_key_env": "OPENROUTER_API_KEY",
+  "api_base_url": "https://openrouter.ai/api/v1",
+  "models": {
+    "moonshotai/kimi-k2": {
+      "id": "moonshotai/kimi-k2",
+      "name": "Kimi K2",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.55,
+        "output": 2.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "moonshotai/kimi-k2-0905": {
+      "id": "moonshotai/kimi-k2-0905",
+      "name": "Kimi K2 Instruct 0905",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.6,
+        "output": 2.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "moonshotai/kimi-dev-72b:free": {
+      "id": "moonshotai/kimi-dev-72b:free",
+      "name": "Kimi Dev 72b (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "moonshotai/kimi-k2-thinking": {
+      "id": "moonshotai/kimi-k2-thinking",
+      "name": "Kimi K2 Thinking",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.6,
+        "output": 2.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "moonshotai/kimi-k2-0905:exacto": {
+      "id": "moonshotai/kimi-k2-0905:exacto",
+      "name": "Kimi K2 Instruct 0905 (exacto)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.6,
+        "output": 2.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "moonshotai/kimi-k2:free": {
+      "id": "moonshotai/kimi-k2:free",
+      "name": "Kimi K2 (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 32800,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "thudm/glm-z1-32b:free": {
+      "id": "thudm/glm-z1-32b:free",
+      "name": "GLM Z1 32B (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 32768,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "nousresearch/hermes-4-70b": {
+      "id": "nousresearch/hermes-4-70b",
+      "name": "Hermes 4 70B",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.13,
+        "output": 0.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "nousresearch/hermes-4-405b": {
+      "id": "nousresearch/hermes-4-405b",
+      "name": "Hermes 4 405B",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 1.0,
+        "output": 3.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "nousresearch/deephermes-3-llama-3-8b-preview": {
+      "id": "nousresearch/deephermes-3-llama-3-8b-preview",
+      "name": "DeepHermes 3 Llama 3 8B Preview",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "nvidia/nemotron-nano-9b-v2": {
+      "id": "nvidia/nemotron-nano-9b-v2",
+      "name": "nvidia-nemotron-nano-9b-v2",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.04,
+        "output": 0.16,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "x-ai/grok-4": {
+      "id": "x-ai/grok-4",
+      "name": "Grok 4",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 3.0,
+        "output": 15.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 256000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "x-ai/grok-code-fast-1": {
+      "id": "x-ai/grok-code-fast-1",
+      "name": "Grok Code Fast 1",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.2,
+        "output": 1.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 256000,
+      "capabilities": [
+        "text",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "x-ai/grok-3": {
+      "id": "x-ai/grok-3",
+      "name": "Grok 3",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 3.0,
+        "output": 15.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "x-ai/grok-4-fast": {
+      "id": "x-ai/grok-4-fast",
+      "name": "Grok 4 Fast",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 2000000,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "x-ai/grok-3-beta": {
+      "id": "x-ai/grok-3-beta",
+      "name": "Grok 3 Beta",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 3.0,
+        "output": 15.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "x-ai/grok-3-mini-beta": {
+      "id": "x-ai/grok-3-mini-beta",
+      "name": "Grok 3 Mini Beta",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.3,
+        "output": 0.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "x-ai/grok-3-mini": {
+      "id": "x-ai/grok-3-mini",
+      "name": "Grok 3 Mini",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.3,
+        "output": 0.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "kwaipilot/kat-coder-pro:free": {
+      "id": "kwaipilot/kat-coder-pro:free",
+      "name": "Kat Coder Pro (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 256000,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": true
+    },
+    "cognitivecomputations/dolphin3.0-mistral-24b": {
+      "id": "cognitivecomputations/dolphin3.0-mistral-24b",
+      "name": "Dolphin3.0 Mistral 24B",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 32768,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "cognitivecomputations/dolphin3.0-r1-mistral-24b": {
+      "id": "cognitivecomputations/dolphin3.0-r1-mistral-24b",
+      "name": "Dolphin3.0 R1 Mistral 24B",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 32768,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "deepseek/deepseek-chat-v3.1": {
+      "id": "deepseek/deepseek-chat-v3.1",
+      "name": "DeepSeek-V3.1",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.8,
+        "unit": "per million tokens"
+      },
+      "context_length": 163840,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "deepseek/deepseek-r1:free": {
+      "id": "deepseek/deepseek-r1:free",
+      "name": "R1 (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 163840,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "deepseek/deepseek-v3-base:free": {
+      "id": "deepseek/deepseek-v3-base:free",
+      "name": "DeepSeek V3 Base (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 163840,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "deepseek/deepseek-v3.1-terminus": {
+      "id": "deepseek/deepseek-v3.1-terminus",
+      "name": "DeepSeek V3.1 Terminus",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.27,
+        "output": 1.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "deepseek/deepseek-r1-0528-qwen3-8b:free": {
+      "id": "deepseek/deepseek-r1-0528-qwen3-8b:free",
+      "name": "Deepseek R1 0528 Qwen3 8B (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "deepseek/deepseek-chat-v3-0324": {
+      "id": "deepseek/deepseek-chat-v3-0324",
+      "name": "DeepSeek V3 0324",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 16384,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "deepseek/deepseek-r1-0528:free": {
+      "id": "deepseek/deepseek-r1-0528:free",
+      "name": "R1 0528 (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 163840,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "deepseek/deepseek-r1-distill-llama-70b": {
+      "id": "deepseek/deepseek-r1-distill-llama-70b",
+      "name": "DeepSeek R1 Distill Llama 70B",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 8192,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "deepseek/deepseek-r1-distill-qwen-14b": {
+      "id": "deepseek/deepseek-r1-distill-qwen-14b",
+      "name": "DeepSeek R1 Distill Qwen 14B",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 64000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "deepseek/deepseek-v3.1-terminus:exacto": {
+      "id": "deepseek/deepseek-v3.1-terminus:exacto",
+      "name": "DeepSeek V3.1 Terminus (exacto)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.27,
+        "output": 1.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "featherless/qwerky-72b": {
+      "id": "featherless/qwerky-72b",
+      "name": "Qwerky 72B",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 32768,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "tngtech/deepseek-r1t2-chimera:free": {
+      "id": "tngtech/deepseek-r1t2-chimera:free",
+      "name": "DeepSeek R1T2 Chimera (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 163840,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "minimax/minimax-m1": {
+      "id": "minimax/minimax-m1",
+      "name": "MiniMax M1",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.4,
+        "output": 2.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 1000000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "minimax/minimax-m2": {
+      "id": "minimax/minimax-m2",
+      "name": "MiniMax M2",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.28,
+        "output": 1.15,
+        "unit": "per million tokens"
+      },
+      "context_length": 196600,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "minimax/minimax-01": {
+      "id": "minimax/minimax-01",
+      "name": "MiniMax-01",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.2,
+        "output": 1.1,
+        "unit": "per million tokens"
+      },
+      "context_length": 1000000,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "google/gemini-2.0-flash-001": {
+      "id": "google/gemini-2.0-flash-001",
+      "name": "Gemini 2.0 Flash",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.1,
+        "output": 0.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "google/gemma-2-9b-it:free": {
+      "id": "google/gemma-2-9b-it:free",
+      "name": "Gemma 2 9B (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 8192,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "google/gemini-2.5-flash": {
+      "id": "google/gemini-2.5-flash",
+      "name": "Gemini 2.5 Flash",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.3,
+        "output": 2.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "google/gemini-2.5-pro-preview-05-06": {
+      "id": "google/gemini-2.5-pro-preview-05-06",
+      "name": "Gemini 2.5 Pro Preview 05-06",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 1.25,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": true
+    },
+    "google/gemma-3n-e4b-it": {
+      "id": "google/gemma-3n-e4b-it",
+      "name": "Gemma 3n E4B IT",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 8192,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "google/gemini-2.5-flash-lite": {
+      "id": "google/gemini-2.5-flash-lite",
+      "name": "Gemini 2.5 Flash Lite",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.1,
+        "output": 0.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "google/gemini-2.5-pro-preview-06-05": {
+      "id": "google/gemini-2.5-pro-preview-06-05",
+      "name": "Gemini 2.5 Pro Preview 06-05",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 1.25,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "google/gemini-2.5-flash-preview-09-2025": {
+      "id": "google/gemini-2.5-flash-preview-09-2025",
+      "name": "Gemini 2.5 Flash Preview 09-25",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.3,
+        "output": 2.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "google/gemini-2.5-pro": {
+      "id": "google/gemini-2.5-pro",
+      "name": "Gemini 2.5 Pro",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 1.25,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "google/gemma-3-12b-it": {
+      "id": "google/gemma-3-12b-it",
+      "name": "Gemma 3 12B IT",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 96000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "google/gemma-3n-e4b-it:free": {
+      "id": "google/gemma-3n-e4b-it:free",
+      "name": "Gemma 3n 4B (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 8192,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "google/gemini-2.5-flash-lite-preview-09-2025": {
+      "id": "google/gemini-2.5-flash-lite-preview-09-2025",
+      "name": "Gemini 2.5 Flash Lite Preview 09-25",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.1,
+        "output": 0.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "google/gemini-2.0-flash-exp:free": {
+      "id": "google/gemini-2.0-flash-exp:free",
+      "name": "Gemini 2.0 Flash Experimental (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.05,
+        "output": 0.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "google/gemma-3-27b-it": {
+      "id": "google/gemma-3-27b-it",
+      "name": "Gemma 3 27B IT",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 96000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "microsoft/mai-ds-r1:free": {
+      "id": "microsoft/mai-ds-r1:free",
+      "name": "MAI DS R1 (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 163840,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-5.1-codex": {
+      "id": "openai/gpt-5.1-codex",
+      "name": "GPT-5.1-Codex",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 1.25,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 400000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-4.1-mini": {
+      "id": "openai/gpt-4.1-mini",
+      "name": "GPT-4.1 Mini",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.4,
+        "output": 1.6,
+        "unit": "per million tokens"
+      },
+      "context_length": 1047576,
+      "capabilities": [
+        "text",
+        "vision",
+        "code"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-5-chat": {
+      "id": "openai/gpt-5-chat",
+      "name": "GPT-5 Chat (latest)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 1.25,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 400000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-5.1-codex-mini": {
+      "id": "openai/gpt-5.1-codex-mini",
+      "name": "GPT-5.1-Codex-Mini",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.25,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 400000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-5.1": {
+      "id": "openai/gpt-5.1",
+      "name": "GPT-5.1",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 1.25,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 400000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-5-nano": {
+      "id": "openai/gpt-5-nano",
+      "name": "GPT-5 Nano",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.05,
+        "output": 0.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 400000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-5-codex": {
+      "id": "openai/gpt-5-codex",
+      "name": "GPT-5 Codex",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 1.25,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 400000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-4.1": {
+      "id": "openai/gpt-4.1",
+      "name": "GPT-4.1",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 2.0,
+        "output": 8.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 1047576,
+      "capabilities": [
+        "text",
+        "vision",
+        "code"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-oss-120b:exacto": {
+      "id": "openai/gpt-oss-120b:exacto",
+      "name": "GPT OSS 120B (exacto)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.05,
+        "output": 0.24,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/o4-mini": {
+      "id": "openai/o4-mini",
+      "name": "o4 Mini",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 1.1,
+        "output": 4.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-5.1-chat": {
+      "id": "openai/gpt-5.1-chat",
+      "name": "GPT-5.1 Chat",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 1.25,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-5-mini": {
+      "id": "openai/gpt-5-mini",
+      "name": "GPT-5 Mini",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.25,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 400000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-5-image": {
+      "id": "openai/gpt-5-image",
+      "name": "GPT-5 Image",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 5.0,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 400000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-oss-20b": {
+      "id": "openai/gpt-oss-20b",
+      "name": "GPT OSS 20B",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.05,
+        "output": 0.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-oss-120b": {
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.072,
+        "output": 0.28,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-4o-mini": {
+      "id": "openai/gpt-4o-mini",
+      "name": "GPT-4o-mini",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.15,
+        "output": 0.6,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-5": {
+      "id": "openai/gpt-5",
+      "name": "GPT-5",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 1.25,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 400000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-5-pro": {
+      "id": "openai/gpt-5-pro",
+      "name": "GPT-5 Pro",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 15.0,
+        "output": 120.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 400000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openrouter/sherlock-think-alpha": {
+      "id": "openrouter/sherlock-think-alpha",
+      "name": "Sherlock Think Alpha",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 1840000,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openrouter/horizon-alpha": {
+      "id": "openrouter/horizon-alpha",
+      "name": "Horizon Alpha",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 256000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "openrouter/polaris-alpha": {
+      "id": "openrouter/polaris-alpha",
+      "name": "Polaris Alpha",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 256000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "openrouter/sherlock-dash-alpha": {
+      "id": "openrouter/sherlock-dash-alpha",
+      "name": "Sherlock Dash Alpha",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 1840000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "openrouter/sonoma-sky-alpha": {
+      "id": "openrouter/sonoma-sky-alpha",
+      "name": "Sonoma Sky Alpha",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 2000000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "openrouter/cypher-alpha:free": {
+      "id": "openrouter/cypher-alpha:free",
+      "name": "Cypher Alpha (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 1000000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "openrouter/sonoma-dusk-alpha": {
+      "id": "openrouter/sonoma-dusk-alpha",
+      "name": "Sonoma Dusk Alpha",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 2000000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "openrouter/horizon-beta": {
+      "id": "openrouter/horizon-beta",
+      "name": "Horizon Beta",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 256000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "z-ai/glm-4.5": {
+      "id": "z-ai/glm-4.5",
+      "name": "GLM 4.5",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.6,
+        "output": 2.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "z-ai/glm-4.5-air": {
+      "id": "z-ai/glm-4.5-air",
+      "name": "GLM 4.5 Air",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.2,
+        "output": 1.1,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "z-ai/glm-4.5v": {
+      "id": "z-ai/glm-4.5v",
+      "name": "GLM 4.5V",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.6,
+        "output": 1.8,
+        "unit": "per million tokens"
+      },
+      "context_length": 64000,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "z-ai/glm-4.6": {
+      "id": "z-ai/glm-4.6",
+      "name": "GLM 4.6",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.6,
+        "output": 2.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "z-ai/glm-4.6:exacto": {
+      "id": "z-ai/glm-4.6:exacto",
+      "name": "GLM 4.6 (exacto)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.6,
+        "output": 1.9,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "z-ai/glm-4.5-air:free": {
+      "id": "z-ai/glm-4.5-air:free",
+      "name": "GLM 4.5 Air (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen3-coder": {
+      "id": "qwen/qwen3-coder",
+      "name": "Qwen3 Coder",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.3,
+        "output": 1.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen3-32b:free": {
+      "id": "qwen/qwen3-32b:free",
+      "name": "Qwen3 32B (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 40960,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen3-next-80b-a3b-instruct": {
+      "id": "qwen/qwen3-next-80b-a3b-instruct",
+      "name": "Qwen3 Next 80B A3B Instruct",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.14,
+        "output": 1.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen-2.5-coder-32b-instruct": {
+      "id": "qwen/qwen-2.5-coder-32b-instruct",
+      "name": "Qwen2.5 Coder 32B Instruct",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 32768,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen3-235b-a22b:free": {
+      "id": "qwen/qwen3-235b-a22b:free",
+      "name": "Qwen3 235B A22B (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "qwen/qwq-32b:free": {
+      "id": "qwen/qwq-32b:free",
+      "name": "QwQ 32B (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 32768,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen3-30b-a3b-thinking-2507": {
+      "id": "qwen/qwen3-30b-a3b-thinking-2507",
+      "name": "Qwen3 30B A3B Thinking 2507",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.8,
+        "unit": "per million tokens"
+      },
+      "context_length": 262000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen3-30b-a3b:free": {
+      "id": "qwen/qwen3-30b-a3b:free",
+      "name": "Qwen3 30B A3B (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 40960,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen2.5-vl-72b-instruct": {
+      "id": "qwen/qwen2.5-vl-72b-instruct",
+      "name": "Qwen2.5 VL 72B Instruct",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 32768,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen3-14b:free": {
+      "id": "qwen/qwen3-14b:free",
+      "name": "Qwen3 14B (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 40960,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen3-30b-a3b-instruct-2507": {
+      "id": "qwen/qwen3-30b-a3b-instruct-2507",
+      "name": "Qwen3 30B A3B Instruct 2507",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.8,
+        "unit": "per million tokens"
+      },
+      "context_length": 262000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen3-235b-a22b-thinking-2507": {
+      "id": "qwen/qwen3-235b-a22b-thinking-2507",
+      "name": "Qwen3 235B A22B Thinking 2507",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.078,
+        "output": 0.312,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen2.5-vl-32b-instruct:free": {
+      "id": "qwen/qwen2.5-vl-32b-instruct:free",
+      "name": "Qwen2.5 VL 32B Instruct (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 8192,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen2.5-vl-72b-instruct:free": {
+      "id": "qwen/qwen2.5-vl-72b-instruct:free",
+      "name": "Qwen2.5 VL 72B Instruct (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 32768,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen3-235b-a22b-07-25:free": {
+      "id": "qwen/qwen3-235b-a22b-07-25:free",
+      "name": "Qwen3 235B A22B Instruct 2507 (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen3-coder:free": {
+      "id": "qwen/qwen3-coder:free",
+      "name": "Qwen3 Coder 480B A35B Instruct (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen3-235b-a22b-07-25": {
+      "id": "qwen/qwen3-235b-a22b-07-25",
+      "name": "Qwen3 235B A22B Instruct 2507",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.15,
+        "output": 0.85,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen3-8b:free": {
+      "id": "qwen/qwen3-8b:free",
+      "name": "Qwen3 8B (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 40960,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen3-max": {
+      "id": "qwen/qwen3-max",
+      "name": "Qwen3 Max",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 1.2,
+        "output": 6.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen3-next-80b-a3b-thinking": {
+      "id": "qwen/qwen3-next-80b-a3b-thinking",
+      "name": "Qwen3 Next 80B A3B Thinking",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.14,
+        "output": 1.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen3-coder:exacto": {
+      "id": "qwen/qwen3-coder:exacto",
+      "name": "Qwen3 Coder (exacto)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.38,
+        "output": 1.53,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "mistralai/devstral-medium-2507": {
+      "id": "mistralai/devstral-medium-2507",
+      "name": "Devstral Medium",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.4,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "mistralai/codestral-2508": {
+      "id": "mistralai/codestral-2508",
+      "name": "Codestral 2508",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.3,
+        "output": 0.9,
+        "unit": "per million tokens"
+      },
+      "context_length": 256000,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "mistralai/mistral-7b-instruct:free": {
+      "id": "mistralai/mistral-7b-instruct:free",
+      "name": "Mistral 7B Instruct (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 32768,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "mistralai/devstral-small-2505": {
+      "id": "mistralai/devstral-small-2505",
+      "name": "Devstral Small",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.06,
+        "output": 0.12,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "mistralai/mistral-small-3.2-24b-instruct": {
+      "id": "mistralai/mistral-small-3.2-24b-instruct",
+      "name": "Mistral Small 3.2 24B Instruct",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 96000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "mistralai/devstral-small-2505:free": {
+      "id": "mistralai/devstral-small-2505:free",
+      "name": "Devstral Small 2505 (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 32768,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "mistralai/mistral-small-3.2-24b-instruct:free": {
+      "id": "mistralai/mistral-small-3.2-24b-instruct:free",
+      "name": "Mistral Small 3.2 24B (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 96000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "mistralai/mistral-medium-3": {
+      "id": "mistralai/mistral-medium-3",
+      "name": "Mistral Medium 3",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.4,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "mistralai/mistral-small-3.1-24b-instruct": {
+      "id": "mistralai/mistral-small-3.1-24b-instruct",
+      "name": "Mistral Small 3.1 24B Instruct",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "mistralai/devstral-small-2507": {
+      "id": "mistralai/devstral-small-2507",
+      "name": "Devstral Small 1.1",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.1,
+        "output": 0.3,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "mistralai/mistral-medium-3.1": {
+      "id": "mistralai/mistral-medium-3.1",
+      "name": "Mistral Medium 3.1",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.4,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "mistralai/mistral-nemo:free": {
+      "id": "mistralai/mistral-nemo:free",
+      "name": "Mistral Nemo (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "rekaai/reka-flash-3": {
+      "id": "rekaai/reka-flash-3",
+      "name": "Reka Flash 3",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.05,
+        "output": 0.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 32768,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "meta-llama/llama-3.2-11b-vision-instruct": {
+      "id": "meta-llama/llama-3.2-11b-vision-instruct",
+      "name": "Llama 3.2 11B Vision Instruct",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "meta-llama/llama-3.3-70b-instruct:free": {
+      "id": "meta-llama/llama-3.3-70b-instruct:free",
+      "name": "Llama 3.3 70B Instruct (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 65536,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "meta-llama/llama-4-scout:free": {
+      "id": "meta-llama/llama-4-scout:free",
+      "name": "Llama 4 Scout (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 64000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "anthropic/claude-opus-4": {
+      "id": "anthropic/claude-opus-4",
+      "name": "Claude Opus 4",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 15.0,
+        "output": 75.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "anthropic/claude-haiku-4.5": {
+      "id": "anthropic/claude-haiku-4.5",
+      "name": "Claude Haiku 4.5",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 1.0,
+        "output": 5.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "anthropic/claude-opus-4.1": {
+      "id": "anthropic/claude-opus-4.1",
+      "name": "Claude Opus 4.1",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 15.0,
+        "output": 75.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "anthropic/claude-3.7-sonnet": {
+      "id": "anthropic/claude-3.7-sonnet",
+      "name": "Claude Sonnet 3.7",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 15.0,
+        "output": 75.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "anthropic/claude-3.5-haiku": {
+      "id": "anthropic/claude-3.5-haiku",
+      "name": "Claude Haiku 3.5",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.8,
+        "output": 4.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code"
+      ],
+      "recommended": false
+    },
+    "anthropic/claude-sonnet-4": {
+      "id": "anthropic/claude-sonnet-4",
+      "name": "Claude Sonnet 4",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 3.0,
+        "output": 15.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "anthropic/claude-sonnet-4.5": {
+      "id": "anthropic/claude-sonnet-4.5",
+      "name": "Claude Sonnet 4.5",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 3.0,
+        "output": 15.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 1000000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "sarvamai/sarvam-m:free": {
+      "id": "sarvamai/sarvam-m:free",
+      "name": "Sarvam-M (free)",
+      "provider": "OpenRouter",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 32768,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    }
+  }
+}

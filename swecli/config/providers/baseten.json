@@ -1,0 +1,71 @@
+{
+  "id": "baseten",
+  "name": "Baseten",
+  "description": "Baseten AI models and services",
+  "api_key_env": "BASETEN_API_KEY",
+  "api_base_url": "https://inference.baseten.co/v1",
+  "models": {
+    "moonshotai/Kimi-K2-Instruct-0905": {
+      "id": "moonshotai/Kimi-K2-Instruct-0905",
+      "name": "Kimi K2 Instruct 0905",
+      "provider": "Baseten",
+      "pricing": {
+        "input": 0.6,
+        "output": 2.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": true
+    },
+    "moonshotai/Kimi-K2-Thinking": {
+      "id": "moonshotai/Kimi-K2-Thinking",
+      "name": "Kimi K2 Thinking",
+      "provider": "Baseten",
+      "pricing": {
+        "input": 0.6,
+        "output": 2.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "Qwen/Qwen3-Coder-480B-A35B-Instruct": {
+      "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct",
+      "name": "Qwen3 Coder 480B A35B Instruct",
+      "provider": "Baseten",
+      "pricing": {
+        "input": 0.38,
+        "output": 1.53,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "zai-org/GLM-4.6": {
+      "id": "zai-org/GLM-4.6",
+      "name": "GLM 4.6",
+      "provider": "Baseten",
+      "pricing": {
+        "input": 0.6,
+        "output": 2.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    }
+  }
+}

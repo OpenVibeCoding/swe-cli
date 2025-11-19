@@ -1,0 +1,72 @@
+{
+  "id": "cerebras",
+  "name": "Cerebras",
+  "description": "Cerebras AI models and services",
+  "api_key_env": "CEREBRAS_API_KEY",
+  "api_base_url": "",
+  "models": {
+    "qwen-3-235b-a22b-instruct-2507": {
+      "id": "qwen-3-235b-a22b-instruct-2507",
+      "name": "Qwen 3 235B Instruct",
+      "provider": "Cerebras",
+      "pricing": {
+        "input": 0.6,
+        "output": 1.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 131000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": true
+    },
+    "zai-glm-4.6": {
+      "id": "zai-glm-4.6",
+      "name": "Z.AI GLM-4.6",
+      "provider": "Cerebras",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "qwen-3-coder-480b": {
+      "id": "qwen-3-coder-480b",
+      "name": "Qwen 3 Coder 480B",
+      "provider": "Cerebras",
+      "pricing": {
+        "input": 2.0,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131000,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "gpt-oss-120b": {
+      "id": "gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "provider": "Cerebras",
+      "pricing": {
+        "input": 0.25,
+        "output": 0.69,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    }
+  }
+}

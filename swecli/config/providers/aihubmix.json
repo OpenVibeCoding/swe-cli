@@ -1,0 +1,396 @@
+{
+  "id": "aihubmix",
+  "name": "AIHubMix",
+  "description": "AIHubMix AI models and services",
+  "api_key_env": "AIHUBMIX_API_KEY",
+  "api_base_url": "",
+  "models": {
+    "gpt-4.1-nano": {
+      "id": "gpt-4.1-nano",
+      "name": "GPT-4.1 nano",
+      "provider": "AIHubMix",
+      "pricing": {
+        "input": 0.1,
+        "output": 0.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 1047576,
+      "capabilities": [
+        "text",
+        "vision",
+        "code"
+      ],
+      "recommended": true
+    },
+    "qwen3-235b-a22b-instruct-2507": {
+      "id": "qwen3-235b-a22b-instruct-2507",
+      "name": "Qwen3 235B A22B Instruct 2507",
+      "provider": "AIHubMix",
+      "pricing": {
+        "input": 0.28,
+        "output": 1.12,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "claude-opus-4-1": {
+      "id": "claude-opus-4-1",
+      "name": "Claude Opus 4.1",
+      "provider": "AIHubMix",
+      "pricing": {
+        "input": 16.5,
+        "output": 82.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "claude-haiku-4-5": {
+      "id": "claude-haiku-4-5",
+      "name": "Claude Haiku 4.5",
+      "provider": "AIHubMix",
+      "pricing": {
+        "input": 1.1,
+        "output": 5.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "gemini-2.5-flash": {
+      "id": "gemini-2.5-flash",
+      "name": "Gemini 2.5 Flash",
+      "provider": "AIHubMix",
+      "pricing": {
+        "input": 0.075,
+        "output": 0.3,
+        "unit": "per million tokens"
+      },
+      "context_length": 1000000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "gpt-4.1-mini": {
+      "id": "gpt-4.1-mini",
+      "name": "GPT-4.1 mini",
+      "provider": "AIHubMix",
+      "pricing": {
+        "input": 0.4,
+        "output": 1.6,
+        "unit": "per million tokens"
+      },
+      "context_length": 1047576,
+      "capabilities": [
+        "text",
+        "vision",
+        "code"
+      ],
+      "recommended": true
+    },
+    "claude-sonnet-4-5": {
+      "id": "claude-sonnet-4-5",
+      "name": "Claude Sonnet 4.5",
+      "provider": "AIHubMix",
+      "pricing": {
+        "input": 3.3,
+        "output": 16.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "DeepSeek-V3.2-Exp": {
+      "id": "DeepSeek-V3.2-Exp",
+      "name": "DeepSeek-V3.2-Exp",
+      "provider": "AIHubMix",
+      "pricing": {
+        "input": 0.27,
+        "output": 0.41,
+        "unit": "per million tokens"
+      },
+      "context_length": 163000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "qwen3-235b-a22b-thinking-2507": {
+      "id": "qwen3-235b-a22b-thinking-2507",
+      "name": "Qwen3 235B A22B Thinking 2507",
+      "provider": "AIHubMix",
+      "pricing": {
+        "input": 0.28,
+        "output": 2.8,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "gpt-5-nano": {
+      "id": "gpt-5-nano",
+      "name": "GPT-5-Nano",
+      "provider": "AIHubMix",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code"
+      ],
+      "recommended": false
+    },
+    "gpt-5-codex": {
+      "id": "gpt-5-codex",
+      "name": "GPT-5-Codex",
+      "provider": "AIHubMix",
+      "pricing": {
+        "input": 1.25,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 400000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "gpt-4o": {
+      "id": "gpt-4o",
+      "name": "GPT-4o",
+      "provider": "AIHubMix",
+      "pricing": {
+        "input": 2.5,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code"
+      ],
+      "recommended": false
+    },
+    "gpt-4.1": {
+      "id": "gpt-4.1",
+      "name": "GPT-4.1",
+      "provider": "AIHubMix",
+      "pricing": {
+        "input": 2.0,
+        "output": 8.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 1047576,
+      "capabilities": [
+        "text",
+        "vision",
+        "code"
+      ],
+      "recommended": false
+    },
+    "glm-4.6": {
+      "id": "glm-4.6",
+      "name": "GLM-4.6",
+      "provider": "AIHubMix",
+      "pricing": {
+        "input": 0.27,
+        "output": 1.1,
+        "unit": "per million tokens"
+      },
+      "context_length": 204800,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "o4-mini": {
+      "id": "o4-mini",
+      "name": "o4-mini",
+      "provider": "AIHubMix",
+      "pricing": {
+        "input": 1.5,
+        "output": 6.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "gpt-5-mini": {
+      "id": "gpt-5-mini",
+      "name": "GPT-5-Mini",
+      "provider": "AIHubMix",
+      "pricing": {
+        "input": 1.5,
+        "output": 6.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "gemini-2.5-pro": {
+      "id": "gemini-2.5-pro",
+      "name": "Gemini 2.5 Pro",
+      "provider": "AIHubMix",
+      "pricing": {
+        "input": 1.25,
+        "output": 5.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 2000000,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "DeepSeek-V3.2-Exp-Think": {
+      "id": "DeepSeek-V3.2-Exp-Think",
+      "name": "DeepSeek-V3.2-Exp-Think",
+      "provider": "AIHubMix",
+      "pricing": {
+        "input": 0.27,
+        "output": 0.41,
+        "unit": "per million tokens"
+      },
+      "context_length": 131000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "gpt-4o-2024-11-20": {
+      "id": "gpt-4o-2024-11-20",
+      "name": "GPT-4o (2024-11-20)",
+      "provider": "AIHubMix",
+      "pricing": {
+        "input": 2.5,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code"
+      ],
+      "recommended": false
+    },
+    "qwen3-coder-480b-a35b-instruct": {
+      "id": "qwen3-coder-480b-a35b-instruct",
+      "name": "Qwen3 Coder 480B A35B Instruct",
+      "provider": "AIHubMix",
+      "pricing": {
+        "input": 0.82,
+        "output": 3.29,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "gpt-5": {
+      "id": "gpt-5",
+      "name": "GPT-5",
+      "provider": "AIHubMix",
+      "pricing": {
+        "input": 5.0,
+        "output": 20.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 400000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "Kimi-K2-0905": {
+      "id": "Kimi-K2-0905",
+      "name": "Kimi K2 0905",
+      "provider": "AIHubMix",
+      "pricing": {
+        "input": 0.55,
+        "output": 2.19,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "gpt-5-pro": {
+      "id": "gpt-5-pro",
+      "name": "GPT-5-Pro",
+      "provider": "AIHubMix",
+      "pricing": {
+        "input": 7.0,
+        "output": 28.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 400000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    }
+  }
+}

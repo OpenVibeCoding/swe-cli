@@ -1,0 +1,60 @@
+{
+  "id": "v0",
+  "name": "v0",
+  "description": "v0 AI models and services",
+  "api_key_env": "V0_API_KEY",
+  "api_base_url": "",
+  "models": {
+    "v0-1.5-lg": {
+      "id": "v0-1.5-lg",
+      "name": "v0-1.5-lg",
+      "provider": "v0",
+      "pricing": {
+        "input": 15.0,
+        "output": 75.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 512000,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": true
+    },
+    "v0-1.5-md": {
+      "id": "v0-1.5-md",
+      "name": "v0-1.5-md",
+      "provider": "v0",
+      "pricing": {
+        "input": 3.0,
+        "output": 15.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": true
+    },
+    "v0-1.0-md": {
+      "id": "v0-1.0-md",
+      "name": "v0-1.0-md",
+      "provider": "v0",
+      "pricing": {
+        "input": 3.0,
+        "output": 15.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    }
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "id": "deepinfra",
+  "name": "Deep Infra",
+  "description": "Deep Infra AI models and services",
+  "api_key_env": "DEEPINFRA_API_KEY",
+  "api_base_url": "",
+  "models": {
+    "moonshotai/Kimi-K2-Instruct": {
+      "id": "moonshotai/Kimi-K2-Instruct",
+      "name": "Kimi K2",
+      "provider": "Deep Infra",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": true
+    },
+    "openai/gpt-oss-20b": {
+      "id": "openai/gpt-oss-20b",
+      "name": "GPT OSS 20B",
+      "provider": "Deep Infra",
+      "pricing": {
+        "input": 0.03,
+        "output": 0.14,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-oss-120b": {
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "provider": "Deep Infra",
+      "pricing": {
+        "input": 0.05,
+        "output": 0.24,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "Qwen/Qwen3-Coder-480B-A35B-Instruct": {
+      "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct",
+      "name": "Qwen3 Coder 480B A35B Instruct",
+      "provider": "Deep Infra",
+      "pricing": {
+        "input": 0.4,
+        "output": 1.6,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo": {
+      "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo",
+      "name": "Qwen3 Coder 480B A35B Instruct Turbo",
+      "provider": "Deep Infra",
+      "pricing": {
+        "input": 0.3,
+        "output": 1.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "zai-org/GLM-4.5": {
+      "id": "zai-org/GLM-4.5",
+      "name": "GLM-4.5",
+      "provider": "Deep Infra",
+      "pricing": {
+        "input": 0.6,
+        "output": 2.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    }
+  }
+}

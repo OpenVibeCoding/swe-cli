@@ -1,0 +1,226 @@
+{
+  "id": "huggingface",
+  "name": "Hugging Face",
+  "description": "Hugging Face AI models and services",
+  "api_key_env": "HF_TOKEN",
+  "api_base_url": "https://router.huggingface.co/v1",
+  "models": {
+    "moonshotai/Kimi-K2-Instruct": {
+      "id": "moonshotai/Kimi-K2-Instruct",
+      "name": "Kimi-K2-Instruct",
+      "provider": "Hugging Face",
+      "pricing": {
+        "input": 1.0,
+        "output": 3.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": true
+    },
+    "moonshotai/Kimi-K2-Instruct-0905": {
+      "id": "moonshotai/Kimi-K2-Instruct-0905",
+      "name": "Kimi-K2-Instruct-0905",
+      "provider": "Hugging Face",
+      "pricing": {
+        "input": 1.0,
+        "output": 3.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "MiniMaxAI/MiniMax-M2": {
+      "id": "MiniMaxAI/MiniMax-M2",
+      "name": "MiniMax-M2",
+      "provider": "Hugging Face",
+      "pricing": {
+        "input": 0.3,
+        "output": 1.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 204800,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "Qwen/Qwen3-Embedding-8B": {
+      "id": "Qwen/Qwen3-Embedding-8B",
+      "name": "Qwen 3 Embedding 4B",
+      "provider": "Hugging Face",
+      "pricing": {
+        "input": 0.01,
+        "output": 0.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 32000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "Qwen/Qwen3-Embedding-4B": {
+      "id": "Qwen/Qwen3-Embedding-4B",
+      "name": "Qwen 3 Embedding 4B",
+      "provider": "Hugging Face",
+      "pricing": {
+        "input": 0.01,
+        "output": 0.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 32000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "Qwen/Qwen3-Coder-480B-A35B-Instruct": {
+      "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct",
+      "name": "Qwen3-Coder-480B-A35B-Instruct",
+      "provider": "Hugging Face",
+      "pricing": {
+        "input": 2.0,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "Qwen/Qwen3-235B-A22B-Thinking-2507": {
+      "id": "Qwen/Qwen3-235B-A22B-Thinking-2507",
+      "name": "Qwen3-235B-A22B-Thinking-2507",
+      "provider": "Hugging Face",
+      "pricing": {
+        "input": 0.3,
+        "output": 3.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "Qwen/Qwen3-Next-80B-A3B-Instruct": {
+      "id": "Qwen/Qwen3-Next-80B-A3B-Instruct",
+      "name": "Qwen3-Next-80B-A3B-Instruct",
+      "provider": "Hugging Face",
+      "pricing": {
+        "input": 0.25,
+        "output": 1.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "Qwen/Qwen3-Next-80B-A3B-Thinking": {
+      "id": "Qwen/Qwen3-Next-80B-A3B-Thinking",
+      "name": "Qwen3-Next-80B-A3B-Thinking",
+      "provider": "Hugging Face",
+      "pricing": {
+        "input": 0.3,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "zai-org/GLM-4.5": {
+      "id": "zai-org/GLM-4.5",
+      "name": "GLM-4.5",
+      "provider": "Hugging Face",
+      "pricing": {
+        "input": 0.6,
+        "output": 2.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "zai-org/GLM-4.6": {
+      "id": "zai-org/GLM-4.6",
+      "name": "GLM-4.6",
+      "provider": "Hugging Face",
+      "pricing": {
+        "input": 0.6,
+        "output": 2.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "zai-org/GLM-4.5-Air": {
+      "id": "zai-org/GLM-4.5-Air",
+      "name": "GLM-4.5-Air",
+      "provider": "Hugging Face",
+      "pricing": {
+        "input": 0.2,
+        "output": 1.1,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "deepseek-ai/Deepseek-V3-0324": {
+      "id": "deepseek-ai/Deepseek-V3-0324",
+      "name": "DeepSeek-V3-0324",
+      "provider": "Hugging Face",
+      "pricing": {
+        "input": 1.25,
+        "output": 1.25,
+        "unit": "per million tokens"
+      },
+      "context_length": 16384,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "deepseek-ai/DeepSeek-R1-0528": {
+      "id": "deepseek-ai/DeepSeek-R1-0528",
+      "name": "DeepSeek-R1-0528",
+      "provider": "Hugging Face",
+      "pricing": {
+        "input": 3.0,
+        "output": 5.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 163840,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    }
+  }
+}

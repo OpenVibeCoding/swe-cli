@@ -1,0 +1,40 @@
+{
+  "id": "upstage",
+  "name": "Upstage",
+  "description": "Upstage AI models and services",
+  "api_key_env": "UPSTAGE_API_KEY",
+  "api_base_url": "https://api.upstage.ai",
+  "models": {
+    "solar-mini": {
+      "id": "solar-mini",
+      "name": "solar-mini",
+      "provider": "Upstage",
+      "pricing": {
+        "input": 0.15,
+        "output": 0.15,
+        "unit": "per million tokens"
+      },
+      "context_length": 32768,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": true
+    },
+    "solar-pro2": {
+      "id": "solar-pro2",
+      "name": "solar-pro2",
+      "provider": "Upstage",
+      "pricing": {
+        "input": 0.25,
+        "output": 0.25,
+        "unit": "per million tokens"
+      },
+      "context_length": 65536,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": true
+    }
+  }
+}

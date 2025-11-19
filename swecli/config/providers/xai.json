@@ -1,0 +1,323 @@
+{
+  "id": "xai",
+  "name": "xAI",
+  "description": "xAI AI models and services",
+  "api_key_env": "XAI_API_KEY",
+  "api_base_url": "",
+  "models": {
+    "grok-4-fast-non-reasoning": {
+      "id": "grok-4-fast-non-reasoning",
+      "name": "Grok 4 Fast (Non-Reasoning)",
+      "provider": "xAI",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 2000000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "grok-3-fast": {
+      "id": "grok-3-fast",
+      "name": "Grok 3 Fast",
+      "provider": "xAI",
+      "pricing": {
+        "input": 5.0,
+        "output": 25.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "grok-4": {
+      "id": "grok-4",
+      "name": "Grok 4",
+      "provider": "xAI",
+      "pricing": {
+        "input": 3.0,
+        "output": 15.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 256000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "grok-2-vision": {
+      "id": "grok-2-vision",
+      "name": "Grok 2 Vision",
+      "provider": "xAI",
+      "pricing": {
+        "input": 2.0,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 8192,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "grok-code-fast-1": {
+      "id": "grok-code-fast-1",
+      "name": "Grok Code Fast 1",
+      "provider": "xAI",
+      "pricing": {
+        "input": 0.2,
+        "output": 1.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 256000,
+      "capabilities": [
+        "text",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "grok-2": {
+      "id": "grok-2",
+      "name": "Grok 2",
+      "provider": "xAI",
+      "pricing": {
+        "input": 2.0,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "grok-3-mini-fast-latest": {
+      "id": "grok-3-mini-fast-latest",
+      "name": "Grok 3 Mini Fast Latest",
+      "provider": "xAI",
+      "pricing": {
+        "input": 0.6,
+        "output": 4.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": true
+    },
+    "grok-2-vision-1212": {
+      "id": "grok-2-vision-1212",
+      "name": "Grok 2 Vision (1212)",
+      "provider": "xAI",
+      "pricing": {
+        "input": 2.0,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 8192,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "grok-3": {
+      "id": "grok-3",
+      "name": "Grok 3",
+      "provider": "xAI",
+      "pricing": {
+        "input": 3.0,
+        "output": 15.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "grok-4-fast": {
+      "id": "grok-4-fast",
+      "name": "Grok 4 Fast",
+      "provider": "xAI",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 2000000,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "grok-2-latest": {
+      "id": "grok-2-latest",
+      "name": "Grok 2 Latest",
+      "provider": "xAI",
+      "pricing": {
+        "input": 2.0,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": true
+    },
+    "grok-2-1212": {
+      "id": "grok-2-1212",
+      "name": "Grok 2 (1212)",
+      "provider": "xAI",
+      "pricing": {
+        "input": 2.0,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "grok-3-fast-latest": {
+      "id": "grok-3-fast-latest",
+      "name": "Grok 3 Fast Latest",
+      "provider": "xAI",
+      "pricing": {
+        "input": 5.0,
+        "output": 25.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "grok-3-latest": {
+      "id": "grok-3-latest",
+      "name": "Grok 3 Latest",
+      "provider": "xAI",
+      "pricing": {
+        "input": 3.0,
+        "output": 15.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "grok-2-vision-latest": {
+      "id": "grok-2-vision-latest",
+      "name": "Grok 2 Vision Latest",
+      "provider": "xAI",
+      "pricing": {
+        "input": 2.0,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 8192,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "grok-vision-beta": {
+      "id": "grok-vision-beta",
+      "name": "Grok Vision Beta",
+      "provider": "xAI",
+      "pricing": {
+        "input": 5.0,
+        "output": 15.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 8192,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "grok-3-mini": {
+      "id": "grok-3-mini",
+      "name": "Grok 3 Mini",
+      "provider": "xAI",
+      "pricing": {
+        "input": 0.3,
+        "output": 0.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "grok-beta": {
+      "id": "grok-beta",
+      "name": "Grok Beta",
+      "provider": "xAI",
+      "pricing": {
+        "input": 5.0,
+        "output": 15.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "grok-3-mini-latest": {
+      "id": "grok-3-mini-latest",
+      "name": "Grok 3 Mini Latest",
+      "provider": "xAI",
+      "pricing": {
+        "input": 0.3,
+        "output": 0.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "grok-3-mini-fast": {
+      "id": "grok-3-mini-fast",
+      "name": "Grok 3 Mini Fast",
+      "provider": "xAI",
+      "pricing": {
+        "input": 0.6,
+        "output": 4.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    }
+  }
+}

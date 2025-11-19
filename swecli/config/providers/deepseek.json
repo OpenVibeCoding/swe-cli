@@ -1,0 +1,42 @@
+{
+  "id": "deepseek",
+  "name": "DeepSeek",
+  "description": "DeepSeek AI models and services",
+  "api_key_env": "DEEPSEEK_API_KEY",
+  "api_base_url": "https://api.deepseek.com",
+  "models": {
+    "deepseek-chat": {
+      "id": "deepseek-chat",
+      "name": "DeepSeek Chat",
+      "provider": "DeepSeek",
+      "pricing": {
+        "input": 0.28,
+        "output": 0.42,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": true
+    },
+    "deepseek-reasoner": {
+      "id": "deepseek-reasoner",
+      "name": "DeepSeek Reasoner",
+      "provider": "DeepSeek",
+      "pricing": {
+        "input": 0.28,
+        "output": 0.42,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": true
+    }
+  }
+}

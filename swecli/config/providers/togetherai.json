@@ -1,0 +1,104 @@
+{
+  "id": "togetherai",
+  "name": "Together AI",
+  "description": "Together AI AI models and services",
+  "api_key_env": "TOGETHER_API_KEY",
+  "api_base_url": "",
+  "models": {
+    "moonshotai/Kimi-K2-Instruct": {
+      "id": "moonshotai/Kimi-K2-Instruct",
+      "name": "Kimi K2 Instruct",
+      "provider": "Together AI",
+      "pricing": {
+        "input": 1.0,
+        "output": 3.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": true
+    },
+    "openai/gpt-oss-120b": {
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "provider": "Together AI",
+      "pricing": {
+        "input": 0.15,
+        "output": 0.6,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "meta-llama/Llama-3.3-70B-Instruct-Turbo": {
+      "id": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+      "name": "Llama 3.3 70B",
+      "provider": "Together AI",
+      "pricing": {
+        "input": 0.88,
+        "output": 0.88,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8": {
+      "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8",
+      "name": "Qwen3 Coder 480B A35B Instruct",
+      "provider": "Together AI",
+      "pricing": {
+        "input": 2.0,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "deepseek-ai/DeepSeek-R1": {
+      "id": "deepseek-ai/DeepSeek-R1",
+      "name": "DeepSeek R1",
+      "provider": "Together AI",
+      "pricing": {
+        "input": 3.0,
+        "output": 7.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 163839,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "deepseek-ai/DeepSeek-V3": {
+      "id": "deepseek-ai/DeepSeek-V3",
+      "name": "DeepSeek V3",
+      "provider": "Together AI",
+      "pricing": {
+        "input": 1.25,
+        "output": 1.25,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    }
+  }
+}

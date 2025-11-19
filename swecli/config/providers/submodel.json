@@ -1,0 +1,151 @@
+{
+  "id": "submodel",
+  "name": "submodel",
+  "description": "submodel AI models and services",
+  "api_key_env": "SUBMODEL_INSTAGEN_ACCESS_KEY",
+  "api_base_url": "https://llm.submodel.ai/v1",
+  "models": {
+    "openai/gpt-oss-120b": {
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "provider": "submodel",
+      "pricing": {
+        "input": 0.1,
+        "output": 0.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "code",
+        "reasoning"
+      ],
+      "recommended": true
+    },
+    "Qwen/Qwen3-235B-A22B-Instruct-2507": {
+      "id": "Qwen/Qwen3-235B-A22B-Instruct-2507",
+      "name": "Qwen3 235B A22B Instruct 2507",
+      "provider": "submodel",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.3,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8": {
+      "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8",
+      "name": "Qwen3 Coder 480B A35B Instruct",
+      "provider": "submodel",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.8,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "Qwen/Qwen3-235B-A22B-Thinking-2507": {
+      "id": "Qwen/Qwen3-235B-A22B-Thinking-2507",
+      "name": "Qwen3 235B A22B Thinking 2507",
+      "provider": "submodel",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.6,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "zai-org/GLM-4.5-FP8": {
+      "id": "zai-org/GLM-4.5-FP8",
+      "name": "GLM 4.5 FP8",
+      "provider": "submodel",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.8,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "zai-org/GLM-4.5-Air": {
+      "id": "zai-org/GLM-4.5-Air",
+      "name": "GLM 4.5 Air",
+      "provider": "submodel",
+      "pricing": {
+        "input": 0.1,
+        "output": 0.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "deepseek-ai/DeepSeek-R1-0528": {
+      "id": "deepseek-ai/DeepSeek-R1-0528",
+      "name": "DeepSeek R1 0528",
+      "provider": "submodel",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.15,
+        "unit": "per million tokens"
+      },
+      "context_length": 75000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "deepseek-ai/DeepSeek-V3.1": {
+      "id": "deepseek-ai/DeepSeek-V3.1",
+      "name": "DeepSeek V3.1",
+      "provider": "submodel",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.8,
+        "unit": "per million tokens"
+      },
+      "context_length": 75000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "deepseek-ai/DeepSeek-V3-0324": {
+      "id": "deepseek-ai/DeepSeek-V3-0324",
+      "name": "DeepSeek V3 0324",
+      "provider": "submodel",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.8,
+        "unit": "per million tokens"
+      },
+      "context_length": 75000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    }
+  }
+}

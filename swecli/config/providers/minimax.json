@@ -1,0 +1,25 @@
+{
+  "id": "minimax",
+  "name": "Minimax",
+  "description": "Minimax AI models and services",
+  "api_key_env": "MINIMAX_API_KEY",
+  "api_base_url": "https://api.minimax.io/anthropic/v1",
+  "models": {
+    "MiniMax-M2": {
+      "id": "MiniMax-M2",
+      "name": "Minimax-M2",
+      "provider": "Minimax",
+      "pricing": {
+        "input": 0.3,
+        "output": 1.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 196608,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": true
+    }
+  }
+}

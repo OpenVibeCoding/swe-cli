@@ -1,0 +1,374 @@
+{
+  "id": "synthetic",
+  "name": "Synthetic",
+  "description": "Synthetic AI models and services",
+  "api_key_env": "SYNTHETIC_API_KEY",
+  "api_base_url": "https://api.synthetic.new/v1",
+  "models": {
+    "hf:Qwen/Qwen3-235B-A22B-Instruct-2507": {
+      "id": "hf:Qwen/Qwen3-235B-A22B-Instruct-2507",
+      "name": "Qwen 3 235B Instruct",
+      "provider": "Synthetic",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.6,
+        "unit": "per million tokens"
+      },
+      "context_length": 256000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": true
+    },
+    "hf:Qwen/Qwen2.5-Coder-32B-Instruct": {
+      "id": "hf:Qwen/Qwen2.5-Coder-32B-Instruct",
+      "name": "Qwen2.5-Coder-32B-Instruct",
+      "provider": "Synthetic",
+      "pricing": {
+        "input": 0.8,
+        "output": 0.8,
+        "unit": "per million tokens"
+      },
+      "context_length": 32768,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "hf:Qwen/Qwen3-Coder-480B-A35B-Instruct": {
+      "id": "hf:Qwen/Qwen3-Coder-480B-A35B-Instruct",
+      "name": "Qwen 3 Coder 480B",
+      "provider": "Synthetic",
+      "pricing": {
+        "input": 2.0,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 256000,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "hf:Qwen/Qwen3-235B-A22B-Thinking-2507": {
+      "id": "hf:Qwen/Qwen3-235B-A22B-Thinking-2507",
+      "name": "Qwen3 235B A22B Thinking 2507",
+      "provider": "Synthetic",
+      "pricing": {
+        "input": 0.65,
+        "output": 3.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 256000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "hf:MiniMaxAI/MiniMax-M2": {
+      "id": "hf:MiniMaxAI/MiniMax-M2",
+      "name": "Minimax-M2",
+      "provider": "Synthetic",
+      "pricing": {
+        "input": 0.55,
+        "output": 2.19,
+        "unit": "per million tokens"
+      },
+      "context_length": 196608,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "hf:meta-llama/Llama-3.1-70B-Instruct": {
+      "id": "hf:meta-llama/Llama-3.1-70B-Instruct",
+      "name": "Llama-3.1-70B-Instruct",
+      "provider": "Synthetic",
+      "pricing": {
+        "input": 0.9,
+        "output": 0.9,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "hf:meta-llama/Llama-3.1-8B-Instruct": {
+      "id": "hf:meta-llama/Llama-3.1-8B-Instruct",
+      "name": "Llama-3.1-8B-Instruct",
+      "provider": "Synthetic",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "hf:meta-llama/Llama-3.3-70B-Instruct": {
+      "id": "hf:meta-llama/Llama-3.3-70B-Instruct",
+      "name": "Llama-3.3-70B-Instruct",
+      "provider": "Synthetic",
+      "pricing": {
+        "input": 0.9,
+        "output": 0.9,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "hf:meta-llama/Llama-4-Scout-17B-16E-Instruct": {
+      "id": "hf:meta-llama/Llama-4-Scout-17B-16E-Instruct",
+      "name": "Llama-4-Scout-17B-16E-Instruct",
+      "provider": "Synthetic",
+      "pricing": {
+        "input": 0.15,
+        "output": 0.6,
+        "unit": "per million tokens"
+      },
+      "context_length": 328000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "hf:meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8": {
+      "id": "hf:meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8",
+      "name": "Llama-4-Maverick-17B-128E-Instruct-FP8",
+      "provider": "Synthetic",
+      "pricing": {
+        "input": 0.22,
+        "output": 0.88,
+        "unit": "per million tokens"
+      },
+      "context_length": 524000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "hf:meta-llama/Llama-3.1-405B-Instruct": {
+      "id": "hf:meta-llama/Llama-3.1-405B-Instruct",
+      "name": "Llama-3.1-405B-Instruct",
+      "provider": "Synthetic",
+      "pricing": {
+        "input": 3.0,
+        "output": 3.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "hf:moonshotai/Kimi-K2-Instruct": {
+      "id": "hf:moonshotai/Kimi-K2-Instruct",
+      "name": "Kimi K2",
+      "provider": "Synthetic",
+      "pricing": {
+        "input": 0.6,
+        "output": 2.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "hf:moonshotai/Kimi-K2-Instruct-0905": {
+      "id": "hf:moonshotai/Kimi-K2-Instruct-0905",
+      "name": "Kimi K2 0905",
+      "provider": "Synthetic",
+      "pricing": {
+        "input": 1.2,
+        "output": 1.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "hf:moonshotai/Kimi-K2-Thinking": {
+      "id": "hf:moonshotai/Kimi-K2-Thinking",
+      "name": "Kimi K2 Thinking",
+      "provider": "Synthetic",
+      "pricing": {
+        "input": 0.55,
+        "output": 2.19,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "hf:zai-org/GLM-4.5": {
+      "id": "hf:zai-org/GLM-4.5",
+      "name": "GLM 4.5",
+      "provider": "Synthetic",
+      "pricing": {
+        "input": 0.55,
+        "output": 2.19,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "hf:zai-org/GLM-4.6": {
+      "id": "hf:zai-org/GLM-4.6",
+      "name": "GLM 4.6",
+      "provider": "Synthetic",
+      "pricing": {
+        "input": 0.55,
+        "output": 2.19,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "hf:deepseek-ai/DeepSeek-R1": {
+      "id": "hf:deepseek-ai/DeepSeek-R1",
+      "name": "DeepSeek R1",
+      "provider": "Synthetic",
+      "pricing": {
+        "input": 0.55,
+        "output": 2.19,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "hf:deepseek-ai/DeepSeek-R1-0528": {
+      "id": "hf:deepseek-ai/DeepSeek-R1-0528",
+      "name": "DeepSeek R1 (0528)",
+      "provider": "Synthetic",
+      "pricing": {
+        "input": 3.0,
+        "output": 8.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "hf:deepseek-ai/DeepSeek-V3.1-Terminus": {
+      "id": "hf:deepseek-ai/DeepSeek-V3.1-Terminus",
+      "name": "DeepSeek V3.1 Terminus",
+      "provider": "Synthetic",
+      "pricing": {
+        "input": 1.2,
+        "output": 1.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "hf:deepseek-ai/DeepSeek-V3": {
+      "id": "hf:deepseek-ai/DeepSeek-V3",
+      "name": "DeepSeek V3",
+      "provider": "Synthetic",
+      "pricing": {
+        "input": 1.25,
+        "output": 1.25,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "hf:deepseek-ai/DeepSeek-V3.1": {
+      "id": "hf:deepseek-ai/DeepSeek-V3.1",
+      "name": "DeepSeek V3.1",
+      "provider": "Synthetic",
+      "pricing": {
+        "input": 0.56,
+        "output": 1.68,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "hf:deepseek-ai/DeepSeek-V3-0324": {
+      "id": "hf:deepseek-ai/DeepSeek-V3-0324",
+      "name": "DeepSeek V3 (0324)",
+      "provider": "Synthetic",
+      "pricing": {
+        "input": 1.2,
+        "output": 1.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "hf:openai/gpt-oss-120b": {
+      "id": "hf:openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "provider": "Synthetic",
+      "pricing": {
+        "input": 0.1,
+        "output": 0.1,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    }
+  }
+}

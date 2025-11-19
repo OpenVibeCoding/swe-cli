@@ -1,0 +1,274 @@
+{
+  "id": "groq",
+  "name": "Groq",
+  "description": "Groq AI models and services",
+  "api_key_env": "GROQ_API_KEY",
+  "api_base_url": "",
+  "models": {
+    "llama-3.1-8b-instant": {
+      "id": "llama-3.1-8b-instant",
+      "name": "Llama 3.1 8B Instant",
+      "provider": "Groq",
+      "pricing": {
+        "input": 0.05,
+        "output": 0.08,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": true
+    },
+    "mistral-saba-24b": {
+      "id": "mistral-saba-24b",
+      "name": "Mistral Saba 24B",
+      "provider": "Groq",
+      "pricing": {
+        "input": 0.79,
+        "output": 0.79,
+        "unit": "per million tokens"
+      },
+      "context_length": 32768,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "llama3-8b-8192": {
+      "id": "llama3-8b-8192",
+      "name": "Llama 3 8B",
+      "provider": "Groq",
+      "pricing": {
+        "input": 0.05,
+        "output": 0.08,
+        "unit": "per million tokens"
+      },
+      "context_length": 8192,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "qwen-qwq-32b": {
+      "id": "qwen-qwq-32b",
+      "name": "Qwen QwQ 32B",
+      "provider": "Groq",
+      "pricing": {
+        "input": 0.29,
+        "output": 0.39,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "llama3-70b-8192": {
+      "id": "llama3-70b-8192",
+      "name": "Llama 3 70B",
+      "provider": "Groq",
+      "pricing": {
+        "input": 0.59,
+        "output": 0.79,
+        "unit": "per million tokens"
+      },
+      "context_length": 8192,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "deepseek-r1-distill-llama-70b": {
+      "id": "deepseek-r1-distill-llama-70b",
+      "name": "DeepSeek R1 Distill Llama 70B",
+      "provider": "Groq",
+      "pricing": {
+        "input": 0.75,
+        "output": 0.99,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "llama-guard-3-8b": {
+      "id": "llama-guard-3-8b",
+      "name": "Llama Guard 3 8B",
+      "provider": "Groq",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 8192,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "gemma2-9b-it": {
+      "id": "gemma2-9b-it",
+      "name": "Gemma 2 9B",
+      "provider": "Groq",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 8192,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "llama-3.3-70b-versatile": {
+      "id": "llama-3.3-70b-versatile",
+      "name": "Llama 3.3 70B Versatile",
+      "provider": "Groq",
+      "pricing": {
+        "input": 0.59,
+        "output": 0.79,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "moonshotai/kimi-k2-instruct-0905": {
+      "id": "moonshotai/kimi-k2-instruct-0905",
+      "name": "Kimi K2 Instruct 0905",
+      "provider": "Groq",
+      "pricing": {
+        "input": 1.0,
+        "output": 3.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "moonshotai/kimi-k2-instruct": {
+      "id": "moonshotai/kimi-k2-instruct",
+      "name": "Kimi K2 Instruct",
+      "provider": "Groq",
+      "pricing": {
+        "input": 1.0,
+        "output": 3.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-oss-20b": {
+      "id": "openai/gpt-oss-20b",
+      "name": "GPT OSS 20B",
+      "provider": "Groq",
+      "pricing": {
+        "input": 0.1,
+        "output": 0.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-oss-120b": {
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "provider": "Groq",
+      "pricing": {
+        "input": 0.15,
+        "output": 0.75,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen3-32b": {
+      "id": "qwen/qwen3-32b",
+      "name": "Qwen3 32B",
+      "provider": "Groq",
+      "pricing": {
+        "input": 0.29,
+        "output": 0.59,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "meta-llama/llama-4-scout-17b-16e-instruct": {
+      "id": "meta-llama/llama-4-scout-17b-16e-instruct",
+      "name": "Llama 4 Scout 17B",
+      "provider": "Groq",
+      "pricing": {
+        "input": 0.11,
+        "output": 0.34,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "meta-llama/llama-4-maverick-17b-128e-instruct": {
+      "id": "meta-llama/llama-4-maverick-17b-128e-instruct",
+      "name": "Llama 4 Maverick 17B",
+      "provider": "Groq",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.6,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "meta-llama/llama-guard-4-12b": {
+      "id": "meta-llama/llama-guard-4-12b",
+      "name": "Llama Guard 4 12B",
+      "provider": "Groq",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    }
+  }
+}

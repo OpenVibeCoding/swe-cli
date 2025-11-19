@@ -1,0 +1,359 @@
+{
+  "id": "zenmux",
+  "name": "ZenMux",
+  "description": "ZenMux AI models and services",
+  "api_key_env": "ZENMUX_API_KEY",
+  "api_base_url": "https://zenmux.ai/api/v1",
+  "models": {
+    "moonshotai/kimi-k2-thinking-turbo": {
+      "id": "moonshotai/kimi-k2-thinking-turbo",
+      "name": "Kimi K2 Thinking Turbo",
+      "provider": "ZenMux",
+      "pricing": {
+        "input": 1.15,
+        "output": 8.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "moonshotai/kimi-k2-0905": {
+      "id": "moonshotai/kimi-k2-0905",
+      "name": "Kimi K2 0905",
+      "provider": "ZenMux",
+      "pricing": {
+        "input": 0.6,
+        "output": 2.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "moonshotai/kimi-k2-thinking": {
+      "id": "moonshotai/kimi-k2-thinking",
+      "name": "Kimi K2 Thinking",
+      "provider": "ZenMux",
+      "pricing": {
+        "input": 0.6,
+        "output": 2.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "x-ai/grok-4-fast-non-reasoning": {
+      "id": "x-ai/grok-4-fast-non-reasoning",
+      "name": "Grok 4 Fast None Reasoning",
+      "provider": "ZenMux",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 2000000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "x-ai/grok-4": {
+      "id": "x-ai/grok-4",
+      "name": "Grok 4",
+      "provider": "ZenMux",
+      "pricing": {
+        "input": 3.0,
+        "output": 15.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 256000,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "x-ai/grok-code-fast-1": {
+      "id": "x-ai/grok-code-fast-1",
+      "name": "Grok Code Fast 1",
+      "provider": "ZenMux",
+      "pricing": {
+        "input": 0.2,
+        "output": 1.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 256000,
+      "capabilities": [
+        "text",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "x-ai/grok-4-fast": {
+      "id": "x-ai/grok-4-fast",
+      "name": "Grok 4 Fast",
+      "provider": "ZenMux",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 2000000,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "deepseek/deepseek-chat": {
+      "id": "deepseek/deepseek-chat",
+      "name": "DeepSeek-V3.2-Exp (Non-thinking Mode)",
+      "provider": "ZenMux",
+      "pricing": {
+        "input": 0.56,
+        "output": 1.68,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "minimax/minimax-m2": {
+      "id": "minimax/minimax-m2",
+      "name": "MiniMax M2",
+      "provider": "ZenMux",
+      "pricing": {
+        "input": 0.3,
+        "output": 1.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 204800,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "google/gemini-2.5-pro": {
+      "id": "google/gemini-2.5-pro",
+      "name": "Gemini 2.5 Pro",
+      "provider": "ZenMux",
+      "pricing": {
+        "input": 1.25,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": true
+    },
+    "openai/gpt-5-codex": {
+      "id": "openai/gpt-5-codex",
+      "name": "GPT-5 Codex",
+      "provider": "ZenMux",
+      "pricing": {
+        "input": 1.25,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 400000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-5": {
+      "id": "openai/gpt-5",
+      "name": "GPT-5",
+      "provider": "ZenMux",
+      "pricing": {
+        "input": 1.25,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 400000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "inclusionai/ring-1t": {
+      "id": "inclusionai/ring-1t",
+      "name": "Ring-1T",
+      "provider": "ZenMux",
+      "pricing": {
+        "input": 0.56,
+        "output": 2.24,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "inclusionai/lint-1t": {
+      "id": "inclusionai/lint-1t",
+      "name": "Ling-1T",
+      "provider": "ZenMux",
+      "pricing": {
+        "input": 0.56,
+        "output": 2.24,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "z-ai/glm-4.5-air": {
+      "id": "z-ai/glm-4.5-air",
+      "name": "GLM 4.5 Air",
+      "provider": "ZenMux",
+      "pricing": {
+        "input": 0.11,
+        "output": 0.56,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "z-ai/glm-4.6": {
+      "id": "z-ai/glm-4.6",
+      "name": "GLM 4.6",
+      "provider": "ZenMux",
+      "pricing": {
+        "input": 0.35,
+        "output": 1.54,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen3-coder-plus": {
+      "id": "qwen/qwen3-coder-plus",
+      "name": "Qwen3 Coder Plus",
+      "provider": "ZenMux",
+      "pricing": {
+        "input": 1.0,
+        "output": 5.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 1000000,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "kuaishou/kat-coder-pro-v1": {
+      "id": "kuaishou/kat-coder-pro-v1",
+      "name": "KAT-Coder-Pro-V1",
+      "provider": "ZenMux",
+      "pricing": {
+        "input": 0.6,
+        "output": 2.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 256000,
+      "capabilities": [
+        "text",
+        "code",
+        "reasoning"
+      ],
+      "recommended": true
+    },
+    "anthropic/claude-haiku-4.5": {
+      "id": "anthropic/claude-haiku-4.5",
+      "name": "Claude Haiku 4.5",
+      "provider": "ZenMux",
+      "pricing": {
+        "input": 1.0,
+        "output": 5.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "anthropic/claude-opus-4.1": {
+      "id": "anthropic/claude-opus-4.1",
+      "name": "Claude Opus 4.1",
+      "provider": "ZenMux",
+      "pricing": {
+        "input": 15.0,
+        "output": 75.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "anthropic/claude-sonnet-4.5": {
+      "id": "anthropic/claude-sonnet-4.5",
+      "name": "Claude Sonnet 4.5",
+      "provider": "ZenMux",
+      "pricing": {
+        "input": 3.0,
+        "output": 15.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 1000000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    }
+  }
+}

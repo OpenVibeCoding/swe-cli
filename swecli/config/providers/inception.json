@@ -1,0 +1,40 @@
+{
+  "id": "inception",
+  "name": "Inception",
+  "description": "Inception AI models and services",
+  "api_key_env": "INCEPTION_API_KEY",
+  "api_base_url": "https://api.inceptionlabs.ai/v1/",
+  "models": {
+    "mercury-coder": {
+      "id": "mercury-coder",
+      "name": "Mercury Coder",
+      "provider": "Inception",
+      "pricing": {
+        "input": 0.25,
+        "output": 1.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": true
+    },
+    "mercury": {
+      "id": "mercury",
+      "name": "Mercury",
+      "provider": "Inception",
+      "pricing": {
+        "input": 0.25,
+        "output": 1.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": true
+    }
+  }
+}

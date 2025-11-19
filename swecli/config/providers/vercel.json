@@ -1,0 +1,1401 @@
+{
+  "id": "vercel",
+  "name": "Vercel AI Gateway",
+  "description": "Vercel AI Gateway AI models and services",
+  "api_key_env": "AI_GATEWAY_API_KEY",
+  "api_base_url": "",
+  "models": {
+    "moonshotai/kimi-k2": {
+      "id": "moonshotai/kimi-k2",
+      "name": "Kimi K2 Instruct",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 1.0,
+        "output": 3.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "alibaba/qwen3-next-80b-a3b-instruct": {
+      "id": "alibaba/qwen3-next-80b-a3b-instruct",
+      "name": "Qwen3 Next 80B A3B Instruct",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "alibaba/qwen3-vl-instruct": {
+      "id": "alibaba/qwen3-vl-instruct",
+      "name": "Qwen3 VL Instruct",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.7,
+        "output": 2.8,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "alibaba/qwen3-vl-thinking": {
+      "id": "alibaba/qwen3-vl-thinking",
+      "name": "Qwen3 VL Thinking",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.7,
+        "output": 8.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "alibaba/qwen3-max": {
+      "id": "alibaba/qwen3-max",
+      "name": "Qwen3 Max",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 1.2,
+        "output": 6.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "alibaba/qwen3-coder-plus": {
+      "id": "alibaba/qwen3-coder-plus",
+      "name": "Qwen3 Coder Plus",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 1.0,
+        "output": 5.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 1000000,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "alibaba/qwen3-next-80b-a3b-thinking": {
+      "id": "alibaba/qwen3-next-80b-a3b-thinking",
+      "name": "Qwen3 Next 80B A3B Thinking",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.5,
+        "output": 6.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "xai/grok-3-mini-fast": {
+      "id": "xai/grok-3-mini-fast",
+      "name": "Grok 3 Mini Fast",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.6,
+        "output": 4.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "xai/grok-3-mini": {
+      "id": "xai/grok-3-mini",
+      "name": "Grok 3 Mini",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.3,
+        "output": 0.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "xai/grok-4-fast": {
+      "id": "xai/grok-4-fast",
+      "name": "Grok 4 Fast",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 2000000,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "xai/grok-3": {
+      "id": "xai/grok-3",
+      "name": "Grok 3",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 3.0,
+        "output": 15.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "xai/grok-2": {
+      "id": "xai/grok-2",
+      "name": "Grok 2",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 2.0,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "xai/grok-code-fast-1": {
+      "id": "xai/grok-code-fast-1",
+      "name": "Grok Code Fast 1",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.2,
+        "output": 1.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 256000,
+      "capabilities": [
+        "text",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "xai/grok-2-vision": {
+      "id": "xai/grok-2-vision",
+      "name": "Grok 2 Vision",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 2.0,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 8192,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "xai/grok-4": {
+      "id": "xai/grok-4",
+      "name": "Grok 4",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 3.0,
+        "output": 15.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 256000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "xai/grok-3-fast": {
+      "id": "xai/grok-3-fast",
+      "name": "Grok 3 Fast",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 5.0,
+        "output": 25.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "xai/grok-4-fast-non-reasoning": {
+      "id": "xai/grok-4-fast-non-reasoning",
+      "name": "Grok 4 Fast (Non-Reasoning)",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 2000000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "mistral/codestral": {
+      "id": "mistral/codestral",
+      "name": "Codestral",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.3,
+        "output": 0.9,
+        "unit": "per million tokens"
+      },
+      "context_length": 256000,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "mistral/magistral-medium": {
+      "id": "mistral/magistral-medium",
+      "name": "Magistral Medium",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 2.0,
+        "output": 5.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "mistral/mistral-large": {
+      "id": "mistral/mistral-large",
+      "name": "Mistral Large",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 2.0,
+        "output": 6.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "mistral/pixtral-large": {
+      "id": "mistral/pixtral-large",
+      "name": "Pixtral Large",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 2.0,
+        "output": 6.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "mistral/ministral-8b": {
+      "id": "mistral/ministral-8b",
+      "name": "Ministral 8B",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.1,
+        "output": 0.1,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "mistral/ministral-3b": {
+      "id": "mistral/ministral-3b",
+      "name": "Ministral 3B",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.04,
+        "output": 0.04,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "mistral/magistral-small": {
+      "id": "mistral/magistral-small",
+      "name": "Magistral Small",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.5,
+        "output": 1.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "mistral/mistral-small": {
+      "id": "mistral/mistral-small",
+      "name": "Mistral Small",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.1,
+        "output": 0.3,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "mistral/pixtral-12b": {
+      "id": "mistral/pixtral-12b",
+      "name": "Pixtral 12B",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.15,
+        "output": 0.15,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "mistral/mixtral-8x22b-instruct": {
+      "id": "mistral/mixtral-8x22b-instruct",
+      "name": "Mixtral 8x22B",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 2.0,
+        "output": 6.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 64000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "vercel/v0-1.0-md": {
+      "id": "vercel/v0-1.0-md",
+      "name": "v0-1.0-md",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 3.0,
+        "output": 15.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "vercel/v0-1.5-md": {
+      "id": "vercel/v0-1.5-md",
+      "name": "v0-1.5-md",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 3.0,
+        "output": 15.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "deepseek/deepseek-v3.2-exp-thinking": {
+      "id": "deepseek/deepseek-v3.2-exp-thinking",
+      "name": "DeepSeek V3.2 Exp Thinking",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.28,
+        "output": 0.42,
+        "unit": "per million tokens"
+      },
+      "context_length": 163840,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "deepseek/deepseek-v3.1-terminus": {
+      "id": "deepseek/deepseek-v3.1-terminus",
+      "name": "DeepSeek V3.1 Terminus",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.27,
+        "output": 1.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "deepseek/deepseek-v3.2-exp": {
+      "id": "deepseek/deepseek-v3.2-exp",
+      "name": "DeepSeek V3.2 Exp",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.28,
+        "output": 0.42,
+        "unit": "per million tokens"
+      },
+      "context_length": 163840,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "deepseek/deepseek-r1-distill-llama-70b": {
+      "id": "deepseek/deepseek-r1-distill-llama-70b",
+      "name": "DeepSeek R1 Distill Llama 70B",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.75,
+        "output": 0.99,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "deepseek/deepseek-r1": {
+      "id": "deepseek/deepseek-r1",
+      "name": "DeepSeek-R1",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 1.35,
+        "output": 5.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "minimax/minimax-m2": {
+      "id": "minimax/minimax-m2",
+      "name": "MiniMax M2",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.3,
+        "output": 1.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 205000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "google/gemini-2.5-flash-lite": {
+      "id": "google/gemini-2.5-flash-lite",
+      "name": "Gemini 2.5 Flash Lite",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.1,
+        "output": 0.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "google/gemini-2.5-flash-preview-09-2025": {
+      "id": "google/gemini-2.5-flash-preview-09-2025",
+      "name": "Gemini 2.5 Flash Preview 09-25",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.3,
+        "output": 2.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "google/gemini-2.5-flash-lite-preview-09-2025": {
+      "id": "google/gemini-2.5-flash-lite-preview-09-2025",
+      "name": "Gemini 2.5 Flash Lite Preview 09-25",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.1,
+        "output": 0.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "google/gemini-2.5-pro": {
+      "id": "google/gemini-2.5-pro",
+      "name": "Gemini 2.5 Pro",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 1.25,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": true
+    },
+    "google/gemini-2.0-flash": {
+      "id": "google/gemini-2.0-flash",
+      "name": "Gemini 2.0 Flash",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.1,
+        "output": 0.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "google/gemini-2.0-flash-lite": {
+      "id": "google/gemini-2.0-flash-lite",
+      "name": "Gemini 2.0 Flash Lite",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.075,
+        "output": 0.3,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "google/gemini-2.5-flash": {
+      "id": "google/gemini-2.5-flash",
+      "name": "Gemini 2.5 Flash",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.3,
+        "output": 2.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-oss-20b": {
+      "id": "openai/gpt-oss-20b",
+      "name": "GPT OSS 20B",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.07,
+        "output": 0.3,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-oss-120b": {
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.1,
+        "output": 0.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-5": {
+      "id": "openai/gpt-5",
+      "name": "GPT-5",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 1.25,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 400000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-4o-mini": {
+      "id": "openai/gpt-4o-mini",
+      "name": "GPT-4o mini",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.15,
+        "output": 0.6,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code"
+      ],
+      "recommended": true
+    },
+    "openai/o3": {
+      "id": "openai/o3",
+      "name": "o3",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 2.0,
+        "output": 8.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-5-mini": {
+      "id": "openai/gpt-5-mini",
+      "name": "GPT-5 Mini",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.25,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 400000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/o1": {
+      "id": "openai/o1",
+      "name": "o1",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 15.0,
+        "output": 60.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/o4-mini": {
+      "id": "openai/o4-mini",
+      "name": "o4-mini",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 1.1,
+        "output": 4.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-4.1": {
+      "id": "openai/gpt-4.1",
+      "name": "GPT-4.1",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 2.0,
+        "output": 8.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 1047576,
+      "capabilities": [
+        "text",
+        "vision",
+        "code"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-4o": {
+      "id": "openai/gpt-4o",
+      "name": "GPT-4o",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 2.5,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-5-codex": {
+      "id": "openai/gpt-5-codex",
+      "name": "GPT-5-Codex",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 1.25,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 400000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-5-nano": {
+      "id": "openai/gpt-5-nano",
+      "name": "GPT-5 Nano",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.05,
+        "output": 0.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 400000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/o3-mini": {
+      "id": "openai/o3-mini",
+      "name": "o3-mini",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 1.1,
+        "output": 4.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-4-turbo": {
+      "id": "openai/gpt-4-turbo",
+      "name": "GPT-4 Turbo",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 10.0,
+        "output": 30.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-4.1-mini": {
+      "id": "openai/gpt-4.1-mini",
+      "name": "GPT-4.1 mini",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.4,
+        "output": 1.6,
+        "unit": "per million tokens"
+      },
+      "context_length": 1047576,
+      "capabilities": [
+        "text",
+        "vision",
+        "code"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-4.1-nano": {
+      "id": "openai/gpt-4.1-nano",
+      "name": "GPT-4.1 nano",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.1,
+        "output": 0.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 1047576,
+      "capabilities": [
+        "text",
+        "vision",
+        "code"
+      ],
+      "recommended": false
+    },
+    "perplexity/sonar-reasoning": {
+      "id": "perplexity/sonar-reasoning",
+      "name": "Sonar Reasoning",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 1.0,
+        "output": 5.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 127000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "perplexity/sonar": {
+      "id": "perplexity/sonar",
+      "name": "Sonar",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 1.0,
+        "output": 1.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 127000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "perplexity/sonar-pro": {
+      "id": "perplexity/sonar-pro",
+      "name": "Sonar Pro",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 3.0,
+        "output": 15.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "perplexity/sonar-reasoning-pro": {
+      "id": "perplexity/sonar-reasoning-pro",
+      "name": "Sonar Reasoning Pro",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 2.0,
+        "output": 8.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 127000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "zai/glm-4.5": {
+      "id": "zai/glm-4.5",
+      "name": "GLM 4.5",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.6,
+        "output": 2.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "zai/glm-4.5-air": {
+      "id": "zai/glm-4.5-air",
+      "name": "GLM 4.5 Air",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.2,
+        "output": 1.1,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "zai/glm-4.5v": {
+      "id": "zai/glm-4.5v",
+      "name": "GLM 4.5V",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.6,
+        "output": 1.8,
+        "unit": "per million tokens"
+      },
+      "context_length": 66000,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "zai/glm-4.6": {
+      "id": "zai/glm-4.6",
+      "name": "GLM 4.6",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.6,
+        "output": 2.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "amazon/nova-micro": {
+      "id": "amazon/nova-micro",
+      "name": "Nova Micro",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.035,
+        "output": 0.14,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "amazon/nova-pro": {
+      "id": "amazon/nova-pro",
+      "name": "Nova Pro",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.8,
+        "output": 3.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 300000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "amazon/nova-lite": {
+      "id": "amazon/nova-lite",
+      "name": "Nova Lite",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.06,
+        "output": 0.24,
+        "unit": "per million tokens"
+      },
+      "context_length": 300000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "morph/morph-v3-fast": {
+      "id": "morph/morph-v3-fast",
+      "name": "Morph v3 Fast",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.8,
+        "output": 1.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 16000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "morph/morph-v3-large": {
+      "id": "morph/morph-v3-large",
+      "name": "Morph v3 Large",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.9,
+        "output": 1.9,
+        "unit": "per million tokens"
+      },
+      "context_length": 32000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "meta/llama-4-scout": {
+      "id": "meta/llama-4-scout",
+      "name": "Llama-4-Scout-17B-16E-Instruct-FP8",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "meta/llama-3.3-70b": {
+      "id": "meta/llama-3.3-70b",
+      "name": "Llama-3.3-70B-Instruct",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "meta/llama-4-maverick": {
+      "id": "meta/llama-4-maverick",
+      "name": "Llama-4-Maverick-17B-128E-Instruct-FP8",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "anthropic/claude-haiku-4.5": {
+      "id": "anthropic/claude-haiku-4.5",
+      "name": "Claude Haiku 4.5",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 1.0,
+        "output": 1.25,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "anthropic/claude-3.5-haiku": {
+      "id": "anthropic/claude-3.5-haiku",
+      "name": "Claude Haiku 3.5",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.8,
+        "output": 4.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code"
+      ],
+      "recommended": false
+    },
+    "anthropic/claude-3.7-sonnet": {
+      "id": "anthropic/claude-3.7-sonnet",
+      "name": "Claude Sonnet 3.7",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 3.0,
+        "output": 15.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "anthropic/claude-4.5-sonnet": {
+      "id": "anthropic/claude-4.5-sonnet",
+      "name": "Claude Sonnet 4.5",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 3.0,
+        "output": 15.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "anthropic/claude-3.5-sonnet": {
+      "id": "anthropic/claude-3.5-sonnet",
+      "name": "Claude Sonnet 3.5 v2",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 3.0,
+        "output": 15.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code"
+      ],
+      "recommended": false
+    },
+    "anthropic/claude-4-1-opus": {
+      "id": "anthropic/claude-4-1-opus",
+      "name": "Claude Opus 4",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 15.0,
+        "output": 75.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "anthropic/claude-4-sonnet": {
+      "id": "anthropic/claude-4-sonnet",
+      "name": "Claude Sonnet 4",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 3.0,
+        "output": 15.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "anthropic/claude-3-opus": {
+      "id": "anthropic/claude-3-opus",
+      "name": "Claude Opus 3",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 15.0,
+        "output": 75.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code"
+      ],
+      "recommended": false
+    },
+    "anthropic/claude-3-haiku": {
+      "id": "anthropic/claude-3-haiku",
+      "name": "Claude Haiku 3",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 0.25,
+        "output": 1.25,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code"
+      ],
+      "recommended": false
+    },
+    "anthropic/claude-4-opus": {
+      "id": "anthropic/claude-4-opus",
+      "name": "Claude Opus 4",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 15.0,
+        "output": 75.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "cerebras/qwen3-coder": {
+      "id": "cerebras/qwen3-coder",
+      "name": "Qwen 3 Coder 480B",
+      "provider": "Vercel AI Gateway",
+      "pricing": {
+        "input": 2.0,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131000,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    }
+  }
+}

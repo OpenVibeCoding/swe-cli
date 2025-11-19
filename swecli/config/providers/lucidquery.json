@@ -1,0 +1,44 @@
+{
+  "id": "lucidquery",
+  "name": "LucidQuery AI",
+  "description": "LucidQuery AI AI models and services",
+  "api_key_env": "LUCIDQUERY_API_KEY",
+  "api_base_url": "https://lucidquery.com/api/v1",
+  "models": {
+    "lucidquery-nexus-coder": {
+      "id": "lucidquery-nexus-coder",
+      "name": "LucidQuery Nexus Coder",
+      "provider": "LucidQuery AI",
+      "pricing": {
+        "input": 2.0,
+        "output": 5.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 250000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": true
+    },
+    "lucidnova-rf1-100b": {
+      "id": "lucidnova-rf1-100b",
+      "name": "LucidNova RF1 100B",
+      "provider": "LucidQuery AI",
+      "pricing": {
+        "input": 2.0,
+        "output": 5.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 120000,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": true
+    }
+  }
+}

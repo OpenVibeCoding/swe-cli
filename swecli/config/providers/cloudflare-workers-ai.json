@@ -1,0 +1,1069 @@
+{
+  "id": "cloudflare-workers-ai",
+  "name": "Cloudflare Workers AI",
+  "description": "Cloudflare Workers AI AI models and services",
+  "api_key_env": "CLOUDFLARE_ACCOUNT_ID",
+  "api_base_url": "",
+  "models": {
+    "mistral-7b-instruct-v0.1-awq": {
+      "id": "mistral-7b-instruct-v0.1-awq",
+      "name": "@hf/thebloke/mistral-7b-instruct-v0.1-awq",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 4096,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "aura-1": {
+      "id": "aura-1",
+      "name": "@cf/deepgram/aura-1",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.015,
+        "output": 0.015,
+        "unit": "per million tokens"
+      },
+      "context_length": 0,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "mistral-7b-instruct-v0.2": {
+      "id": "mistral-7b-instruct-v0.2",
+      "name": "@hf/mistral/mistral-7b-instruct-v0.2",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 3072,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "tinyllama-1.1b-chat-v1.0": {
+      "id": "tinyllama-1.1b-chat-v1.0",
+      "name": "@cf/tinyllama/tinyllama-1.1b-chat-v1.0",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 2048,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "qwen1.5-0.5b-chat": {
+      "id": "qwen1.5-0.5b-chat",
+      "name": "@cf/qwen/qwen1.5-0.5b-chat",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 32000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "llama-3.2-11b-vision-instruct": {
+      "id": "llama-3.2-11b-vision-instruct",
+      "name": "@cf/meta/llama-3.2-11b-vision-instruct",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.049,
+        "output": 0.68,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "llama-2-13b-chat-awq": {
+      "id": "llama-2-13b-chat-awq",
+      "name": "@hf/thebloke/llama-2-13b-chat-awq",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 4096,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "llama-3.1-8b-instruct-fp8": {
+      "id": "llama-3.1-8b-instruct-fp8",
+      "name": "@cf/meta/llama-3.1-8b-instruct-fp8",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.15,
+        "output": 0.29,
+        "unit": "per million tokens"
+      },
+      "context_length": 32000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "whisper": {
+      "id": "whisper",
+      "name": "@cf/openai/whisper",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.00045,
+        "output": 0.00045,
+        "unit": "per million tokens"
+      },
+      "context_length": 0,
+      "capabilities": [],
+      "recommended": false
+    },
+    "stable-diffusion-xl-base-1.0": {
+      "id": "stable-diffusion-xl-base-1.0",
+      "name": "@cf/stabilityai/stable-diffusion-xl-base-1.0",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 0,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "llama-2-7b-chat-fp16": {
+      "id": "llama-2-7b-chat-fp16",
+      "name": "@cf/meta/llama-2-7b-chat-fp16",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.56,
+        "output": 6.67,
+        "unit": "per million tokens"
+      },
+      "context_length": 4096,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "resnet-50": {
+      "id": "resnet-50",
+      "name": "@cf/microsoft/resnet-50",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 2.5e-06,
+        "output": 0.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 0,
+      "capabilities": [
+        "vision"
+      ],
+      "recommended": false
+    },
+    "stable-diffusion-v1-5-inpainting": {
+      "id": "stable-diffusion-v1-5-inpainting",
+      "name": "@cf/runwayml/stable-diffusion-v1-5-inpainting",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 0,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "sqlcoder-7b-2": {
+      "id": "sqlcoder-7b-2",
+      "name": "@cf/defog/sqlcoder-7b-2",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 10000,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "llama-3-8b-instruct": {
+      "id": "llama-3-8b-instruct",
+      "name": "@cf/meta/llama-3-8b-instruct",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.28,
+        "output": 0.83,
+        "unit": "per million tokens"
+      },
+      "context_length": 7968,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "llama-2-7b-chat-hf-lora": {
+      "id": "llama-2-7b-chat-hf-lora",
+      "name": "@cf/meta-llama/llama-2-7b-chat-hf-lora",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 8192,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "llama-3.1-8b-instruct": {
+      "id": "llama-3.1-8b-instruct",
+      "name": "@cf/meta/llama-3.1-8b-instruct",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.28,
+        "output": 0.83,
+        "unit": "per million tokens"
+      },
+      "context_length": 7968,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "openchat-3.5-0106": {
+      "id": "openchat-3.5-0106",
+      "name": "@cf/openchat/openchat-3.5-0106",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 8192,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "openhermes-2.5-mistral-7b-awq": {
+      "id": "openhermes-2.5-mistral-7b-awq",
+      "name": "@hf/thebloke/openhermes-2.5-mistral-7b-awq",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 4096,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "lucid-origin": {
+      "id": "lucid-origin",
+      "name": "@cf/leonardo/lucid-origin",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.007,
+        "output": 0.007,
+        "unit": "per million tokens"
+      },
+      "context_length": 0,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "bart-large-cnn": {
+      "id": "bart-large-cnn",
+      "name": "@cf/facebook/bart-large-cnn",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 0,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "flux-1-schnell": {
+      "id": "flux-1-schnell",
+      "name": "@cf/black-forest-labs/flux-1-schnell",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 5.3e-05,
+        "output": 0.00011,
+        "unit": "per million tokens"
+      },
+      "context_length": 2048,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "deepseek-r1-distill-qwen-32b": {
+      "id": "deepseek-r1-distill-qwen-32b",
+      "name": "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 4.88,
+        "unit": "per million tokens"
+      },
+      "context_length": 80000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "gemma-2b-it-lora": {
+      "id": "gemma-2b-it-lora",
+      "name": "@cf/google/gemma-2b-it-lora",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 8192,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "una-cybertron-7b-v2-bf16": {
+      "id": "una-cybertron-7b-v2-bf16",
+      "name": "@cf/fblgit/una-cybertron-7b-v2-bf16",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 15000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "m2m100-1.2b": {
+      "id": "m2m100-1.2b",
+      "name": "@cf/meta/m2m100-1.2b",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.34,
+        "output": 0.34,
+        "unit": "per million tokens"
+      },
+      "context_length": 0,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "llama-3.2-3b-instruct": {
+      "id": "llama-3.2-3b-instruct",
+      "name": "@cf/meta/llama-3.2-3b-instruct",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.051,
+        "output": 0.34,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "qwen2.5-coder-32b-instruct": {
+      "id": "qwen2.5-coder-32b-instruct",
+      "name": "@cf/qwen/qwen2.5-coder-32b-instruct",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.66,
+        "output": 1.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 32768,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "stable-diffusion-v1-5-img2img": {
+      "id": "stable-diffusion-v1-5-img2img",
+      "name": "@cf/runwayml/stable-diffusion-v1-5-img2img",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 0,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "gemma-7b-it-lora": {
+      "id": "gemma-7b-it-lora",
+      "name": "@cf/google/gemma-7b-it-lora",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 3500,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "qwen1.5-14b-chat-awq": {
+      "id": "qwen1.5-14b-chat-awq",
+      "name": "@cf/qwen/qwen1.5-14b-chat-awq",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 7500,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "qwen1.5-1.8b-chat": {
+      "id": "qwen1.5-1.8b-chat",
+      "name": "@cf/qwen/qwen1.5-1.8b-chat",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 32000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "mistral-small-3.1-24b-instruct": {
+      "id": "mistral-small-3.1-24b-instruct",
+      "name": "@cf/mistralai/mistral-small-3.1-24b-instruct",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.35,
+        "output": 0.56,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "gemma-7b-it": {
+      "id": "gemma-7b-it",
+      "name": "@hf/google/gemma-7b-it",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 8192,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "llamaguard-7b-awq": {
+      "id": "llamaguard-7b-awq",
+      "name": "@hf/thebloke/llamaguard-7b-awq",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 4096,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "hermes-2-pro-mistral-7b": {
+      "id": "hermes-2-pro-mistral-7b",
+      "name": "@hf/nousresearch/hermes-2-pro-mistral-7b",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 24000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": true
+    },
+    "falcon-7b-instruct": {
+      "id": "falcon-7b-instruct",
+      "name": "@cf/tiiuae/falcon-7b-instruct",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 4096,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "llama-3.3-70b-instruct-fp8-fast": {
+      "id": "llama-3.3-70b-instruct-fp8-fast",
+      "name": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.29,
+        "output": 2.25,
+        "unit": "per million tokens"
+      },
+      "context_length": 24000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "llama-3-8b-instruct-awq": {
+      "id": "llama-3-8b-instruct-awq",
+      "name": "@cf/meta/llama-3-8b-instruct-awq",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.12,
+        "output": 0.27,
+        "unit": "per million tokens"
+      },
+      "context_length": 8192,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "phoenix-1.0": {
+      "id": "phoenix-1.0",
+      "name": "@cf/leonardo/phoenix-1.0",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.0058,
+        "output": 0.0058,
+        "unit": "per million tokens"
+      },
+      "context_length": 0,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "phi-2": {
+      "id": "phi-2",
+      "name": "@cf/microsoft/phi-2",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 2048,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "dreamshaper-8-lcm": {
+      "id": "dreamshaper-8-lcm",
+      "name": "@cf/lykon/dreamshaper-8-lcm",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 0,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "discolm-german-7b-v1-awq": {
+      "id": "discolm-german-7b-v1-awq",
+      "name": "@cf/thebloke/discolm-german-7b-v1-awq",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 4096,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "llama-2-7b-chat-int8": {
+      "id": "llama-2-7b-chat-int8",
+      "name": "@cf/meta/llama-2-7b-chat-int8",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.556,
+        "output": 6.667,
+        "unit": "per million tokens"
+      },
+      "context_length": 8192,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "llama-3.2-1b-instruct": {
+      "id": "llama-3.2-1b-instruct",
+      "name": "@cf/meta/llama-3.2-1b-instruct",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.027,
+        "output": 0.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 60000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "whisper-large-v3-turbo": {
+      "id": "whisper-large-v3-turbo",
+      "name": "@cf/openai/whisper-large-v3-turbo",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.00051,
+        "output": 0.00051,
+        "unit": "per million tokens"
+      },
+      "context_length": 0,
+      "capabilities": [],
+      "recommended": false
+    },
+    "llama-4-scout-17b-16e-instruct": {
+      "id": "llama-4-scout-17b-16e-instruct",
+      "name": "@cf/meta/llama-4-scout-17b-16e-instruct",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.27,
+        "output": 0.85,
+        "unit": "per million tokens"
+      },
+      "context_length": 131000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "starling-lm-7b-beta": {
+      "id": "starling-lm-7b-beta",
+      "name": "@hf/nexusflow/starling-lm-7b-beta",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 4096,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "deepseek-coder-6.7b-base-awq": {
+      "id": "deepseek-coder-6.7b-base-awq",
+      "name": "@hf/thebloke/deepseek-coder-6.7b-base-awq",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 4096,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "gemma-3-12b-it": {
+      "id": "gemma-3-12b-it",
+      "name": "@cf/google/gemma-3-12b-it",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.35,
+        "output": 0.56,
+        "unit": "per million tokens"
+      },
+      "context_length": 80000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "llama-guard-3-8b": {
+      "id": "llama-guard-3-8b",
+      "name": "@cf/meta/llama-guard-3-8b",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.48,
+        "output": 0.03,
+        "unit": "per million tokens"
+      },
+      "context_length": 0,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "neural-chat-7b-v3-1-awq": {
+      "id": "neural-chat-7b-v3-1-awq",
+      "name": "@hf/thebloke/neural-chat-7b-v3-1-awq",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 4096,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "whisper-tiny-en": {
+      "id": "whisper-tiny-en",
+      "name": "@cf/openai/whisper-tiny-en",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 0,
+      "capabilities": [],
+      "recommended": false
+    },
+    "stable-diffusion-xl-lightning": {
+      "id": "stable-diffusion-xl-lightning",
+      "name": "@cf/bytedance/stable-diffusion-xl-lightning",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 0,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "mistral-7b-instruct-v0.1": {
+      "id": "mistral-7b-instruct-v0.1",
+      "name": "@cf/mistral/mistral-7b-instruct-v0.1",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.11,
+        "output": 0.19,
+        "unit": "per million tokens"
+      },
+      "context_length": 2824,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "llava-1.5-7b-hf": {
+      "id": "llava-1.5-7b-hf",
+      "name": "@cf/llava-hf/llava-1.5-7b-hf",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 0,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "gpt-oss-20b": {
+      "id": "gpt-oss-20b",
+      "name": "@cf/openai/gpt-oss-20b",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.3,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "deepseek-math-7b-instruct": {
+      "id": "deepseek-math-7b-instruct",
+      "name": "@cf/deepseek-ai/deepseek-math-7b-instruct",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 4096,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "gpt-oss-120b": {
+      "id": "gpt-oss-120b",
+      "name": "@cf/openai/gpt-oss-120b",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.35,
+        "output": 0.75,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "melotts": {
+      "id": "melotts",
+      "name": "@cf/myshell-ai/melotts",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.0002,
+        "output": 0.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 0,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "qwen1.5-7b-chat-awq": {
+      "id": "qwen1.5-7b-chat-awq",
+      "name": "@cf/qwen/qwen1.5-7b-chat-awq",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 20000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "llama-3.1-8b-instruct-fast": {
+      "id": "llama-3.1-8b-instruct-fast",
+      "name": "@cf/meta/llama-3.1-8b-instruct-fast",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.045,
+        "output": 0.384,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "nova-3": {
+      "id": "nova-3",
+      "name": "@cf/deepgram/nova-3",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.0052,
+        "output": 0.0052,
+        "unit": "per million tokens"
+      },
+      "context_length": 0,
+      "capabilities": [],
+      "recommended": false
+    },
+    "llama-3.1-70b-instruct": {
+      "id": "llama-3.1-70b-instruct",
+      "name": "@cf/meta/llama-3.1-70b-instruct",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.293,
+        "output": 2.253,
+        "unit": "per million tokens"
+      },
+      "context_length": 24000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "qwq-32b": {
+      "id": "qwq-32b",
+      "name": "@cf/qwen/qwq-32b",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.66,
+        "output": 1.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 24000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "zephyr-7b-beta-awq": {
+      "id": "zephyr-7b-beta-awq",
+      "name": "@hf/thebloke/zephyr-7b-beta-awq",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 4096,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "deepseek-coder-6.7b-instruct-awq": {
+      "id": "deepseek-coder-6.7b-instruct-awq",
+      "name": "@hf/thebloke/deepseek-coder-6.7b-instruct-awq",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 4096,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "llama-3.1-8b-instruct-awq": {
+      "id": "llama-3.1-8b-instruct-awq",
+      "name": "@cf/meta/llama-3.1-8b-instruct-awq",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.12,
+        "output": 0.27,
+        "unit": "per million tokens"
+      },
+      "context_length": 8192,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "mistral-7b-instruct-v0.2-lora": {
+      "id": "mistral-7b-instruct-v0.2-lora",
+      "name": "@cf/mistral/mistral-7b-instruct-v0.2-lora",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 15000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "uform-gen2-qwen-500m": {
+      "id": "uform-gen2-qwen-500m",
+      "name": "@cf/unum/uform-gen2-qwen-500m",
+      "provider": "Cloudflare Workers AI",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 0,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    }
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "id": "perplexity",
+  "name": "Perplexity",
+  "description": "Perplexity AI models and services",
+  "api_key_env": "PERPLEXITY_API_KEY",
+  "api_base_url": "",
+  "models": {
+    "sonar-reasoning": {
+      "id": "sonar-reasoning",
+      "name": "Sonar Reasoning",
+      "provider": "Perplexity",
+      "pricing": {
+        "input": 1.0,
+        "output": 5.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "sonar": {
+      "id": "sonar",
+      "name": "Sonar",
+      "provider": "Perplexity",
+      "pricing": {
+        "input": 1.0,
+        "output": 1.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "sonar-pro": {
+      "id": "sonar-pro",
+      "name": "Sonar Pro",
+      "provider": "Perplexity",
+      "pricing": {
+        "input": 3.0,
+        "output": 15.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 200000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": true
+    },
+    "sonar-reasoning-pro": {
+      "id": "sonar-reasoning-pro",
+      "name": "Sonar Reasoning Pro",
+      "provider": "Perplexity",
+      "pricing": {
+        "input": 2.0,
+        "output": 8.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": true
+    }
+  }
+}

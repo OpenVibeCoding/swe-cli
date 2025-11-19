@@ -1,0 +1,324 @@
+{
+  "id": "nvidia",
+  "name": "Nvidia",
+  "description": "Nvidia AI models and services",
+  "api_key_env": "NVIDIA_API_KEY",
+  "api_base_url": "https://integrate.api.nvidia.com/v1",
+  "models": {
+    "moonshotai/kimi-k2-instruct-0905": {
+      "id": "moonshotai/kimi-k2-instruct-0905",
+      "name": "Kimi K2 0905",
+      "provider": "Nvidia",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": true
+    },
+    "moonshotai/kimi-k2-instruct": {
+      "id": "moonshotai/kimi-k2-instruct",
+      "name": "Kimi K2 Instruct",
+      "provider": "Nvidia",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "nvidia/nvidia-nemotron-nano-9b-v2": {
+      "id": "nvidia/nvidia-nemotron-nano-9b-v2",
+      "name": "nvidia-nemotron-nano-9b-v2",
+      "provider": "Nvidia",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "nvidia/cosmos-nemotron-34b": {
+      "id": "nvidia/cosmos-nemotron-34b",
+      "name": "Cosmos Nemotron 34B",
+      "provider": "Nvidia",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "nvidia/llama-embed-nemotron-8b": {
+      "id": "nvidia/llama-embed-nemotron-8b",
+      "name": "Llama Embed Nemotron 8B",
+      "provider": "Nvidia",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 32768,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "nvidia/parakeet-tdt-0.6b-v2": {
+      "id": "nvidia/parakeet-tdt-0.6b-v2",
+      "name": "Parakeet TDT 0.6B v2",
+      "provider": "Nvidia",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 0,
+      "capabilities": [],
+      "recommended": false
+    },
+    "nvidia/nemoretriever-ocr-v1": {
+      "id": "nvidia/nemoretriever-ocr-v1",
+      "name": "NeMo Retriever OCR v1",
+      "provider": "Nvidia",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 0,
+      "capabilities": [
+        "vision"
+      ],
+      "recommended": false
+    },
+    "nvidia/llama-3.1-nemotron-ultra-253b-v1": {
+      "id": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+      "name": "Llama-3.1-Nemotron-Ultra-253B-v1",
+      "provider": "Nvidia",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "minimaxai/minimax-m2": {
+      "id": "minimaxai/minimax-m2",
+      "name": "MiniMax-M2",
+      "provider": "Nvidia",
+      "pricing": {
+        "input": 0.05,
+        "output": 0.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "google/gemma-3-27b-it": {
+      "id": "google/gemma-3-27b-it",
+      "name": "Gemma-3-27B-IT",
+      "provider": "Nvidia",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "microsoft/phi-4-mini-instruct": {
+      "id": "microsoft/phi-4-mini-instruct",
+      "name": "Phi-4-Mini",
+      "provider": "Nvidia",
+      "pricing": {
+        "input": 0.05,
+        "output": 0.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/whisper-large-v3": {
+      "id": "openai/whisper-large-v3",
+      "name": "Whisper Large v3",
+      "provider": "Nvidia",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 0,
+      "capabilities": [],
+      "recommended": false
+    },
+    "openai/gpt-oss-120b": {
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT-OSS-120B",
+      "provider": "Nvidia",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen3-next-80b-a3b-instruct": {
+      "id": "qwen/qwen3-next-80b-a3b-instruct",
+      "name": "Qwen3-Next-80B-A3B-Instruct",
+      "provider": "Nvidia",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen3-235b-a22b": {
+      "id": "qwen/qwen3-235b-a22b",
+      "name": "Qwen3-235B-A22B",
+      "provider": "Nvidia",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen3-coder-480b-a35b-instruct": {
+      "id": "qwen/qwen3-coder-480b-a35b-instruct",
+      "name": "Qwen3 Coder 480B A35B Instruct",
+      "provider": "Nvidia",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen3-next-80b-a3b-thinking": {
+      "id": "qwen/qwen3-next-80b-a3b-thinking",
+      "name": "Qwen3-Next-80B-A3B-Thinking",
+      "provider": "Nvidia",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "deepseek-ai/deepseek-v3.1-terminus": {
+      "id": "deepseek-ai/deepseek-v3.1-terminus",
+      "name": "DeepSeek V3.1 Terminus",
+      "provider": "Nvidia",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "deepseek-ai/deepseek-v3.1": {
+      "id": "deepseek-ai/deepseek-v3.1",
+      "name": "DeepSeek V3.1",
+      "provider": "Nvidia",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "black-forest-labs/flux.1-dev": {
+      "id": "black-forest-labs/flux.1-dev",
+      "name": "FLUX.1-dev",
+      "provider": "Nvidia",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 4096,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    }
+  }
+}

@@ -1,0 +1,406 @@
+{
+  "id": "google",
+  "name": "Google",
+  "description": "Google AI models and services",
+  "api_key_env": "GOOGLE_GENERATIVE_AI_API_KEY",
+  "api_base_url": "",
+  "models": {
+    "gemini-embedding-001": {
+      "id": "gemini-embedding-001",
+      "name": "Gemini Embedding 001",
+      "provider": "Google",
+      "pricing": {
+        "input": 0.15,
+        "output": 0.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 2048,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "gemini-2.5-flash-image": {
+      "id": "gemini-2.5-flash-image",
+      "name": "Gemini 2.5 Flash Image",
+      "provider": "Google",
+      "pricing": {
+        "input": 0.3,
+        "output": 30.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 32768,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "gemini-2.5-flash-preview-05-20": {
+      "id": "gemini-2.5-flash-preview-05-20",
+      "name": "Gemini 2.5 Flash Preview 05-20",
+      "provider": "Google",
+      "pricing": {
+        "input": 0.15,
+        "output": 0.6,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "gemini-flash-lite-latest": {
+      "id": "gemini-flash-lite-latest",
+      "name": "Gemini Flash-Lite Latest",
+      "provider": "Google",
+      "pricing": {
+        "input": 0.1,
+        "output": 0.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": true
+    },
+    "gemini-2.5-flash": {
+      "id": "gemini-2.5-flash",
+      "name": "Gemini 2.5 Flash",
+      "provider": "Google",
+      "pricing": {
+        "input": 0.3,
+        "output": 2.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "gemini-flash-latest": {
+      "id": "gemini-flash-latest",
+      "name": "Gemini Flash Latest",
+      "provider": "Google",
+      "pricing": {
+        "input": 0.3,
+        "output": 2.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": true
+    },
+    "gemini-2.5-pro-preview-05-06": {
+      "id": "gemini-2.5-pro-preview-05-06",
+      "name": "Gemini 2.5 Pro Preview 05-06",
+      "provider": "Google",
+      "pricing": {
+        "input": 1.25,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "gemini-2.5-flash-preview-tts": {
+      "id": "gemini-2.5-flash-preview-tts",
+      "name": "Gemini 2.5 Flash Preview TTS",
+      "provider": "Google",
+      "pricing": {
+        "input": 0.5,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 8000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "gemini-2.0-flash-lite": {
+      "id": "gemini-2.0-flash-lite",
+      "name": "Gemini 2.0 Flash Lite",
+      "provider": "Google",
+      "pricing": {
+        "input": 0.075,
+        "output": 0.3,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "gemini-live-2.5-flash-preview-native-audio": {
+      "id": "gemini-live-2.5-flash-preview-native-audio",
+      "name": "Gemini Live 2.5 Flash Preview Native Audio",
+      "provider": "Google",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "gemini-2.0-flash": {
+      "id": "gemini-2.0-flash",
+      "name": "Gemini 2.0 Flash",
+      "provider": "Google",
+      "pricing": {
+        "input": 0.1,
+        "output": 0.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "gemini-2.5-flash-lite": {
+      "id": "gemini-2.5-flash-lite",
+      "name": "Gemini 2.5 Flash Lite",
+      "provider": "Google",
+      "pricing": {
+        "input": 0.1,
+        "output": 0.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "gemini-2.5-pro-preview-06-05": {
+      "id": "gemini-2.5-pro-preview-06-05",
+      "name": "Gemini 2.5 Pro Preview 06-05",
+      "provider": "Google",
+      "pricing": {
+        "input": 1.25,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "gemini-live-2.5-flash": {
+      "id": "gemini-live-2.5-flash",
+      "name": "Gemini Live 2.5 Flash",
+      "provider": "Google",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 128000,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "gemini-2.5-flash-lite-preview-06-17": {
+      "id": "gemini-2.5-flash-lite-preview-06-17",
+      "name": "Gemini 2.5 Flash Lite Preview 06-17",
+      "provider": "Google",
+      "pricing": {
+        "input": 0.1,
+        "output": 0.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "gemini-2.5-flash-image-preview": {
+      "id": "gemini-2.5-flash-image-preview",
+      "name": "Gemini 2.5 Flash Image (Preview)",
+      "provider": "Google",
+      "pricing": {
+        "input": 0.3,
+        "output": 30.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 32768,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "gemini-2.5-flash-preview-09-2025": {
+      "id": "gemini-2.5-flash-preview-09-2025",
+      "name": "Gemini 2.5 Flash Preview 09-25",
+      "provider": "Google",
+      "pricing": {
+        "input": 0.3,
+        "output": 2.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "gemini-2.5-flash-preview-04-17": {
+      "id": "gemini-2.5-flash-preview-04-17",
+      "name": "Gemini 2.5 Flash Preview 04-17",
+      "provider": "Google",
+      "pricing": {
+        "input": 0.15,
+        "output": 0.6,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "gemini-2.5-pro-preview-tts": {
+      "id": "gemini-2.5-pro-preview-tts",
+      "name": "Gemini 2.5 Pro Preview TTS",
+      "provider": "Google",
+      "pricing": {
+        "input": 1.0,
+        "output": 20.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 8000,
+      "capabilities": [
+        "text"
+      ],
+      "recommended": false
+    },
+    "gemini-2.5-pro": {
+      "id": "gemini-2.5-pro",
+      "name": "Gemini 2.5 Pro",
+      "provider": "Google",
+      "pricing": {
+        "input": 1.25,
+        "output": 10.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "gemini-1.5-flash": {
+      "id": "gemini-1.5-flash",
+      "name": "Gemini 1.5 Flash",
+      "provider": "Google",
+      "pricing": {
+        "input": 0.075,
+        "output": 0.3,
+        "unit": "per million tokens"
+      },
+      "context_length": 1000000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "gemini-1.5-flash-8b": {
+      "id": "gemini-1.5-flash-8b",
+      "name": "Gemini 1.5 Flash-8B",
+      "provider": "Google",
+      "pricing": {
+        "input": 0.0375,
+        "output": 0.15,
+        "unit": "per million tokens"
+      },
+      "context_length": 1000000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    },
+    "gemini-2.5-flash-lite-preview-09-2025": {
+      "id": "gemini-2.5-flash-lite-preview-09-2025",
+      "name": "Gemini 2.5 Flash Lite Preview 09-25",
+      "provider": "Google",
+      "pricing": {
+        "input": 0.1,
+        "output": 0.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 1048576,
+      "capabilities": [
+        "text",
+        "vision",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "gemini-1.5-pro": {
+      "id": "gemini-1.5-pro",
+      "name": "Gemini 1.5 Pro",
+      "provider": "Google",
+      "pricing": {
+        "input": 1.25,
+        "output": 5.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 1000000,
+      "capabilities": [
+        "text",
+        "vision"
+      ],
+      "recommended": false
+    }
+  }
+}

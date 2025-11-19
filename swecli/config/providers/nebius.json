@@ -1,0 +1,253 @@
+{
+  "id": "nebius",
+  "name": "Nebius Token Factory",
+  "description": "Nebius Token Factory AI models and services",
+  "api_key_env": "NEBIUS_API_KEY",
+  "api_base_url": "https://api.tokenfactory.nebius.com/v1",
+  "models": {
+    "NousResearch/hermes-4-70b": {
+      "id": "NousResearch/hermes-4-70b",
+      "name": "Hermes 4 70B",
+      "provider": "Nebius Token Factory",
+      "pricing": {
+        "input": 0.13,
+        "output": 0.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": true
+    },
+    "NousResearch/hermes-4-405b": {
+      "id": "NousResearch/hermes-4-405b",
+      "name": "Hermes-4 405B",
+      "provider": "Nebius Token Factory",
+      "pricing": {
+        "input": 1.0,
+        "output": 3.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "moonshotai/kimi-k2-instruct": {
+      "id": "moonshotai/kimi-k2-instruct",
+      "name": "Kimi K2 Instruct",
+      "provider": "Nebius Token Factory",
+      "pricing": {
+        "input": 0.5,
+        "output": 2.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "nvidia/llama-3_1-nemotron-ultra-253b-v1": {
+      "id": "nvidia/llama-3_1-nemotron-ultra-253b-v1",
+      "name": "Llama 3.1 Nemotron Ultra 253B v1",
+      "provider": "Nebius Token Factory",
+      "pricing": {
+        "input": 0.6,
+        "output": 1.8,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-oss-20b": {
+      "id": "openai/gpt-oss-20b",
+      "name": "GPT OSS 20B",
+      "provider": "Nebius Token Factory",
+      "pricing": {
+        "input": 0.05,
+        "output": 0.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "openai/gpt-oss-120b": {
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "provider": "Nebius Token Factory",
+      "pricing": {
+        "input": 0.15,
+        "output": 0.6,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "vision",
+        "code",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen3-235b-a22b-instruct-2507": {
+      "id": "qwen/qwen3-235b-a22b-instruct-2507",
+      "name": "Qwen3 235B A22B Instruct 2507",
+      "provider": "Nebius Token Factory",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.6,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen3-235b-a22b-thinking-2507": {
+      "id": "qwen/qwen3-235b-a22b-thinking-2507",
+      "name": "Qwen3 235B A22B Thinking 2507",
+      "provider": "Nebius Token Factory",
+      "pricing": {
+        "input": 0.2,
+        "output": 0.8,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "qwen/qwen3-coder-480b-a35b-instruct": {
+      "id": "qwen/qwen3-coder-480b-a35b-instruct",
+      "name": "Qwen3 Coder 480B A35B Instruct",
+      "provider": "Nebius Token Factory",
+      "pricing": {
+        "input": 0.4,
+        "output": 1.8,
+        "unit": "per million tokens"
+      },
+      "context_length": 262144,
+      "capabilities": [
+        "text",
+        "code"
+      ],
+      "recommended": false
+    },
+    "meta-llama/llama-3_1-405b-instruct": {
+      "id": "meta-llama/llama-3_1-405b-instruct",
+      "name": "Llama 3.1 405B Instruct",
+      "provider": "Nebius Token Factory",
+      "pricing": {
+        "input": 1.0,
+        "output": 3.0,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "meta-llama/llama-3.3-70b-instruct-fast": {
+      "id": "meta-llama/llama-3.3-70b-instruct-fast",
+      "name": "Llama-3.3-70B-Instruct (Fast)",
+      "provider": "Nebius Token Factory",
+      "pricing": {
+        "input": 0.25,
+        "output": 0.75,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "meta-llama/llama-3.3-70b-instruct-base": {
+      "id": "meta-llama/llama-3.3-70b-instruct-base",
+      "name": "Llama-3.3-70B-Instruct (Base)",
+      "provider": "Nebius Token Factory",
+      "pricing": {
+        "input": 0.13,
+        "output": 0.4,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "zai-org/glm-4.5": {
+      "id": "zai-org/glm-4.5",
+      "name": "GLM 4.5",
+      "provider": "Nebius Token Factory",
+      "pricing": {
+        "input": 0.6,
+        "output": 2.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "zai-org/glm-4.5-air": {
+      "id": "zai-org/glm-4.5-air",
+      "name": "GLM 4.5 Air",
+      "provider": "Nebius Token Factory",
+      "pricing": {
+        "input": 0.2,
+        "output": 1.2,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    },
+    "deepseek-ai/deepseek-v3": {
+      "id": "deepseek-ai/deepseek-v3",
+      "name": "DeepSeek V3",
+      "provider": "Nebius Token Factory",
+      "pricing": {
+        "input": 0.5,
+        "output": 1.5,
+        "unit": "per million tokens"
+      },
+      "context_length": 131072,
+      "capabilities": [
+        "text",
+        "reasoning"
+      ],
+      "recommended": false
+    }
+  }
+}
