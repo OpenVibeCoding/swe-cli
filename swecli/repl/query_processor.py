@@ -513,7 +513,7 @@ class QueryProcessor:
 
         return "\n".join(lines)
 
-    def _execute_tool_call(self, tool_call: dict, tool_registry, approval_manager, undo_manager) -> dict:
+    def _execute_tool_call(self, tool_call: dict, tool_registry, approval_manager, undo_manager, tool_call_display: str = None) -> dict:
         """Execute a single tool call.
 
         Args:
@@ -521,6 +521,7 @@ class QueryProcessor:
             tool_registry: Tool registry
             approval_manager: Approval manager
             undo_manager: Undo manager
+            tool_call_display: Pre-formatted display string (optional, will format if not provided)
 
         Returns:
             Tool execution result
@@ -533,8 +534,9 @@ class QueryProcessor:
         tool_name = tool_call["function"]["name"]
         tool_args = json.loads(tool_call["function"]["arguments"])
 
-        # Format tool call display
-        tool_call_display = format_tool_call(tool_name, tool_args)
+        # Format tool call display if not provided
+        if tool_call_display is None:
+            tool_call_display = format_tool_call(tool_name, tool_args)
 
         # Create task monitor for interrupt support
         tool_monitor = TaskMonitor()
@@ -543,15 +545,10 @@ class QueryProcessor:
         # Track current monitor for interrupt support
         self._current_task_monitor = tool_monitor
 
-        # Show progress in PLAN mode
-        if self.mode_manager.current_mode == OperationMode.PLAN:
-            tool_progress = TaskProgressDisplay(self.console, tool_monitor)
-            tool_progress.start()
-        else:
-            # In NORMAL mode, show static symbol before approval
-            self.console.print(f"\n⏺ [cyan]{tool_call_display}[/cyan]")
-            tool_progress = TaskProgressDisplay(self.console, tool_monitor)
-            tool_progress.start()
+        # Start progress display (spinner) - don't print the tool call line again
+        # It was already printed by the caller in process_query()
+        tool_progress = TaskProgressDisplay(self.console, tool_monitor)
+        tool_progress.start()
 
         try:
             # Execute tool with interrupt support
@@ -756,7 +753,17 @@ class QueryProcessor:
 
                 # Execute tool calls
                 for tool_call in tool_calls:
-                    result = self._execute_tool_call(tool_call, tool_registry, approval_manager, undo_manager)
+                    # Display tool call IMMEDIATELY (before execution)
+                    import json
+                    tool_name = tool_call["function"]["name"]
+                    tool_args = json.loads(tool_call["function"]["arguments"])
+                    tool_call_display = format_tool_call(tool_name, tool_args)
+
+                    # Show the tool call line right away
+                    self.console.print(f"\n⏺ [cyan]{tool_call_display}[/cyan]")
+
+                    # THEN execute the tool (this takes time)
+                    result = self._execute_tool_call(tool_call, tool_registry, approval_manager, undo_manager, tool_call_display)
 
                     # Add tool result to messages
                     tool_result = result.get("output", "") if result["success"] else f"Error: {result.get('error', 'Tool execution failed')}"

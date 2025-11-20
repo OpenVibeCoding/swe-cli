@@ -25,6 +25,7 @@ from swecli.ui_textual.managers.console_buffer_manager import ConsoleBufferManag
 from swecli.ui_textual.managers.message_history import MessageHistory
 from swecli.ui_textual.managers.tool_summary_manager import ToolSummaryManager
 from swecli.ui_textual.renderers.welcome_panel import render_welcome_panel
+from swecli.ui_textual import style_tokens
 
 
 
@@ -310,7 +311,10 @@ class SWECLIChatApp(App):
         handled = await self._command_router.handle(command)
         if not handled and not self.on_message:
             cmd = command.lower().split()[0]
-            self.conversation.add_error(f"Unknown command: {cmd}")
+            self.conversation.add_error(
+                f"Unknown command: {cmd}",
+                hint=style_tokens.UNKNOWN_COMMAND_HINT,
+            )
         return handled
 
     async def _start_model_picker(self) -> None:

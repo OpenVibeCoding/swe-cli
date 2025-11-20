@@ -293,13 +293,16 @@ class ToolRegistryAdapter:
     def _create_langchain_tools(self) -> list[BaseTool]:
         """Create LangChain tool instances from SWE-CLI registry.
 
+        NOTE: File operation tools (read_file, write_file, edit_file, ls, grep, glob)
+        are provided by Deep Agent's built-in FilesystemMiddleware. We only register
+        custom tools that provide unique functionality not available in Deep Agents.
+
         Returns:
             List of LangChain BaseTool instances
         """
-        from .file_tools import (
-            WriteFileTool, EditFileTool, ReadFileTool,
-            ListFilesTool, SearchTool
-        )
+        # File tools are now handled by Deep Agent's built-in FilesystemMiddleware
+        # No need to import file_tools
+
         from .bash_tools import (
             RunCommandTool, ListProcessesTool,
             GetProcessOutputTool, KillProcessTool
@@ -313,30 +316,27 @@ class ToolRegistryAdapter:
             CaptureScreenshotTool, ListScreenshotsTool, ClearScreenshotsTool
         )
         from .vlm_tools import AnalyzeImageTool
-        from .todo_tools import (
-            CreateTodoTool, UpdateTodoTool, CompleteTodoTool, ListTodosTool
-        )
+        # Todo tools removed - using Deep Agent's built-in TodoListMiddleware (write_todos)
 
-        # Create base tools first
+        # Create custom tools (built-in file and todo tools are provided by Deep Agent)
         base_tools = [
-            # File operations
-            WriteFileTool(self.tool_registry),
-            EditFileTool(self.tool_registry),
-            ReadFileTool(self.tool_registry),
-            ListFilesTool(self.tool_registry),
-            SearchTool(self.tool_registry),
+            # File operations: read_file, write_file, edit_file, ls, grep, glob
+            # are provided by Deep Agent's FilesystemMiddleware - NOT included here
 
-            # Process operations
+            # Todo operations: write_todos is provided by Deep Agent's TodoListMiddleware
+            # - NOT included here
+
+            # Process operations (custom - not in Deep Agent)
             RunCommandTool(self.tool_registry),
             ListProcessesTool(self.tool_registry),
             GetProcessOutputTool(self.tool_registry),
             KillProcessTool(self.tool_registry),
 
-            # Web operations
+            # Web operations (custom - not in Deep Agent)
             FetchUrlTool(self.tool_registry),
             OpenBrowserTool(self.tool_registry),
 
-            # Screenshot operations
+            # Screenshot operations (custom - not in Deep Agent)
             CaptureScreenshotTool(self.tool_registry),
             ListScreenshotsTool(self.tool_registry),
             ClearScreenshotsTool(self.tool_registry),
@@ -344,14 +344,8 @@ class ToolRegistryAdapter:
             ListWebScreenshotsTool(self.tool_registry),
             ClearWebScreenshotsTool(self.tool_registry),
 
-            # VLM operations
+            # VLM operations (custom - not in Deep Agent)
             AnalyzeImageTool(self.tool_registry),
-
-            # Todo operations
-            CreateTodoTool(self.tool_registry),
-            UpdateTodoTool(self.tool_registry),
-            CompleteTodoTool(self.tool_registry),
-            ListTodosTool(self.tool_registry),
         ]
 
         # Create MCP tools

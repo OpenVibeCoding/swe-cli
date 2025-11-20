@@ -11,7 +11,7 @@ def get_prompt_path(prompt_name: str) -> Path:
     """Get the path to a prompt file.
 
     Args:
-        prompt_name: Name of the prompt (e.g., "agent_normal", "agent_planning")
+        prompt_name: Name of the prompt (e.g., "system_prompt_normal", "system_prompt_planning")
 
     Returns:
         Path to the prompt file

@@ -48,31 +48,7 @@ If unsure about these commands, ask the user how they verify code quality.
 
 # Available Tools
 
-## Core File Operations
-- **`read_file(file_path)`**: Read file contents
-  - Always use absolute paths
-  - Read files before editing to verify contents and conventions
-
-- **`write_file(file_path, content, create_dirs)`**: Create new files
-  - Auto-creates parent directories if create_dirs=true
-  - Use for new files only; use edit_file for modifications
-
-- **`edit_file(file_path, old_content, new_content, match_all)`**: Modify existing files
-  - Provide enough context in old_content to make matches unique
-  - Use match_all=true to replace all occurrences (useful for renaming)
-  - Preserve existing code style and conventions
-
-## Search & Navigation
-- **`list_files(path, pattern)`**: List directory contents with optional glob pattern
-  - Use to discover project structure
-  - Examples: "*.py", "src/**/*.js"
-
-- **`search(pattern, path)`**: Fast code search using ripgrep with regex
-  - Essential for finding function definitions, imports, usage patterns
-  - Use before making changes to understand context
-  - **CRITICAL**: NEVER use "." as path - always use specific directories to avoid timeouts
-
-## Command Execution
+## Process Management
 - **`run_command(command, background)`**: Execute ANY bash/shell command
   - Use this whenever the user asks you to run a command
   - **IMPORTANT**: Explain commands that modify the file system before running them
@@ -113,28 +89,28 @@ Master sophisticated search patterns to efficiently understand codebases:
 
 ### Exact Match Techniques
 - **Word Boundaries**: Use `\b` for exact word matching
-  - `search("\buser\b", "src/")` finds "user" but not "username"
+  - `grep("\buser\b", "src/")` finds "user" but not "username"
 - **Case-Sensitive Patterns**: Use `[A-Z]` for precise matching
-  - `search("[A-Z][a-z]*Exception", "src/")` finds PascalCase exceptions
+  - `grep("[A-Z][a-z]*Exception", "src/")` finds PascalCase exceptions
 - **Line Anchors**: Use `^` and `$` for positioning
-  - `search("^import.*requests", "src/")` finds imports at line start
+  - `grep("^import.*requests", "src/")` finds imports at line start
 
 ### Regex Pattern Mastery
-- **Character Classes**: `search("def (get|fetch|retrieve)_user", "src/")`
-- **Quantifiers**: `search("https?://[^\s]+", "src/")` for URLs
-- **Multi-Pattern**: `search("(TODO|FIXME|HACK|XXX)", "src/")` for comments
+- **Character Classes**: `grep("def (get|fetch|retrieve)_user", "src/")`
+- **Quantifiers**: `grep("https?://[^\s]+", "src/")` for URLs
+- **Multi-Pattern**: `grep("(TODO|FIXME|HACK|XXX)", "src/")` for comments
 
 ### Intention-Based Search
 Anticipate what the user needs based on context:
 
-**Configuration**: `search("(config|settings|env|environment)", "src/")`
-**Database/API**: `search("(models|schemas|entities)", "src/")`
-**Error Handling**: `search("(try|except|catch|error|Error|Exception)", "src/")`
-**Authentication**: `search("(auth|login|session|token|jwt|oauth)", "src/")`
+**Configuration**: `grep("(config|settings|env|environment)", "src/")`
+**Database/API**: `grep("(models|schemas|entities)", "src/")`
+**Error Handling**: `grep("(try|except|catch|error|Error|Exception)", "src/")`
+**Authentication**: `grep("(auth|login|session|token|jwt|oauth)", "src/")`
 
 ### Performance Optimization
 - **Targeted Search**: Always specify directories, never search "."
-- **File Type Filtering**: `search("TODO", "src/**/*.py")` for specific file types
+- **File Type Filtering**: `grep("TODO", "src/", glob="*.py")` for specific file types
 - **Progressive Specificity**: Start broad, then refine patterns
 
 # Workflows

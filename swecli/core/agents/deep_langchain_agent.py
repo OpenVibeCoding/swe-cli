@@ -14,6 +14,7 @@ from swecli.models.config import AppConfig
 # Import deepagents if available, handle import gracefully
 try:
     from deepagents import create_deep_agent
+    from deepagents.backends import FilesystemBackend
     _DEEPAGENTS_AVAILABLE = True
 except ImportError:
     _DEEPAGENTS_AVAILABLE = False
@@ -108,8 +109,13 @@ class InterruptibleDeepAgent:
                 result_container["error"] = e
 
         # Use ThreadPoolExecutor for better thread management
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info("[DEEP_AGENT] Starting Deep Agent invocation...")
+
         with ThreadPoolExecutor(max_workers=1) as executor:
             future = executor.submit(run_deep_agent)
+            start_time = time.time()
 
             # Check for interrupts while Deep Agent runs using event-based waiting
             while future.running():
@@ -148,8 +154,20 @@ class InterruptibleDeepAgent:
                     time.sleep(0.01)
 
             # Get the result (will raise any exceptions)
+            # Add timeout to prevent indefinite hangs (5 minutes max)
+            elapsed = time.time() - start_time
+            logger.info(f"[DEEP_AGENT] Completed in {elapsed:.2f}s")
             try:
-                future.result()  # Wait for completion and get any exceptions
+                future.result(timeout=300)  # 5 minute timeout for complex reasoning tasks
+            except TimeoutError:
+                # Deep Agent took too long
+                future.cancel()
+                return {
+                    "success": False,
+                    "error": "Deep Agent timeout after 5 minutes. Try a simpler prompt or press ESC to interrupt.",
+                    "content": "Request timed out. The model may be taking too long to respond.",
+                    "messages": payload.get("messages", []),
+                }
             except Exception as e:
                 # Check for interrupt-related errors from Deep Agent internals
                 error_msg = str(e)
@@ -239,19 +257,29 @@ class DeepLangChainAgent(BaseAgent):
                 logger.info(f"GitHub tool names: {[tool.name for tool in github_tools[:5]]}")
 
             # Get tool names for interrupt_on config
-            tool_names = [tool.name for tool in tools]
-
-            # Create the deep agent with model and tools
-            # CRITICAL: Use interrupt_on to prevent automatic tool execution
-            # This makes Deep Agent behave like a regular LLM that just returns tool_calls
-            interrupt_config = {tool_name: True for tool_name in tool_names}
+            # DON'T use interrupt_on - let Deep Agent execute all tools internally
+            # This allows built-in tools (grep, glob, read_file, etc.) to work properly
+            # Our custom tools will also be executed by Deep Agent
+            logger.info(f"Deep Agent will auto-execute all {len(tools)} tools internally")
 
             logger.info(f"Creating deep agent with {len(tools)} tools...")
+
+            # Build system prompt using our custom prompt
+            system_prompt = self.build_system_prompt()
+            logger.info(f"System prompt length: {len(system_prompt)} chars")
+
+            # Create filesystem backend for real file access
+            working_dir = self._working_dir or os.getcwd()
+            backend = FilesystemBackend(root_dir=working_dir)
+            logger.info(f"Created FilesystemBackend with root: {working_dir}")
+
             try:
                 deep_agent = create_deep_agent(
                     model=model,
                     tools=tools,
-                    interrupt_on=interrupt_config
+                    system_prompt=system_prompt,
+                    backend=backend
+                    # No interrupt_on - let Deep Agent execute all tools
                 )
                 logger.info("Deep agent created successfully")
             except Exception as e:
@@ -265,15 +293,24 @@ class DeepLangChainAgent(BaseAgent):
             # Wrap with interruptible support
             self._interrupt_monitor = DeepAgentInterruptMonitor()
             self._deep_agent = InterruptibleDeepAgent(deep_agent, self._interrupt_monitor)
+            self._init_error = None
 
         except Exception as e:
             logger.error(f"Failed to initialize Deep Agent: {e}", exc_info=True)
             self._deep_agent = None
+            self._init_error = str(e)
 
     def _create_model(self) -> BaseChatModel:
         """Create LangChain model based on configuration and provider files."""
-        provider = getattr(self.config, 'model_provider', 'fireworks')
-        model_name = getattr(self.config, 'model', 'accounts/fireworks/models/llama-v3p1-8b-instruct')
+        provider = self.config.model_provider
+        model_name = self.config.model
+        
+        if not provider or not model_name:
+            raise ValueError(
+                "Model and provider not configured. Please run 'swecli config setup' "
+                "or check your ~/.swecli/settings.json configuration."
+            )
+
         temperature = getattr(self.config, 'temperature', 0.7)
         max_tokens = getattr(self.config, 'max_tokens', 4096)
 
@@ -385,9 +422,10 @@ class DeepLangChainAgent(BaseAgent):
         try:
             # Check if deep agent is available
             if not self._deep_agent:
+                error_msg = getattr(self, "_init_error", "Deep Agent not initialized")
                 return {
                     "success": False,
-                    "error": "Deep Agent not initialized",
+                    "error": error_msg,
                 }
 
             # Connect task_monitor to interrupt monitor for immediate interrupt checking

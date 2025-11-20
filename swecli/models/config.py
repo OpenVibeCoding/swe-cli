@@ -104,8 +104,8 @@ class AppConfig(BaseModel):
 
     # AI Provider settings - Three model system
     # Normal model: For standard coding tasks
-    model_provider: str = "fireworks"
-    model: str = "accounts/fireworks/models/kimi-k2-instruct-0905"
+    model_provider: Optional[str] = None
+    model: Optional[str] = None
 
     # Thinking model: For complex reasoning tasks (optional, falls back to normal if not set)
     model_thinking: Optional[str] = None
@@ -150,8 +150,10 @@ class AppConfig(BaseModel):
 
     @field_validator("model_provider")
     @classmethod
-    def validate_provider(cls, v: str) -> str:
+    def validate_provider(cls, v: Optional[str]) -> Optional[str]:
         """Validate model provider."""
+        if v is None:
+            return None
         supported = ["fireworks", "anthropic", "openai"]
         if v not in supported:
             raise ValueError(
@@ -170,12 +172,17 @@ class AppConfig(BaseModel):
             key = os.getenv("FIREWORKS_API_KEY")
         elif self.model_provider == "anthropic":
             key = os.getenv("ANTHROPIC_API_KEY")
-        else:
+        elif self.model_provider == "openai":
             key = os.getenv("OPENAI_API_KEY")
+        else:
+            if self.model_provider is None:
+                raise ValueError("Model provider not configured.")
+            key = None
 
         if not key:
+            provider_env = f"{self.model_provider.upper()}_API_KEY" if self.model_provider else "API_KEY"
             raise ValueError(
-                f"No API key found. Set {self.model_provider.upper()}_API_KEY environment variable"
+                f"No API key found. Set {provider_env} environment variable"
             )
         return key
 

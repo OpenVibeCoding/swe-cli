@@ -340,7 +340,9 @@ class REPL:
 
                 # Check for slash commands
                 if user_input.startswith("/"):
-                    self._handle_command(user_input)
+                    result = self._handle_command(user_input)
+                    if isinstance(result, dict):
+                        self._render_structured_message(result)
                     continue
 
                 self._last_prompt = user_input.strip()
@@ -493,9 +495,10 @@ class REPL:
         elif cmd == "/run":
             self._run_command(args)
         else:
+            # Return structured error for display_message() to format
             return {
                 "level": "error",
-                "primary": "Unknown command",
+                "primary": f"Unknown command: {cmd}",
                 "secondary": "Type /help for available commands",
             }
         return None
@@ -517,6 +520,24 @@ class REPL:
         except Exception as e:
             self.console.print(f"[red]✗ Error parsing command: {e}[/red]")
             return
+
+    def _render_structured_message(self, payload: dict) -> None:
+        """Render structured command output in REPL mode."""
+        from swecli.ui_textual.formatters.display_formatter import DisplayFormatter
+
+        level = payload.get("level", "info")
+        primary = payload.get("primary", "")
+        secondary = payload.get("secondary")
+        title = payload.get("title")
+
+        formatter = DisplayFormatter()
+        if level == "usage":
+            renderable = formatter.format_usage(primary, secondary, title)
+        else:
+            formatter_method = getattr(formatter, f"format_{level}", formatter.format_info)
+            renderable = formatter_method(primary, secondary)
+
+        self.console.print(renderable)
 
         # Create dependencies
         deps = AgentDependencies(

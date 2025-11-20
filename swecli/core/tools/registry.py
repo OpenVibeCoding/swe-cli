@@ -9,6 +9,7 @@ from swecli.core.tools.context import ToolExecutionContext
 from swecli.core.tools.file_handlers import FileToolHandler
 from swecli.core.tools.mcp_handler import McpToolHandler
 from swecli.core.tools.process_handlers import ProcessToolHandler
+from swecli.core.tools.todo_handler import TodoHandler
 from swecli.core.tools.web_handlers import WebToolHandler
 from swecli.core.tools.screenshot_handler import ScreenshotToolHandler
 
@@ -21,6 +22,7 @@ _PLAN_READ_ONLY_TOOLS = {
     "get_process_output",
     "list_screenshots",
     "analyze_image",  # VLM is read-only, safe for planning mode
+    "list_todos",  # List todos is read-only, safe for planning mode
 }
 
 
@@ -53,7 +55,13 @@ class ToolRegistry:
         self._web_handler = WebToolHandler(web_fetch_tool)
         self._mcp_handler = McpToolHandler(mcp_manager)
         self._screenshot_handler = ScreenshotToolHandler()
+        self._todo_handler = TodoHandler()
         self.set_mcp_manager(mcp_manager)
+
+        # Initialize Deep Agent filesystem backend for built-in tools
+        from deepagents.backends import FilesystemBackend
+        import os
+        self._deep_backend = FilesystemBackend(root_dir=os.getcwd())
 
         self._handlers: dict[str, Any] = {
             "write_file": self._file_handler.write_file,
@@ -61,6 +69,10 @@ class ToolRegistry:
             "read_file": self._file_handler.read_file,
             "list_files": self._file_handler.list_files,
             "search": self._file_handler.search,
+            # Add Deep Agent built-in tools
+            "grep": self._deep_grep,
+            "glob": self._deep_glob,
+            "ls": self._deep_ls,
             "run_command": self._process_handler.run_command,
             "list_processes": lambda args, ctx: self._process_handler.list_processes(),
             "get_process_output": self._process_handler.get_process_output,
@@ -73,7 +85,13 @@ class ToolRegistry:
             "analyze_image": self._analyze_image,
             "capture_web_screenshot": self._capture_web_screenshot,
             "list_web_screenshots": lambda args: self._list_web_screenshots(),
-            "clear_web_screenshots": self._clear_web_screenshots
+            "clear_web_screenshots": self._clear_web_screenshots,
+            # Todo/task management tools
+            "write_todos": self._todo_handler.write_todos,  # Batch create (Deep Agents compatibility)
+            "create_todo": self._todo_handler.create_todo,
+            "update_todo": self._todo_handler.update_todo,
+            "complete_todo": self._todo_handler.complete_todo,
+            "list_todos": lambda args: self._todo_handler.list_todos(),
         }
 
     def get_schemas(self) -> list[dict[str, Any]]:
@@ -302,3 +320,56 @@ class ToolRegistry:
                 "error": result.get("error", "Unknown error"),
                 "output": None,
             }
+
+    def _deep_grep(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        """Execute grep using Deep Agent's FilesystemBackend."""
+        pattern = arguments.get("pattern")
+        path = arguments.get("path")
+        glob_pattern = arguments.get("glob")
+        output_mode = arguments.get("output_mode", "files_with_matches")
+
+        try:
+            # Call backend's grep_raw method
+            result = self._deep_backend.grep_raw(
+                pattern,
+                path=path,
+                glob=glob_pattern
+            )
+
+            if isinstance(result, str):
+                # Error message
+                return {"success": False, "error": result, "output": None}
+
+            # Format results based on output_mode
+            from deepagents.middleware.filesystem import format_grep_matches
+            formatted = format_grep_matches(result, output_mode)
+
+            return {"success": True, "output": formatted}
+        except Exception as e:
+            return {"success": False, "error": str(e), "output": None}
+
+    def _deep_glob(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        """Execute glob using Deep Agent's FilesystemBackend."""
+        pattern = arguments.get("pattern")
+        path = arguments.get("path", "/")
+
+        try:
+            infos = self._deep_backend.glob_info(pattern, path=path)
+            paths = [fi.get("path", "") for fi in infos]
+
+            return {"success": True, "output": "\n".join(paths)}
+        except Exception as e:
+            return {"success": False, "error": str(e), "output": None}
+
+    def _deep_ls(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        """Execute ls using Deep Agent's FilesystemBackend."""
+        path = arguments.get("path", ".")
+
+        try:
+            infos = self._deep_backend.ls_info(path)
+            # Format as list of paths
+            paths = [fi.get("path", "") for fi in infos]
+
+            return {"success": True, "output": "\n".join(paths)}
+        except Exception as e:
+            return {"success": False, "error": str(e), "output": None}

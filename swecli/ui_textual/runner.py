@@ -471,6 +471,7 @@ class TextualRunner:
                 primary=result.get("primary", ""),
                 secondary=result.get("secondary"),
                 is_markdown=result.get("is_markdown", False),
+                title=result.get("title"),
             )
         # Otherwise, display the captured output from old-style commands
         else:
@@ -486,6 +487,7 @@ class TextualRunner:
         primary: str,
         secondary: Optional[str] = None,
         is_markdown: bool = False,
+        title: Optional[str] = None,
     ) -> None:
         """Format and display a message in the conversation log."""
         if not primary:
@@ -501,7 +503,10 @@ class TextualRunner:
         if not formatter_method:
             formatter_method = self._display_formatter.format_info
 
-        message_text = formatter_method(primary, secondary)
+        if level == "usage":
+            message_text = formatter_method(primary, secondary, title)
+        else:
+            message_text = formatter_method(primary, secondary)
         self.app.conversation.write(message_text)
 
     def _handle_mcp_view_command(self, command: str) -> None:

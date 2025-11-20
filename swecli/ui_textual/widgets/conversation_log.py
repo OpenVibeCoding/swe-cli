@@ -16,6 +16,7 @@ from textual.widgets import RichLog
 
 from swecli.ui_textual.renderers import render_markdown_text_segment
 from swecli.ui_textual.constants import TOOL_ERROR_SENTINEL
+from swecli.ui_textual import style_tokens
 
 
 class ConversationLog(RichLog):
@@ -93,15 +94,11 @@ class ConversationLog(RichLog):
     def add_system_message(self, message: str) -> None:
         self.write(Text(message, style="dim italic"))
 
-    def add_error(self, message: str) -> None:
+    def add_error(self, message: str, hint: str | None = None) -> None:
         """Render an error message with unified style and clear any active spinner."""
         self.stop_spinner()
-        # Just show error detail under user's command with ⎿
-        line = Text("  ⎿ ", style="red")
-        line.append(message, style="red")
-        self.write(line)
-        # Add blank line for spacing
-        self.write(Text(""))
+        for line in self._format_inline_error(message, hint):
+            self.write(line)
         self.write(Text(""))
 
     def add_tool_call(self, display: Text | str, *_: Any) -> None:
@@ -193,9 +190,8 @@ class ConversationLog(RichLog):
 
     def _write_generic_tool_result(self, text: str) -> None:
         lines = text.rstrip("\n").splitlines() or [text]
-        grey = "#a0a4ad"
         for raw_line in lines:
-            line = Text("  ⎿  ", style=grey)
+            line = Text(f"  {style_tokens.INLINE_ARROW}  ", style=style_tokens.SUBTLE)
             message = raw_line.rstrip("\n")
             is_error = False
             is_interrupted = False
@@ -207,10 +203,26 @@ class ConversationLog(RichLog):
                 message = message[len("::interrupted::"):].lstrip()
 
             if is_interrupted:
-                line.append(message, style="bold red")
+                line.append(message, style=f"bold {style_tokens.ERROR}")
             else:
-                line.append(message, style="red" if is_error else grey)
+                line.append(message, style=style_tokens.ERROR if is_error else style_tokens.SUBTLE)
             self.write(line)
+
+    def _format_inline_error(self, message: str, hint: str | None = None) -> list[Text]:
+        """Build inline error lines with consistent iconography and spacing."""
+        primary = Text()
+        primary.append(f"  {style_tokens.INLINE_ARROW}  ", style=style_tokens.ERROR)
+        primary.append(f"{style_tokens.ERROR_ICON} ", style=style_tokens.ERROR)
+        primary.append(message, style=style_tokens.ERROR)
+
+        lines = [primary]
+        if hint:
+            hint_line = Text()
+            hint_line.append(f"     {style_tokens.HINT_ICON} ", style=style_tokens.SUBTLE)
+            hint_line.append(hint, style=style_tokens.SUBTLE)
+            lines.append(hint_line)
+
+        return lines
 
     def _write_edit_result(self, header: str, diff_lines: list[str]) -> None:
         if not diff_lines:
