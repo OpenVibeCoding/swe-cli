@@ -257,10 +257,11 @@ class DeepLangChainAgent(BaseAgent):
                 logger.info(f"GitHub tool names: {[tool.name for tool in github_tools[:5]]}")
 
             # Get tool names for interrupt_on config
-            # DON'T use interrupt_on - let Deep Agent execute all tools internally
-            # This allows built-in tools (grep, glob, read_file, etc.) to work properly
-            # Our custom tools will also be executed by Deep Agent
-            logger.info(f"Deep Agent will auto-execute all {len(tools)} tools internally")
+            # Use interrupt_on to make Deep Agent return tool calls instead of executing them
+            # This allows UI to display each tool call step-by-step with proper spinners
+            tool_names = [tool.name for tool in tools]
+            interrupt_config = {tool_name: True for tool_name in tool_names}
+            logger.info(f"Configured interrupt_on for {len(tool_names)} tools to enable step-by-step display")
 
             logger.info(f"Creating deep agent with {len(tools)} tools...")
 
@@ -278,8 +279,8 @@ class DeepLangChainAgent(BaseAgent):
                     model=model,
                     tools=tools,
                     system_prompt=system_prompt,
-                    backend=backend
-                    # No interrupt_on - let Deep Agent execute all tools
+                    backend=backend,
+                    interrupt_on=interrupt_config  # Enable tool call interruption for UI display
                 )
                 logger.info("Deep agent created successfully")
             except Exception as e:

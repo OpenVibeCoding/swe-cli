@@ -56,14 +56,14 @@ class CaptureWebScreenshotTool(SWECLIToolWrapper):
                 "Capture a screenshot of a web page. Use this to capture visual content "
                 "from websites, document web applications, or create image references of "
                 "web pages. The url parameter specifies the web page to screenshot, "
-                "and optional name parameter provides a custom filename."
+                "and optional output_path parameter provides a custom save path."
             ),
             tool_registry=tool_registry,
         )
 
-    def _run(self, url: str, name: Optional[str] = None, **kwargs) -> str:
+    def _run(self, url: str, output_path: Optional[str] = None, **kwargs) -> str:
         """Execute capture_web_screenshot tool."""
-        return super()._run(url=url, name=name, **kwargs)
+        return super()._run(url=url, output_path=output_path, **kwargs)
 
 
 class ListWebScreenshotsTool(SWECLIToolWrapper):

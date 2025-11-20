@@ -283,6 +283,33 @@ def format_tool_call(tool_name: str, tool_args: Mapping[str, Any]) -> str:
         if "include_external" in tool_args and tool_args["include_external"]:
             params.append(f'include_external: {tool_args["include_external"]}')
 
+        # Show max_length if not default
+        if "max_length" in tool_args and tool_args["max_length"] and tool_args["max_length"] != 50000:
+            params.append(f'max_length: {tool_args["max_length"]}')
+
+        # Show domain filters (condensed format)
+        if "allowed_domains" in tool_args and tool_args["allowed_domains"]:
+            domains = tool_args["allowed_domains"]
+            if len(domains) <= 2:
+                params.append(f'allowed_domains: {", ".join(domains)}')
+            else:
+                params.append(f'allowed_domains: {len(domains)} domains')
+
+        if "blocked_domains" in tool_args and tool_args["blocked_domains"]:
+            domains = tool_args["blocked_domains"]
+            if len(domains) <= 2:
+                params.append(f'blocked_domains: {", ".join(domains)}')
+            else:
+                params.append(f'blocked_domains: {len(domains)} domains')
+
+        # Show URL patterns if specified
+        if "url_patterns" in tool_args and tool_args["url_patterns"]:
+            patterns = tool_args["url_patterns"]
+            if len(patterns) == 1:
+                params.append(f'patterns: {patterns[0]}')
+            else:
+                params.append(f'patterns: {len(patterns)} patterns')
+
         if params:
             return f"Fetch({', '.join(params)})"
 

@@ -87,7 +87,7 @@ class ToolRegistry:
             "list_web_screenshots": lambda args: self._list_web_screenshots(),
             "clear_web_screenshots": self._clear_web_screenshots,
             # Todo/task management tools
-            "write_todos": self._todo_handler.write_todos,  # Batch create (Deep Agents compatibility)
+            "write_todos": self._todo_handler.write_todos,  # Accepts both List[str] and List[dict] formats (Deep Agent compatible)
             "create_todo": self._todo_handler.create_todo,
             "update_todo": self._todo_handler.update_todo,
             "complete_todo": self._todo_handler.complete_todo,
@@ -163,7 +163,8 @@ class ToolRegistry:
                 return handler(arguments)
 
             # Remaining handlers ignore execution context
-            return handler(arguments)
+            # Unpack arguments dict to pass as keyword arguments
+            return handler(**arguments)
         except Exception as exc:  # noqa: BLE001
             return {"success": False, "error": str(exc), "output": None}
 
@@ -197,7 +198,7 @@ class ToolRegistry:
         self.mcp_manager = mcp_manager
         self._mcp_handler = McpToolHandler(mcp_manager)
 
-    def _open_browser(self, arguments: dict[str, Any]) -> dict[str, Any]:
+    def _open_browser(self, **arguments) -> dict[str, Any]:
         """Execute the open_browser tool."""
         if not self.open_browser_tool:
             return {
@@ -207,7 +208,7 @@ class ToolRegistry:
             }
         return self.open_browser_tool.execute(**arguments)
 
-    def _analyze_image(self, arguments: dict[str, Any]) -> dict[str, Any]:
+    def _analyze_image(self, **arguments) -> dict[str, Any]:
         """Execute the analyze_image tool (VLM)."""
         if not self.vlm_tool:
             return {
@@ -231,7 +232,7 @@ class ToolRegistry:
                 "output": None,
             }
 
-    def _capture_web_screenshot(self, arguments: dict[str, Any]) -> dict[str, Any]:
+    def _capture_web_screenshot(self, **arguments) -> dict[str, Any]:
         """Execute the capture_web_screenshot tool."""
         if not self.web_screenshot_tool:
             return {
@@ -297,7 +298,7 @@ class ToolRegistry:
                 "output": None,
             }
 
-    def _clear_web_screenshots(self, arguments: dict[str, Any]) -> dict[str, Any]:
+    def _clear_web_screenshots(self, **arguments) -> dict[str, Any]:
         """Execute the clear_web_screenshots tool."""
         if not self.web_screenshot_tool:
             return {

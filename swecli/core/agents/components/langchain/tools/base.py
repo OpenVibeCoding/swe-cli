@@ -343,10 +343,19 @@ class ToolRegistryAdapter:
             CaptureWebScreenshotTool(self.tool_registry),
             ListWebScreenshotsTool(self.tool_registry),
             ClearWebScreenshotsTool(self.tool_registry),
-
-            # VLM operations (custom - not in Deep Agent)
-            AnalyzeImageTool(self.tool_registry),
         ]
+
+        # Add VLM tool conditionally based on configuration
+        # Only include if VLM model is configured
+        if self._is_vlm_available():
+            base_tools.append(AnalyzeImageTool(self.tool_registry))
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.debug("VLM tool is available and included in tool list")
+        else:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.debug("VLM tool not configured, skipping AnalyzeImageTool")
 
         # Create MCP tools
         mcp_tools = self._create_mcp_tools()
@@ -421,3 +430,13 @@ class ToolRegistryAdapter:
             pass
 
         return mcp_tools
+
+    def _is_vlm_available(self) -> bool:
+        """Check if VLM (Vision Language Model) is configured and available.
+
+        Returns:
+            True if VLM tool is configured with a model, False otherwise
+        """
+        if not hasattr(self.tool_registry, 'vlm_tool') or not self.tool_registry.vlm_tool:
+            return False
+        return self.tool_registry.vlm_tool.is_available()

@@ -54,11 +54,15 @@ class TodoHandler:
         # Load existing todos
         self._load_todos()
 
-    def write_todos(self, todos: List[str]) -> dict:
+    def write_todos(self, todos: List[str] | List[dict]) -> dict:
         """Create multiple todo items in a single call.
 
+        Supports both formats:
+        - List[str]: Simple string list ["Task 1", "Task 2"]
+        - List[dict]: Deep Agent format [{"content": "Task 1", "status": "pending"}]
+
         Args:
-            todos: List of todo titles/descriptions to create
+            todos: List of todo titles/descriptions (str) or todo objects (dict)
 
         Returns:
             Result dict with success status and summary
@@ -76,6 +80,30 @@ class TodoHandler:
                 "error": f"'todos' must be a list. Got {type(todos).__name__}.",
                 "output": None,
             }
+
+        # Normalize to string list
+        # Handle both List[str] and List[dict] formats (Deep Agent compatibility)
+        normalized_todos = []
+        for item in todos:
+            if isinstance(item, str):
+                normalized_todos.append(item)
+            elif isinstance(item, dict):
+                # Extract 'content' field from Deep Agent's todo dict format
+                content = item.get("content", "")
+                if content:
+                    normalized_todos.append(content)
+            else:
+                # Skip invalid items
+                continue
+
+        if not normalized_todos:
+            return {
+                "success": False,
+                "error": "No valid todos found in the list.",
+                "output": None,
+            }
+
+        todos = normalized_todos
 
         # Create all todos
         results = []
