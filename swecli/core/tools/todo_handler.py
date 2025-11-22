@@ -1,10 +1,7 @@
 """Todo/Task management handler for tracking development tasks."""
 
-import json
-import os
 from dataclasses import dataclass, asdict
 from datetime import datetime
-from pathlib import Path
 from typing import Dict, List, Optional
 
 from rich.console import Console
@@ -34,25 +31,10 @@ class TodoItem:
 class TodoHandler:
     """Handler for todo/task management operations."""
 
-    def __init__(self, storage_dir: Optional[str] = None):
-        """Initialize todo handler.
-
-        Args:
-            storage_dir: Directory for storing todos (defaults to ~/.swecli/)
-        """
+    def __init__(self):
+        """Initialize todo handler with in-memory storage."""
         self._todos: Dict[str, TodoItem] = {}
         self._next_id = 1
-
-        # Set up storage
-        if storage_dir:
-            self._storage_path = Path(storage_dir) / "todos.json"
-        else:
-            swecli_dir = Path.home() / ".swecli"
-            swecli_dir.mkdir(exist_ok=True)
-            self._storage_path = swecli_dir / "todos.json"
-
-        # Load existing todos
-        self._load_todos()
 
     def write_todos(self, todos: List[str] | List[dict]) -> dict:
         """Create multiple todo items in a single call.
@@ -105,6 +87,10 @@ class TodoHandler:
 
         todos = normalized_todos
 
+        # Clear existing todos - write_todos replaces the entire list
+        self._todos.clear()
+        self._next_id = 1
+
         # Create all todos
         results = []
         created_count = 0
@@ -123,11 +109,11 @@ class TodoHandler:
             if result.get("success"):
                 todo_id = result.get("todo_id", "?")
                 created_ids.append(todo_id)
-                results.append(f"  {i}. [✓] Todo #{todo_id}: {str(todo_text).strip()}")
+                results.append(f"  [cyan]○ {str(todo_text).strip()}[/cyan]")
                 created_count += 1
             else:
                 error = result.get("error", "Unknown error")
-                results.append(f"  {i}. [✗] Failed: {error}")
+                results.append(f"  [red]✗ {error}[/red]")
                 failed_count += 1
 
         # Build summary
@@ -159,35 +145,44 @@ class TodoHandler:
 
         Args:
             title: Todo title/description
-            status: Status ("todo", "doing", or "done")
+            status: Status ("todo", "doing", "done" OR "pending", "in_progress", "completed")
             log: Optional log/notes
             expanded: Whether to show expanded in UI
 
         Returns:
             Result dict with success status and todo ID
         """
+        # Map Deep Agent statuses to internal statuses
+        status_map = {
+            "pending": "todo",
+            "in_progress": "doing",
+            "completed": "done",
+        }
+
+        # Normalize status
+        normalized_status = status_map.get(status, status)
+
         # Validate status
-        if status not in ["todo", "doing", "done"]:
+        if normalized_status not in ["todo", "doing", "done"]:
             return {
                 "success": False,
-                "error": f"Invalid status '{status}'. Must be 'todo', 'doing', or 'done'.",
+                "error": f"Invalid status '{status}'. Must be 'todo', 'doing', or 'done' (or 'pending', 'in_progress', 'completed').",
                 "output": None,
             }
 
-        # Create todo
-        todo_id = str(self._next_id)
+        # Create todo with Deep Agent compatible ID format
+        todo_id = f"todo-{self._next_id}"
         self._next_id += 1
 
         todo = TodoItem(
             id=todo_id,
             title=title,
-            status=status,
+            status=normalized_status,
             log=log,
             expanded=expanded,
         )
 
         self._todos[todo_id] = todo
-        self._save_todos()
 
         return {
             "success": True,
@@ -195,6 +190,79 @@ class TodoHandler:
             "todo_id": todo_id,
             "todo": asdict(todo),
         }
+
+    def _find_todo(self, id: str) -> tuple[Optional[str], Optional[TodoItem]]:
+        """Find a todo by ID, trying multiple matching strategies.
+
+        Deep Agent uses 0-based indexing (0, 1, 2...) while we use 1-based IDs (todo-1, todo-2, todo-3...).
+        This method handles the conversion. Also supports finding by title string, kebab-case slugs, and fuzzy matching.
+
+        Args:
+            id: Todo ID in formats: "0", "1", "todo-1", exact title, kebab-case slug like "implement-basic-level"
+
+        Returns:
+            Tuple of (actual_id, todo_item) or (None, None) if not found
+        """
+        # Try exact match first
+        if id in self._todos:
+            return id, self._todos[id]
+
+        # If numeric ID provided, convert from 0-based to 1-based then try "todo-X" format
+        if id.isdigit():
+            numeric_id = int(id)
+            # Deep Agent uses 0-based indexing, convert to 1-based
+            one_based_id = numeric_id + 1
+            todo_id = f"todo-{one_based_id}"
+            if todo_id in self._todos:
+                return todo_id, self._todos[todo_id]
+
+        # If "todo-X" provided, try numeric format
+        if id.startswith("todo-"):
+            numeric_id = id[5:]
+            if numeric_id in self._todos:
+                return numeric_id, self._todos[numeric_id]
+
+        # Try to find by title (case-sensitive exact match)
+        for todo_id, todo in self._todos.items():
+            if todo.title == id:
+                return todo_id, todo
+
+        # Try case-insensitive exact match
+        id_lower = id.lower()
+        for todo_id, todo in self._todos.items():
+            if todo.title.lower() == id_lower:
+                return todo_id, todo
+
+        # Try kebab-case slug matching (e.g., "implement-basic-level" → "Implement basic level design...")
+        # Convert kebab-case to words and try fuzzy matching
+        if "-" in id:
+            # Convert "implement-basic-level" → "implement basic level"
+            slug_words = id.replace("-", " ").lower()
+            for todo_id, todo in self._todos.items():
+                title_lower = todo.title.lower()
+                # Check if slug words appear at start of title
+                if title_lower.startswith(slug_words):
+                    return todo_id, todo
+                # Check if all slug words appear in title (in order)
+                if all(word in title_lower for word in slug_words.split()):
+                    # Verify words appear in order
+                    pos = 0
+                    all_in_order = True
+                    for word in slug_words.split():
+                        idx = title_lower.find(word, pos)
+                        if idx == -1:
+                            all_in_order = False
+                            break
+                        pos = idx + len(word)
+                    if all_in_order:
+                        return todo_id, todo
+
+        # Try partial matching - if id is contained in title
+        for todo_id, todo in self._todos.items():
+            if id_lower in todo.title.lower():
+                return todo_id, todo
+
+        return None, None
 
     def update_todo(
         self,
@@ -209,44 +277,59 @@ class TodoHandler:
         Args:
             id: Todo ID
             title: New title (optional)
-            status: New status (optional)
+            status: New status ("todo", "doing", "done" OR "pending", "in_progress", "completed") (optional)
             log: New log/notes (optional)
             expanded: New expanded state (optional)
 
         Returns:
             Result dict with success status
         """
-        if id not in self._todos:
+        actual_id, todo = self._find_todo(id)
+        if todo is None:
             return {
                 "success": False,
                 "error": f"Todo #{id} not found",
                 "output": None,
             }
 
-        todo = self._todos[id]
-
         # Update fields
         if title is not None:
             todo.title = title
         if status is not None:
-            if status not in ["todo", "doing", "done"]:
+            # Map Deep Agent statuses to internal statuses
+            status_map = {
+                "pending": "todo",
+                "in_progress": "doing",
+                "completed": "done",
+            }
+
+            # Normalize status
+            normalized_status = status_map.get(status, status)
+
+            if normalized_status not in ["todo", "doing", "done"]:
                 return {
                     "success": False,
-                    "error": f"Invalid status '{status}'. Must be 'todo', 'doing', or 'done'.",
+                    "error": f"Invalid status '{status}'. Must be 'todo', 'doing', or 'done' (or 'pending', 'in_progress', 'completed').",
                     "output": None,
                 }
-            todo.status = status
+            todo.status = normalized_status
         if log is not None:
             todo.log = log
         if expanded is not None:
             todo.expanded = expanded
 
         todo.updated_at = datetime.now().isoformat()
-        self._save_todos()
+
+        # Generate full todo list after update
+        todo_list = self._format_todo_list_simple()
+        output_lines = [f"Updated: {todo.title}", ""]
+        if todo_list:
+            output_lines.append("Current todos:")
+            output_lines.extend(todo_list)
 
         return {
             "success": True,
-            "output": f"Updated todo #{id}",
+            "output": "\n".join(output_lines),
             "todo": asdict(todo),
         }
 
@@ -260,14 +343,13 @@ class TodoHandler:
         Returns:
             Result dict with success status
         """
-        if id not in self._todos:
+        actual_id, todo = self._find_todo(id)
+        if todo is None:
             return {
                 "success": False,
                 "error": f"Todo #{id} not found",
                 "output": None,
             }
-
-        todo = self._todos[id]
         todo.status = "done"
 
         if log:
@@ -277,13 +359,55 @@ class TodoHandler:
                 todo.log = log
 
         todo.updated_at = datetime.now().isoformat()
-        self._save_todos()
+
+        # Generate full todo list after completion
+        todo_list = self._format_todo_list_simple()
+        output_lines = [f"✅ Completed: {todo.title}", ""]
+        if todo_list:
+            output_lines.append("Current todos:")
+            output_lines.extend(todo_list)
 
         return {
             "success": True,
-            "output": f"Completed todo #{id}: {todo.title}",
+            "output": "\n".join(output_lines),
             "todo": asdict(todo),
         }
+
+    def _format_todo_list_simple(self) -> list[str]:
+        """Format todo list for display after updates.
+
+        Returns:
+            List of formatted todo lines with status indicators and strikethrough for completed items.
+        """
+        if not self._todos:
+            return []
+
+        lines = []
+        status_order = {"doing": 0, "todo": 1, "done": 2}
+
+        def extract_id_number(todo_id: str) -> int:
+            """Extract numeric part from 'todo-X' format."""
+            if todo_id.startswith("todo-"):
+                return int(todo_id[5:])
+            return int(todo_id)
+
+        sorted_todos = sorted(
+            self._todos.values(),
+            key=lambda t: (status_order.get(t.status, 3), extract_id_number(t.id)),
+        )
+
+        for todo in sorted_todos:
+            if todo.status == "done":
+                # Completed: green with strikethrough
+                lines.append(f"  [green]✓ ~~{todo.title}~~[/green]")
+            elif todo.status == "doing":
+                # In progress: yellow
+                lines.append(f"  [yellow]▶ {todo.title}[/yellow]")
+            else:
+                # Pending: cyan
+                lines.append(f"  [cyan]○ {todo.title}[/cyan]")
+
+        return lines
 
     def list_todos(self) -> dict:
         """List all todos with formatted display.
@@ -307,9 +431,16 @@ class TodoHandler:
 
         # Sort by status (doing -> todo -> done) then by ID
         status_order = {"doing": 0, "todo": 1, "done": 2}
+
+        def extract_id_number(todo_id: str) -> int:
+            """Extract numeric part from 'todo-X' format."""
+            if todo_id.startswith("todo-"):
+                return int(todo_id[5:])
+            return int(todo_id)
+
         sorted_todos = sorted(
             self._todos.values(),
-            key=lambda t: (status_order.get(t.status, 3), int(t.id)),
+            key=lambda t: (status_order.get(t.status, 3), extract_id_number(t.id)),
         )
 
         for todo in sorted_todos:
@@ -337,38 +468,3 @@ class TodoHandler:
             "todos": [asdict(t) for t in sorted_todos],
             "count": len(self._todos),
         }
-
-    def _save_todos(self):
-        """Save todos to disk."""
-        data = {
-            "next_id": self._next_id,
-            "todos": {tid: asdict(todo) for tid, todo in self._todos.items()},
-        }
-
-        try:
-            with open(self._storage_path, "w") as f:
-                json.dump(data, f, indent=2)
-        except Exception as e:
-            # Log error but don't fail
-            print(f"Warning: Could not save todos: {e}")
-
-    def _load_todos(self):
-        """Load todos from disk."""
-        if not self._storage_path.exists():
-            return
-
-        try:
-            with open(self._storage_path, "r") as f:
-                data = json.load(f)
-
-            self._next_id = data.get("next_id", 1)
-            todos_data = data.get("todos", {})
-
-            for todo_id, todo_dict in todos_data.items():
-                self._todos[todo_id] = TodoItem(**todo_dict)
-
-        except Exception as e:
-            # Log error but start fresh
-            print(f"Warning: Could not load todos: {e}")
-            self._todos = {}
-            self._next_id = 1
