@@ -222,6 +222,15 @@ class TodoHandler:
             if numeric_id in self._todos:
                 return numeric_id, self._todos[numeric_id]
 
+        # If "todo_X" provided (Deep Agent format with underscore), convert to "todo-X"
+        if id.startswith("todo_"):
+            numeric_part = id[5:]
+            if numeric_part.isdigit():
+                # Convert "todo_1" → "todo-1" (our internal format)
+                internal_id = f"todo-{numeric_part}"
+                if internal_id in self._todos:
+                    return internal_id, self._todos[internal_id]
+
         # Try to find by title (case-sensitive exact match)
         for todo_id, todo in self._todos.items():
             if todo.title == id:

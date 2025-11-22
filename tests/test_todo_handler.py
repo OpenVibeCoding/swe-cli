@@ -25,6 +25,18 @@ class TestTodoHandlerFindTodo:
         assert todo is not None
         assert todo.title == "Set up game development environment and project structure"
 
+    def test_find_by_todo_underscore_format(self, handler):
+        """Test finding todo by 'todo_X' format (Deep Agent uses this)."""
+        # Deep Agent uses underscore instead of dash
+        actual_id, todo = handler._find_todo("todo_1")
+        assert actual_id == "todo-1"
+        assert todo is not None
+        assert todo.title == "Set up game development environment and project structure"
+
+        actual_id, todo = handler._find_todo("todo_3")
+        assert actual_id == "todo-3"
+        assert todo.title == "Implement basic level design with platforms and ground"
+
     def test_find_by_numeric_zero_based_index(self, handler):
         """Test finding todo by 0-based numeric index (Deep Agent format)."""
         # Deep Agent uses 0-based indexing, should map to todo-1
