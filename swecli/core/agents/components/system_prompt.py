@@ -20,21 +20,8 @@ class SystemPromptBuilder:
         # Load base prompt from file
         prompt = load_prompt("system_prompt_normal")
 
-        # Add conditional tool documentation based on availability
         prompt = self._add_conditional_tool_docs(prompt)
-
-        # Add working directory context
-        if self._working_dir:
-            prompt += f"\n\n# Working Directory Context\n\nYou are currently working in the directory: `{self._working_dir}`\n\nWhen processing file paths without explicit directories (like `app.py` or `README.md`), assume they are located in the current working directory unless the user provides a specific path. Use relative paths from the working directory for file operations.\n"
-
-            env_context = self._build_environment_context(Path(self._working_dir))
-            if env_context:
-                prompt += env_context
-
-        # Add MCP section if available
-        mcp_prompt = self._build_mcp_section()
-        if mcp_prompt:
-            prompt += mcp_prompt
+        prompt = self._fill_dynamic_sections(prompt)
 
         return prompt
 
@@ -60,37 +47,10 @@ class SystemPromptBuilder:
         Returns:
             Modified prompt with conditional tool documentation
         """
-        # Check if VLM is NOT available
-        if not self._is_vlm_available():
-            # 1. Remove analyze_image mandatory workflow and add anti-loop guidance
-            vlm_section = """- **`analyze_image(prompt, image_path, image_url, max_tokens)`**: Analyze images using Vision Language Model
-  - **🚨 ABSOLUTELY CRITICAL WORKFLOW**: After capturing ANY screenshots, MUST IMMEDIATELY follow up with analyze_image
-  - **MANDATORY SEQUENCE**: 1) Capture screenshot → 2) Analyze image → 3) Proceed with other tools
-  - **NEVER SKIP ANALYSIS**: Even if you think you know what's in the screenshot, you MUST analyze it"""
-
-            vlm_replacement = """- **Note**: Vision analysis (analyze_image) is not currently available.
-  - **WEB CLONING WITHOUT VISION**: Use `fetch_url` as your PRIMARY tool - it extracts text content and structure effectively
-  - **Screenshots are useless without vision**: You CANNOT analyze screenshots without vision capabilities
-  - **CRITICAL**: Do NOT capture multiple screenshots in a loop - you have no way to extract information from them
-  - **Workflow**: For web cloning tasks, use `fetch_url` directly. Skip screenshot capture unless explicitly requested by user"""
-
-            prompt = prompt.replace(vlm_section, vlm_replacement)
-
-            # 2. Replace screenshot priority instructions for web cloning
-            screenshot_priority = """  - **PRIORITY FOR WEB CLONING**: ALWAYS use this first before fetch_url for web cloning
-  - Screenshots provide visual layout, styling, and component structure"""
-
-            screenshot_replacement = """  - **NOTE**: Without vision capabilities, screenshots cannot provide layout or styling information
-  - **FOR WEB CLONING**: Use `fetch_url` instead - screenshots are not useful without vision analysis"""
-
-            prompt = prompt.replace(screenshot_priority, screenshot_replacement)
-
-            # 3. Update fetch_url guidance to make it primary for web cloning
-            fetch_url_old = """  - **FOR WEB CLONING**: Use AFTER capturing screenshots, only when needing specific text content"""
-            fetch_url_new = """  - **FOR WEB CLONING (No Vision)**: Use as PRIMARY tool - captures text content, structure, and HTML effectively"""
-
-            prompt = prompt.replace(fetch_url_old, fetch_url_new)
-
+        # Fill conditional tool docs via placeholders
+        replacements = self._build_tool_doc_replacements()
+        for placeholder, content in replacements.items():
+            prompt = prompt.replace(placeholder, content)
         return prompt
 
     def _build_mcp_section(self) -> str:
@@ -111,34 +71,101 @@ class SystemPromptBuilder:
         lines.append("\nUse these MCP tools when they're relevant to the user's task.\n")
         return "".join(lines)
 
+    def _build_tool_doc_replacements(self) -> dict[str, str]:
+        """Build placeholder values for tool documentation sections."""
+        if self._is_vlm_available():
+            return {
+                "[[WEB_CLONE_NOTE]]": "**FOR WEB CLONING**: Use AFTER capturing screenshots, only when needing specific text content",
+                "[[SCREENSHOT_NOTE]]": "**PRIORITY FOR WEB CLONING**: ALWAYS use this first before fetch_url for web cloning\n  - Screenshots provide visual layout, styling, and component structure",
+                "[[VISION_DOCS]]": "- **`analyze_image(prompt, image_path, image_url, max_tokens)`**: Analyze images using Vision Language Model\n  - **🚨 ABSOLUTELY CRITICAL WORKFLOW**: After capturing ANY screenshots, MUST IMMEDIATELY follow up with analyze_image\n  - **MANDATORY SEQUENCE**: 1) Capture screenshot → 2) Analyze image → 3) Proceed with other tools\n  - **NEVER SKIP ANALYSIS**: Even if you think you know what's in the screenshot, you MUST analyze it",
+            }
+
+        # When vision is not available, adjust guidance to avoid screenshot loops
+        return {
+            "[[WEB_CLONE_NOTE]]": "**FOR WEB CLONING (No Vision)**: Use as PRIMARY tool - captures text content, structure, and HTML effectively",
+            "[[SCREENSHOT_NOTE]]": "**NOTE**: Without vision capabilities, screenshots cannot provide layout or styling information\n  - **FOR WEB CLONING**: Use `fetch_url` instead - screenshots are not useful without vision analysis",
+            "[[VISION_DOCS]]": "- **Note**: Vision analysis (analyze_image) is not currently available.\n  - **WEB CLONING WITHOUT VISION**: Use `fetch_url` as your PRIMARY tool - it extracts text content and structure effectively\n  - **Screenshots are useless without vision**: You CANNOT analyze screenshots without vision capabilities\n  - **CRITICAL**: Do NOT capture multiple screenshots in a loop - you have no way to extract information from them\n  - **Workflow**: For web cloning tasks, use `fetch_url` directly. Skip screenshot capture unless explicitly requested by user",
+        }
+
+    def _fill_dynamic_sections(self, prompt: str) -> str:
+        """Replace dynamic section placeholders in the prompt template."""
+        placeholders = {
+            "[[WORKING_DIR_CONTEXT]]": self._render_working_dir_context(),
+            "[[ENVIRONMENT_CONTEXT_NOTE]]": self._build_environment_context(Path(self._working_dir)) if self._working_dir else "",
+            "[[MCP_TOOLS_SECTION]]": self._build_mcp_section(),
+        }
+
+        for placeholder, content in placeholders.items():
+            prompt = prompt.replace(placeholder, content or "")
+        return prompt
+
+    def _render_working_dir_context(self) -> str:
+        """Render working directory context section."""
+        if not self._working_dir:
+            return ""
+
+        return (
+            "\n# Working Directory Context\n\n"
+            f"You are currently working in the directory: `{self._working_dir}`\n\n"
+            "When processing file paths without explicit directories (like `app.py` or `README.md`), assume they are located in the current working directory unless the user provides a specific path. Use relative paths from the working directory for file operations.\n"
+        )
+
     def _build_environment_context(self, working_dir: Path) -> str:
-        """Detect common Python environment managers to nudge correct install commands."""
+        """Detect common ecosystem manifests to guide install/run commands."""
+        detections: list[str] = []
         try:
-            uv_lock = (working_dir / "uv.lock").exists()
-            poetry_lock = (working_dir / "poetry.lock").exists()
-            pipfile = (working_dir / "Pipfile").exists()
-            conda_env = any((working_dir / name).exists() for name in ("environment.yml", "environment.yaml"))
-            requirements = (working_dir / "requirements.txt").exists()
-            pyproject = (working_dir / "pyproject.toml").exists()
+            checks = [
+                (("uv.lock",), "Python: **uv** detected (`uv.lock`). Prefer `uv pip install <pkg>` / `uv run ...`."),
+                (("poetry.lock",), "Python: **Poetry** detected (`poetry.lock`). Prefer `poetry install` / `poetry run ...`."),
+                (("Pipfile",), "Python: **Pipenv** detected (`Pipfile`). Prefer `pipenv install` / `pipenv run ...`."),
+                (("environment.yml", "environment.yaml"), "Python: **Conda** env file detected. Prefer `conda env update -f environment.yml` / `conda run ...`."),
+                (("requirements.txt",), "Python: `requirements.txt` present. Use project-standard installer (pip/uv) with that file."),
+                (("package-lock.json",), "Node: npm lockfile detected. Prefer `npm install` / `npm run ...`."),
+                (("pnpm-lock.yaml",), "Node: pnpm lockfile detected. Prefer `pnpm install` / `pnpm ...`."),
+                (("yarn.lock",), "Node: yarn lockfile detected. Prefer `yarn install` / `yarn ...`."),
+                (("bun.lockb",), "Node: bun lockfile detected. Prefer `bun install` / `bun run ...`."),
+                (("go.mod",), "Go: module file detected. Prefer `go mod tidy` / `go run ./...` or `go test ./...`."),
+                (("Cargo.toml",), "Rust: Cargo project detected. Prefer `cargo build` / `cargo test`."),
+                (("Gemfile", "Gemfile.lock"), "Ruby: Bundler project detected. Prefer `bundle install` / `bundle exec ...`."),
+                (("composer.json", "composer.lock"), "PHP: Composer project detected. Prefer `composer install` / `composer run`."),
+                (("mix.exs",), "Elixir: Mix project detected. Prefer `mix deps.get` / `mix test`."),
+                (("build.gradle", "build.gradle.kts", "gradlew"), "Java/Kotlin: Gradle project detected. Prefer `./gradlew ...` when available."),
+                (("pom.xml",), "Java: Maven project detected. Prefer `mvn install` / `mvn test`."),
+                (("Package.swift",), "Swift: Swift Package Manager detected. Prefer `swift build` / `swift test`."),
+                (("global.json", "Directory.Packages.props", "NuGet.config", ".csproj", ".sln"), "C#/.NET: solution/project files detected. Prefer `dotnet restore` / `dotnet test` / `dotnet run`."),
+                (("CMakeLists.txt",), "C/C++: CMake project detected. Prefer `cmake -S . -B build` / `cmake --build build` / `ctest --test-dir build`."),
+                (("Makefile",), "C/C++/general: Makefile detected. Prefer `make` targets defined by the project."),
+                (("SConstruct",), "C/C++/general: SCons build detected. Prefer `scons` targets."),
+                (("build.sbt",), "Scala: sbt project detected. Prefer `sbt test` / `sbt run`."),
+                (("stack.yaml",), "Haskell: Stack project detected. Prefer `stack build` / `stack test`."),
+                (("cabal.project", "cabal.project.local"), "Haskell: Cabal project detected. Prefer `cabal build` / `cabal test`."),
+                (("pubspec.yaml",), "Dart/Flutter: Pubspec detected. Prefer `dart pub get` / `dart test` or `flutter pub get` / `flutter test`."),
+                (("rebar.config",), "Erlang: Rebar project detected. Prefer `rebar3 compile` / `rebar3 eunit`."),
+                (("dune-project", "dune-workspace"), "OCaml: dune project detected. Prefer `dune build` / `dune test`."),
+                (("Project.toml", "Manifest.toml"), "Julia: project detected. Prefer `julia --project -e 'using Pkg; Pkg.instantiate()'` and `Pkg.test()`."),
+                (("*.rockspec",), "Lua: LuaRocks spec detected. Prefer `luarocks install --only-deps <spec>` / `luarocks make`."),
+                (("*.nimble",), "Nim: nimble manifest detected. Prefer `nimble install -d` / `nimble test`."),
+            ]
+
+            for filenames, note in checks:
+                if any((working_dir / name).exists() for name in filenames if "*" not in name):
+                    detections.append(note)
+                elif any(Path(p).match(name) for name in filenames if "*" in name for p in working_dir.glob(name)):
+                    detections.append(note)
+
         except Exception:
             return ""
 
-        message = None
-        if uv_lock or (pyproject and (working_dir / "uv.lock").exists()):
-            message = "Python dependency manager detected: **uv** (`uv.lock`). Prefer `uv pip install <pkg>` and `uv run ...`."
-        elif poetry_lock and pyproject:
-            message = "Python dependency manager detected: **Poetry** (`poetry.lock`). Prefer `poetry install` and `poetry run ...`."
-        elif pipfile:
-            message = "Python dependency manager detected: **Pipenv** (`Pipfile`). Prefer `pipenv install` and `pipenv run ...`."
-        elif conda_env:
-            message = "Environment file detected: **Conda** (`environment.yml`). Prefer `conda env update -f environment.yml` and `conda run ...`."
-        elif requirements:
-            message = "Dependencies listed in `requirements.txt`. Use `pip install -r requirements.txt` (or project-standard installer)."
-
-        if not message:
+        if not detections:
             return ""
 
-        return f"\n\n# Environment Detection\n\n{message}\n"
+        max_items = 2
+        lines = detections[:max_items]
+        if len(detections) > max_items:
+            lines.append(f"...and {len(detections) - max_items} more manifests detected; follow each ecosystem's standard install/run commands.")
+
+        body = "\n".join(f"- {line}" for line in lines)
+        return f"\n\n# Environment Detection (purpose: steer install/run to project-standard tooling)\n\n{body}\n"
 
 
 class PlanningPromptBuilder:
