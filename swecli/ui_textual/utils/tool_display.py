@@ -33,6 +33,9 @@ _TOOL_DISPLAY_PARTS: dict[str, tuple[str, str]] = {
     "analyze_image": ("Analyze", "image"),
     "git_commit": ("Commit", "changes"),
     "git_branch": ("Branch", "git"),
+    "update_todo": ("Update", "todo"),
+    "complete_todo": ("Complete", "todo"),
+    "write_todos": ("Write", "todos"),
 }
 
 _PATH_HINT_KEYS = {"file_path", "path", "directory", "dir", "image_path", "working_dir", "target"}
@@ -56,6 +59,9 @@ _PRIMARY_ARG_MAP: dict[str, tuple[str, ...]] = {
     "capture_web_screenshot": ("url",),
     "analyze_image": ("image_path", "file_path"),
     "git_commit": ("message",),
+    "update_todo": ("id",),
+    "complete_todo": ("id",),
+    "write_todos": ("todos",),
 }
 
 _MAX_SUMMARY_LEN = 60
@@ -189,6 +195,19 @@ def _summarize_nested_value(value: Any, key: str | None, seen: set[int] | None =
 def summarize_tool_arguments(tool_name: str, tool_args: Mapping[str, Any]) -> str:
     if not isinstance(tool_args, Mapping) or not tool_args:
         return ""
+
+    # Special handling for write_todos - just show "todos" not the first item
+    if tool_name == "write_todos" and "todos" in tool_args:
+        return "todos"
+
+    # Special handling for update_todo/complete_todo - show the id (which contains the title)
+    if tool_name in ("update_todo", "complete_todo") and "id" in tool_args:
+        todo_id = tool_args["id"]
+        # If id looks like a title (long string), truncate it
+        if isinstance(todo_id, str) and len(todo_id) > 40:
+            return todo_id[:37] + "..."
+        return str(todo_id)
+
     primary_keys = _PRIMARY_ARG_MAP.get(tool_name, ())
     for key in primary_keys:
         if key in tool_args:

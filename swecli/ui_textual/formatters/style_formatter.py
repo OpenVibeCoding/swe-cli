@@ -37,6 +37,10 @@ class StyleFormatter:
             result_lines = self._format_process_output_result(tool_args, result)
         elif tool_name == "write_todos":
             result_lines = self._format_write_todos_result(tool_args, result)
+        elif tool_name == "update_todo":
+            result_lines = self._format_update_todo_result(tool_args, result)
+        elif tool_name == "complete_todo":
+            result_lines = self._format_complete_todo_result(tool_args, result)
         else:
             result_lines = self._format_generic_result(tool_name, tool_args, result)
 
@@ -300,6 +304,32 @@ class StyleFormatter:
             return lines  # Return ALL lines, no truncation
 
         return ["Todos created"]
+
+    def _format_update_todo_result(self, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
+        """Format update_todo result - show full todo list with updates."""
+        if not result.get("success"):
+            error_msg = result.get("error", "Unknown error")
+            return [f"Failed to update todo: {error_msg}"]
+
+        # Return the output as-is (already contains full formatted list)
+        output = result.get("output", "")
+        if isinstance(output, str):
+            return output.strip().splitlines()
+
+        return ["Todo updated"]
+
+    def _format_complete_todo_result(self, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
+        """Format complete_todo result - show full todo list with completion."""
+        if not result.get("success"):
+            error_msg = result.get("error", "Unknown error")
+            return [f"Failed to complete todo: {error_msg}"]
+
+        # Return the output as-is (already contains full formatted list)
+        output = result.get("output", "")
+        if isinstance(output, str):
+            return output.strip().splitlines()
+
+        return ["Todo completed"]
 
     def _format_generic_result(self, tool_name: str, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
         if not result.get("success"):
