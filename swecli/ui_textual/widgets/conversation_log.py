@@ -187,10 +187,6 @@ class ConversationLog(RichLog):
             self._tool_spinner_timer = None
 
     def add_tool_result(self, result: str) -> None:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.debug(f"add_tool_result called with {len(result)} chars, current lines: {len(self.lines)}")
-
         try:
             result_plain = Text.from_markup(result).plain
         except Exception:
@@ -203,7 +199,6 @@ class ConversationLog(RichLog):
             self._write_generic_tool_result(result_plain)
 
         self.write(Text(""))
-        logger.debug(f"add_tool_result finished, lines now: {len(self.lines)}")
 
     def render_approval_prompt(self, lines: list[Text]) -> None:
         if self._approval_start is None:
@@ -259,12 +254,9 @@ class ConversationLog(RichLog):
             else:
                 # Preserve Rich markup colors (e.g., [green], [yellow], [cyan] from todos)
                 try:
-                    parsed = Text.from_markup(message)
-                    logger.debug(f"Parsed markup: {repr(message[:80])} → {len(parsed.spans)} spans")
-                    line.append(parsed)
-                except Exception as e:
+                    line.append(Text.from_markup(message))
+                except Exception:
                     # Fallback to plain text if markup parsing fails
-                    logger.warning(f"Failed to parse markup: {e}, message: {repr(message[:80])}")
                     line.append(message, style=style_tokens.SUBTLE)
             self.write(line)
 
@@ -487,12 +479,9 @@ class ConversationLog(RichLog):
         self._schedule_tool_spinner()
 
     def _truncate_from(self, index: int) -> None:
-        import logging
-        logger = logging.getLogger(__name__)
         if index >= len(self.lines):
             return
 
-        logger.debug(f"_truncate_from({index}) called - deleting {len(self.lines) - index} lines")
         del self.lines[index:]
         self._line_cache.clear()
 

@@ -408,7 +408,7 @@ class TodoHandler:
         for todo in sorted_todos:
             if todo.status == "done":
                 # Completed: green with strikethrough
-                lines.append(f"  [green]✓ [strike]{todo.title}[/strike][/green]")
+                lines.append(f"  [green]✓ ~~{todo.title}~~[/green]")
             elif todo.status == "doing":
                 # In progress: yellow
                 lines.append(f"  [yellow]▶ {todo.title}[/yellow]")
