@@ -254,6 +254,9 @@ class ConversationLog(RichLog):
             else:
                 # Preserve Rich markup colors (e.g., [green], [yellow], [cyan] from todos)
                 try:
+                    # Debug: Log if we see color markup
+                    if '[cyan]' in message or '[green]' in message or '[yellow]' in message:
+                        print(f"DEBUG: Processing color markup: {repr(message[:50])}")
                     line.append(Text.from_markup(message))
                 except Exception:
                     # Fallback to plain text if markup parsing fails
