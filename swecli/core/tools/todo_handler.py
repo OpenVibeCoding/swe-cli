@@ -247,6 +247,16 @@ class TodoHandler:
             if numeric_id in self._todos:
                 return numeric_id, self._todos[numeric_id]
 
+        # If ":X" provided (colon format), treat as numeric 0-based index
+        if id.startswith(":") and len(id) > 1:
+            numeric_part = id[1:]
+            if numeric_part.isdigit():
+                # Convert ":1" → "todo-2" (0-based to 1-based)
+                one_based_id = int(numeric_part) + 1
+                todo_id = f"todo-{one_based_id}"
+                if todo_id in self._todos:
+                    return todo_id, self._todos[todo_id]
+
         # If "todo_X" provided (Deep Agent format with underscore), convert to "todo-X"
         if id.startswith("todo_"):
             numeric_part = id[5:]

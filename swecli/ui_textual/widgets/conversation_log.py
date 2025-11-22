@@ -254,10 +254,19 @@ class ConversationLog(RichLog):
             elif is_error:
                 line.append(message, style=style_tokens.ERROR)
             else:
-                # Preserve Rich markup colors (e.g., [green], [yellow], [cyan] from todos)
+                # Preserve Rich markup colors (e.g., [dim], [yellow], [strike] from todos)
                 try:
-                    line.append(Text.from_markup(message))
-                except Exception:
+                    # Debug: Check if this message contains todo markup
+                    if any(tag in message for tag in ['[dim]', '[yellow]', '[strike]', '○', '▶', '✓']):
+                        print(f"DEBUG Todo markup: {repr(message)}")
+                    parsed_text = Text.from_markup(message)
+                    if any(tag in message for tag in ['[dim]', '[yellow]', '[strike]']):
+                        print(f"DEBUG Parsed spans: {len(parsed_text.spans)}")
+                    line.append(parsed_text)
+                except Exception as e:
+                    # Debug: Show what failed
+                    if any(tag in message for tag in ['[dim]', '[yellow]', '[strike]']):
+                        print(f"DEBUG Parse failed: {e} - {repr(message)}")
                     # Fallback to plain text if markup parsing fails
                     line.append(message, style=style_tokens.SUBTLE)
             self.write(line)
