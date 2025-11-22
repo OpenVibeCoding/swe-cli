@@ -14,12 +14,13 @@ from .bash_tools import RunCommandTool, ListProcessesTool, GetProcessOutputTool,
 from .web_tools import FetchUrlTool, OpenBrowserTool, CaptureWebScreenshotTool, ListWebScreenshotsTool, ClearWebScreenshotsTool
 from .screenshot_tools import CaptureScreenshotTool, ListScreenshotsTool, ClearScreenshotsTool
 from .vlm_tools import AnalyzeImageTool
+from .todo_tools import UpdateTodoTool, CompleteTodoTool
 
 __all__ = [
     "SWECLIToolWrapper",
     "ToolRegistryAdapter",
     # File tools removed - using Deep Agent built-ins
-    # Todo tools removed - using Deep Agent built-ins
+    # Todo tools: write_todos is built-in, but update_todo and complete_todo are custom
     "RunCommandTool",
     "ListProcessesTool",
     "GetProcessOutputTool",
@@ -33,4 +34,6 @@ __all__ = [
     "ListScreenshotsTool",
     "ClearScreenshotsTool",
     "AnalyzeImageTool",
+    "UpdateTodoTool",
+    "CompleteTodoTool",
 ]

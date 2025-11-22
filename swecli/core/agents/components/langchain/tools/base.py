@@ -357,6 +357,17 @@ class ToolRegistryAdapter:
             logger = logging.getLogger(__name__)
             logger.debug("VLM tool not configured, skipping AnalyzeImageTool")
 
+        # Add individual todo management tools for proper workflow
+        # write_todos is built-in to Deep Agent, but update_todo and complete_todo are custom
+        from .todo_tools import UpdateTodoTool, CompleteTodoTool
+        base_tools.extend([
+            UpdateTodoTool(self.tool_registry),
+            CompleteTodoTool(self.tool_registry),
+        ])
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.debug("Added individual todo management tools (update_todo, complete_todo)")
+
         # Create MCP tools
         mcp_tools = self._create_mcp_tools()
 
