@@ -27,6 +27,12 @@ Follow this pattern for all interactions:
 - **DECIDE ON TODOS**: You need to decide when to create todos based on task complexity
   - For simple 1-2 step tasks, just do them without creating todos
   - Use todos for complex multi-step tasks (3+ steps) to keep work organized
+  - **CRITICAL: Keep todo lists SHORT - maximum 6-7 high-level tasks**
+  - Focus on the next immediate steps, not exhaustive project roadmaps
+  - Break down work progressively as you complete tasks, not all upfront
+  - Prioritize the most important/immediate tasks only
+  - **Todo workflow**: Create initial list with write_todos → Update items with update_todo → Mark complete with complete_todo
+  - **DO NOT recreate entire todo list** - use update_todo and complete_todo to manage individual items
   - Mark todos as in-progress when starting and completed when finished
 - **COMPLETE TASKS**: When running background processes, immediately check output and continue monitoring
 - **READ BEFORE ASSUMING**: Never make assumptions about file contents, project structure, or dependencies - verify with tools
