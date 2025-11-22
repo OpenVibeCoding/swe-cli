@@ -109,7 +109,7 @@ class UpdateTodoTool(SWECLIToolWrapper):
             tool_name="update_todo",
             description=(
                 "Update an existing todo item. Use this to change todo status, title, or log. "
-                "ID can be: numeric index (0, 1, 2...), or todo title/partial match. "
+                "ID can be: numeric index (0, 1, 2...), colon format (:0, :1, :2...), todo-1 format, or todo title/partial match. "
                 "Status can be 'pending'/'in_progress'/'completed' (or 'todo'/'doing'/'done'). "
                 "Example: update_todo(id='0', status='in_progress') to start first todo."
             ),
@@ -138,7 +138,7 @@ class CompleteTodoTool(SWECLIToolWrapper):
             tool_name="complete_todo",
             description=(
                 "Mark a todo as completed. Use this when you finish a specific task instead of recreating the entire todo list. "
-                "ID can be: numeric index (0, 1, 2...), or todo title/partial match. "
+                "ID can be: numeric index (0, 1, 2...), colon format (:0, :1, :2...), todo-1 format, or todo title/partial match. "
                 "Example: complete_todo(id='0') to complete first todo."
             ),
             tool_registry=tool_registry,
