@@ -10,7 +10,9 @@ from rich.console import Group
 from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.text import Text
+from textual.events import Mount
 from textual.geometry import Size
+from textual.message import Message
 from textual.timer import Timer
 from textual.widgets import RichLog
 
@@ -56,7 +58,50 @@ class ConversationLog(RichLog):
             self._tool_spinner_timer.stop()
             self._tool_spinner_timer = None
 
+    def on_key(self, event) -> None:
+        """Detect manual scrolling via keyboard to disable auto-scroll."""
+        # Handle Page Up with custom scroll distance (1/3 viewport instead of full page)
+        if event.key == "pageup":
+            self._user_scrolled = True
+            self.auto_scroll = False
+            # Scroll up by 1/3 of viewport height for more control
+            scroll_amount = max(self.size.height // 3, 5)  # At least 5 lines
+            self.scroll_relative(y=-scroll_amount)
+            event.prevent_default()
+            return
+
+        # Handle Page Down with custom scroll distance
+        elif event.key == "pagedown":
+            self._user_scrolled = True
+            self.auto_scroll = False
+            # Scroll down by 1/3 of viewport height
+            scroll_amount = max(self.size.height // 3, 5)  # At least 5 lines
+            self.scroll_relative(y=scroll_amount)
+            event.prevent_default()
+            return
+
+        # For other scroll keys (arrows, home, end), use default behavior
+        elif event.key in ("up", "down", "home", "end"):
+            self._user_scrolled = True
+            self.auto_scroll = False
+
+        # Let the parent handle arrow/home/end scrolling normally
+        return super().on_key(event)
+
+    def _reset_auto_scroll(self) -> None:
+        """Reset auto-scroll when new content arrives."""
+        # When new content arrives, check if we should re-enable auto-scroll
+        # If user hasn't manually scrolled away, enable auto-scroll
+        if not self._user_scrolled:
+            self.auto_scroll = True
+
+        # If we're back at the bottom (within 2 lines), re-enable auto-scroll
+        if self.scroll_offset.y >= self.max_scroll_y - 2:
+            self._user_scrolled = False
+            self.auto_scroll = True
+
     def add_user_message(self, message: str) -> None:
+        self._reset_auto_scroll()
         self.write(Text(f"› {message}", style="bold white"))
         # Only add a blank line if it's not a command
         if not message.strip().startswith("/"):
@@ -67,6 +112,7 @@ class ConversationLog(RichLog):
         if normalized and normalized == self._last_assistant_rendered:
             return
 
+        self._reset_auto_scroll()
         self._last_assistant_rendered = normalized
         segments = self._split_code_blocks(message)
         text_output = False
