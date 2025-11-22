@@ -8,7 +8,11 @@
       "Bash(python3:*)",
       "Bash(uv run python:*)",
       "Bash(export FIREWORKS_API_KEY=fw_3Zm8B8jFpjsuw4rDJMJn2PoH:*)",
-      "Bash(uv tool install:*)"
+      "Bash(uv tool install:*)",
+      "Bash(git add:*)",
+      "Bash(find:*)",
+      "Bash(uv run pytest:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
