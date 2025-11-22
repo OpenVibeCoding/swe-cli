@@ -259,9 +259,12 @@ class ConversationLog(RichLog):
             else:
                 # Preserve Rich markup colors (e.g., [green], [yellow], [cyan] from todos)
                 try:
-                    line.append(Text.from_markup(message))
-                except Exception:
+                    parsed = Text.from_markup(message)
+                    logger.debug(f"Parsed markup: {repr(message[:80])} → {len(parsed.spans)} spans")
+                    line.append(parsed)
+                except Exception as e:
                     # Fallback to plain text if markup parsing fails
+                    logger.warning(f"Failed to parse markup: {e}, message: {repr(message[:80])}")
                     line.append(message, style=style_tokens.SUBTLE)
             self.write(line)
 
