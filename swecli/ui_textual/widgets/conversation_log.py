@@ -249,8 +249,15 @@ class ConversationLog(RichLog):
 
             if is_interrupted:
                 line.append(message, style=f"bold {style_tokens.ERROR}")
+            elif is_error:
+                line.append(message, style=style_tokens.ERROR)
             else:
-                line.append(message, style=style_tokens.ERROR if is_error else style_tokens.SUBTLE)
+                # Preserve Rich markup colors (e.g., [green], [yellow], [cyan] from todos)
+                try:
+                    line.append(Text.from_markup(message))
+                except Exception:
+                    # Fallback to plain text if markup parsing fails
+                    line.append(message, style=style_tokens.SUBTLE)
             self.write(line)
 
     def _format_inline_error(self, message: str, hint: str | None = None) -> list[Text]:
