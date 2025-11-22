@@ -357,6 +357,13 @@ class TodoHandler:
                     "output": None,
                 }
             todo.status = normalized_status
+
+            # ENFORCEMENT: Ensure only one todo can be "doing" at a time
+            if normalized_status == "doing":
+                for other_id, other_todo in self._todos.items():
+                    if other_id != actual_id and other_todo.status == "doing":
+                        other_todo.status = "todo"
+
         if log is not None:
             todo.log = log
         if expanded is not None:
@@ -364,12 +371,13 @@ class TodoHandler:
 
         todo.updated_at = datetime.now().isoformat()
 
-        # Generate full todo list after update
-        todo_list = self._format_todo_list_simple()
-        output_lines = [f"Updated: {todo.title}", ""]
-        if todo_list:
-            output_lines.append("Current todos:")
-            output_lines.extend(todo_list)
+        # Generate minimal status update
+        if todo.status == "doing":
+            output_lines = [f"▶ Now working on: {todo.title}"]
+        elif todo.status == "done":
+            output_lines = [f"✅ Completed: {todo.title}"]
+        else:
+            output_lines = [f"⏸ Paused: {todo.title}"]
 
         return {
             "success": True,
@@ -404,12 +412,8 @@ class TodoHandler:
 
         todo.updated_at = datetime.now().isoformat()
 
-        # Generate full todo list after completion
-        todo_list = self._format_todo_list_simple()
-        output_lines = [f"✅ Completed: {todo.title}", ""]
-        if todo_list:
-            output_lines.append("Current todos:")
-            output_lines.extend(todo_list)
+        # Generate minimal completion output
+        output_lines = [f"✅ Completed: {todo.title}"]
 
         return {
             "success": True,
