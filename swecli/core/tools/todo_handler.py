@@ -70,10 +70,22 @@ class TodoHandler:
             if isinstance(item, str):
                 normalized_todos.append(item)
             elif isinstance(item, dict):
-                # Extract 'content' field from Deep Agent's todo dict format
+                # Extract 'content' and 'status' fields from Deep Agent's todo dict format
                 content = item.get("content", "")
+                status = item.get("status", "pending")
                 if content:
-                    normalized_todos.append(content)
+                    # Map Deep Agent status to internal status
+                    status_mapping = {
+                        "pending": "todo",
+                        "in_progress": "doing",
+                        "completed": "done",
+                        "todo": "todo",
+                        "doing": "doing",
+                        "done": "done"
+                    }
+                    mapped_status = status_mapping.get(status, "todo")
+                    # Store as tuple to preserve status information
+                    normalized_todos.append((content, mapped_status))
             else:
                 # Skip invalid items
                 continue
@@ -97,19 +109,32 @@ class TodoHandler:
         failed_count = 0
         created_ids = []
 
-        for i, todo_text in enumerate(todos, 1):
+        for i, todo_item in enumerate(normalized_todos, 1):
+            # Handle both string and tuple formats
+            if isinstance(todo_item, tuple):
+                todo_text, todo_status = todo_item
+            else:
+                todo_text = todo_item
+                todo_status = "todo"
+
             if not todo_text or not str(todo_text).strip():
                 failed_count += 1
                 results.append(f"  {i}. [SKIPPED] Empty todo")
                 continue
 
-            # Call create_todo for each item
-            result = self.create_todo(title=str(todo_text).strip())
+            # Call create_todo for each item with correct status
+            result = self.create_todo(title=str(todo_text).strip(), status=todo_status)
 
             if result.get("success"):
                 todo_id = result.get("todo_id", "?")
                 created_ids.append(todo_id)
-                results.append(f"  [cyan]○ {str(todo_text).strip()}[/cyan]")
+                # Format with correct color and styling based on status
+                if todo_status == "done":
+                    results.append(f"  [green]✓ [strike]{str(todo_text).strip()}[/strike][/green]")
+                elif todo_status == "doing":
+                    results.append(f"  [yellow]▶ {str(todo_text).strip()}[/yellow]")
+                else:
+                    results.append(f"  [cyan]○ {str(todo_text).strip()}[/cyan]")
                 created_count += 1
             else:
                 error = result.get("error", "Unknown error")
@@ -408,7 +433,7 @@ class TodoHandler:
         for todo in sorted_todos:
             if todo.status == "done":
                 # Completed: green with strikethrough
-                lines.append(f"  [green]✓ ~~{todo.title}~~[/green]")
+                lines.append(f"  [green]✓ [strike]{todo.title}[/strike][/green]")
             elif todo.status == "doing":
                 # In progress: yellow
                 lines.append(f"  [yellow]▶ {todo.title}[/yellow]")
