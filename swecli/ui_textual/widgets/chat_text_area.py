@@ -235,6 +235,12 @@ class ChatTextArea(TextArea):
         approval_controller = getattr(app, "_approval_controller", None)
         approval_mode = bool(approval_controller and getattr(approval_controller, "active", False))
 
+        if event.key != "ctrl+c" and app and hasattr(app, "_handle_input_activity"):
+            try:
+                app._handle_input_activity()
+            except Exception:
+                pass
+
         if approval_mode:
             if event.key == "up":
                 event.stop()
@@ -380,6 +386,13 @@ class ChatTextArea(TextArea):
 
     def on_paste(self, event: Paste) -> None:
         """Handle paste events, collapsing large blocks into placeholders."""
+
+        app = getattr(self, "app", None)
+        if app and hasattr(app, "_handle_input_activity"):
+            try:
+                app._handle_input_activity()
+            except Exception:
+                pass
 
         paste_text = event.text
         event.stop()

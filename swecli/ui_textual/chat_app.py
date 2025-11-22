@@ -33,6 +33,8 @@ class SWECLIChatApp(App):
     """SWE-CLI Chat Application using Textual."""
 
     CSS_PATH = "styles/chat.tcss"
+    INPUT_LABEL_DEFAULT = "› Type your message (Enter to send, Shift+Enter for new line):"
+    INPUT_LABEL_EXIT = "Press Ctrl + C again to exit"
 
     # Disable mouse support to allow natural terminal text selection
     ENABLE_MOUSE = False
@@ -110,6 +112,7 @@ class SWECLIChatApp(App):
         self._command_router = CommandRouter(self)
         self._history = MessageHistory()
         self._message_controller = MessageController(self)
+        self._quit_armed = False
 
     def compose(self) -> ComposeResult:
         """Create child widgets."""
@@ -125,7 +128,7 @@ class SWECLIChatApp(App):
             # Input area
             with Vertical(id="input-container"):
                 yield Static(
-                    "› Type your message (Enter to send, Shift+Enter for new line):",
+                    self.INPUT_LABEL_DEFAULT,
                     id="input-label",
                 )
                 yield ChatTextArea(
@@ -151,6 +154,7 @@ class SWECLIChatApp(App):
         input_container = self.query_one("#input-container")
         self.status_bar = self.query_one("#status-bar", StatusBar)
         self.footer = self.query_one("#model-footer", ModelFooter)
+        self.input_label = self.query_one("#input-label", Static)
         self.input_field.set_completer(self.completer)
         self.autocomplete_popup = Static("", id="autocomplete-popup")
         self.autocomplete_popup.can_focus = False
@@ -290,6 +294,7 @@ class SWECLIChatApp(App):
 
     async def on_chat_text_area_submitted(self, event: ChatTextArea.Submitted) -> None:
         """Handle chat submissions from the custom text area."""
+        self._handle_input_activity()
         await self._message_controller.submit(event.value)
 
     def add_assistant_message(self, message: str) -> None:
@@ -427,8 +432,16 @@ class SWECLIChatApp(App):
             # The actual interruption message will come from the tool/agent when it stops
 
     def action_quit(self) -> None:
-        """Quit the application (Ctrl+C)."""
-        self.exit()
+        """Require a double Ctrl+C to exit; first press clears and arms the prompt."""
+        if self._quit_armed:
+            self.exit()
+            return
+
+        self._quit_armed = True
+        self._set_input_label(self.INPUT_LABEL_EXIT)
+        self.input_field.load_text("")
+        self.input_field.clear_large_pastes()
+        self.input_field.focus()
 
     def action_scroll_up(self) -> None:
         """Scroll conversation up (Page Up)."""
@@ -510,6 +523,17 @@ class SWECLIChatApp(App):
 
         mode_label = new_mode.lower()
         self.status_bar.set_mode(mode_label)
+
+    def _set_input_label(self, text: str) -> None:
+        """Update the helper label above the input field."""
+        if hasattr(self, "input_label"):
+            self.input_label.update(text)
+
+    def _handle_input_activity(self) -> None:
+        """Reset the quit prompt if the user resumes typing."""
+        if self._quit_armed:
+            self._quit_armed = False
+            self._set_input_label(self.INPUT_LABEL_DEFAULT)
 
 
 def create_chat_app(

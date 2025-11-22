@@ -130,11 +130,11 @@ class TodoHandler:
                 created_ids.append(todo_id)
                 # Format with correct color and styling based on status
                 if todo_status == "done":
-                    results.append(f"  [green]✓ [strike]{str(todo_text).strip()}[/strike][/green]")
+                    results.append(f"  [dim]✓ [strike]{str(todo_text).strip()}[/strike][/dim]")
                 elif todo_status == "doing":
                     results.append(f"  [yellow]▶ {str(todo_text).strip()}[/yellow]")
                 else:
-                    results.append(f"  [cyan]○ {str(todo_text).strip()}[/cyan]")
+                    results.append(f"  [dim]○ {str(todo_text).strip()}[/dim]")
                 created_count += 1
             else:
                 error = result.get("error", "Unknown error")
@@ -432,14 +432,14 @@ class TodoHandler:
 
         for todo in sorted_todos:
             if todo.status == "done":
-                # Completed: green with strikethrough
-                lines.append(f"  [green]✓ [strike]{todo.title}[/strike][/green]")
+                # Completed: gray with strikethrough
+                lines.append(f"  [dim]✓ [strike]{todo.title}[/strike][/dim]")
             elif todo.status == "doing":
                 # In progress: yellow
                 lines.append(f"  [yellow]▶ {todo.title}[/yellow]")
             else:
-                # Pending: cyan
-                lines.append(f"  [cyan]○ {todo.title}[/cyan]")
+                # Pending: gray
+                lines.append(f"  [dim]○ {todo.title}[/dim]")
 
         return lines
 
