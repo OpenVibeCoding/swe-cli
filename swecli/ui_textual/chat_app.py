@@ -421,9 +421,6 @@ class SWECLIChatApp(App):
     def action_interrupt(self) -> None:
         """Interrupt processing (ESC)."""
         if self._is_processing:
-            # Show immediate feedback that interrupt was requested
-            self.conversation.add_system_message("[yellow]⏸ Interrupting...[/yellow]")
-
             # Call interrupt callback if provided
             if self.on_interrupt:
                 self.on_interrupt()
