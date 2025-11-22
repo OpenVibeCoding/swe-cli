@@ -444,7 +444,24 @@ class ConversationLog(RichLog):
         elapsed = self._tool_elapsed_seconds()
         if elapsed is None:
             return None
-        return Text(f" ({elapsed}s)", style="#7a8594")
+
+        # Format time intelligently based on duration
+        if elapsed < 60:
+            # Under 1 minute: show seconds
+            time_str = f"{elapsed}s"
+        elif elapsed < 3600:
+            # 1 minute to 1 hour: show minutes and seconds
+            minutes = elapsed // 60
+            seconds = elapsed % 60
+            time_str = f"{minutes}m {seconds}s"
+        else:
+            # 1+ hours: show hours, minutes, and seconds
+            hours = elapsed // 3600
+            minutes = (elapsed % 3600) // 60
+            seconds = elapsed % 60
+            time_str = f"{hours}h {minutes}m {seconds}s"
+
+        return Text(f" ({time_str})", style="#7a8594")
 
     def _schedule_tool_spinner(self) -> None:
         if not self._spinner_active:
