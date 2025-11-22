@@ -48,7 +48,14 @@ class TodoPanel(Static):
         if not todos:
             self.update("[dim]No active todos[/dim]")
             self.border_title = "TODOS"
+            # Auto-hide panel when no todos exist
+            if self.has_class("visible"):
+                self.remove_class("visible")
             return
+
+        # Auto-show panel when todos exist
+        if not self.has_class("visible"):
+            self.add_class("visible")
 
         # Update border title with count
         self.border_title = f"TODOS ({len(todos)} total)"

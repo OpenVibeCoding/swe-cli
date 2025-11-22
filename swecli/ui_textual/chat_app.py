@@ -531,6 +531,12 @@ class SWECLIChatApp(App):
         except Exception:  # pragma: no cover - defensive
             return
 
+        if not new_mode:
+            return
+
+        mode_label = new_mode.lower()
+        self.status_bar.set_mode(mode_label)
+
     def action_toggle_todo_panel(self) -> None:
         """Toggle todo panel visibility (Ctrl+T)."""
         try:
@@ -542,12 +548,6 @@ class SWECLIChatApp(App):
                 panel.refresh_display()
         except Exception:  # pragma: no cover - defensive
             pass
-
-        if not new_mode:
-            return
-
-        mode_label = new_mode.lower()
-        self.status_bar.set_mode(mode_label)
 
     def _set_input_label(self, text: str) -> None:
         """Update the helper label above the input field."""
