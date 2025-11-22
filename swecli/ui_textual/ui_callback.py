@@ -182,6 +182,10 @@ class TextualUICallback:
         if summary_lines and self.chat_app and hasattr(self.chat_app, "record_tool_summary"):
             self._run_on_ui(self.chat_app.record_tool_summary, tool_name, normalized_args, summary_lines.copy())
 
+        # Refresh todo panel if todo tool was executed
+        if tool_name in ("write_todos", "update_todo", "complete_todo", "complete_and_activate_next"):
+            self._refresh_todo_panel()
+
         if self.chat_app and hasattr(self.chat_app, "resume_reasoning_spinner"):
             self._run_on_ui(self.chat_app.resume_reasoning_spinner)
 
@@ -249,3 +253,16 @@ class TextualUICallback:
             self._app.call_from_thread(func, *args, **kwargs)
         else:
             func(*args, **kwargs)
+
+    def _refresh_todo_panel(self) -> None:
+        """Refresh the todo panel with latest state."""
+        if not self.chat_app:
+            return
+
+        try:
+            from swecli.ui_textual.widgets.todo_panel import TodoPanel
+            panel = self.chat_app.query_one("#todo-panel", TodoPanel)
+            self._run_on_ui(panel.refresh_display)
+        except Exception:
+            # Panel not found or not initialized yet
+            pass

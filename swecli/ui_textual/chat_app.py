@@ -14,6 +14,7 @@ from textual.widgets import Header, Rule, Static
 from swecli.ui_textual.widgets import ConversationLog
 from swecli.ui_textual.widgets.chat_text_area import ChatTextArea
 from swecli.ui_textual.widgets.status_bar import ModelFooter, StatusBar
+from swecli.ui_textual.widgets.todo_panel import TodoPanel
 from swecli.ui_textual.components import TipsManager
 from swecli.ui_textual.controllers.approval_prompt_controller import ApprovalPromptController
 from swecli.ui_textual.controllers.autocomplete_popup_controller import AutocompletePopupController
@@ -42,6 +43,7 @@ class SWECLIChatApp(App):
     BINDINGS = [
         Binding("ctrl+c", "quit", "", show=False, priority=True),
         Binding("ctrl+l", "clear_conversation", "", show=False),
+        Binding("ctrl+t", "toggle_todo_panel", "Toggle Todos", show=False),
         Binding("escape", "interrupt", "", show=False),
         Binding("pageup", "scroll_up", "Scroll Up", show=False),
         Binding("pagedown", "scroll_down", "Scroll Down", show=False),
@@ -64,6 +66,7 @@ class SWECLIChatApp(App):
         on_ready: Optional[Callable[[], None]] = None,
         on_interrupt: Optional[Callable[[], bool]] = None,
         working_dir: Optional[str] = None,
+        todo_handler=None,
         **kwargs,
     ):
         """Initialize chat application.
@@ -92,6 +95,7 @@ class SWECLIChatApp(App):
         self.get_model_config = get_model_config
         self._on_ready = on_ready
         self.working_dir = working_dir or ""
+        self.todo_handler = todo_handler
         self.autocomplete_popup: Static | None = None
         self._autocomplete_controller: AutocompletePopupController | None = None
         self.footer: ModelFooter | None = None
@@ -124,6 +128,9 @@ class SWECLIChatApp(App):
 
             # Separator line between conversation and input
             yield Rule(line_style="solid")
+
+            # Todo panel (persistent, toggleable with Ctrl+T)
+            yield TodoPanel(todo_handler=self.todo_handler, id="todo-panel")
 
             # Input area
             with Vertical(id="input-container"):
@@ -445,11 +452,17 @@ class SWECLIChatApp(App):
 
     def action_scroll_up(self) -> None:
         """Scroll conversation up (Page Up)."""
-        self.conversation.scroll_page_up()
+        if hasattr(self.conversation, "scroll_partial_page"):
+            self.conversation.scroll_partial_page(direction=-1)
+        else:
+            self.conversation.scroll_page_up()
 
     def action_scroll_down(self) -> None:
         """Scroll conversation down (Page Down)."""
-        self.conversation.scroll_page_down()
+        if hasattr(self.conversation, "scroll_partial_page"):
+            self.conversation.scroll_partial_page(direction=1)
+        else:
+            self.conversation.scroll_page_down()
 
     def action_scroll_up_line(self) -> None:
         """Scroll conversation up one line (Up Arrow)."""
@@ -518,6 +531,18 @@ class SWECLIChatApp(App):
         except Exception:  # pragma: no cover - defensive
             return
 
+    def action_toggle_todo_panel(self) -> None:
+        """Toggle todo panel visibility (Ctrl+T)."""
+        try:
+            panel = self.query_one("#todo-panel", TodoPanel)
+            if panel.has_class("visible"):
+                panel.remove_class("visible")
+            else:
+                panel.add_class("visible")
+                panel.refresh_display()
+        except Exception:  # pragma: no cover - defensive
+            pass
+
         if not new_mode:
             return
 
@@ -547,6 +572,7 @@ def create_chat_app(
     on_ready: Optional[Callable[[], None]] = None,
     on_interrupt: Optional[Callable[[], bool]] = None,
     working_dir: Optional[str] = None,
+    todo_handler=None,
 ) -> SWECLIChatApp:
     """Create and return a new chat application instance.
 
@@ -575,6 +601,7 @@ def create_chat_app(
         on_ready=on_ready,
         on_interrupt=on_interrupt,
         working_dir=working_dir,
+        todo_handler=todo_handler,
     )
 
 

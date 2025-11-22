@@ -23,6 +23,23 @@ Rule {
     margin: 0;
 }
 
+#todo-panel {
+    display: none;
+    height: auto;
+    max-height: 15;
+    min-height: 3;
+    background: $surface-darken-1;
+    border: solid $primary;
+    border-title-align: left;
+    padding: 1 2;
+    overflow-y: auto;
+    margin-bottom: 1;
+}
+
+#todo-panel.visible {
+    display: block;
+}
+
 #input-container {
     height: auto;
     layout: vertical;

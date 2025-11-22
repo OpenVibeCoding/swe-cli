@@ -60,23 +60,14 @@ class ConversationLog(RichLog):
 
     def on_key(self, event) -> None:
         """Detect manual scrolling via keyboard to disable auto-scroll."""
-        # Handle Page Up with custom scroll distance (1/3 viewport instead of full page)
+        # Handle Page Up/Down (or Fn+Up/Down) with a smaller stride for finer control
         if event.key == "pageup":
-            self._user_scrolled = True
-            self.auto_scroll = False
-            # Scroll up by 1/3 of viewport height for more control
-            scroll_amount = max(self.size.height // 3, 5)  # At least 5 lines
-            self.scroll_relative(y=-scroll_amount)
+            self.scroll_partial_page(direction=-1)
             event.prevent_default()
             return
 
-        # Handle Page Down with custom scroll distance
         elif event.key == "pagedown":
-            self._user_scrolled = True
-            self.auto_scroll = False
-            # Scroll down by 1/3 of viewport height
-            scroll_amount = max(self.size.height // 3, 5)  # At least 5 lines
-            self.scroll_relative(y=scroll_amount)
+            self.scroll_partial_page(direction=1)
             event.prevent_default()
             return
 
@@ -87,6 +78,13 @@ class ConversationLog(RichLog):
 
         # Let the parent handle arrow/home/end scrolling normally
         return super().on_key(event)
+
+    def scroll_partial_page(self, direction: int) -> None:
+        """Scroll a fraction of the viewport instead of a full page."""
+        self._user_scrolled = True
+        self.auto_scroll = False
+        stride = max(self.size.height // 6, 3)  # Smaller jump for better control
+        self.scroll_relative(y=direction * stride)
 
     def _reset_auto_scroll(self) -> None:
         """Reset auto-scroll when new content arrives."""
