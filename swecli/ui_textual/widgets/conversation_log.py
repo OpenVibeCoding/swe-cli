@@ -187,6 +187,7 @@ class ConversationLog(RichLog):
             self._tool_spinner_timer = None
 
     def add_tool_result(self, result: str) -> None:
+        # First try to extract edit payload using plain text (for compatibility)
         try:
             result_plain = Text.from_markup(result).plain
         except Exception:
@@ -196,7 +197,8 @@ class ConversationLog(RichLog):
         if header:
             self._write_edit_result(header, diff_lines)
         else:
-            self._write_generic_tool_result(result_plain)
+            # For non-edit results, preserve Rich markup by passing the original result
+            self._write_generic_tool_result(result)
 
         self.write(Text(""))
 
@@ -254,9 +256,6 @@ class ConversationLog(RichLog):
             else:
                 # Preserve Rich markup colors (e.g., [green], [yellow], [cyan] from todos)
                 try:
-                    # Debug: Log if we see color markup
-                    if '[cyan]' in message or '[green]' in message or '[yellow]' in message:
-                        print(f"DEBUG: Processing color markup: {repr(message[:50])}")
                     line.append(Text.from_markup(message))
                 except Exception:
                     # Fallback to plain text if markup parsing fails
@@ -464,7 +463,7 @@ class ConversationLog(RichLog):
             seconds = elapsed % 60
             time_str = f"{hours}h {minutes}m {seconds}s"
 
-        return Text(f" ({time_str})", style="#7a8594")
+        return Text(f" ({time_str})", style="cyan")
 
     def _schedule_tool_spinner(self) -> None:
         if not self._spinner_active:
