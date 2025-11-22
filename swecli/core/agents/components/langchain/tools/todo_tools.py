@@ -109,9 +109,11 @@ class UpdateTodoTool(SWECLIToolWrapper):
             tool_name="update_todo",
             description=(
                 "Update an existing todo item. Use this to change todo status, title, or log. "
+                "IMPORTANT: Only one todo can be 'doing' at a time - setting a todo to 'doing' automatically deactivates others. "
                 "ID can be: numeric index (0, 1, 2...), colon format (:0, :1, :2...), todo-1 format, or todo title/partial match. "
                 "Status can be 'pending'/'in_progress'/'completed' (or 'todo'/'doing'/'done'). "
-                "Example: update_todo(id='0', status='in_progress') to start first todo."
+                "For efficient workflow, consider using complete_and_activate_next() to finish current task and start next one automatically. "
+                "Example: update_todo(id='0', status='in_progress') to start working on first todo."
             ),
             tool_registry=tool_registry,
         )
@@ -139,13 +141,39 @@ class CompleteTodoTool(SWECLIToolWrapper):
             description=(
                 "Mark a todo as completed. Use this when you finish a specific task instead of recreating the entire todo list. "
                 "ID can be: numeric index (0, 1, 2...), colon format (:0, :1, :2...), todo-1 format, or todo title/partial match. "
-                "Example: complete_todo(id='0') to complete first todo."
+                "RECOMMENDED: Use complete_and_activate_next() instead for better workflow - it completes current task AND activates next one automatically. "
+                "Example: complete_todo(id='0') to complete first todo, or complete_and_activate_next('0') to complete and move to next."
             ),
             tool_registry=tool_registry,
         )
 
     def _run(self, id: str, log: Optional[str] = None, **kwargs) -> str:
         """Execute complete_todo tool."""
+        args = {"id": id}
+        if log is not None:
+            args["log"] = log
+
+        return super()._run(**args)
+
+
+class CompleteAndActivateNextTool(SWECLIToolWrapper):
+    """LangChain wrapper for complete_and_activate_next tool."""
+
+    def __init__(self, tool_registry):
+        super().__init__(
+            tool_name="complete_and_activate_next",
+            description=(
+                "Complete a todo and automatically activate the next pending one. This is the RECOMMENDED way to manage todo workflow. "
+                "Atomic operation that: 1) Marks current todo as completed, 2) Deactivates other active todos, 3) Activates next pending todo. "
+                "Use this instead of separate complete_todo() + update_todo() calls for cleaner workflow. "
+                "ID can be: numeric index (0, 1, 2...), colon format (:0, :1, :2...), todo-1 format, or todo title/partial match. "
+                "Example: complete_and_activate_next('0') to finish current task and automatically start next one."
+            ),
+            tool_registry=tool_registry,
+        )
+
+    def _run(self, id: str, log: Optional[str] = None, **kwargs) -> str:
+        """Execute complete_and_activate_next tool."""
         args = {"id": id}
         if log is not None:
             args["log"] = log

@@ -457,6 +457,62 @@ class TodoHandler:
 
         return lines
 
+    def complete_and_activate_next(self, id: str, log: Optional[str] = None) -> dict:
+        """Complete a todo and automatically activate the next pending one.
+
+        This is an atomic operation that:
+        1. Marks the specified todo as completed
+        2. Deactivates any other active todos
+        3. Activates the next pending todo (if any)
+
+        Args:
+            id: Todo ID to complete
+            log: Optional completion log message
+
+        Returns:
+            Result dict with success status and formatted output
+        """
+        actual_id, todo = self._find_todo(id)
+        if not todo:
+            return {
+                "success": False,
+                "error": f"Todo #{id} not found",
+                "output": None,
+            }
+
+        # Mark current todo as completed
+        todo.status = "done"
+        if log is not None:
+            todo.log = log
+        todo.updated_at = datetime.now().isoformat()
+
+        # Find the next pending todo to activate
+        next_todo = None
+        pending_todos = [t for t in self._todos.values() if t.status == "todo"]
+
+        if pending_todos:
+            # Sort by original creation order
+            def extract_id_number(todo_id: str) -> int:
+                if todo_id.startswith("todo-"):
+                    return int(todo_id[5:])
+                return int(todo_id)
+
+            next_todo = min(pending_todos, key=lambda t: extract_id_number(t.id))
+            next_todo.status = "doing"
+
+        # Generate output
+        output_lines = [f"✅ Completed: {todo.title}"]
+        if next_todo:
+            output_lines.append(f"▶ Now working on: {next_todo.title}")
+        else:
+            output_lines.append("🎉 All todos completed!")
+
+        return {
+            "success": True,
+            "output": "\n".join(output_lines),
+            "todo": asdict(todo),
+        }
+
     def list_todos(self) -> dict:
         """List all todos with formatted display.
 

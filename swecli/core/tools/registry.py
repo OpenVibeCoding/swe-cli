@@ -91,6 +91,7 @@ class ToolRegistry:
             "create_todo": self._todo_handler.create_todo,
             "update_todo": self._todo_handler.update_todo,
             "complete_todo": self._todo_handler.complete_todo,
+            "complete_and_activate_next": self._todo_handler.complete_and_activate_next,  # Atomic operation
             "list_todos": lambda args: self._todo_handler.list_todos(),
         }
 
