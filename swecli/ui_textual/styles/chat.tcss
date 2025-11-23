@@ -26,14 +26,14 @@ Rule {
 #todo-panel {
     display: none;
     background: $surface-darken-1;
-    border: solid $primary;
+    border: solid $text-muted;
     border-title-align: left;
     margin-bottom: 1;
 }
 
 /* Collapsed state - show compact summary */
 #todo-panel.collapsed {
-    display: block;
+    display: block !important;
     height: 1;
     max-height: 1;
     min-height: 1;
@@ -43,7 +43,7 @@ Rule {
 
 /* Expanded state - show full todo list */
 #todo-panel.expanded {
-    display: block;
+    display: block !important;
     height: auto;
     max-height: 15;
     min-height: 3;
