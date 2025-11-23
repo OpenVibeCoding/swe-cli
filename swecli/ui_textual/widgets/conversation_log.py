@@ -71,13 +71,11 @@ class ConversationLog(RichLog):
             event.prevent_default()
             return
 
-        # For other scroll keys (arrows, home, end), use default behavior
+        # For other scroll keys (arrows, home, end), mark as user-scrolled
+        # The default behavior will handle the actual scrolling
         elif event.key in ("up", "down", "home", "end"):
             self._user_scrolled = True
             self.auto_scroll = False
-
-        # Let the parent handle arrow/home/end scrolling normally
-        return super().on_key(event)
 
     def scroll_partial_page(self, direction: int) -> None:
         """Scroll a fraction of the viewport instead of a full page."""
