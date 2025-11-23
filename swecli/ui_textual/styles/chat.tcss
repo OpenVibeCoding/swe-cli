@@ -34,9 +34,9 @@ Rule {
 /* Collapsed state - show compact summary */
 #todo-panel.collapsed {
     display: block !important;
-    height: 1;
-    max-height: 1;
-    min-height: 1;
+    height: 3;
+    max-height: 3;
+    min-height: 3;
     overflow: hidden;
     padding: 0 2;
 }
