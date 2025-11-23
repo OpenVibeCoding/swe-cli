@@ -28,6 +28,12 @@ class TodoPanel(Static):
         self.border_title = "TODOS"
         self.is_expanded = False  # Track collapsed/expanded state
 
+        # Spinner animation for active tasks
+        self._spinner_chars = ["←", "↖", "↑", "↗", "→", "↘", "↓", "↙"]
+        self._spinner_index = 0
+        self._spinner_timer = None
+        self._spinner_active = False
+
     def on_mount(self) -> None:
         """Called when widget is mounted to the DOM."""
         self.refresh_display()
@@ -52,6 +58,8 @@ class TodoPanel(Static):
                 self.remove_class("collapsed")
             if self.has_class("expanded"):
                 self.remove_class("expanded")
+            # Stop spinner when no todos
+            self._stop_spinner()
             return
 
         # Auto-show in collapsed state when todos are created
@@ -66,15 +74,24 @@ class TodoPanel(Static):
             self._render_collapsed(todos)
 
     def _render_collapsed(self, todos: list) -> None:
-        """Render compact summary line."""
+        """Render compact summary with animated spinner for active tasks."""
         total = len(todos)
-        doing = sum(1 for t in todos if t.status == "doing")
+        active_text = self._get_active_todo_text(todos)
 
-        # Format: "📋 4 todos (1 active) - Press Ctrl+T to expand"
-        if doing > 0:
-            summary = f"📋 {total} todo{'s' if total != 1 else ''} ({doing} active) - Press Ctrl+T to expand"
+        if active_text:
+            # Show spinner + active task text
+            spinner = self._spinner_chars[self._spinner_index]
+            summary = f"[yellow]{spinner} {active_text}[/yellow] [dim](Press Ctrl+T to expand/hide)[/dim]"
+
+            # Start spinner if not already running
+            if not self._spinner_active:
+                self._start_spinner()
         else:
-            summary = f"📋 {total} todo{'s' if total != 1 else ''} - Press Ctrl+T to expand"
+            # No active task - show count only
+            summary = f"{total} todo{'s' if total != 1 else ''} [dim](Press Ctrl+T to expand/hide)[/dim]"
+
+            # Stop spinner
+            self._stop_spinner()
 
         self.update(summary)
         self.border_title = ""  # No border title in collapsed mode
@@ -108,6 +125,53 @@ class TodoPanel(Static):
         # Join all lines and update display
         self.update("\n".join(lines))
 
+    def _get_active_todo_text(self, todos: list) -> str | None:
+        """Get the title of the currently active todo.
+
+        Args:
+            todos: List of TodoItem objects
+
+        Returns:
+            The title of the first todo with status "doing", or None if no active todo
+        """
+        for todo in todos:
+            if todo.status == "doing":
+                return todo.title
+        return None
+
+    def _start_spinner(self) -> None:
+        """Start the spinner animation timer."""
+        if self._spinner_timer is not None:
+            return  # Already running
+
+        self._spinner_active = True
+        self._spinner_index = 0
+        self._spinner_timer = self.set_timer(0.15, self._animate_spinner)
+
+    def _stop_spinner(self) -> None:
+        """Stop the spinner animation timer."""
+        self._spinner_active = False
+        if self._spinner_timer is not None:
+            self._spinner_timer.stop()
+            self._spinner_timer = None
+
+    def _animate_spinner(self) -> None:
+        """Advance spinner animation to next frame."""
+        if not self._spinner_active:
+            return
+
+        # Advance to next frame
+        self._spinner_index = (self._spinner_index + 1) % len(self._spinner_chars)
+
+        # Re-render collapsed view with new spinner frame
+        if self.todo_handler:
+            todos = list(self.todo_handler._todos.values())
+            if todos and self.has_class("collapsed"):
+                self._render_collapsed(todos)
+
+        # Schedule next frame
+        self._spinner_timer = self.set_timer(0.15, self._animate_spinner)
+
     def toggle_expansion(self) -> None:
         """Toggle between collapsed and expanded states."""
         if self.is_expanded:
@@ -121,4 +185,11 @@ class TodoPanel(Static):
             self.remove_class("collapsed")
             self.add_class("expanded")
 
+            # Stop spinner when expanding
+            self._stop_spinner()
+
         self.refresh_display()
+
+    def on_unmount(self) -> None:
+        """Clean up timer when widget unmounts."""
+        self._stop_spinner()
