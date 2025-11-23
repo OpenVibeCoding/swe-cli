@@ -538,14 +538,17 @@ class SWECLIChatApp(App):
         self.status_bar.set_mode(mode_label)
 
     def action_toggle_todo_panel(self) -> None:
-        """Toggle todo panel visibility (Ctrl+T)."""
+        """Toggle todo panel between collapsed and expanded (Ctrl+T)."""
         try:
             panel = self.query_one("#todo-panel", TodoPanel)
-            if panel.has_class("visible"):
-                panel.remove_class("visible")
-            else:
-                panel.add_class("visible")
-                panel.refresh_display()
+
+            # If panel is hidden (no todos), do nothing
+            if not panel.has_class("collapsed") and not panel.has_class("expanded"):
+                return
+
+            # Toggle between collapsed and expanded
+            panel.toggle_expansion()
+
         except Exception:  # pragma: no cover - defensive
             pass
 

@@ -25,19 +25,30 @@ Rule {
 
 #todo-panel {
     display: none;
-    height: auto;
-    max-height: 15;
-    min-height: 3;
     background: $surface-darken-1;
     border: solid $primary;
     border-title-align: left;
-    padding: 1 2;
-    overflow-y: auto;
     margin-bottom: 1;
 }
 
-#todo-panel.visible {
+/* Collapsed state - show compact summary */
+#todo-panel.collapsed {
     display: block;
+    height: 1;
+    max-height: 1;
+    min-height: 1;
+    overflow: hidden;
+    padding: 0 2;
+}
+
+/* Expanded state - show full todo list */
+#todo-panel.expanded {
+    display: block;
+    height: auto;
+    max-height: 15;
+    min-height: 3;
+    padding: 1 2;
+    overflow-y: auto;
 }
 
 #input-container {

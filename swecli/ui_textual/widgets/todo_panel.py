@@ -26,18 +26,17 @@ class TodoPanel(Static):
         super().__init__(**kwargs)
         self.todo_handler = todo_handler
         self.border_title = "TODOS"
+        self.is_expanded = False  # Track collapsed/expanded state
 
     def on_mount(self) -> None:
         """Called when widget is mounted to the DOM."""
         self.refresh_display()
 
     def refresh_display(self) -> None:
-        """Update the panel with current todos from TodoHandler.
+        """Update the panel with current todos, respecting collapsed/expanded state.
 
-        Shows COMPLETE todo list sorted by status:
-        1. In-progress (doing) - yellow
-        2. Pending (todo) - gray
-        3. Completed (done) - gray with strikethrough
+        Shows collapsed summary or full list depending on is_expanded state.
+        Auto-shows panel in collapsed state when todos are created.
         """
         if not self.todo_handler:
             self.update("Todo panel not connected")
@@ -48,15 +47,40 @@ class TodoPanel(Static):
         if not todos:
             self.update("[dim]No active todos[/dim]")
             self.border_title = "TODOS"
-            # Auto-hide panel when no todos exist
-            if self.has_class("visible"):
-                self.remove_class("visible")
+            # Hide completely when no todos
+            if self.has_class("collapsed"):
+                self.remove_class("collapsed")
+            if self.has_class("expanded"):
+                self.remove_class("expanded")
             return
 
-        # Auto-show panel when todos exist
-        if not self.has_class("visible"):
-            self.add_class("visible")
+        # Auto-show in collapsed state when todos are created
+        if not self.has_class("collapsed") and not self.has_class("expanded"):
+            self.add_class("collapsed")
+            self.is_expanded = False
 
+        # Render based on current state
+        if self.is_expanded:
+            self._render_expanded(todos)
+        else:
+            self._render_collapsed(todos)
+
+    def _render_collapsed(self, todos: list) -> None:
+        """Render compact summary line."""
+        total = len(todos)
+        doing = sum(1 for t in todos if t.status == "doing")
+
+        # Format: "📋 4 todos (1 active) - Press Ctrl+T to expand"
+        if doing > 0:
+            summary = f"📋 {total} todo{'s' if total != 1 else ''} ({doing} active) - Press Ctrl+T to expand"
+        else:
+            summary = f"📋 {total} todo{'s' if total != 1 else ''} - Press Ctrl+T to expand"
+
+        self.update(summary)
+        self.border_title = ""  # No border title in collapsed mode
+
+    def _render_expanded(self, todos: list) -> None:
+        """Render full todo list with status indicators."""
         # Update border title with count
         self.border_title = f"TODOS ({len(todos)} total)"
 
@@ -83,3 +107,18 @@ class TodoPanel(Static):
 
         # Join all lines and update display
         self.update("\n".join(lines))
+
+    def toggle_expansion(self) -> None:
+        """Toggle between collapsed and expanded states."""
+        if self.is_expanded:
+            # Collapse
+            self.is_expanded = False
+            self.remove_class("expanded")
+            self.add_class("collapsed")
+        else:
+            # Expand
+            self.is_expanded = True
+            self.remove_class("collapsed")
+            self.add_class("expanded")
+
+        self.refresh_display()
