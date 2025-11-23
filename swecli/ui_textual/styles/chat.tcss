@@ -26,7 +26,7 @@ Rule {
 #todo-panel {
     display: none;
     background: $surface-darken-1;
-    border: solid $text-muted;
+    border: solid #6a6a6a;
     border-title-align: left;
     margin-bottom: 1;
 }
