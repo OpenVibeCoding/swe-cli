@@ -36,6 +36,12 @@ Follow this pattern for all interactions:
   - **Todo workflow**: Create initial list with write_todos → Update items with update_todo → Mark complete with complete_todo
   - **DO NOT recreate entire todo list** - use update_todo and complete_todo to manage individual items
   - Mark todos as in-progress when starting and completed when finished
+  - **CRITICAL ID Format Rules**:
+    - Todo IDs are ALWAYS in format 'todo-N' where N is a number (e.g., 'todo-1', 'todo-2', 'todo-3')
+    - Use the EXACT ID returned by write_todos or shown in square brackets [N] in the todo panel
+    - NEVER use numeric indices (0, 1, 2), titles, or partial matches when calling update_todo/complete_todo
+    - Example: If panel shows "▶ [1] Fix bug", use id='todo-1' NOT id='1' or id='Fix bug'
+    - Pattern: 'todo-' prefix followed by sequential number, no exceptions
 - **COMPLETE TASKS**: When running background processes, immediately check output and continue monitoring
 - **READ BEFORE ASSUMING**: Never make assumptions about file contents, project structure, or dependencies - verify with tools
 

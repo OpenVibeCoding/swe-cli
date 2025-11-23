@@ -1,5 +1,6 @@
 """Todo/Task management handler for tracking development tasks."""
 
+import logging
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from typing import Dict, List, Optional
@@ -7,6 +8,9 @@ from typing import Dict, List, Optional
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
+
+# Configure logger for todo ID validation warnings
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -222,13 +226,15 @@ class TodoHandler:
         Deep Agent uses 0-based indexing (0, 1, 2...) while we use 1-based IDs (todo-1, todo-2, todo-3...).
         This method handles the conversion. Also supports finding by title string, kebab-case slugs, and fuzzy matching.
 
+        Logs warnings when fuzzy matching is used to help improve ID usage reliability.
+
         Args:
             id: Todo ID in formats: "0", "1", "todo-1", exact title, kebab-case slug like "implement-basic-level"
 
         Returns:
             Tuple of (actual_id, todo_item) or (None, None) if not found
         """
-        # Try exact match first
+        # Try exact match first (no warning needed)
         if id in self._todos:
             return id, self._todos[id]
 
@@ -239,6 +245,10 @@ class TodoHandler:
             one_based_id = numeric_id + 1
             todo_id = f"todo-{one_based_id}"
             if todo_id in self._todos:
+                logger.warning(
+                    f"[TODO] ID '{id}' fuzzy-matched to '{todo_id}'. "
+                    f"Recommend using exact format 'todo-N' for reliability."
+                )
                 return todo_id, self._todos[todo_id]
 
         # If "todo-X" provided, try numeric format
@@ -330,9 +340,21 @@ class TodoHandler:
         """
         actual_id, todo = self._find_todo(id)
         if todo is None:
+            # Build helpful error message with valid ID suggestions
+            valid_ids = sorted(self._todos.keys())
+            if valid_ids:
+                ids_list = ", ".join(valid_ids)
+                error_msg = (
+                    f"Todo '{id}' not found. "
+                    f"Valid IDs: {ids_list}. "
+                    f"Use exact 'todo-N' format for best results."
+                )
+            else:
+                error_msg = f"Todo '{id}' not found. No todos exist yet. Create todos with write_todos first."
+
             return {
                 "success": False,
-                "error": f"Todo #{id} not found",
+                "error": error_msg,
                 "output": None,
             }
 
@@ -397,9 +419,21 @@ class TodoHandler:
         """
         actual_id, todo = self._find_todo(id)
         if todo is None:
+            # Build helpful error message with valid ID suggestions
+            valid_ids = sorted(self._todos.keys())
+            if valid_ids:
+                ids_list = ", ".join(valid_ids)
+                error_msg = (
+                    f"Todo '{id}' not found. "
+                    f"Valid IDs: {ids_list}. "
+                    f"Use exact 'todo-N' format for best results."
+                )
+            else:
+                error_msg = f"Todo '{id}' not found. No todos exist yet. Create todos with write_todos first."
+
             return {
                 "success": False,
-                "error": f"Todo #{id} not found",
+                "error": error_msg,
                 "output": None,
             }
         todo.status = "done"

@@ -491,7 +491,8 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
                 "properties": {
                     "id": {
                         "type": "string",
-                        "description": "ID of the to-do to update (shown in the panel).",
+                        "description": "Todo ID in exact format 'todo-N' (e.g., 'todo-1', 'todo-2'). Use the ID shown in square brackets [N] in the todo panel. CRITICAL: Must match pattern 'todo-' followed by a number.",
+                        "pattern": "^todo-\\d+$",
                     },
                     "title": {
                         "type": "string",
@@ -525,7 +526,8 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
                 "properties": {
                     "id": {
                         "type": "string",
-                        "description": "ID of the to-do item to mark complete.",
+                        "description": "Todo ID in exact format 'todo-N' (e.g., 'todo-1', 'todo-2'). Use the ID shown in square brackets [N] in the todo panel. CRITICAL: Must match pattern 'todo-' followed by a number.",
+                        "pattern": "^todo-\\d+$",
                     },
                     "log": {
                         "type": "string",

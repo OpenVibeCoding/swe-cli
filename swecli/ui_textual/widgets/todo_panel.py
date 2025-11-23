@@ -113,15 +113,18 @@ class TodoPanel(Static):
         lines = []
 
         for todo in sorted_todos:
+            # Extract numeric ID for display (todo-1 → 1)
+            id_num = todo.id.replace("todo-", "") if todo.id.startswith("todo-") else todo.id
+
             if todo.status == "done":
                 # Completed: gray with strikethrough
-                lines.append(f"[dim]✓ [strike]{todo.title}[/strike][/dim]")
+                lines.append(f"[dim]✓ [{id_num}] [strike]{todo.title}[/strike][/dim]")
             elif todo.status == "doing":
                 # In-progress: yellow
-                lines.append(f"[yellow]▶ {todo.title}[/yellow]")
+                lines.append(f"[yellow]▶ [{id_num}] {todo.title}[/yellow]")
             else:
                 # Pending: gray
-                lines.append(f"[dim]○ {todo.title}[/dim]")
+                lines.append(f"[dim]○ [{id_num}] {todo.title}[/dim]")
 
         # Join all lines and update display
         self.update("\n".join(lines))

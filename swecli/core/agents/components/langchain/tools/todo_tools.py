@@ -16,6 +16,71 @@ class WriteTodosSchema(BaseModel):
     )
 
 
+class UpdateTodoSchema(BaseModel):
+    """Schema for update_todo tool parameters with strict ID validation."""
+
+    id: str = Field(
+        description=(
+            "Todo ID in exact format 'todo-N' (e.g., 'todo-1', 'todo-2', 'todo-3'). "
+            "Use the exact ID returned by write_todos or shown in the todo panel [N]. "
+            "CRITICAL: Must use 'todo-' prefix followed by a number. "
+            "Never use numeric indices (0, 1, 2), titles, or partial matches for reliability."
+        ),
+        pattern=r"^todo-\d+$",
+        examples=["todo-1", "todo-2", "todo-3"],
+    )
+    title: Optional[str] = Field(
+        None,
+        description="New title for this todo item"
+    )
+    status: Optional[str] = Field(
+        None,
+        pattern=r"^(todo|doing|done|pending|in_progress|completed)$",
+        description=(
+            "New status: 'todo'/'pending' (not started), "
+            "'doing'/'in_progress' (active), 'done'/'completed' (finished)"
+        )
+    )
+    log: Optional[str] = Field(
+        None,
+        description="Log entry to append to this todo's history"
+    )
+
+
+class CompleteTodoSchema(BaseModel):
+    """Schema for complete_todo tool parameters with strict ID validation."""
+
+    id: str = Field(
+        description=(
+            "Todo ID in exact format 'todo-N' (e.g., 'todo-1', 'todo-2'). "
+            "Use the exact ID from write_todos output or shown in todo panel [N]. "
+            "CRITICAL: Must match pattern 'todo-' followed by a number."
+        ),
+        pattern=r"^todo-\d+$",
+        examples=["todo-1", "todo-2", "todo-3"],
+    )
+    log: Optional[str] = Field(
+        None,
+        description="Optional completion note or log entry"
+    )
+
+
+class CompleteAndActivateNextSchema(BaseModel):
+    """Schema for complete_and_activate_next tool parameters with strict ID validation."""
+
+    id: str = Field(
+        description=(
+            "Todo ID in exact format 'todo-N' (e.g., 'todo-1', 'todo-2') to mark as completed. "
+            "Use the exact ID from write_todos or shown in todo panel [N]. "
+            "The next pending todo will be automatically activated."
+        ),
+        pattern=r"^todo-\d+$",
+        examples=["todo-1", "todo-2", "todo-3"],
+    )
+    log: Optional[str] = Field(
+        None,
+        description="Optional completion note for the finished todo"
+    )
 
 
 class WriteTodosTool(SWECLIToolWrapper):
@@ -110,12 +175,13 @@ class UpdateTodoTool(SWECLIToolWrapper):
             description=(
                 "Update an existing todo item. Use this to change todo status, title, or log. "
                 "IMPORTANT: Only one todo can be 'doing' at a time - setting a todo to 'doing' automatically deactivates others. "
-                "ID can be: numeric index (0, 1, 2...), colon format (:0, :1, :2...), todo-1 format, or todo title/partial match. "
+                "ID must be in exact format 'todo-N' (e.g., 'todo-1', 'todo-2'). "
                 "Status can be 'pending'/'in_progress'/'completed' (or 'todo'/'doing'/'done'). "
                 "For efficient workflow, consider using complete_and_activate_next() to finish current task and start next one automatically. "
-                "Example: update_todo(id='0', status='in_progress') to start working on first todo."
+                "Example: update_todo(id='todo-1', status='in_progress') to start working on first todo."
             ),
             tool_registry=tool_registry,
+            args_schema=UpdateTodoSchema,  # Add Pydantic schema for validation
         )
 
     def _run(self, id: str, title: Optional[str] = None, status: Optional[str] = None, log: Optional[str] = None, **kwargs) -> str:
@@ -140,11 +206,12 @@ class CompleteTodoTool(SWECLIToolWrapper):
             tool_name="complete_todo",
             description=(
                 "Mark a todo as completed. Use this when you finish a specific task instead of recreating the entire todo list. "
-                "ID can be: numeric index (0, 1, 2...), colon format (:0, :1, :2...), todo-1 format, or todo title/partial match. "
+                "ID must be in exact format 'todo-N' (e.g., 'todo-1', 'todo-2'). "
                 "RECOMMENDED: Use complete_and_activate_next() instead for better workflow - it completes current task AND activates next one automatically. "
-                "Example: complete_todo(id='0') to complete first todo, or complete_and_activate_next('0') to complete and move to next."
+                "Example: complete_todo(id='todo-1') to complete first todo, or complete_and_activate_next('todo-1') to complete and move to next."
             ),
             tool_registry=tool_registry,
+            args_schema=CompleteTodoSchema,  # Add Pydantic schema for validation
         )
 
     def _run(self, id: str, log: Optional[str] = None, **kwargs) -> str:
@@ -166,10 +233,11 @@ class CompleteAndActivateNextTool(SWECLIToolWrapper):
                 "Complete a todo and automatically activate the next pending one. This is the RECOMMENDED way to manage todo workflow. "
                 "Atomic operation that: 1) Marks current todo as completed, 2) Deactivates other active todos, 3) Activates next pending todo. "
                 "Use this instead of separate complete_todo() + update_todo() calls for cleaner workflow. "
-                "ID can be: numeric index (0, 1, 2...), colon format (:0, :1, :2...), todo-1 format, or todo title/partial match. "
-                "Example: complete_and_activate_next('0') to finish current task and automatically start next one."
+                "ID must be in exact format 'todo-N' (e.g., 'todo-1', 'todo-2'). "
+                "Example: complete_and_activate_next('todo-1') to finish current task and automatically start next one."
             ),
             tool_registry=tool_registry,
+            args_schema=CompleteAndActivateNextSchema,  # Add Pydantic schema for validation
         )
 
     def _run(self, id: str, log: Optional[str] = None, **kwargs) -> str:
