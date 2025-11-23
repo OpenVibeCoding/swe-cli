@@ -87,8 +87,9 @@ class TodoPanel(Static):
             if not self._spinner_active:
                 self._start_spinner()
         else:
-            # No active task - show count only
-            summary = f"{total} todo{'s' if total != 1 else ''} [dim](Press Ctrl+T to expand/hide)[/dim]"
+            # No active task - show completion progress
+            completed = len([t for t in todos if t.status == "done"])
+            summary = f"{completed}/{total} completed [dim](Press Ctrl+T to expand/hide)[/dim]"
 
             # Stop spinner
             self._stop_spinner()
