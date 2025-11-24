@@ -91,7 +91,7 @@ class TaskProgressDisplay:
             pass
 
     def _update_loop(self) -> None:
-        """Update loop running in background thread."""
+        """Update loop running in background thread with interrupt awareness."""
         with Live(console=self.console, auto_refresh=False, transient=True) as live:
             self.live = live
 
@@ -100,14 +100,38 @@ class TaskProgressDisplay:
             live.update(text)
             live.refresh()
 
-            # Continue updating at regular intervals
+            # Continue updating at regular intervals with interrupt checking
             while self._running and self.task_monitor.is_running():
-                time.sleep(self.UPDATE_INTERVAL)
+                # Check for interrupt immediately before sleeping
+                if self.task_monitor.should_interrupt():
+                    self._running = False
+                    break
 
-                # Format and update display
-                text = self._format_display()
-                live.update(text)
-                live.refresh()
+                # Use event-based waiting for immediate interrupt response
+                # Wait in small intervals to check both _running and task_monitor state
+                if hasattr(self.task_monitor, 'wait_for_interrupt'):
+                    # Event-based waiting - wakes up immediately on interrupt
+                    interrupted = self.task_monitor.wait_for_interrupt(timeout=self.UPDATE_INTERVAL)
+                    if interrupted:
+                        self._running = False
+                        break
+                else:
+                    # Fallback: sleep in smaller chunks to check interrupt more frequently
+                    sleep_chunks = 5  # Split 0.5s into 5 chunks of 0.1s
+                    chunk_duration = self.UPDATE_INTERVAL / sleep_chunks
+                    for _ in range(sleep_chunks):
+                        if not self._running or self.task_monitor.should_interrupt():
+                            self._running = False
+                            break
+                        time.sleep(chunk_duration)
+                    if not self._running:
+                        break
+
+                # Format and update display (only if not interrupted)
+                if self._running:
+                    text = self._format_display()
+                    live.update(text)
+                    live.refresh()
 
     def _format_display(self) -> Text:
         """Format the task display.

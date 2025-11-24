@@ -223,48 +223,56 @@ class BashTool(BaseTool):
                 env=env,
             )
 
-            # Poll process with interrupt checking
+            # Poll process with interrupt checking (event-based for fast response)
             stdout_lines = []
             stderr_lines = []
-            poll_interval = 0.1  # Check every 100ms
+            poll_interval = 0.01  # Reduced to 10ms for faster response
             time_elapsed = 0.0
 
             while process.poll() is None:
-                # Check for interrupt
+                # Check for interrupt using event-based waiting if available
+                interrupted = False
                 if task_monitor is not None:
-                    should_interrupt = False
-                    if hasattr(task_monitor, "should_interrupt"):
-                        should_interrupt = task_monitor.should_interrupt()
-                    elif hasattr(task_monitor, "is_interrupted"):
-                        should_interrupt = task_monitor.is_interrupted()
+                    # Try event-based waiting first (wakes up immediately on interrupt)
+                    if hasattr(task_monitor, "wait_for_interrupt"):
+                        interrupted = task_monitor.wait_for_interrupt(timeout=poll_interval)
+                    else:
+                        # Fallback to polling-based check
+                        time.sleep(poll_interval)
+                        if hasattr(task_monitor, "should_interrupt"):
+                            interrupted = task_monitor.should_interrupt()
+                        elif hasattr(task_monitor, "is_interrupted"):
+                            interrupted = task_monitor.is_interrupted()
+                else:
+                    # No task monitor - just sleep
+                    time.sleep(poll_interval)
 
-                    if should_interrupt:
-                        # User pressed ESC - terminate the process
-                        try:
-                            process.terminate()
-                            process.wait(timeout=2)
-                        except subprocess.TimeoutExpired:
-                            process.kill()
-                            process.wait()
+                if interrupted:
+                    # User pressed ESC - terminate the process immediately
+                    try:
+                        process.terminate()
+                        process.wait(timeout=2)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                        process.wait()
 
-                        duration = time.time() - start_time
-                        error = "Command interrupted by user"
-                        if operation:
-                            operation.mark_failed(error)
+                    duration = time.time() - start_time
+                    error = "Command interrupted by user"
+                    if operation:
+                        operation.mark_failed(error)
 
-                        return BashResult(
-                            success=False,
-                            command=command,
-                            exit_code=-1,
-                            stdout="",
-                            stderr=error,
-                            duration=duration,
-                            error=error,
-                            operation_id=operation.id if operation else None,
-                        )
+                    return BashResult(
+                        success=False,
+                        command=command,
+                        exit_code=-1,
+                        stdout="",
+                        stderr=error,
+                        duration=duration,
+                        error=error,
+                        operation_id=operation.id if operation else None,
+                    )
 
                 # Check timeout
-                time.sleep(poll_interval)
                 time_elapsed += poll_interval
                 if time_elapsed >= timeout:
                     # Timeout - kill process

@@ -236,6 +236,51 @@ class SWECLIChatApp(App):
             self._console_buffer.flush()
         self.flush_console_buffer()
 
+    def _show_interrupt_message_immediately(self) -> None:
+        """Show interrupt message IMMEDIATELY in the UI without any delays.
+
+        This provides instant visual feedback when ESC is pressed, even if
+        the actual process termination takes time in the background.
+        """
+        # Stop spinner immediately
+        if hasattr(self, '_spinner'):
+            self._spinner.stop()
+
+        # Stop any local spinners
+        self._stop_local_spinner()
+
+        # Stop conversation spinner if it exists
+        if hasattr(self.conversation, 'stop_spinner'):
+            self.conversation.stop_spinner()
+
+        # Immediately display the interrupt message using the shared utility
+        from swecli.ui_textual.utils.interrupt_utils import create_interrupt_text, THINKING_INTERRUPT_MESSAGE
+        from rich.text import Text
+
+        # Remove blank line if present (same logic as ui_callback.py on_interrupt)
+        if hasattr(self.conversation, 'lines') and len(self.conversation.lines) > 0:
+            last_line = self.conversation.lines[-1]
+            is_blank = False
+
+            # Check if it's a Strip object with empty content
+            if hasattr(last_line, '_segments'):
+                segments = last_line._segments
+                if len(segments) == 0:
+                    is_blank = True
+                elif len(segments) == 1 and segments[0].text == '':
+                    is_blank = True
+            elif hasattr(last_line, 'plain'):
+                # Fallback for Text objects
+                if last_line.plain.strip() == "":
+                    is_blank = True
+
+            if is_blank and hasattr(self.conversation, '_truncate_from'):
+                self.conversation._truncate_from(len(self.conversation.lines) - 1)
+
+        # Write interrupt message
+        interrupt_line = create_interrupt_text(THINKING_INTERRUPT_MESSAGE)
+        self.conversation.write(interrupt_line)
+
     def resume_reasoning_spinner(self) -> None:
         """Restart the thinking spinner after tool output while waiting for reply."""
 
@@ -431,12 +476,21 @@ class SWECLIChatApp(App):
         self.conversation.add_system_message("Conversation cleared (Ctrl+L)")
 
     def action_interrupt(self) -> None:
-        """Interrupt processing (ESC)."""
+        """Interrupt processing (ESC) - shows message IMMEDIATELY, then interrupts in background."""
         if self._is_processing:
-            # Call interrupt callback if provided
+            # STEP 1: Show interrupt message IMMEDIATELY for instant visual feedback
+            self._show_interrupt_message_immediately()
+
+            # STEP 2: Trigger actual interrupt handling in background (non-blocking)
             if self.on_interrupt:
-                self.on_interrupt()
-            # The actual interruption message will come from the tool/agent when it stops
+                # Run interrupt in background thread so UI stays responsive
+                import threading
+                interrupt_thread = threading.Thread(
+                    target=self.on_interrupt,
+                    daemon=True,
+                    name="interrupt-handler"
+                )
+                interrupt_thread.start()
 
     def action_quit(self) -> None:
         """Require a double Ctrl+C to exit; first press clears and arms the prompt."""

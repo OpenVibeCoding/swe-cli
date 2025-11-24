@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
+
+from rich.console import Group
+from rich.panel import Panel
+from rich.text import Text
 
 from swecli.ui_textual.formatters_internal.formatter_base import STATUS_ICONS
 from swecli.ui_textual.utils.tool_display import get_tool_display_parts
@@ -13,6 +17,48 @@ from swecli.ui_textual.utils.interrupt_utils import create_interrupt_message, ST
 
 class StyleFormatter:
     """Minimalist formatter for conversational tool output."""
+
+    def format_tool_result_renderable(self, tool_name: str, tool_args: Dict[str, Any], result: Dict[str, Any]) -> Union[str, Panel]:
+        """Format tool result returning a Renderable (Panel) or string."""
+        if tool_name in {"run_command", "bash_execute"}:
+            return self._format_shell_panel(tool_args, result)
+        
+        # Fallback to text-based formatting
+        return self.format_tool_result(tool_name, tool_args, result)
+
+    def _format_shell_panel(self, tool_args: Dict[str, Any], result: Dict[str, Any]) -> Union[str, Panel]:
+        if not result.get("success"):
+            return self.format_tool_result("bash_execute", tool_args, result)
+
+        stdout = (result.get("stdout") or result.get("output") or "").strip()
+        stderr = (result.get("stderr") or "").strip()
+        
+        if not stdout and not stderr:
+             return self.format_tool_result("bash_execute", tool_args, result)
+
+        renderables = []
+        if stdout:
+            lines = stdout.splitlines()
+            if len(lines) > 500:
+                preview = "\n".join(lines[:500])
+                renderables.append(Text(preview))
+                renderables.append(Text(f"\n... {len(lines)-500} more lines hidden ...", style="italic dim"))
+            else:
+                renderables.append(Text(stdout))
+                
+        if stderr:
+            if renderables:
+                renderables.append(Text("\nErrors:", style="bold red"))
+            renderables.append(Text(stderr, style="red"))
+
+        return Panel(
+            Group(*renderables),
+            border_style="bright_cyan",
+            padding=(1, 2),
+            title="Output",
+            title_align="left",
+            expand=False
+        )
 
     def format_tool_result(self, tool_name: str, tool_args: Dict[str, Any], result: Dict[str, Any]) -> str:
         tool_display = self._format_tool_call(tool_name, tool_args)

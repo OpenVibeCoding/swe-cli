@@ -47,26 +47,31 @@ class TextualUICallback:
             content: The assistant's message/thinking
         """
         if content and content.strip():
-            # Stop spinner before showing assistant message
-            if hasattr(self.conversation, 'stop_spinner'):
-                self._run_on_ui(self.conversation.stop_spinner)
-            if self.chat_app and hasattr(self.chat_app, "_stop_local_spinner"):
-                self._run_on_ui(self.chat_app._stop_local_spinner)
+            # Skip if interrupted
+            if self._should_skip_due_to_interrupt():
+                return
 
-            # Display the assistant's thinking/message
+            # Stop spinner before showing assistant message (non-blocking)
+            if hasattr(self.conversation, 'stop_spinner'):
+                self._run_on_ui_non_blocking(self.conversation.stop_spinner)
+            if self.chat_app and hasattr(self.chat_app, "_stop_local_spinner"):
+                self._run_on_ui_non_blocking(self.chat_app._stop_local_spinner)
+
+            # Display the assistant's thinking/message (non-blocking)
             if hasattr(self.conversation, 'add_assistant_message'):
-                self._run_on_ui(self.conversation.add_assistant_message, content)
+                self._run_on_ui_non_blocking(self.conversation.add_assistant_message, content)
 
     def on_interrupt(self) -> None:
         """Called when execution is interrupted by user.
 
         Displays the interrupt message directly by replacing the blank line after user prompt.
+        Note: Checks if interrupt message was already shown to prevent duplicates.
         """
-        # Stop spinner first - this removes spinner lines but leaves the blank line after user prompt
+        # Stop spinner first - non-blocking for immediate interrupt response
         if hasattr(self.conversation, 'stop_spinner'):
-            self._run_on_ui(self.conversation.stop_spinner)
+            self._run_on_ui_non_blocking(self.conversation.stop_spinner)
         if self.chat_app and hasattr(self.chat_app, "_stop_local_spinner"):
-            self._run_on_ui(self.chat_app._stop_local_spinner)
+            self._run_on_ui_non_blocking(self.chat_app._stop_local_spinner)
 
         # The key insight: after user message, there's a blank line (added by add_user_message)
         # After stopping spinner, this blank line is the last line
@@ -74,13 +79,25 @@ class TextualUICallback:
         def write_interrupt_replacing_blank_line():
             from rich.text import Text
 
-            # Check if we have lines and last line is blank
+            # Check if interrupt message was already shown (to prevent duplicates)
+            # This can happen if chat_app showed it immediately when ESC was pressed
             if hasattr(self.conversation, 'lines') and len(self.conversation.lines) > 0:
-                # Check if last line is blank
                 last_line = self.conversation.lines[-1]
 
-                # RichLog stores lines as Strip objects, not Text objects
-                # A blank line is a Strip with empty segments or a single empty Segment
+                # Check if last line is already an interrupt message
+                if hasattr(last_line, 'plain'):
+                    last_text = last_line.plain
+                elif hasattr(last_line, '_segments') and len(last_line._segments) > 0:
+                    # Extract text from segments
+                    last_text = ''.join(seg.text for seg in last_line._segments)
+                else:
+                    last_text = ""
+
+                # If already showing interrupt message, don't add another
+                if "Interrupted" in last_text or "⏹" in last_text:
+                    return
+
+                # Check if last line is blank
                 is_blank = False
 
                 # Check if it's a Strip object with empty content
@@ -105,7 +122,8 @@ class TextualUICallback:
             interrupt_line = create_interrupt_text(THINKING_INTERRUPT_MESSAGE)
             self.conversation.write(interrupt_line)
 
-        self._run_on_ui(write_interrupt_replacing_blank_line)
+        # Use non-blocking for immediate interrupt display
+        self._run_on_ui_non_blocking(write_interrupt_replacing_blank_line)
 
     def on_tool_call(self, tool_name: str, tool_args: Dict[str, Any]) -> None:
         """Called when a tool call is about to be executed.
@@ -114,24 +132,28 @@ class TextualUICallback:
             tool_name: Name of the tool being called
             tool_args: Arguments for the tool call
         """
-        # Stop thinking spinner if still active
+        # Skip UI updates if already interrupted
+        if self._should_skip_due_to_interrupt():
+            return
+
+        # Stop thinking spinner if still active (non-blocking for faster response)
         if self._current_thinking:
-            self._run_on_ui(self.conversation.stop_spinner)
+            self._run_on_ui_non_blocking(self.conversation.stop_spinner)
             self._current_thinking = False
 
         if self.chat_app and hasattr(self.chat_app, "_stop_local_spinner"):
-            self._run_on_ui(self.chat_app._stop_local_spinner)
+            self._run_on_ui_non_blocking(self.chat_app._stop_local_spinner)
 
         normalized_args = self._normalize_arguments(tool_args)
 
-        # Display tool call (BLOCKING - ensure line is added)
+        # Display tool call (non-blocking - UI will process in order)
         if hasattr(self.conversation, 'add_tool_call'):
             display_text = build_tool_call_text(tool_name, normalized_args)
-            self._run_on_ui(self.conversation.add_tool_call, display_text)
+            self._run_on_ui_non_blocking(self.conversation.add_tool_call, display_text)
 
-        # Start spinner animation (BLOCKING - ensure timer is created before tool executes)
+        # Start spinner animation (non-blocking - UI will process in order)
         if hasattr(self.conversation, 'start_tool_execution'):
-            self._run_on_ui(self.conversation.start_tool_execution)
+            self._run_on_ui_non_blocking(self.conversation.start_tool_execution)
 
     def on_tool_result(self, tool_name: str, tool_args: Dict[str, Any], result: Dict[str, Any]) -> None:
         """Called when a tool execution completes.
@@ -141,9 +163,13 @@ class TextualUICallback:
             tool_args: Arguments that were used
             result: Result of the tool execution
         """
-        # Stop spinner animation (blocking so the bullet restores before results render)
+        # Skip UI updates if already interrupted
+        if self._should_skip_due_to_interrupt():
+            return
+
+        # Stop spinner animation (non-blocking - UI will process in order)
         if hasattr(self.conversation, 'stop_tool_execution'):
-            self._run_on_ui(self.conversation.stop_tool_execution)
+            self._run_on_ui_non_blocking(self.conversation.stop_tool_execution)
 
         # Skip displaying "Operation cancelled by user" errors
         # These are already shown by the approval controller interrupt message
@@ -152,11 +178,12 @@ class TextualUICallback:
 
         # Format the result using the Claude-style formatter
         normalized_args = self._normalize_arguments(tool_args)
-        formatted = self.formatter.format_tool_result(tool_name, normalized_args, result)
+        formatted = self.formatter.format_tool_result_renderable(tool_name, normalized_args, result)
 
         # Extract the result line(s) from the formatted output
         summary_lines: list[str] = []
         collected_lines: list[str] = []
+
         if isinstance(formatted, str):
             lines = formatted.splitlines()
             for line in lines:
@@ -167,27 +194,35 @@ class TextualUICallback:
                     if result_text:
                         summary_lines.append(result_text)
                         collected_lines.append(result_text)
-        else:
-            self._run_on_ui(self.conversation.write, formatted)
-            if hasattr(formatted, "renderable") and hasattr(formatted, "title"):
-                # Panels typically summarize tool output in title/body; try to capture text
-                renderable = getattr(formatted, "renderable", None)
-                if isinstance(renderable, str):
-                    summary_lines.append(renderable.strip())
 
-        if collected_lines:
-            block = "\n".join(collected_lines)
-            self._run_on_ui(self.conversation.add_tool_result, block)
+            if collected_lines:
+                block = "\n".join(collected_lines)
+                self._run_on_ui_non_blocking(self.conversation.add_tool_result, block)
+
+        else:
+            # Handle Rich Renderables (Panel)
+            self._run_on_ui_non_blocking(self.conversation.add_tool_result, formatted)
+
+            # Try to extract some text for summary
+            # For shell commands, we might want to use the stdout from result directly
+            if tool_name in ("run_command", "bash_execute"):
+                 output = result.get("stdout") or result.get("output") or ""
+                 if output:
+                     summary_lines.append(f"Output: {len(output)} chars")
+                 else:
+                     summary_lines.append("Completed")
+            else:
+                 summary_lines.append("Tool completed")
 
         if summary_lines and self.chat_app and hasattr(self.chat_app, "record_tool_summary"):
-            self._run_on_ui(self.chat_app.record_tool_summary, tool_name, normalized_args, summary_lines.copy())
+            self._run_on_ui_non_blocking(self.chat_app.record_tool_summary, tool_name, normalized_args, summary_lines.copy())
 
         # Refresh todo panel if todo tool was executed
         if tool_name in ("write_todos", "update_todo", "complete_todo", "complete_and_activate_next"):
             self._refresh_todo_panel()
 
         if self.chat_app and hasattr(self.chat_app, "resume_reasoning_spinner"):
-            self._run_on_ui(self.chat_app.resume_reasoning_spinner)
+            self._run_on_ui_non_blocking(self.chat_app.resume_reasoning_spinner)
 
     def _normalize_arguments(self, tool_args: Any) -> Dict[str, Any]:
         """Ensure tool arguments are represented as a dictionary and normalize URLs for display."""
@@ -253,6 +288,22 @@ class TextualUICallback:
             self._app.call_from_thread(func, *args, **kwargs)
         else:
             func(*args, **kwargs)
+
+    def _should_skip_due_to_interrupt(self) -> bool:
+        """Check if we should skip UI operations due to interrupt.
+
+        Returns:
+            True if an interrupt is pending and we should skip UI updates
+        """
+        if self.chat_app and hasattr(self.chat_app, 'runner'):
+            runner = self.chat_app.runner
+            if hasattr(runner, 'query_processor'):
+                query_processor = runner.query_processor
+                if hasattr(query_processor, 'task_monitor'):
+                    task_monitor = query_processor.task_monitor
+                    if task_monitor and hasattr(task_monitor, 'should_interrupt'):
+                        return task_monitor.should_interrupt()
+        return False
 
     def _refresh_todo_panel(self) -> None:
         """Refresh the todo panel with latest state."""

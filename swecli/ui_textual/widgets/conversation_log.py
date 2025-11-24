@@ -182,7 +182,13 @@ class ConversationLog(RichLog):
             self._tool_spinner_timer.stop()
             self._tool_spinner_timer = None
 
-    def add_tool_result(self, result: str) -> None:
+    def add_tool_result(self, result: str | Any) -> None:
+        # Handle Rich Renderables (like Panel) directly
+        if hasattr(result, "__rich_console__") or hasattr(result, "__rich__"):
+            self.write(result)
+            self.write(Text(""))
+            return
+
         # First try to extract edit payload using plain text (for compatibility)
         try:
             result_plain = Text.from_markup(result).plain
