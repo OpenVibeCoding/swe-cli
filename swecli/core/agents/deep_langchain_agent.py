@@ -1,6 +1,7 @@
 """Clean version of Deep LangChain Agent implementation."""
 
 import json
+import logging
 import os
 import time
 from typing import Any, Dict, List, Optional
@@ -18,6 +19,9 @@ try:
     _DEEPAGENTS_AVAILABLE = True
 except ImportError:
     _DEEPAGENTS_AVAILABLE = False
+
+# Configure logger
+logger = logging.getLogger(__name__)
 
 
 class DeepAgentInterruptMonitor:
@@ -198,6 +202,10 @@ class DeepLangChainAgent(BaseAgent):
         tool_registry: Any,
         mode_manager: Any,
         working_dir: Optional[Any] = None,
+        approval_manager: Any = None,
+        undo_manager: Any = None,
+        task_monitor: Any = None,
+        session_manager: Any = None,
     ) -> None:
         """Initialize the Deep LangChain Agent.
 
@@ -206,11 +214,21 @@ class DeepLangChainAgent(BaseAgent):
             tool_registry: Registry of available tools
             mode_manager: Mode manager for plan/normal mode switching
             working_dir: Working directory for context
+            approval_manager: Approval manager for user confirmations
+            undo_manager: Undo manager for operation history
+            task_monitor: Task monitor for interrupt handling
+            session_manager: Session manager for conversation tracking
         """
         # Set working directory BEFORE calling super() since super() calls _initialize_components()
         self._working_dir = working_dir or os.getcwd()  # Default to current directory
         self._deep_agent = None
         self._tool_adapter = None
+
+        # Store managers for middleware creation
+        self._approval_manager = approval_manager
+        self._undo_manager = undo_manager
+        self._task_monitor = task_monitor
+        self._session_manager = session_manager
 
         super().__init__(config, tool_registry, mode_manager)
 
@@ -256,12 +274,28 @@ class DeepLangChainAgent(BaseAgent):
             if github_tools:
                 logger.info(f"GitHub tool names: {[tool.name for tool in github_tools[:5]]}")
 
+            # Create subagent configurations
+            from swecli.core.agents.subagents import SubagentConfigFactory
+            subagent_factory = SubagentConfigFactory(
+                tool_adapter=self._tool_adapter,
+                model=model
+            )
+            subagent_configs = subagent_factory.create_all_subagent_configs()
+            logger.info(f"Created {len(subagent_configs)} subagent configurations: {[s['name'] for s in subagent_configs]}")
+
             # Get tool names for interrupt_on config
             # Use interrupt_on to make Deep Agent return tool calls instead of executing them
             # This allows UI to display each tool call step-by-step with proper spinners
             tool_names = [tool.name for tool in tools]
             interrupt_config = {tool_name: True for tool_name in tool_names}
-            logger.info(f"Configured interrupt_on for {len(tool_names)} tools to enable step-by-step display")
+
+            # IMPORTANT: Exclude 'task' tool from interrupt_on to allow automatic subagent spawning
+            # The user requested automatic spawning without approval
+            if 'task' in interrupt_config:
+                del interrupt_config['task']
+                logger.info("Excluded 'task' tool from interrupt_on for automatic subagent spawning")
+
+            logger.info(f"Configured interrupt_on for {len(interrupt_config)} tools to enable step-by-step display")
 
             logger.info(f"Creating deep agent with {len(tools)} tools...")
 
@@ -269,20 +303,34 @@ class DeepLangChainAgent(BaseAgent):
             system_prompt = self.build_system_prompt()
             logger.info(f"System prompt length: {len(system_prompt)} chars")
 
-            # Create filesystem backend for real file access
+            # Create SWE-CLI FilesystemMiddleware with custom backend
             working_dir = self._working_dir or os.getcwd()
-            backend = FilesystemBackend(root_dir=working_dir)
-            logger.info(f"Created FilesystemBackend with root: {working_dir}")
+            from swecli.core.middleware.swecli_filesystem import create_swecli_filesystem_middleware
+
+            self._swecli_filesystem_middleware = create_swecli_filesystem_middleware(
+                tool_registry=self.tool_registry,
+                working_dir=working_dir,
+                ui_callback=None,  # Will be set when UI callback is available
+                mode_manager=self.mode_manager,
+                approval_manager=self._approval_manager,
+                undo_manager=self._undo_manager,
+                task_monitor=self._task_monitor,
+                session_manager=self._session_manager,
+                tool_token_limit_before_evict=20000
+            )
+            logger.info("Created SWE-CLI FilesystemMiddleware with custom backend")
 
             try:
                 deep_agent = create_deep_agent(
                     model=model,
                     tools=tools,
                     system_prompt=system_prompt,
-                    backend=backend,
+                    backend=self._swecli_filesystem_middleware.backend,  # Use SWE-CLI custom backend
+                    middleware=[self._swecli_filesystem_middleware],  # Single SWE-CLI middleware
+                    subagents=subagent_configs,  # Add specialized subagents
                     interrupt_on=interrupt_config  # Enable tool call interruption for UI display
                 )
-                logger.info("Deep agent created successfully")
+                logger.info(f"Deep agent created successfully with SWE-CLI backend and {len(subagent_configs)} subagents")
             except Exception as e:
                 logger.error(f"Failed to create deep agent: {e}")
                 logger.error(f"Tools passed: {len(tools)}")
@@ -300,6 +348,55 @@ class DeepLangChainAgent(BaseAgent):
             logger.error(f"Failed to initialize Deep Agent: {e}", exc_info=True)
             self._deep_agent = None
             self._init_error = str(e)
+
+    def set_ui_callback(self, ui_callback: Any) -> None:
+        """Set the UI callback for Deep Agent tool transparency.
+
+        This method configures the SWE-CLI FilesystemMiddleware to trigger
+        UI callbacks when Deep Agent executes filesystem tools, ensuring complete
+        tool execution transparency through our custom backend.
+
+        Args:
+            ui_callback: SWE-CLI UI callback instance for displaying tool execution
+        """
+        if hasattr(self, '_swecli_filesystem_middleware') and self._swecli_filesystem_middleware:
+            self._swecli_filesystem_middleware.set_ui_callback(ui_callback)
+            logger.info("UI callback configured for SWE-CLI Deep Agent tool transparency")
+        else:
+            logger.warning("SWE-CLI FilesystemMiddleware not available for UI callback configuration")
+
+    def update_managers(
+        self,
+        mode_manager: Any = None,
+        approval_manager: Any = None,
+        undo_manager: Any = None,
+        task_monitor: Any = None,
+        session_manager: Any = None,
+    ) -> None:
+        """Update managers for Deep Agent's backend to enable full SWE-CLI integration.
+
+        This method updates the managers on the SWE-CLI backend used by Deep Agent,
+        enabling full integration including approval workflows, undo functionality,
+        and proper tool execution context.
+
+        Args:
+            mode_manager: Mode manager for operation mode tracking
+            approval_manager: Approval manager for user confirmations
+            undo_manager: Undo manager for operation history
+            task_monitor: Task monitor for interrupt handling
+            session_manager: Session manager for conversation tracking
+        """
+        if hasattr(self, '_swecli_filesystem_middleware') and self._swecli_filesystem_middleware:
+            self._swecli_filesystem_middleware.update_managers(
+                mode_manager=mode_manager,
+                approval_manager=approval_manager,
+                undo_manager=undo_manager,
+                task_monitor=task_monitor,
+                session_manager=session_manager
+            )
+            logger.debug("Updated managers on Deep Agent's SWE-CLI backend")
+        else:
+            logger.warning("SWE-CLI FilesystemMiddleware not available for manager update")
 
     def _create_model(self) -> BaseChatModel:
         """Create LangChain model based on configuration and provider files."""

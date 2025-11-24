@@ -87,7 +87,7 @@ class ToolRegistry:
             "list_web_screenshots": lambda args: self._list_web_screenshots(),
             "clear_web_screenshots": self._clear_web_screenshots,
             # Todo/task management tools
-            "write_todos": self._todo_handler.write_todos,  # Accepts both List[str] and List[dict] formats (Deep Agent compatible)
+
             "create_todo": self._todo_handler.create_todo,
             "update_todo": self._todo_handler.update_todo,
             "complete_todo": self._todo_handler.complete_todo,
@@ -161,6 +161,11 @@ class ToolRegistry:
                 return handler(arguments, context)
 
             if tool_name in {"get_process_output", "kill_process"}:
+                return handler(arguments)
+
+            # FileToolHandler methods expect args dict, not unpacked kwargs
+            # Deep Agent tools (grep, glob, ls) also expect args dict
+            if tool_name in {"read_file", "list_files", "search", "grep", "glob", "ls"}:
                 return handler(arguments)
 
             # Remaining handlers ignore execution context
@@ -375,3 +380,12 @@ class ToolRegistry:
             return {"success": True, "output": "\n".join(paths)}
         except Exception as e:
             return {"success": False, "error": str(e), "output": None}
+
+    @property
+    def todo_handler(self) -> TodoHandler:
+        """Get the todo handler instance for todo completion tracking.
+
+        Returns:
+            TodoHandler instance used by the tool registry
+        """
+        return self._todo_handler

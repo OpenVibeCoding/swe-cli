@@ -153,6 +153,7 @@ class QueryProcessor:
         output_formatter: "OutputFormatter",
         status_line: "StatusLine",
         message_printer_callback,
+        todo_handler=None,
     ):
         """Initialize query processor.
 
@@ -166,6 +167,7 @@ class QueryProcessor:
             output_formatter: Output formatter for tool results
             status_line: Status line renderer
             message_printer_callback: Callback to print markdown messages
+            todo_handler: Optional todo handler for todo completion tracking
         """
         self.console = console
         self.session_manager = session_manager
@@ -176,6 +178,7 @@ class QueryProcessor:
         self.output_formatter = output_formatter
         self.status_line = status_line
         self._print_markdown_message = message_printer_callback
+        self.todo_handler = todo_handler
 
         # UI state trackers
         self._last_latency_ms = None
@@ -670,6 +673,28 @@ class QueryProcessor:
         # Prepare messages for API
         messages = self._prepare_messages(query, enhanced_query, agent)
 
+        # Check if approval panel is currently active
+        approval_active = False
+        if (ui_callback and hasattr(ui_callback, 'app') and
+            hasattr(ui_callback.app, '_approval_prompt_controller')):
+            approval_active = ui_callback.app._approval_prompt_controller.active
+
+        # Only update Deep Agent if approval is not active to avoid interference
+        if not approval_active:
+            # Connect UI callback to Deep Agent for tool transparency
+            if ui_callback and hasattr(agent, 'set_ui_callback'):
+                agent.set_ui_callback(ui_callback)
+
+            # Update managers on Deep Agent's backend for full SWE-CLI integration
+            if hasattr(agent, 'update_managers'):
+                agent.update_managers(
+                    mode_manager=self.mode_manager,
+                    approval_manager=approval_manager,
+                    undo_manager=undo_manager,
+                    task_monitor=None,  # Will be created per-iteration
+                    session_manager=self.session_manager
+                )
+
         try:
             # ReAct loop: Reasoning → Acting → Observing
             consecutive_reads = 0
@@ -876,6 +901,28 @@ class QueryProcessor:
 
         # Prepare messages for API
         messages = self._prepare_messages(query, enhanced_query, agent)
+
+        # Check if approval panel is currently active
+        approval_active = False
+        if (ui_callback and hasattr(ui_callback, 'app') and
+            hasattr(ui_callback.app, '_approval_prompt_controller')):
+            approval_active = ui_callback.app._approval_prompt_controller.active
+
+        # Only update Deep Agent if approval is not active to avoid interference
+        if not approval_active:
+            # Connect UI callback to Deep Agent for tool transparency
+            if ui_callback and hasattr(agent, 'set_ui_callback'):
+                agent.set_ui_callback(ui_callback)
+
+            # Update managers on Deep Agent's backend for full SWE-CLI integration
+            if hasattr(agent, 'update_managers'):
+                agent.update_managers(
+                    mode_manager=self.mode_manager,
+                    approval_manager=approval_manager,
+                    undo_manager=undo_manager,
+                    task_monitor=None,  # Will be created per-iteration
+                    session_manager=self.session_manager
+                )
 
         try:
             # ReAct loop: Reasoning → Acting → Observing
