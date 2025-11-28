@@ -567,6 +567,7 @@ class DeepLangChainAgent(BaseAgent):
                 logger.error(f"[DEEP_AGENT] Error: {e}", exc_info=True)
                 return {
                     "success": False,
+                    "error": f"Deep Agent error: {str(e)}",
                     "content": f"Deep Agent error: {str(e)}",
                     "messages": messages,
                 }

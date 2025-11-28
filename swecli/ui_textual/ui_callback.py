@@ -305,6 +305,21 @@ class TextualUICallback:
                         return task_monitor.should_interrupt()
         return False
 
+    def on_debug(self, message: str, prefix: str = "DEBUG") -> None:
+        """Called to display debug information about execution flow.
+
+        Args:
+            message: The debug message to display
+            prefix: Optional prefix for categorizing debug messages
+        """
+        # Skip debug if interrupted
+        if self._should_skip_due_to_interrupt():
+            return
+
+        # Display debug message in conversation (non-blocking)
+        if hasattr(self.conversation, 'add_debug_message'):
+            self._run_on_ui_non_blocking(self.conversation.add_debug_message, message, prefix)
+
     def _refresh_todo_panel(self) -> None:
         """Refresh the todo panel with latest state."""
         if not self.chat_app:
