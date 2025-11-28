@@ -249,3 +249,47 @@ class TextualUICallback:
             self._app.call_from_thread(func, *args, **kwargs)
         else:
             func(*args, **kwargs)
+
+    def _should_skip_due_to_interrupt(self) -> bool:
+        """Check if we should skip UI operations due to interrupt.
+
+        Returns:
+            True if an interrupt is pending and we should skip UI updates
+        """
+        if self.chat_app and hasattr(self.chat_app, 'runner'):
+            runner = self.chat_app.runner
+            if hasattr(runner, 'query_processor'):
+                query_processor = runner.query_processor
+                if hasattr(query_processor, 'task_monitor'):
+                    task_monitor = query_processor.task_monitor
+                    if task_monitor and hasattr(task_monitor, 'should_interrupt'):
+                        return task_monitor.should_interrupt()
+        return False
+
+    def on_debug(self, message: str, prefix: str = "DEBUG") -> None:
+        """Called to display debug information about execution flow.
+
+        Args:
+            message: The debug message to display
+            prefix: Optional prefix for categorizing debug messages
+        """
+        # Skip debug if interrupted
+        if self._should_skip_due_to_interrupt():
+            return
+
+        # Display debug message in conversation (non-blocking)
+        if hasattr(self.conversation, 'add_debug_message'):
+            self._run_on_ui_non_blocking(self.conversation.add_debug_message, message, prefix)
+
+    def _refresh_todo_panel(self) -> None:
+        """Refresh the todo panel with latest state."""
+        if not self.chat_app:
+            return
+
+        try:
+            from swecli.ui_textual.widgets.todo_panel import TodoPanel
+            panel = self.chat_app.query_one("#todo-panel", TodoPanel)
+            self._run_on_ui(panel.refresh_display)
+        except Exception:
+            # Panel not found or not initialized yet
+            pass
