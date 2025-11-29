@@ -24,15 +24,6 @@ class ConversationLog(RichLog):
     can_focus = True
     ALLOW_SELECT = True
 
-    @property
-    def allow_select(self) -> bool:
-        """Allow text selection in conversation log.
-
-        Override parent property which checks `not self.is_container`.
-        RichLog is considered a container, but we still want selection.
-        """
-        return True
-
     def __init__(self, **kwargs):
         super().__init__(
             **kwargs,
