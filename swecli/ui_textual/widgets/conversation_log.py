@@ -22,7 +22,7 @@ class ConversationLog(RichLog):
     """Enhanced RichLog for conversation display with scrolling support."""
 
     can_focus = True
-    ALLOW_SELECT = False
+    ALLOW_SELECT = True
 
     def __init__(self, **kwargs):
         super().__init__(
