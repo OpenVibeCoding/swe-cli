@@ -179,30 +179,33 @@ class ProcessToolHandler:
         preview = f"Execute{' (background)' if background else ''}: {command}"
         working_dir = str(self._bash_tool.working_dir) if getattr(self._bash_tool, "working_dir", None) else "."
 
-        try:
-            asyncio.get_running_loop()
-        except RuntimeError:
-            # Check if request_approval already returned a result (WebApprovalManager) or needs to be awaited
-            approval_result = approval_manager.request_approval(
+        # Get the async approval coroutine
+        approval_coro = approval_manager.request_approval(
+            operation=operation,
+            preview=preview,
+            command=command,
+            working_dir=working_dir,
+            force_prompt=True,
+        )
+
+        # Use sync wrapper if available (for Textual UI cross-thread communication)
+        if hasattr(approval_manager, 'request_approval_sync'):
+            result = approval_manager.request_approval_sync(
                 operation=operation,
                 preview=preview,
                 command=command,
                 working_dir=working_dir,
                 force_prompt=True,
             )
+        elif hasattr(approval_coro, 'approved'):
+            # Already a result object, use it directly
+            result = approval_coro
+        else:
+            # It's a coroutine - CLI mode, use asyncio.run()
+            result = asyncio.run(approval_coro)
 
-            # If it's already a result object, use it directly
-            if hasattr(approval_result, 'approved'):
-                result = approval_result
-            else:
-                # If it's a coroutine, run it
-                result = asyncio.run(approval_result)
-
-            if not result.approved:
-                return False
-            operation.approved = True
-            return True
-
+        if not result.approved:
+            return False
         operation.approved = True
         return True
 
