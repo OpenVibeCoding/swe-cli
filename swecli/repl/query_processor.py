@@ -860,6 +860,10 @@ class QueryProcessor:
         if ui_callback and hasattr(ui_callback, 'on_thinking_start'):
             ui_callback.on_thinking_start()
 
+        # Debug: Query processing started
+        if ui_callback and hasattr(ui_callback, 'on_debug'):
+            ui_callback.on_debug(f"Processing query: {query[:50]}{'...' if len(query) > 50 else ''}", "QUERY")
+
         # Add user message to session
         user_msg = ChatMessage(role=Role.USER, content=query)
         self.session_manager.add_message(user_msg, self.config.auto_save_interval)
@@ -880,15 +884,28 @@ class QueryProcessor:
             while True:
                 iteration += 1
 
+                # Debug: ReAct iteration
+                if ui_callback and hasattr(ui_callback, 'on_debug'):
+                    ui_callback.on_debug(f"ReAct iteration #{iteration}", "REACT")
+
                 # Safety check
                 if iteration > SAFETY_LIMIT:
                     self._handle_safety_limit(agent, messages)
                     break
 
+                # Debug: Calling LLM
+                if ui_callback and hasattr(ui_callback, 'on_debug'):
+                    ui_callback.on_debug(f"Calling LLM with {len(messages)} messages", "LLM")
+
                 # Call LLM
                 task_monitor = TaskMonitor()
                 response, latency_ms = self._call_llm_with_progress(agent, messages, task_monitor)
                 self._last_latency_ms = latency_ms
+
+                # Debug: LLM response
+                if ui_callback and hasattr(ui_callback, 'on_debug'):
+                    success = response.get("success", False)
+                    ui_callback.on_debug(f"LLM response (success={success}, latency={latency_ms}ms)", "LLM")
 
                 if not response["success"]:
                     error_text = response.get("error", "Unknown error")
@@ -960,14 +977,25 @@ class QueryProcessor:
                 # Execute tool calls with real-time display
                 operation_cancelled = False
                 for tool_call in tool_calls:
+                    tool_name = tool_call["function"]["name"]
+
+                    # Debug: Executing tool
+                    if ui_callback and hasattr(ui_callback, 'on_debug'):
+                        ui_callback.on_debug(f"Executing tool: {tool_name}", "TOOL")
+
                     # Notify UI about tool call
                     if ui_callback and hasattr(ui_callback, 'on_tool_call'):
                         ui_callback.on_tool_call(
-                            tool_call["function"]["name"],
+                            tool_name,
                             tool_call["function"]["arguments"]
                         )
 
                     result = self._execute_tool_call(tool_call, tool_registry, approval_manager, undo_manager)
+
+                    # Debug: Tool result
+                    if ui_callback and hasattr(ui_callback, 'on_debug'):
+                        success = result.get("success", False)
+                        ui_callback.on_debug(f"Tool '{tool_name}' completed (success={success})", "TOOL")
 
                     # Check if operation was cancelled
                     if not result["success"] and result.get("error") == "Operation cancelled by user":
