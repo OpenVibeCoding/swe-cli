@@ -47,16 +47,18 @@ class AutocompletePopupController:
         active = selected_index if selected_index is not None else 0
         active = max(0, min(active, total - 1))
 
-        page = active // limit if limit > 0 else 0
-        window_start = page * limit
-        window_end = min(window_start + limit, total)
+        window_start = 0
+        if total > limit:
+            window_start = max(0, active - limit + 1)
+            window_start = min(window_start, total - limit)
+        window_end = window_start + limit
 
         rows = [
             (label or "", meta or "")
             for label, meta in entries[window_start:window_end]
         ]
 
-        window_active = active % limit if limit > 0 else 0
+        window_active = active - window_start
         state: StateType = (tuple(rows), window_active)
 
         if state == self._last_state:

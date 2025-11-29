@@ -3,11 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Union
-
-from rich.console import Group
-from rich.panel import Panel
-from rich.text import Text
+from typing import Any, Dict, List
 
 from swecli.ui_textual.formatters_internal.formatter_base import STATUS_ICONS
 from swecli.ui_textual.utils.tool_display import get_tool_display_parts
@@ -17,48 +13,6 @@ from swecli.ui_textual.utils.interrupt_utils import create_interrupt_message, ST
 
 class StyleFormatter:
     """Minimalist formatter for conversational tool output."""
-
-    def format_tool_result_renderable(self, tool_name: str, tool_args: Dict[str, Any], result: Dict[str, Any]) -> Union[str, Panel]:
-        """Format tool result returning a Renderable (Panel) or string."""
-        if tool_name in {"run_command", "bash_execute"}:
-            return self._format_shell_panel(tool_args, result)
-        
-        # Fallback to text-based formatting
-        return self.format_tool_result(tool_name, tool_args, result)
-
-    def _format_shell_panel(self, tool_args: Dict[str, Any], result: Dict[str, Any]) -> Union[str, Panel]:
-        if not result.get("success"):
-            return self.format_tool_result("bash_execute", tool_args, result)
-
-        stdout = (result.get("stdout") or result.get("output") or "").strip()
-        stderr = (result.get("stderr") or "").strip()
-        
-        if not stdout and not stderr:
-             return self.format_tool_result("bash_execute", tool_args, result)
-
-        renderables = []
-        if stdout:
-            lines = stdout.splitlines()
-            if len(lines) > 500:
-                preview = "\n".join(lines[:500])
-                renderables.append(Text(preview))
-                renderables.append(Text(f"\n... {len(lines)-500} more lines hidden ...", style="italic dim"))
-            else:
-                renderables.append(Text(stdout))
-                
-        if stderr:
-            if renderables:
-                renderables.append(Text("\nErrors:", style="bold red"))
-            renderables.append(Text(stderr, style="red"))
-
-        return Panel(
-            Group(*renderables),
-            border_style="bright_cyan",
-            padding=(1, 2),
-            title="Output",
-            title_align="left",
-            expand=False
-        )
 
     def format_tool_result(self, tool_name: str, tool_args: Dict[str, Any], result: Dict[str, Any]) -> str:
         tool_display = self._format_tool_call(tool_name, tool_args)
@@ -81,12 +35,6 @@ class StyleFormatter:
             result_lines = self._format_analyze_image_result(tool_args, result)
         elif tool_name == "get_process_output":
             result_lines = self._format_process_output_result(tool_args, result)
-        elif tool_name == "write_todos":
-            result_lines = self._format_write_todos_result(tool_args, result)
-        elif tool_name == "update_todo":
-            result_lines = self._format_update_todo_result(tool_args, result)
-        elif tool_name == "complete_todo":
-            result_lines = self._format_complete_todo_result(tool_args, result)
         else:
             result_lines = self._format_generic_result(tool_name, tool_args, result)
 
@@ -335,47 +283,6 @@ class StyleFormatter:
 
         preview = first_line[:70] + ("..." if len(first_line) > 70 else "")
         return [f"{preview} ({len(lines)} lines)"]
-
-    def _format_write_todos_result(self, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
-        """Format write_todos result - show all todos without truncation."""
-        if not result.get("success"):
-            error_msg = result.get("error", "Unknown error")
-            if "interrupted by user" in error_msg.lower():
-                return [create_interrupt_message(STANDARD_INTERRUPT_MESSAGE)]
-            return [self._error_line(error_msg)]
-
-        output = result.get("output")
-        if isinstance(output, str):
-            lines = output.strip().splitlines()
-            return lines  # Return ALL lines, no truncation
-
-        return ["Todos created"]
-
-    def _format_update_todo_result(self, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
-        """Format update_todo result - show full todo list with updates."""
-        if not result.get("success"):
-            error_msg = result.get("error", "Unknown error")
-            return [f"Failed to update todo: {error_msg}"]
-
-        # Return the output as-is (already contains full formatted list)
-        output = result.get("output", "")
-        if isinstance(output, str):
-            return output.strip().splitlines()
-
-        return ["Todo updated"]
-
-    def _format_complete_todo_result(self, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
-        """Format complete_todo result - show full todo list with completion."""
-        if not result.get("success"):
-            error_msg = result.get("error", "Unknown error")
-            return [f"Failed to complete todo: {error_msg}"]
-
-        # Return the output as-is (already contains full formatted list)
-        output = result.get("output", "")
-        if isinstance(output, str):
-            return output.strip().splitlines()
-
-        return ["Todo completed"]
 
     def _format_generic_result(self, tool_name: str, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
         if not result.get("success"):

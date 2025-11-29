@@ -92,39 +92,60 @@ class CommandHistory:
 
 
 class ApprovalRulesManager:
-    """Manager for approval rules and command history.
-
-    Rules and history are session-scoped (in-memory only), not persisted to disk.
-    Each conversation session has its own isolated set of rules.
-    """
+    """Manager for approval rules and command history."""
 
     def __init__(self, config_dir: Optional[Path] = None) -> None:
-        """Initialize with empty in-memory rules (session-scoped).
+        if config_dir is None:
+            config_dir = Path.home() / ".swecli"
+        self.config_dir = Path(config_dir)
+        self.config_dir.mkdir(parents=True, exist_ok=True)
 
-        Args:
-            config_dir: Unused - kept for backward compatibility
-        """
+        self.rules_file = self.config_dir / "approval_rules.json"
+        self.history_file = self.config_dir / "command_history.json"
+
         self.rules: List[ApprovalRule] = []
         self.history: List[CommandHistory] = []
 
-        # Initialize default safety rules
+        self._load_rules()
+        self._load_history()
         self._initialize_default_rules()
 
     def _load_rules(self) -> None:
-        """No-op: Rules are session-scoped, not persisted to disk."""
-        pass
+        if self.rules_file.exists():
+            try:
+                data = json.loads(self.rules_file.read_text())
+                self.rules = [ApprovalRule.from_dict(r) for r in data]
+            except Exception as exc:
+                logger.warning("Failed to load approval rules: %s", exc)
+                self.rules = []
 
     def _save_rules(self) -> None:
-        """No-op: Rules are session-scoped, not persisted to disk."""
-        pass
+        try:
+            data = [r.to_dict() for r in self.rules]
+            self.rules_file.write_text(json.dumps(data, indent=2))
+        except Exception as exc:
+            logger.warning("Failed to save approval rules: %s", exc)
 
     def _load_history(self) -> None:
-        """No-op: History is session-scoped, not persisted to disk."""
-        pass
+        if self.history_file.exists():
+            try:
+                content = self.history_file.read_text().strip()
+                # Handle empty file
+                if not content:
+                    self.history = []
+                    return
+                data = json.loads(content)
+                self.history = [CommandHistory.from_dict(h) for h in data[-1000:]]
+            except Exception as exc:
+                logger.warning("Failed to load command history: %s", exc)
+                self.history = []
 
     def _save_history(self) -> None:
-        """No-op: History is session-scoped, not persisted to disk."""
-        pass
+        try:
+            data = [h.to_dict() for h in self.history[-1000:]]
+            self.history_file.write_text(json.dumps(data, indent=2))
+        except Exception as exc:
+            logger.warning("Failed to save command history: %s", exc)
 
     def _initialize_default_rules(self) -> None:
         if self.rules:

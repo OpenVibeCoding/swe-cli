@@ -42,14 +42,11 @@ class MCPCommands(CommandHandler):
             args: Subcommand and arguments
 
         Returns:
-            CommandResult from subcommand execution, or a structured payload for UI renderers.
+            CommandResult from subcommand execution
         """
         if not args:
-            return {
-                "level": "usage",
-                "title": "MCP",
-                "primary": self._build_usage_text(),
-            }
+            self._show_usage()
+            return CommandResult(success=True, message="Usage displayed")
 
         parts = args.split(maxsplit=1)
         subcmd = parts[0].lower()
@@ -73,29 +70,28 @@ class MCPCommands(CommandHandler):
         if subcmd in subcommand_map:
             return subcommand_map[subcmd]()
         else:
-            return {
-                "level": "error",
-                "primary": f"Unknown MCP subcommand: {subcmd}",
-                "secondary": "Try /mcp for usage",
-            }
+            self.print_error(f"Unknown MCP subcommand: {subcmd}")
+            return CommandResult(success=False, message=f"Unknown subcommand: {subcmd}")
 
-    def _build_usage_text(self) -> str:
-        """Return usage text for MCP commands (rendered upstream)."""
-        return (
-            "Usage: /mcp <subcommand>\n"
-            "Key subcommands:\n"
-            "  list           - List servers\n"
-            "  status         - Status summary\n"
-            "  connect <name> - Connect\n"
-            "  tools [name]   - Show tools\n"
-            "  reload         - Reload config\n"
-            "More:\n"
-            "  view / disconnect / enable / disable / test / debug\n"
-        )
+    def _show_usage(self) -> None:
+        """Show MCP command usage."""
+        self.print_warning("Usage: /mcp <subcommand> [args]")
+        self.console.print("\nAvailable subcommands:")
+        self.console.print("  list              - List configured MCP servers")
+        self.console.print("  status            - Quick status overview")
+        self.console.print("  view <name>       - Interactive server viewer (detailed view)")
+        self.console.print("  connect <name>    - Connect to a specific server")
+        self.console.print("  disconnect <name> - Disconnect from a server")
+        self.console.print("  enable <name>     - Enable auto-start for a server")
+        self.console.print("  disable <name>    - Disable auto-start for a server")
+        self.console.print("  tools [<name>]    - Show tools from server(s)")
+        self.console.print("  test <name>       - Test connection to a server")
+        self.console.print("  reload            - Reload MCP configuration")
+        self.console.print("  debug             - Show debug info (tools in agent)")
 
     def _error_no_server_name(self) -> CommandResult:
         """Return error for missing server name."""
-        self.console.print(f"[red]  ⎿ Server name required[/red]")
+        self.print_error("Error: Server name required")
         return CommandResult(success=False, message="Server name required")
 
     def list_servers(self) -> CommandResult:

@@ -5,7 +5,6 @@ anthropic==0.69.0
 browser-use==0.8.0
 Crawl4AI==0.7.6
 datasets==4.2.0
-deepagents==0.2.6
 fastapi==0.115.14
 fastmcp==2.13.0.1
 litellm==1.74.15.post2

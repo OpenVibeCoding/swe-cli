@@ -68,7 +68,7 @@ class REPL:
         self.config_manager = config_manager
         self.session_manager = session_manager
         self.config = config_manager.get_config()
-        self.console = Console(force_terminal=True)
+        self.console = Console()
 
         # Initialize tools and managers
         self._init_tools()
@@ -340,9 +340,7 @@ class REPL:
 
                 # Check for slash commands
                 if user_input.startswith("/"):
-                    result = self._handle_command(user_input)
-                    if isinstance(result, dict):
-                        self._render_structured_message(result)
+                    self._handle_command(user_input)
                     continue
 
                 self._last_prompt = user_input.strip()
@@ -449,14 +447,11 @@ class REPL:
         # Update state from query processor results
         self._last_operation_summary, self._last_error, self._last_latency_ms = result
 
-    def _handle_command(self, command: str) -> Optional[dict]:
+    def _handle_command(self, command: str) -> None:
         """Handle slash commands.
 
         Args:
             command: Command string (including /)
-        
-        Returns:
-            A dictionary with message details for the UI, or None if the command prints its own output.
         """
         parts = command.split(maxsplit=1)
         cmd = parts[0].lower()
@@ -464,11 +459,11 @@ class REPL:
 
         # Route to command handlers
         if cmd == "/help":
-            return self.help_command.handle(args)
+            self.help_command.handle(args)
         elif cmd == "/exit" or cmd == "/quit":
             self.running = False
         elif cmd == "/clear":
-            return self.session_commands.clear()
+            self.session_commands.clear()
         elif cmd == "/sessions":
             self.session_commands.list_sessions()
         elif cmd == "/resume":
@@ -489,19 +484,14 @@ class REPL:
         elif cmd == "/models":
             self.config_commands.show_model_selector()
         elif cmd == "/mcp":
-            return self.mcp_commands.handle(args)
+            self.mcp_commands.handle(args)
         elif cmd == "/init":
             self._init_codebase(command)
         elif cmd == "/run":
             self._run_command(args)
         else:
-            # Return structured error for display_message() to format
-            return {
-                "level": "error",
-                "primary": f"Unknown command: {cmd}",
-                "secondary": "Type /help for available commands",
-            }
-        return None
+            self.console.print(f"[red]Unknown command: {cmd}[/red]")
+            self.console.print("Type /help for available commands.")
 
     def _init_codebase(self, command: str) -> None:
         """Handle /init command to analyze codebase and generate AGENTS.md.
@@ -520,24 +510,6 @@ class REPL:
         except Exception as e:
             self.console.print(f"[red]✗ Error parsing command: {e}[/red]")
             return
-
-    def _render_structured_message(self, payload: dict) -> None:
-        """Render structured command output in REPL mode."""
-        from swecli.ui_textual.formatters.display_formatter import DisplayFormatter
-
-        level = payload.get("level", "info")
-        primary = payload.get("primary", "")
-        secondary = payload.get("secondary")
-        title = payload.get("title")
-
-        formatter = DisplayFormatter()
-        if level == "usage":
-            renderable = formatter.format_usage(primary, secondary, title)
-        else:
-            formatter_method = getattr(formatter, f"format_{level}", formatter.format_info)
-            renderable = formatter_method(primary, secondary)
-
-        self.console.print(renderable)
 
         # Create dependencies
         deps = AgentDependencies(

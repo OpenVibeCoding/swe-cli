@@ -33,9 +33,6 @@ _TOOL_DISPLAY_PARTS: dict[str, tuple[str, str]] = {
     "analyze_image": ("Analyze", "image"),
     "git_commit": ("Commit", "changes"),
     "git_branch": ("Branch", "git"),
-    "update_todo": ("Update", "todo"),
-    "complete_todo": ("Complete", "todo"),
-    "write_todos": ("Write", "todos"),
 }
 
 _PATH_HINT_KEYS = {"file_path", "path", "directory", "dir", "image_path", "working_dir", "target"}
@@ -59,9 +56,6 @@ _PRIMARY_ARG_MAP: dict[str, tuple[str, ...]] = {
     "capture_web_screenshot": ("url",),
     "analyze_image": ("image_path", "file_path"),
     "git_commit": ("message",),
-    "update_todo": ("id",),
-    "complete_todo": ("id",),
-    "write_todos": ("todos",),
 }
 
 _MAX_SUMMARY_LEN = 60
@@ -195,19 +189,6 @@ def _summarize_nested_value(value: Any, key: str | None, seen: set[int] | None =
 def summarize_tool_arguments(tool_name: str, tool_args: Mapping[str, Any]) -> str:
     if not isinstance(tool_args, Mapping) or not tool_args:
         return ""
-
-    # Special handling for write_todos - just show "todos" not the first item
-    if tool_name == "write_todos" and "todos" in tool_args:
-        return "todos"
-
-    # Special handling for update_todo/complete_todo - show the id (which contains the title)
-    if tool_name in ("update_todo", "complete_todo") and "id" in tool_args:
-        todo_id = tool_args["id"]
-        # If id looks like a title (long string), truncate it
-        if isinstance(todo_id, str) and len(todo_id) > 40:
-            return todo_id[:37] + "..."
-        return str(todo_id)
-
     primary_keys = _PRIMARY_ARG_MAP.get(tool_name, ())
     for key in primary_keys:
         if key in tool_args:
@@ -238,37 +219,6 @@ def build_tool_call_text(tool_name: str, tool_args: Mapping[str, Any]) -> Text:
 
 
 def format_tool_call(tool_name: str, tool_args: Mapping[str, Any]) -> str:
-    # Enhanced formatting for MCP tools - show as MCP(tool=server/function, params...)
-    if tool_name.startswith("mcp__"):
-        parts = tool_name.split("__", 2)
-        if len(parts) == 3:
-            server_name = parts[1]
-            function_name = parts[2]
-
-            # Start with tool parameter
-            params = [f'tool={server_name}/{function_name}']
-
-            # Add other arguments
-            if tool_args:
-                for key, value in tool_args.items():
-                    if isinstance(value, str):
-                        # Truncate very long strings
-                        if len(value) > 100:
-                            value = value[:97] + "..."
-                        params.append(f'{key}="{value}"')
-                    elif isinstance(value, (int, float, bool)):
-                        params.append(f'{key}={value}')
-                    elif value is None:
-                        params.append(f'{key}=None')
-                    else:
-                        # For complex types, show truncated repr
-                        value_str = str(value)
-                        if len(value_str) > 50:
-                            value_str = value_str[:47] + "..."
-                        params.append(f'{key}={value_str}')
-
-            return f"MCP({', '.join(params)})"
-
     # Enhanced formatting for Search tool
     if tool_name == "search" and tool_args:
         params = []
@@ -301,33 +251,6 @@ def format_tool_call(tool_name: str, tool_args: Mapping[str, Any]) -> str:
             params.append(f'extract_text: {tool_args["extract_text"]}')
         if "include_external" in tool_args and tool_args["include_external"]:
             params.append(f'include_external: {tool_args["include_external"]}')
-
-        # Show max_length if not default
-        if "max_length" in tool_args and tool_args["max_length"] and tool_args["max_length"] != 50000:
-            params.append(f'max_length: {tool_args["max_length"]}')
-
-        # Show domain filters (condensed format)
-        if "allowed_domains" in tool_args and tool_args["allowed_domains"]:
-            domains = tool_args["allowed_domains"]
-            if len(domains) <= 2:
-                params.append(f'allowed_domains: {", ".join(domains)}')
-            else:
-                params.append(f'allowed_domains: {len(domains)} domains')
-
-        if "blocked_domains" in tool_args and tool_args["blocked_domains"]:
-            domains = tool_args["blocked_domains"]
-            if len(domains) <= 2:
-                params.append(f'blocked_domains: {", ".join(domains)}')
-            else:
-                params.append(f'blocked_domains: {len(domains)} domains')
-
-        # Show URL patterns if specified
-        if "url_patterns" in tool_args and tool_args["url_patterns"]:
-            patterns = tool_args["url_patterns"]
-            if len(patterns) == 1:
-                params.append(f'patterns: {patterns[0]}')
-            else:
-                params.append(f'patterns: {len(patterns)} patterns')
 
         if params:
             return f"Fetch({', '.join(params)})"

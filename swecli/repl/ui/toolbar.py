@@ -54,7 +54,7 @@ class Toolbar:
 
         # Extract readable model name (last part after /)
         model_name = self.config.model.split('/')[-1] if self.config.model else 'unknown'
-        provider_name = self.config.model_provider.capitalize() if self.config.model_provider else 'Unknown'
+        provider_name = self.config.model_provider.capitalize()
 
         return FormattedText(
             [

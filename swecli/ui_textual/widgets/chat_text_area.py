@@ -143,6 +143,8 @@ class ChatTextArea(TextArea):
                 app.update_autocomplete([], None)
             except Exception:
                 pass
+        self.suggestion = ""
+        self._notify_autocomplete()
 
     def _set_highlight_index(self, index: int | None) -> None:
         """Update active selection and inline suggestion."""
@@ -223,7 +225,7 @@ class ChatTextArea(TextArea):
         if result is not None:
             self.cursor_location = result.end_location
 
-        self._dismiss_autocomplete()
+        self._clear_completions()
         self._suppress_next_autocomplete = True
         self.update_suggestion()
         return True
@@ -234,12 +236,6 @@ class ChatTextArea(TextArea):
         app = getattr(self, "app", None)
         approval_controller = getattr(app, "_approval_controller", None)
         approval_mode = bool(approval_controller and getattr(approval_controller, "active", False))
-
-        if event.key != "ctrl+c" and app and hasattr(app, "_handle_input_activity"):
-            try:
-                app._handle_input_activity()
-            except Exception:
-                pass
 
         if approval_mode:
             if event.key == "up":
@@ -386,13 +382,6 @@ class ChatTextArea(TextArea):
 
     def on_paste(self, event: Paste) -> None:
         """Handle paste events, collapsing large blocks into placeholders."""
-
-        app = getattr(self, "app", None)
-        if app and hasattr(app, "_handle_input_activity"):
-            try:
-                app._handle_input_activity()
-            except Exception:
-                pass
 
         paste_text = event.text
         event.stop()

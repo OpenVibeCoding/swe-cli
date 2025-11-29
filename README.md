@@ -57,7 +57,6 @@ Built on **SOLID principles** with **dependency injection** and **interface-driv
 ### ✅ Ready Features
 - **Interactive Coding Agent that Understand Codebase**
 - **Multi-Provider LLM Support** (Fireworks, OpenAI, and Anthropic via native HTTP clients)
-- **LangChain Deep Agents Integration** - Advanced planning and task decomposition with LangGraph
 - **Basic Access to Shell Commands and Control Them Through LLMs**
 - **Context Management**
 - **Compact Context Automatically**
@@ -121,8 +120,6 @@ Configure your settings in `~/.swecli/settings.json`:
 
 For more details, see the [documentation](./docs).
 
-> **API keys:** The Deep Agent picks the model specified by `model_provider` (`fireworks`, `openai`, or `anthropic`). Export the matching environment variable (`FIREWORKS_API_KEY`, `OPENAI_API_KEY`, or `ANTHROPIC_API_KEY`) before launching `swecli`, or set `api_key` in your config file.
-
 ### Provider Support
 
 SWE-CLI ships with first-class support for the following providers:
@@ -132,41 +129,6 @@ SWE-CLI ships with first-class support for the following providers:
 - **Anthropic** – native Messages API adapter with tool-use support
 
 Select the provider via `model_provider` (`fireworks`, `openai`, or `anthropic`) and supply the corresponding API key through environment variables or config.
-
----
-
-## 🧠 Deep Agents (LangChain Integration)
-
-SWE-CLI now supports **LangChain Deep Agents** for advanced task planning and execution!
-
-### What are Deep Agents?
-
-Deep Agents use LangGraph-powered workflows that provide:
-- **Automatic task decomposition** - Complex tasks broken into manageable steps
-- **Built-in planning** - Agents create and follow execution plans
-- **Enhanced reasoning** - Better context management and decision-making
-- **All existing tools** - Seamless integration with 22+ SWE-CLI tools
-
-### Agent Architecture
-
-SWE-CLI uses **LangChain Deep Agents** with advanced planning capabilities for all interactions. The Deep Agents framework provides:
-
-- ✨ Advanced planning and reasoning
-- 🔧 Seamless tool integration
-- 🚀 Optimized performance
-
-Configure your model in `~/.swecli/settings.json`:
-
-```json
-{
-  "model_provider": "fireworks",
-  "model": "accounts/fireworks/models/llama-v3p1-70b-instruct"
-}
-```
-
-### Documentation
-
-See [Deep Agents Summary](./docs/DEEP_AGENTS_SUMMARY.md) for technical details about the agent architecture.
 
 ---
 

@@ -12,7 +12,13 @@
       "Bash(git add:*)",
       "Bash(find:*)",
       "Bash(uv run pytest:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(/Users/nghibui/codes/swe-cli/tests/test_deep_langchain_agent_middleware.py )",
+      "Bash(/Users/nghibui/codes/swe-cli/tests/test_subagents.py )",
+      "Bash(/Users/nghibui/codes/swe-cli/tests/test_deep_agent_simple.py )",
+      "Bash(/Users/nghibui/codes/swe-cli/tests/test_deep_agent_with_tool.py )",
+      "Bash(/Users/nghibui/codes/swe-cli/tests/test_deep_langchain_agent.py)",
+      "Bash(/Users/nghibui/codes/swe-cli/tests/test_agent_factory_default.py)"
     ],
     "deny": [],
     "ask": []

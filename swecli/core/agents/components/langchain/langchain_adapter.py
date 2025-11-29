@@ -81,27 +81,16 @@ class InterruptibleChatModel:
 
         monitor = LangChainInterruptMonitor(task_monitor)
 
-        # Use event-based waiting for instant interrupt response
         while request_thread.is_alive():
-            # Wait for interrupt event or timeout - this wakes up IMMEDIATELY on interrupt
-            if hasattr(monitor.task_monitor, 'wait_for_interrupt'):
-                interrupted = monitor.task_monitor.wait_for_interrupt(timeout=0.01)
-                if interrupted:
-                    # Interrupt was signaled - stop immediately
-                    from langchain_core.outputs import ChatResult
-                    return ChatResult(
-                        generations=[],
-                        llm_output={"error": "Interrupted by user"},
-                    )
-            else:
-                # Fallback to polling if wait_for_interrupt not available
-                if monitor.should_interrupt():
-                    from langchain_core.outputs import ChatResult
-                    return ChatResult(
-                        generations=[],
-                        llm_output={"error": "Interrupted by user"},
-                    )
-                request_thread.join(timeout=0.01)
+            if monitor.should_interrupt():
+                # Note: We can't directly interrupt the LangChain model call
+                # This is a limitation compared to the custom HTTP client
+                from langchain_core.outputs import ChatResult
+                return ChatResult(
+                    generations=[],
+                    llm_output={"error": "Interrupted by user"},
+                )
+            request_thread.join(timeout=0.1)
 
         if exception_container["exception"]:
             raise exception_container["exception"]
@@ -300,30 +289,16 @@ class LangChainLLMAdapter:
             if message.tool_calls:
                 tool_calls = []
                 for tool_call in message.tool_calls:
-                    # Handle LangChain ToolCall objects
-                    if hasattr(tool_call, 'name') and hasattr(tool_call, 'args'):
-                        tool_calls.append(
-                            {
-                                "id": tool_call.get("id", ""),
-                                "type": "function",
-                                "function": {
-                                    "name": tool_call.get("name", ""),
-                                    "arguments": json.dumps(tool_call.get("args", {})),
-                                },
-                            }
-                        )
-                    else:
-                        # Handle dict format (fallback)
-                        tool_calls.append(
-                            {
-                                "id": tool_call.get("id", ""),
-                                "type": "function",
-                                "function": {
-                                    "name": tool_call.get("name", ""),
-                                    "arguments": json.dumps(tool_call.get("args", {})),
-                                },
-                            }
-                        )
+                    tool_calls.append(
+                        {
+                            "id": tool_call.get("id", ""),
+                            "type": "function",
+                            "function": {
+                                "name": tool_call.get("name", ""),
+                                "arguments": json.dumps(tool_call.get("args", {})),
+                            },
+                        }
+                    )
                 result["tool_calls"] = tool_calls
 
             return result

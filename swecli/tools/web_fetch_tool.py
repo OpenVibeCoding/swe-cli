@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import signal
-import threading
 from pathlib import Path
 from typing import Any, Optional, Sequence
 
@@ -47,7 +45,6 @@ class WebFetchTool:
         blocked_domains: Optional[Sequence[str]] = None,
         url_patterns: Optional[Sequence[str]] = None,
         stream: bool = False,
-        task_monitor: Optional[Any] = None,
     ) -> dict[str, any]:
         """Fetch content from a URL using Crawl4AI.
 
@@ -64,122 +61,33 @@ class WebFetchTool:
             blocked_domains: Optional list of domains to skip during deep crawl
             url_patterns: Optional glob patterns to include
             stream: If True (and deep_crawl), stream results as they are discovered
-            task_monitor: Optional task monitor for checking interrupts
 
         Returns:
             Dictionary with success, content, and optional error
         """
-        # Check for interrupt before starting fetch
-        if task_monitor and task_monitor.should_interrupt():
-            return {
-                "success": False,
-                "error": "Operation cancelled by user",
-                "content": None,
-                "interrupted": True,
-            }
+        # Run async fetch in sync context
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
 
-        # Use threading and asyncio cancellation for immediate interrupt capability
-        result_container = {}
-        exception_container = {}
-
-        def run_async_in_thread():
-            """Run the async operation in a separate thread."""
-            try:
-                # Create new event loop for this thread
-                new_loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(new_loop)
-
-                # Create a task that can be cancelled
-                task = new_loop.create_task(
-                    self._fetch_url_async(
-                        url=url,
-                        extract_text=extract_text,
-                        max_length=max_length,
-                        deep_crawl=deep_crawl,
-                        crawl_strategy=crawl_strategy,
-                        max_depth=max_depth,
-                        include_external=include_external,
-                        max_pages=max_pages,
-                        allowed_domains=allowed_domains,
-                        blocked_domains=blocked_domains,
-                        url_patterns=url_patterns,
-                        stream=stream,
-                        task_monitor=task_monitor,
-                        cancel_event=cancel_event,
-                    )
-                )
-
-                # Store the task so it can be cancelled
-                result_container['task'] = task
-
-                # Run the task
-                result = new_loop.run_until_complete(task)
-                result_container['result'] = result
-
-            except asyncio.CancelledError:
-                result_container['result'] = {
-                    "success": False,
-                    "error": "Operation cancelled by user",
-                    "content": None,
-                    "interrupted": True,
-                }
-            except Exception as e:
-                exception_container['exception'] = e
-            finally:
-                new_loop.close()
-
-        # Create cancellation event
-        cancel_event = threading.Event()
-
-        # Start the operation in a background thread
-        worker_thread = threading.Thread(target=run_async_in_thread)
-        worker_thread.daemon = True
-        worker_thread.start()
-
-        # Monitor for interrupts while the operation is running
-        while worker_thread.is_alive():
-            # Check for user interrupt
-            if task_monitor and task_monitor.should_interrupt():
-                # Signal cancellation
-                cancel_event.set()
-
-                # Cancel the asyncio task if it was created
-                if 'task' in result_container and result_container['task']:
-                    try:
-                        # Call cancel in the event loop thread
-                        loop = result_container['task'].get_loop()
-                        if loop and not loop.is_closed():
-                            loop.call_soon_threadsafe(result_container['task'].cancel)
-                    except:
-                        pass
-
-                # Wait for thread to finish with timeout
-                worker_thread.join(timeout=1.0)
-
-                # Return interrupt result
-                return {
-                    "success": False,
-                    "error": "Operation cancelled by user",
-                    "content": None,
-                    "interrupted": True,
-                }
-
-            # Small delay to prevent busy waiting
-            worker_thread.join(timeout=0.1)
-
-        # Check if the thread completed successfully
-        if exception_container:
-            raise exception_container['exception']
-
-        if 'result' in result_container:
-            return result_container['result']
-
-        # Fallback (shouldn't reach here)
-        return {
-            "success": False,
-            "error": "Unknown error during web fetch",
-            "content": None,
-        }
+        return loop.run_until_complete(
+            self._fetch_url_async(
+                url=url,
+                extract_text=extract_text,
+                max_length=max_length,
+                deep_crawl=deep_crawl,
+                crawl_strategy=crawl_strategy,
+                max_depth=max_depth,
+                include_external=include_external,
+                max_pages=max_pages,
+                allowed_domains=allowed_domains,
+                blocked_domains=blocked_domains,
+                url_patterns=url_patterns,
+                stream=stream,
+            )
+        )
 
     async def _fetch_url_async(
         self,
@@ -195,8 +103,6 @@ class WebFetchTool:
         blocked_domains: Optional[Sequence[str]] = None,
         url_patterns: Optional[Sequence[str]] = None,
         stream: bool = False,
-        task_monitor: Optional[Any] = None,
-        cancel_event: Optional[threading.Event] = None,
     ) -> dict[str, any]:
         """Async implementation of URL fetching.
 
@@ -284,58 +190,15 @@ class WebFetchTool:
                 stream=stream_mode,
             )
 
-            # Check for interrupt before starting web crawler
-            if task_monitor and task_monitor.should_interrupt() or (cancel_event and cancel_event.is_set()):
-                return {
-                    "success": False,
-                    "error": "Operation cancelled by user",
-                    "content": None,
-                    "interrupted": True,
-                }
-
             # Fetch URL
             async with AsyncWebCrawler(config=browser_config) as crawler:
-                # Check for interrupt one more time before actual fetch
-                if task_monitor and task_monitor.should_interrupt() or (cancel_event and cancel_event.is_set()):
-                    return {
-                        "success": False,
-                        "error": "Operation cancelled by user",
-                        "content": None,
-                        "interrupted": True,
-                    }
-
                 if stream_mode:
                     page_results = []
                     async for streamed_result in crawler.arun(url=url, config=run_config):
-                        # Check for interrupt during streaming
-                        if task_monitor and task_monitor.should_interrupt() or (cancel_event and cancel_event.is_set()):
-                            return {
-                                "success": False,
-                                "error": "Operation cancelled by user",
-                                "content": None,
-                                "interrupted": True,
-                            }
                         page_results.append(streamed_result)
                 else:
-                    # Use a timeout wrapper to allow periodic cancellation checks
-                    try:
-                        result = await asyncio.wait_for(
-                            crawler.arun(url=url, config=run_config),
-                            timeout=1.0  # Check for cancellation every 1 second
-                        )
-                        page_results = result if isinstance(result, list) else [result]
-                    except asyncio.TimeoutError:
-                        # Check for cancellation on timeout
-                        if task_monitor and task_monitor.should_interrupt() or (cancel_event and cancel_event.is_set()):
-                            return {
-                                "success": False,
-                                "error": "Operation cancelled by user",
-                                "content": None,
-                                "interrupted": True,
-                            }
-                        # If not cancelled, continue with a longer timeout
-                        result = await crawler.arun(url=url, config=run_config)
-                        page_results = result if isinstance(result, list) else [result]
+                    result = await crawler.arun(url=url, config=run_config)
+                    page_results = result if isinstance(result, list) else [result]
 
                 if deep_crawl:
                     successful_pages = [

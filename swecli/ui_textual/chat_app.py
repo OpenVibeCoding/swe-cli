@@ -14,7 +14,6 @@ from textual.widgets import Header, Rule, Static
 from swecli.ui_textual.widgets import ConversationLog
 from swecli.ui_textual.widgets.chat_text_area import ChatTextArea
 from swecli.ui_textual.widgets.status_bar import ModelFooter, StatusBar
-from swecli.ui_textual.widgets.todo_panel import TodoPanel
 from swecli.ui_textual.components import TipsManager
 from swecli.ui_textual.controllers.approval_prompt_controller import ApprovalPromptController
 from swecli.ui_textual.controllers.autocomplete_popup_controller import AutocompletePopupController
@@ -26,7 +25,6 @@ from swecli.ui_textual.managers.console_buffer_manager import ConsoleBufferManag
 from swecli.ui_textual.managers.message_history import MessageHistory
 from swecli.ui_textual.managers.tool_summary_manager import ToolSummaryManager
 from swecli.ui_textual.renderers.welcome_panel import render_welcome_panel
-from swecli.ui_textual import style_tokens
 
 
 
@@ -34,17 +32,12 @@ class SWECLIChatApp(App):
     """SWE-CLI Chat Application using Textual."""
 
     CSS_PATH = "styles/chat.tcss"
-    INPUT_LABEL_DEFAULT = "› Type your message (Enter to send, Shift+Enter for new line):"
-    INPUT_LABEL_EXIT = "Press Ctrl + C again to exit"
 
-    # Disable mouse support to allow natural terminal text selection
-    ENABLE_MOUSE = False
 
     BINDINGS = [
-        Binding("ctrl+c", "quit", "", show=False, priority=True),
-        Binding("ctrl+l", "clear_conversation", "", show=False),
-        Binding("ctrl+t", "toggle_todo_panel", "Toggle Todos", show=False),
-        Binding("escape", "interrupt", "", show=False),
+        Binding("ctrl+c", "quit", "Quit", priority=True),
+        Binding("ctrl+l", "clear_conversation", "Clear"),
+        Binding("escape", "interrupt", "Interrupt"),
         Binding("pageup", "scroll_up", "Scroll Up", show=False),
         Binding("pagedown", "scroll_down", "Scroll Down", show=False),
         Binding("up", "scroll_up_line", "Scroll Up One Line", show=False),
@@ -65,8 +58,6 @@ class SWECLIChatApp(App):
         get_model_config: Optional[Callable[[], Mapping[str, Any]]] = None,
         on_ready: Optional[Callable[[], None]] = None,
         on_interrupt: Optional[Callable[[], bool]] = None,
-        working_dir: Optional[str] = None,
-        todo_handler=None,
         **kwargs,
     ):
         """Initialize chat application.
@@ -80,7 +71,6 @@ class SWECLIChatApp(App):
             get_model_config: Callback returning current model configuration details
             on_ready: Callback invoked once the UI finishes its first layout pass
             on_interrupt: Callback for when user presses ESC to interrupt
-            working_dir: Working directory path for repo display
         """
         # Set color system to inherit from terminal
         kwargs.setdefault("ansi_color", "auto")
@@ -94,8 +84,6 @@ class SWECLIChatApp(App):
         self.on_model_selected = on_model_selected
         self.get_model_config = get_model_config
         self._on_ready = on_ready
-        self.working_dir = working_dir or ""
-        self.todo_handler = todo_handler
         self.autocomplete_popup: Static | None = None
         self._autocomplete_controller: AutocompletePopupController | None = None
         self.footer: ModelFooter | None = None
@@ -116,7 +104,6 @@ class SWECLIChatApp(App):
         self._command_router = CommandRouter(self)
         self._history = MessageHistory()
         self._message_controller = MessageController(self)
-        self._quit_armed = False
 
     def compose(self) -> ComposeResult:
         """Create child widgets."""
@@ -129,13 +116,10 @@ class SWECLIChatApp(App):
             # Separator line between conversation and input
             yield Rule(line_style="solid")
 
-            # Todo panel (persistent, toggleable with Ctrl+T)
-            yield TodoPanel(todo_handler=self.todo_handler, id="todo-panel")
-
             # Input area
             with Vertical(id="input-container"):
                 yield Static(
-                    self.INPUT_LABEL_DEFAULT,
+                    "› Type your message (Enter to send, Shift+Enter for new line):",
                     id="input-label",
                 )
                 yield ChatTextArea(
@@ -146,9 +130,9 @@ class SWECLIChatApp(App):
                 )
 
             # Status bar
-            yield StatusBar(model=self.model, working_dir=self.working_dir, id="status-bar")
+            yield StatusBar(model=self.model, id="status-bar")
 
-        yield ModelFooter(self.model_slots, normal_model=self.model, id="model-footer")
+        yield ModelFooter(self.model_slots, id="model-footer")
 
     def on_mount(self) -> None:
         """Initialize the app on mount."""
@@ -161,7 +145,6 @@ class SWECLIChatApp(App):
         input_container = self.query_one("#input-container")
         self.status_bar = self.query_one("#status-bar", StatusBar)
         self.footer = self.query_one("#model-footer", ModelFooter)
-        self.input_label = self.query_one("#input-label", Static)
         self.input_field.set_completer(self.completer)
         self.autocomplete_popup = Static("", id="autocomplete-popup")
         self.autocomplete_popup.can_focus = False
@@ -193,13 +176,10 @@ class SWECLIChatApp(App):
             self.footer.update_models(self.model_slots)
 
     def update_primary_model(self, model: str) -> None:
-        """Update the primary model label shown in the status bar and footer."""
+        """Update the primary model label shown in the status bar."""
         self.model = model
         if hasattr(self, "status_bar"):
             self.status_bar.set_model_name(model)
-        # Also update the footer to show the normal model
-        if hasattr(self, "footer"):
-            self.footer.set_normal_model(model)
 
 
     def update_autocomplete(
@@ -235,51 +215,6 @@ class SWECLIChatApp(App):
             self._console_buffer.clear_assistant_history()
             self._console_buffer.flush()
         self.flush_console_buffer()
-
-    def _show_interrupt_message_immediately(self) -> None:
-        """Show interrupt message IMMEDIATELY in the UI without any delays.
-
-        This provides instant visual feedback when ESC is pressed, even if
-        the actual process termination takes time in the background.
-        """
-        # Stop spinner immediately
-        if hasattr(self, '_spinner'):
-            self._spinner.stop()
-
-        # Stop any local spinners
-        self._stop_local_spinner()
-
-        # Stop conversation spinner if it exists
-        if hasattr(self.conversation, 'stop_spinner'):
-            self.conversation.stop_spinner()
-
-        # Immediately display the interrupt message using the shared utility
-        from swecli.ui_textual.utils.interrupt_utils import create_interrupt_text, THINKING_INTERRUPT_MESSAGE
-        from rich.text import Text
-
-        # Remove blank line if present (same logic as ui_callback.py on_interrupt)
-        if hasattr(self.conversation, 'lines') and len(self.conversation.lines) > 0:
-            last_line = self.conversation.lines[-1]
-            is_blank = False
-
-            # Check if it's a Strip object with empty content
-            if hasattr(last_line, '_segments'):
-                segments = last_line._segments
-                if len(segments) == 0:
-                    is_blank = True
-                elif len(segments) == 1 and segments[0].text == '':
-                    is_blank = True
-            elif hasattr(last_line, 'plain'):
-                # Fallback for Text objects
-                if last_line.plain.strip() == "":
-                    is_blank = True
-
-            if is_blank and hasattr(self.conversation, '_truncate_from'):
-                self.conversation._truncate_from(len(self.conversation.lines) - 1)
-
-        # Write interrupt message
-        interrupt_line = create_interrupt_text(THINKING_INTERRUPT_MESSAGE)
-        self.conversation.write(interrupt_line)
 
     def resume_reasoning_spinner(self) -> None:
         """Restart the thinking spinner after tool output while waiting for reply."""
@@ -346,7 +281,6 @@ class SWECLIChatApp(App):
 
     async def on_chat_text_area_submitted(self, event: ChatTextArea.Submitted) -> None:
         """Handle chat submissions from the custom text area."""
-        self._handle_input_activity()
         await self._message_controller.submit(event.value)
 
     def add_assistant_message(self, message: str) -> None:
@@ -368,10 +302,7 @@ class SWECLIChatApp(App):
         handled = await self._command_router.handle(command)
         if not handled and not self.on_message:
             cmd = command.lower().split()[0]
-            self.conversation.add_error(
-                f"Unknown command: {cmd}",
-                hint=style_tokens.UNKNOWN_COMMAND_HINT,
-            )
+            self.conversation.add_error(f"Unknown command: {cmd}")
         return handled
 
     async def _start_model_picker(self) -> None:
@@ -476,47 +407,25 @@ class SWECLIChatApp(App):
         self.conversation.add_system_message("Conversation cleared (Ctrl+L)")
 
     def action_interrupt(self) -> None:
-        """Interrupt processing (ESC) - shows message IMMEDIATELY, then interrupts in background."""
+        """Interrupt processing (ESC)."""
         if self._is_processing:
-            # STEP 1: Show interrupt message IMMEDIATELY for instant visual feedback
-            self._show_interrupt_message_immediately()
-
-            # STEP 2: Trigger actual interrupt handling in background (non-blocking)
+            # Call interrupt callback if provided
             if self.on_interrupt:
-                # Run interrupt in background thread so UI stays responsive
-                import threading
-                interrupt_thread = threading.Thread(
-                    target=self.on_interrupt,
-                    daemon=True,
-                    name="interrupt-handler"
-                )
-                interrupt_thread.start()
+                self.on_interrupt()
+            # Don't display system message here - let the tool result formatter handle it
+            # This prevents duplicate "Processing interrupted" messages
 
     def action_quit(self) -> None:
-        """Require a double Ctrl+C to exit; first press clears and arms the prompt."""
-        if self._quit_armed:
-            self.exit()
-            return
-
-        self._quit_armed = True
-        self._set_input_label(self.INPUT_LABEL_EXIT)
-        self.input_field.load_text("")
-        self.input_field.clear_large_pastes()
-        self.input_field.focus()
+        """Quit the application (Ctrl+C)."""
+        self.exit()
 
     def action_scroll_up(self) -> None:
         """Scroll conversation up (Page Up)."""
-        if hasattr(self.conversation, "scroll_partial_page"):
-            self.conversation.scroll_partial_page(direction=-1)
-        else:
-            self.conversation.scroll_page_up()
+        self.conversation.scroll_page_up()
 
     def action_scroll_down(self) -> None:
         """Scroll conversation down (Page Down)."""
-        if hasattr(self.conversation, "scroll_partial_page"):
-            self.conversation.scroll_partial_page(direction=1)
-        else:
-            self.conversation.scroll_page_down()
+        self.conversation.scroll_page_down()
 
     def action_scroll_up_line(self) -> None:
         """Scroll conversation up one line (Up Arrow)."""
@@ -591,32 +500,6 @@ class SWECLIChatApp(App):
         mode_label = new_mode.lower()
         self.status_bar.set_mode(mode_label)
 
-    def action_toggle_todo_panel(self) -> None:
-        """Toggle todo panel between collapsed and expanded (Ctrl+T)."""
-        try:
-            panel = self.query_one("#todo-panel", TodoPanel)
-
-            # If panel is hidden (no todos), do nothing
-            if not panel.has_class("collapsed") and not panel.has_class("expanded"):
-                return
-
-            # Toggle between collapsed and expanded
-            panel.toggle_expansion()
-
-        except Exception:  # pragma: no cover - defensive
-            pass
-
-    def _set_input_label(self, text: str) -> None:
-        """Update the helper label above the input field."""
-        if hasattr(self, "input_label"):
-            self.input_label.update(text)
-
-    def _handle_input_activity(self) -> None:
-        """Reset the quit prompt if the user resumes typing."""
-        if self._quit_armed:
-            self._quit_armed = False
-            self._set_input_label(self.INPUT_LABEL_DEFAULT)
-
 
 def create_chat_app(
     on_message: Optional[Callable[[str], None]] = None,
@@ -628,8 +511,6 @@ def create_chat_app(
     get_model_config: Optional[Callable[[], Mapping[str, Any]]] = None,
     on_ready: Optional[Callable[[], None]] = None,
     on_interrupt: Optional[Callable[[], bool]] = None,
-    working_dir: Optional[str] = None,
-    todo_handler=None,
 ) -> SWECLIChatApp:
     """Create and return a new chat application instance.
 
@@ -642,7 +523,6 @@ def create_chat_app(
         get_model_config: Callback returning current model configuration details
         on_ready: Callback invoked once the UI completes its first render pass
         on_interrupt: Callback for when user presses ESC to interrupt
-        working_dir: Working directory path for repo display
 
     Returns:
         Configured SWECLIChatApp instance
@@ -657,8 +537,6 @@ def create_chat_app(
         get_model_config=get_model_config,
         on_ready=on_ready,
         on_interrupt=on_interrupt,
-        working_dir=working_dir,
-        todo_handler=todo_handler,
     )
 
 

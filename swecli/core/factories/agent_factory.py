@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from swecli.core.agents.deep_langchain_agent import DeepLangChainAgent
+from swecli.core.agents import SwecliAgent
 from swecli.core.interfaces import AgentInterface, ToolRegistryInterface
 from swecli.core.management import ModeManager
 from swecli.core.agents import PlanningAgent
@@ -36,14 +36,9 @@ class AgentFactory:
         self._working_dir = working_dir
 
     def create_agents(self) -> AgentSuite:
-        """Instantiate both normal and planning agents using Deep LangChain Agent."""
-        normal = DeepLangChainAgent(
-            self._config, self._tool_registry, self._mode_manager, self._working_dir
-        )
-
-        planning = PlanningAgent(
-            self._config, self._tool_registry, self._mode_manager, self._working_dir
-        )
+        """Instantiate both normal and planning agents."""
+        normal = SwecliAgent(self._config, self._tool_registry, self._mode_manager, self._working_dir)
+        planning = PlanningAgent(self._config, self._tool_registry, self._mode_manager, self._working_dir)
         return AgentSuite(normal=normal, planning=planning)
 
     def refresh_tools(self, suite: AgentSuite) -> None:

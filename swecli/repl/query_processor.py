@@ -16,14 +16,6 @@ from swecli.core.context_management import (
 )
 from swecli.ui_textual.utils.tool_display import format_tool_call
 
-# Import refactored modules
-from swecli.repl.query_enhancer import QueryEnhancer
-from swecli.repl.llm_caller import LLMCaller
-from swecli.repl.tool_executor import ToolExecutor
-from swecli.repl.ace_integration import ACEIntegration
-from swecli.repl.react_loop import ReActController
-from swecli.repl.react_executor import ReActExecutor
-
 if TYPE_CHECKING:
     from rich.console import Console
     from swecli.core.management import ModeManager, SessionManager
@@ -40,6 +32,116 @@ if TYPE_CHECKING:
 class QueryProcessor:
     """Processes user queries using ReAct pattern."""
 
+    # Fancy verbs for the thinking spinner - randomly selected for variety (100 verbs!)
+    THINKING_VERBS = [
+        "Thinking",
+        "Processing",
+        "Analyzing",
+        "Computing",
+        "Synthesizing",
+        "Orchestrating",
+        "Crafting",
+        "Brewing",
+        "Composing",
+        "Contemplating",
+        "Formulating",
+        "Strategizing",
+        "Architecting",
+        "Designing",
+        "Manifesting",
+        "Conjuring",
+        "Weaving",
+        "Pondering",
+        "Calculating",
+        "Deliberating",
+        "Ruminating",
+        "Meditating",
+        "Scheming",
+        "Envisioning",
+        "Imagining",
+        "Conceptualizing",
+        "Ideating",
+        "Brainstorming",
+        "Innovating",
+        "Engineering",
+        "Assembling",
+        "Constructing",
+        "Building",
+        "Forging",
+        "Molding",
+        "Sculpting",
+        "Fashioning",
+        "Shaping",
+        "Rendering",
+        "Materializing",
+        "Realizing",
+        "Actualizing",
+        "Executing",
+        "Implementing",
+        "Deploying",
+        "Launching",
+        "Initiating",
+        "Activating",
+        "Energizing",
+        "Catalyzing",
+        "Accelerating",
+        "Optimizing",
+        "Refining",
+        "Polishing",
+        "Perfecting",
+        "Enhancing",
+        "Augmenting",
+        "Amplifying",
+        "Boosting",
+        "Elevating",
+        "Transcending",
+        "Transforming",
+        "Evolving",
+        "Adapting",
+        "Morphing",
+        "Mutating",
+        "Iterating",
+        "Recursing",
+        "Traversing",
+        "Navigating",
+        "Exploring",
+        "Discovering",
+        "Uncovering",
+        "Revealing",
+        "Illuminating",
+        "Deciphering",
+        "Decoding",
+        "Parsing",
+        "Interpreting",
+        "Translating",
+        "Compiling",
+        "Rendering",
+        "Generating",
+        "Producing",
+        "Yielding",
+        "Outputting",
+        "Emitting",
+        "Transmitting",
+        "Broadcasting",
+        "Propagating",
+        "Disseminating",
+        "Distributing",
+        "Allocating",
+        "Assigning",
+        "Delegating",
+        "Coordinating",
+        "Synchronizing",
+        "Harmonizing",
+        "Balancing",
+        "Calibrating",
+        "Tuning",
+        "Adjusting",
+    ]
+
+    REFLECTION_WINDOW_SIZE = 10
+    MAX_PLAYBOOK_STRATEGIES = 30
+    PLAYBOOK_DEBUG_PATH = "/tmp/swecli_debug/playbook_evolution.log"
+
     def __init__(
         self,
         console: "Console",
@@ -51,7 +153,6 @@ class QueryProcessor:
         output_formatter: "OutputFormatter",
         status_line: "StatusLine",
         message_printer_callback,
-        todo_handler=None,
     ):
         """Initialize query processor.
 
@@ -65,7 +166,6 @@ class QueryProcessor:
             output_formatter: Output formatter for tool results
             status_line: Status line renderer
             message_printer_callback: Callback to print markdown messages
-            todo_handler: Optional todo handler for todo completion tracking
         """
         self.console = console
         self.session_manager = session_manager
@@ -76,27 +176,6 @@ class QueryProcessor:
         self.output_formatter = output_formatter
         self.status_line = status_line
         self._print_markdown_message = message_printer_callback
-        self.todo_handler = todo_handler
-
-        # Initialize refactored modules
-        self.query_enhancer = QueryEnhancer(file_ops, session_manager, config, console)
-        self.llm_caller = LLMCaller(console)
-        self.tool_executor = ToolExecutor(console, output_formatter, mode_manager, session_manager)
-        self.ace_integration = ACEIntegration()
-        self.react_controller = ReActController(console)
-        self.react_controller._print_markdown_message = message_printer_callback
-
-        # Initialize ReAct executor for loop execution
-        self.react_executor = ReActExecutor(
-            console=console,
-            session_manager=session_manager,
-            config=config,
-            mode_manager=mode_manager,
-            llm_caller=self.llm_caller,
-            tool_executor=self.tool_executor,
-            react_controller=self.react_controller,
-            message_printer_callback=message_printer_callback,
-        )
 
         # UI state trackers
         self._last_latency_ms = None
@@ -121,28 +200,14 @@ class QueryProcessor:
         """
         self._notification_center = notification_center
 
-    def _format_messages_summary(self, messages: list, max_preview_len: int = 60) -> str:
-        """Format a summary of messages for debug display.
-
-        Args:
-            messages: List of message dictionaries
-            max_preview_len: Maximum length for content preview
-
-        Returns:
-            Formatted summary string
-        """
-        return QueryEnhancer.format_messages_summary(messages, max_preview_len)
-
     def request_interrupt(self) -> bool:
         """Request interrupt of currently running task (LLM call or tool execution).
 
         Returns:
             True if interrupt was requested, False if no task is running
         """
-        # Try LLM caller first, then tool executor
-        if self.llm_caller.request_interrupt():
-            return True
-        if self.tool_executor.request_interrupt():
+        if self._current_task_monitor is not None:
+            self._current_task_monitor.request_interrupt()
             return True
         return False
 
@@ -153,15 +218,14 @@ class QueryProcessor:
             agent: Agent with LLM client
         """
         if self._ace_reflector is None:
-            # Initialize ACE components and update tool executor
-            self._ace_reflector, self._ace_curator = self.ace_integration.initialize_components(agent)
-            self.tool_executor.set_ace_components(self._ace_reflector, self._ace_curator)
+            # Initialize ACE roles with native implementation
+            # The native components use swecli's LLM client directly
+            self._ace_reflector = Reflector(agent.client)
+
+            self._ace_curator = Curator(agent.client)
 
     def enhance_query(self, query: str) -> str:
         """Enhance query with file contents if referenced.
-
-        Root cause fix: ANY @file reference automatically triggers content injection.
-        No keyword matching needed - deterministic and universal.
 
         Args:
             query: Original query
@@ -169,7 +233,27 @@ class QueryProcessor:
         Returns:
             Enhanced query with file contents or @ references stripped
         """
-        return self.query_enhancer.enhance_query(query)
+        import re
+
+        # Handle @file references - strip @ prefix so agent understands
+        # Pattern: @filename or @path/to/filename (with or without extension)
+        # This makes "@app.py" become "app.py" in the query
+        enhanced = re.sub(r'@([a-zA-Z0-9_./\-]+)', r'\1', query)
+
+        # Simple heuristic: look for file references and include content
+        lower_query = enhanced.lower()
+        if any(keyword in lower_query for keyword in ["explain", "what does", "show me"]):
+            # Try to extract file paths
+            words = enhanced.split()
+            for word in words:
+                if any(word.endswith(ext) for ext in [".py", ".js", ".ts", ".java", ".go", ".rs"]):
+                    try:
+                        content = self.file_ops.read_file(word)
+                        return f"{enhanced}\n\nFile contents of {word}:\n```\n{content}\n```"
+                    except Exception:
+                        pass
+
+        return enhanced
 
     def _prepare_messages(self, query: str, enhanced_query: str, agent) -> list:
         """Prepare messages for LLM API call.
@@ -182,7 +266,73 @@ class QueryProcessor:
         Returns:
             List of API messages
         """
-        return self.query_enhancer.prepare_messages(query, enhanced_query, agent)
+        session = self.session_manager.current_session
+        messages: list[dict] = []
+
+        if session:
+            messages = session.to_api_messages(window_size=self.REFLECTION_WINDOW_SIZE)
+            if enhanced_query != query:
+                for entry in reversed(messages):
+                    if entry.get("role") == "user":
+                        entry["content"] = enhanced_query
+                        break
+        else:
+            messages = []
+
+        system_content = agent.system_prompt
+        if session:
+            try:
+                playbook = session.get_playbook()
+                # Use ACE's as_context() method for intelligent bullet selection
+                # Configuration from config.playbook section
+                playbook_config = getattr(self.config, 'playbook', None)
+                if playbook_config:
+                    max_strategies = playbook_config.max_strategies
+                    use_selection = playbook_config.use_selection
+                    weights = playbook_config.scoring_weights.to_dict()
+                    embedding_model = playbook_config.embedding_model
+                    cache_file = playbook_config.cache_file
+                    # If cache_file not specified but cache enabled, use session-based default
+                    if cache_file is None and playbook_config.cache_embeddings and session:
+                        import os
+                        swecli_dir = os.path.expanduser(self.config.swecli_dir)
+                        cache_file = os.path.join(swecli_dir, "sessions", f"{session.session_id}_embeddings.json")
+                else:
+                    # Fallback to defaults if config not available
+                    max_strategies = 30
+                    use_selection = True
+                    weights = None
+                    embedding_model = "text-embedding-3-small"
+                    cache_file = None
+
+                playbook_context = playbook.as_context(
+                    query=query,  # Enables semantic matching (Phase 2)
+                    max_strategies=max_strategies,
+                    use_selection=use_selection,
+                    weights=weights,
+                    embedding_model=embedding_model,
+                    cache_file=cache_file,
+                )
+                if playbook_context:
+                    system_content = f"{system_content.rstrip()}\n\n## Learned Strategies\n{playbook_context}"
+            except Exception:  # pragma: no cover
+                pass
+
+        if not messages or messages[0].get("role") != "system":
+            messages.insert(0, {"role": "system", "content": system_content})
+        else:
+            messages[0]["content"] = system_content
+
+        # Debug: Log message count and estimated size
+        total_chars = sum(len(str(m.get("content", ""))) for m in messages)
+        estimated_tokens = total_chars // 4  # Rough estimate: 4 chars per token
+        if self.console and hasattr(self.console, "print"):
+            if estimated_tokens > 100000:  # Warn if > 100k tokens
+                self.console.print(
+                    f"[yellow]⚠ Large context: {len(messages)} messages, ~{estimated_tokens:,} tokens[/yellow]"
+                )
+
+        return messages
 
     def _call_llm_with_progress(self, agent, messages, task_monitor) -> tuple:
         """Call LLM with progress display.
@@ -195,7 +345,41 @@ class QueryProcessor:
         Returns:
             Tuple of (response, latency_ms)
         """
-        return self.llm_caller.call_llm_with_progress(agent, messages, task_monitor)
+        from swecli.ui_textual.components.task_progress import TaskProgressDisplay
+        import time
+
+        # Get random thinking verb
+        thinking_verb = random.choice(self.THINKING_VERBS)
+        task_monitor.start(thinking_verb, initial_tokens=0)
+
+        # Track current monitor for interrupt support
+        self._current_task_monitor = task_monitor
+
+        # Create progress display with live updates
+        progress = TaskProgressDisplay(self.console, task_monitor)
+        progress.start()
+
+        # Give display a moment to render before HTTP call
+        time.sleep(0.05)
+
+        try:
+            # Call LLM
+            started = time.perf_counter()
+            response = agent.call_llm(messages, task_monitor=task_monitor)
+            latency_ms = int((time.perf_counter() - started) * 1000)
+
+            # Get LLM description
+            message_payload = response.get("message", {}) or {}
+            llm_description = response.get("content", message_payload.get("content", ""))
+
+            # Stop progress and show final status
+            progress.stop()
+            progress.print_final_status(replacement_message=llm_description)
+
+            return response, latency_ms
+        finally:
+            # Clear current monitor
+            self._current_task_monitor = None
 
     def _record_tool_learnings(
         self,
@@ -217,11 +401,87 @@ class QueryProcessor:
             outcome: "success", "error", or "partial"
             agent: Agent with LLM client (for ACE initialization)
         """
-        # Initialize ACE components if needed
-        self._init_ace_components(agent)
+        session = self.session_manager.current_session
+        if not session:
+            return
 
-        # Delegate to tool executor
-        self.tool_executor.record_tool_learnings(query, tool_call_objects, outcome, agent)
+        tool_calls = list(tool_call_objects)
+        if not tool_calls:
+            return
+
+        # Skip if no agent response (ACE workflow needs it)
+        if not self._last_agent_response:
+            return
+
+        try:
+            # Initialize ACE components if needed
+            self._init_ace_components(agent)
+
+            playbook = session.get_playbook()
+
+            # Format tool feedback for reflector
+            feedback = self._format_tool_feedback(tool_calls, outcome)
+
+            # STEP 1: Reflect on execution using ACE Reflector
+            reflection = self._ace_reflector.reflect(
+                question=query,
+                agent_response=self._last_agent_response,
+                playbook=playbook,
+                ground_truth=None,
+                feedback=feedback
+            )
+
+            # STEP 2: Apply bullet tags from reflection
+            for bullet_tag in reflection.bullet_tags:
+                try:
+                    playbook.tag_bullet(bullet_tag.id, bullet_tag.tag)
+                except (ValueError, KeyError):
+                    continue
+
+            # STEP 3: Curate playbook updates using ACE Curator
+            self._execution_count += 1
+            curator_output = self._ace_curator.curate(
+                reflection=reflection,
+                playbook=playbook,
+                question_context=query,
+                progress=f"Query #{self._execution_count}"
+            )
+
+            # STEP 4: Apply delta operations
+            bullets_before = len(playbook.bullets())
+            playbook.apply_delta(curator_output.delta)
+            bullets_after = len(playbook.bullets())
+
+            # Save updated playbook
+            session.update_playbook(playbook)
+
+            # Debug logging
+            if bullets_after != bullets_before or curator_output.delta.operations:
+                debug_dir = os.path.dirname(self.PLAYBOOK_DEBUG_PATH)
+                os.makedirs(debug_dir, exist_ok=True)
+                with open(self.PLAYBOOK_DEBUG_PATH, "a", encoding="utf-8") as log:
+                    timestamp = datetime.now().isoformat()
+                    log.write(f"\n{'=' * 60}\n")
+                    log.write(f"🧠 ACE PLAYBOOK EVOLUTION - {timestamp}\n")
+                    log.write(f"{'=' * 60}\n")
+                    log.write(f"Query: {query}\n")
+                    log.write(f"Outcome: {outcome}\n")
+                    log.write(f"Bullets: {bullets_before} -> {bullets_after}\n")
+                    log.write(f"Delta Operations: {len(curator_output.delta.operations)}\n")
+                    for op in curator_output.delta.operations:
+                        log.write(f"  - {op.type}: {op.section} - {op.content[:80] if op.content else op.bullet_id}\n")
+                    log.write(f"Reflection Key Insight: {reflection.key_insight}\n")
+                    log.write(f"Curator Reasoning: {curator_output.delta.reasoning[:200]}\n")
+
+        except Exception as e:  # pragma: no cover
+            # Log error but don't break query processing
+            import traceback
+            debug_dir = os.path.dirname(self.PLAYBOOK_DEBUG_PATH)
+            os.makedirs(debug_dir, exist_ok=True)
+            with open(self.PLAYBOOK_DEBUG_PATH, "a", encoding="utf-8") as log:
+                log.write(f"\n{'!' * 60}\n")
+                log.write(f"❌ ACE ERROR: {str(e)}\n")
+                log.write(traceback.format_exc())
 
     def _format_tool_feedback(self, tool_calls: list, outcome: str) -> str:
         """Format tool execution results as feedback string for ACE Reflector.
@@ -233,9 +493,27 @@ class QueryProcessor:
         Returns:
             Formatted feedback string
         """
-        return self.tool_executor._format_tool_feedback(tool_calls, outcome)
+        lines = [f"Outcome: {outcome}"]
+        lines.append(f"Tools executed: {len(tool_calls)}")
 
-    def _execute_tool_call(self, tool_call: dict, tool_registry, approval_manager, undo_manager, tool_call_display: str = None) -> dict:
+        if outcome == "success":
+            lines.append("All tools completed successfully")
+            # Add brief summary of what was done
+            tool_names = [tc.name for tc in tool_calls]
+            lines.append(f"Tools: {', '.join(tool_names)}")
+        elif outcome == "error":
+            # List errors
+            errors = [f"{tc.name}: {tc.error}" for tc in tool_calls if tc.error]
+            lines.append(f"Errors ({len(errors)}):")
+            for error in errors[:3]:  # First 3 errors
+                lines.append(f"  - {error[:200]}")
+        else:  # partial
+            successes = sum(1 for tc in tool_calls if not tc.error)
+            lines.append(f"Partial success: {successes}/{len(tool_calls)} tools succeeded")
+
+        return "\n".join(lines)
+
+    def _execute_tool_call(self, tool_call: dict, tool_registry, approval_manager, undo_manager) -> dict:
         """Execute a single tool call.
 
         Args:
@@ -243,29 +521,69 @@ class QueryProcessor:
             tool_registry: Tool registry
             approval_manager: Approval manager
             undo_manager: Undo manager
-            tool_call_display: Pre-formatted display string (optional, will format if not provided)
 
         Returns:
             Tool execution result
         """
-        result = self.tool_executor.execute_tool_call(
-            tool_call, tool_registry, approval_manager, undo_manager, tool_call_display
-        )
-
-        # Update local state for status line rendering
+        from swecli.core.monitoring import TaskMonitor
+        from swecli.ui_textual.components.task_progress import TaskProgressDisplay
+        from swecli.core.management import OperationMode
         import json
+
         tool_name = tool_call["function"]["name"]
         tool_args = json.loads(tool_call["function"]["arguments"])
-        if tool_call_display is None:
-            tool_call_display = format_tool_call(tool_name, tool_args)
 
-        self._last_operation_summary = tool_call_display
-        if result.get("success"):
-            self._last_error = None
+        # Format tool call display
+        tool_call_display = format_tool_call(tool_name, tool_args)
+
+        # Create task monitor for interrupt support
+        tool_monitor = TaskMonitor()
+        tool_monitor.start(tool_call_display, initial_tokens=0)
+
+        # Track current monitor for interrupt support
+        self._current_task_monitor = tool_monitor
+
+        # Show progress in PLAN mode
+        if self.mode_manager.current_mode == OperationMode.PLAN:
+            tool_progress = TaskProgressDisplay(self.console, tool_monitor)
+            tool_progress.start()
         else:
-            self._last_error = result.get("error", "Tool execution failed")
+            # In NORMAL mode, show static symbol before approval
+            self.console.print(f"\n⏺ [cyan]{tool_call_display}[/cyan]")
+            tool_progress = TaskProgressDisplay(self.console, tool_monitor)
+            tool_progress.start()
 
-        return result
+        try:
+            # Execute tool with interrupt support
+            result = tool_registry.execute_tool(
+                tool_name,
+                tool_args,
+                mode_manager=self.mode_manager,
+                approval_manager=approval_manager,
+                undo_manager=undo_manager,
+                task_monitor=tool_monitor,
+                session_manager=self.session_manager,
+            )
+
+            # Update state
+            self._last_operation_summary = tool_call_display
+            if result.get("success"):
+                self._last_error = None
+            else:
+                self._last_error = result.get("error", "Tool execution failed")
+
+            # Stop progress if it was started
+            if tool_progress:
+                tool_progress.stop()
+
+            # Display result
+            panel = self.output_formatter.format_tool_result(tool_name, tool_args, result)
+            self.console.print(panel)
+
+            return result
+        finally:
+            # Clear current monitor
+            self._current_task_monitor = None
 
     def _handle_safety_limit(self, agent, messages: list):
         """Handle safety limit reached by requesting summary.
@@ -274,7 +592,15 @@ class QueryProcessor:
             agent: Agent to use
             messages: Message history
         """
-        self.react_controller.handle_safety_limit(agent, messages)
+        self.console.print(f"\n[yellow]⚠ Safety limit reached. Requesting summary...[/yellow]")
+        messages.append({
+            "role": "user",
+            "content": "Please provide a summary of what you've found and what needs to be done."
+        })
+        response = agent.call_llm(messages)
+        if response.get("content"):
+            self.console.print()
+            self._print_markdown_message(response["content"])
 
     def _should_nudge_agent(self, consecutive_reads: int, messages: list) -> bool:
         """Check if agent should be nudged to conclude.
@@ -286,7 +612,14 @@ class QueryProcessor:
         Returns:
             True if nudge was added
         """
-        return self.react_controller.should_nudge_agent(consecutive_reads, messages)
+        if consecutive_reads >= 5:
+            # Silently nudge the agent without displaying a message
+            messages.append({
+                "role": "user",
+                "content": "Based on what you've seen, please summarize your findings and explain what needs to be done next."
+            })
+            return True
+        return False
 
     def _render_status_line(self):
         """Render the status line with current context."""
@@ -328,13 +661,11 @@ class QueryProcessor:
             Tuple of (last_operation_summary, last_error, last_latency_ms)
         """
         from swecli.models.message import ChatMessage, Role
+        from swecli.core.monitoring import TaskMonitor
 
         # Add user message to session
         user_msg = ChatMessage(role=Role.USER, content=query)
         self.session_manager.add_message(user_msg, self.config.auto_save_interval)
-
-        # Initialize ACE components if needed
-        self._init_ace_components(agent)
 
         # Enhance query with file contents
         enhanced_query = self.enhance_query(query)
@@ -342,24 +673,163 @@ class QueryProcessor:
         # Prepare messages for API
         messages = self._prepare_messages(query, enhanced_query, agent)
 
-        # Execute ReAct loop (non-callback mode)
-        result = self.react_executor.execute_react_loop(
-            messages=messages,
-            agent=agent,
-            tool_registry=tool_registry,
-            approval_manager=approval_manager,
-            undo_manager=undo_manager,
-            query=query,
-            ui_callback=None,  # Non-callback mode
-        )
+        try:
+            # ReAct loop: Reasoning → Acting → Observing
+            consecutive_reads = 0
+            iteration = 0
+            SAFETY_LIMIT = 30
+            READ_OPERATIONS = {"read_file", "list_files", "search_code"}
 
-        # Update local state from executor
-        self._last_operation_summary, self._last_error, self._last_latency_ms = result
+            while True:
+                iteration += 1
 
-        # Show status line
-        self._render_status_line()
+                # Safety check
+                if iteration > SAFETY_LIMIT:
+                    self._handle_safety_limit(agent, messages)
+                    break
 
-        return result
+                # Call LLM
+                task_monitor = TaskMonitor()
+                response, latency_ms = self._call_llm_with_progress(agent, messages, task_monitor)
+                self._last_latency_ms = latency_ms
+
+                if not response["success"]:
+                    error_text = response.get("error", "Unknown error")
+                    # Check if this is an interruption
+                    if "interrupted" in error_text.lower():
+                        # For interruptions, just print directly (no UI callback in non-callback mode)
+                        self.console.print(f"  ⎿  [bold red]Interrupted · What should I do instead?[/bold red]")
+                        self._last_error = error_text
+                        # Don't save to session
+                    else:
+                        self.console.print(f"[red]Error: {error_text}[/red]")
+                        fallback = ChatMessage(role=Role.ASSISTANT, content=f"❌ {error_text}")
+                        self._last_error = error_text
+                        self.session_manager.add_message(fallback, self.config.auto_save_interval)
+                    break
+
+                # Get LLM description and tool calls
+                message_payload = response.get("message", {}) or {}
+                raw_llm_content = message_payload.get("content")
+                llm_description = response.get("content", raw_llm_content or "")
+                if raw_llm_content is None:
+                    raw_llm_content = llm_description
+
+                tool_calls = response.get("tool_calls")
+                if tool_calls is None:
+                    tool_calls = message_payload.get("tool_calls")
+                has_tool_calls = bool(tool_calls)
+                normalized_description = (llm_description or "").strip()
+
+                # Store agent response for ACE learning
+                self._last_agent_response = AgentResponse(
+                    content=normalized_description,
+                    tool_calls=tool_calls or []
+                )
+
+                # If no tool calls, task is complete
+                if not has_tool_calls:
+                    if not normalized_description:
+                        normalized_description = "Warning: model returned no reply."
+                    self.console.print(f"\n[dim]{normalized_description}[/dim]")
+                    metadata = {}
+                    if raw_llm_content is not None:
+                        metadata["raw_content"] = raw_llm_content
+                    assistant_msg = ChatMessage(
+                        role=Role.ASSISTANT,
+                        content=normalized_description,
+                        metadata=metadata,
+                    )
+                    self.session_manager.add_message(assistant_msg, self.config.auto_save_interval)
+                    break
+
+                # Add assistant message with tool calls to history
+                messages.append({
+                    "role": "assistant",
+                    "content": raw_llm_content,
+                    "tool_calls": tool_calls,
+                })
+
+                # Track read-only operations
+                all_reads = all(tc["function"]["name"] in READ_OPERATIONS for tc in tool_calls)
+                consecutive_reads = consecutive_reads + 1 if all_reads else 0
+
+                # Execute tool calls
+                for tool_call in tool_calls:
+                    result = self._execute_tool_call(tool_call, tool_registry, approval_manager, undo_manager)
+
+                    # Add tool result to messages
+                    tool_result = result.get("output", "") if result["success"] else f"Error: {result.get('error', 'Tool execution failed')}"
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call["id"],
+                        "content": tool_result,
+                    })
+
+                # Persist assistant step with tool calls to session
+                from swecli.models.message import ToolCall as ToolCallModel
+                from swecli.core.utils.tool_result_summarizer import summarize_tool_result
+
+                tool_call_objects = []
+                for tc in tool_calls:
+                    tool_result = None
+                    tool_error = None
+                    for msg in reversed(messages):
+                        if msg.get("role") == "tool" and msg.get("tool_call_id") == tc["id"]:
+                            content = msg.get("content", "")
+                            if content.startswith("Error:"):
+                                tool_error = content[6:].strip()
+                            else:
+                                tool_result = content
+                            break
+
+                    # Generate concise summary for LLM context
+                    tool_name = tc["function"]["name"]
+                    result_summary = summarize_tool_result(tool_name, tool_result, tool_error)
+
+                    tool_call_objects.append(
+                        ToolCallModel(
+                            id=tc["id"],
+                            name=tool_name,
+                            parameters=json.loads(tc["function"]["arguments"]),
+                            result=tool_result,
+                            result_summary=result_summary,
+                            error=tool_error,
+                            approved=True,
+                        )
+                    )
+
+                if normalized_description or tool_call_objects:
+                    metadata = {}
+                    if raw_llm_content is not None:
+                        metadata["raw_content"] = raw_llm_content
+
+                    assistant_msg = ChatMessage(
+                        role=Role.ASSISTANT,
+                        content=normalized_description or "",
+                        metadata=metadata,
+                        tool_calls=tool_call_objects,
+                    )
+                    self.session_manager.add_message(assistant_msg, self.config.auto_save_interval)
+
+                if tool_call_objects:
+                    outcome = "error" if any(tc.error for tc in tool_call_objects) else "success"
+                    self._record_tool_learnings(query, tool_call_objects, outcome, agent)
+
+                # Check if agent needs nudge
+                if self._should_nudge_agent(consecutive_reads, messages):
+                    consecutive_reads = 0
+
+            # Show status line
+            self._render_status_line()
+
+        except Exception as e:
+            self.console.print(f"[red]Error: {str(e)}[/red]")
+            import traceback
+            traceback.print_exc()
+            self._last_error = str(e)
+
+        return (self._last_operation_summary, self._last_error, self._last_latency_ms)
 
     def process_query_with_callback(
         self,
@@ -384,41 +854,205 @@ class QueryProcessor:
             Tuple of (last_operation_summary, last_error, last_latency_ms)
         """
         from swecli.models.message import ChatMessage, Role
+        from swecli.core.monitoring import TaskMonitor
 
-        # Debug: Query processing started
-        if ui_callback and hasattr(ui_callback, 'on_debug'):
-            ui_callback.on_debug(f"Starting query processing: '{query[:50]}...'", "QUERY")
+        # Notify UI that thinking is starting
+        if ui_callback and hasattr(ui_callback, 'on_thinking_start'):
+            ui_callback.on_thinking_start()
 
         # Add user message to session
         user_msg = ChatMessage(role=Role.USER, content=query)
         self.session_manager.add_message(user_msg, self.config.auto_save_interval)
 
-        # Initialize ACE components if needed
-        self._init_ace_components(agent)
-
         # Enhance query with file contents
         enhanced_query = self.enhance_query(query)
-        if ui_callback and hasattr(ui_callback, 'on_debug'):
-            ui_callback.on_debug("Query enhanced", "QUERY")
 
         # Prepare messages for API
         messages = self._prepare_messages(query, enhanced_query, agent)
 
-        # Execute ReAct loop (callback mode)
-        result = self.react_executor.execute_react_loop(
-            messages=messages,
-            agent=agent,
-            tool_registry=tool_registry,
-            approval_manager=approval_manager,
-            undo_manager=undo_manager,
-            query=query,
-            ui_callback=ui_callback,
-        )
+        try:
+            # ReAct loop: Reasoning → Acting → Observing
+            consecutive_reads = 0
+            iteration = 0
+            SAFETY_LIMIT = 30
+            READ_OPERATIONS = {"read_file", "list_files", "search_code"}
 
-        # Update local state from executor
-        self._last_operation_summary, self._last_error, self._last_latency_ms = result
+            while True:
+                iteration += 1
 
-        # Show status line
-        self._render_status_line()
+                # Safety check
+                if iteration > SAFETY_LIMIT:
+                    self._handle_safety_limit(agent, messages)
+                    break
 
-        return result
+                # Call LLM
+                task_monitor = TaskMonitor()
+                response, latency_ms = self._call_llm_with_progress(agent, messages, task_monitor)
+                self._last_latency_ms = latency_ms
+
+                if not response["success"]:
+                    error_text = response.get("error", "Unknown error")
+                    # Check if this is an interruption
+                    if "interrupted" in error_text.lower():
+                        # Display interrupt using UI callback - same mechanism as tool results
+                        self._last_error = error_text
+                        if ui_callback and hasattr(ui_callback, 'on_interrupt'):
+                            ui_callback.on_interrupt()
+                        # Don't save to session
+                    else:
+                        self.console.print(f"[red]Error: {error_text}[/red]")
+                        fallback = ChatMessage(role=Role.ASSISTANT, content=f"❌ {error_text}")
+                        self._last_error = error_text
+                        self.session_manager.add_message(fallback, self.config.auto_save_interval)
+                        if ui_callback and hasattr(ui_callback, 'on_assistant_message'):
+                            ui_callback.on_assistant_message(fallback.content)
+                    break
+
+                # Get LLM description and tool calls
+                message_payload = response.get("message", {}) or {}
+                raw_llm_content = message_payload.get("content")
+                llm_description = response.get("content", raw_llm_content or "")
+                if raw_llm_content is None:
+                    raw_llm_content = llm_description
+
+                tool_calls = response.get("tool_calls")
+                if tool_calls is None:
+                    tool_calls = message_payload.get("tool_calls")
+                has_tool_calls = bool(tool_calls)
+                normalized_description = (llm_description or "").strip()
+
+                # Notify UI that thinking is complete
+                if ui_callback and hasattr(ui_callback, 'on_thinking_complete'):
+                    ui_callback.on_thinking_complete()
+
+                # If no tool calls, task is complete
+                if not has_tool_calls:
+                    if not normalized_description:
+                        normalized_description = "Warning: model returned no reply."
+                    if ui_callback and hasattr(ui_callback, 'on_assistant_message'):
+                        ui_callback.on_assistant_message(normalized_description)
+                    metadata = {}
+                    if raw_llm_content is not None:
+                        metadata["raw_content"] = raw_llm_content
+                    assistant_msg = ChatMessage(
+                        role=Role.ASSISTANT,
+                        content=normalized_description,
+                        metadata=metadata,
+                    )
+                    self.session_manager.add_message(assistant_msg, self.config.auto_save_interval)
+                    break
+
+                # Display assistant's thinking text BEFORE tool execution
+                if llm_description and ui_callback and hasattr(ui_callback, 'on_assistant_message'):
+                    ui_callback.on_assistant_message(llm_description)
+
+                # Add assistant message with tool calls to history
+                messages.append({
+                    "role": "assistant",
+                    "content": raw_llm_content,
+                    "tool_calls": tool_calls,
+                })
+
+                # Track read-only operations
+                all_reads = all(tc["function"]["name"] in READ_OPERATIONS for tc in tool_calls)
+                consecutive_reads = consecutive_reads + 1 if all_reads else 0
+
+                # Execute tool calls with real-time display
+                operation_cancelled = False
+                for tool_call in tool_calls:
+                    # Notify UI about tool call
+                    if ui_callback and hasattr(ui_callback, 'on_tool_call'):
+                        ui_callback.on_tool_call(
+                            tool_call["function"]["name"],
+                            tool_call["function"]["arguments"]
+                        )
+
+                    result = self._execute_tool_call(tool_call, tool_registry, approval_manager, undo_manager)
+
+                    # Check if operation was cancelled
+                    if not result["success"] and result.get("error") == "Operation cancelled by user":
+                        operation_cancelled = True
+
+                    # Notify UI about tool result
+                    if ui_callback and hasattr(ui_callback, 'on_tool_result'):
+                        ui_callback.on_tool_result(
+                            tool_call["function"]["name"],
+                            tool_call["function"]["arguments"],
+                            result
+                        )
+
+                    # Add tool result to messages
+                    tool_result = result.get("output", "") if result["success"] else f"Error: {result.get('error', 'Tool execution failed')}"
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call["id"],
+                        "content": tool_result,
+                    })
+
+                # If operation was cancelled, exit loop immediately without calling LLM
+                if operation_cancelled:
+                    break
+
+                # Persist assistant step with tool calls to session
+                from swecli.models.message import ToolCall as ToolCallModel
+                from swecli.core.utils.tool_result_summarizer import summarize_tool_result
+
+                tool_call_objects = []
+                for tc in tool_calls:
+                    tool_result = None
+                    tool_error = None
+                    for msg in reversed(messages):
+                        if msg.get("role") == "tool" and msg.get("tool_call_id") == tc["id"]:
+                            content = msg.get("content", "")
+                            if content.startswith("Error:"):
+                                tool_error = content[6:].strip()
+                            else:
+                                tool_result = content
+                            break
+
+                    # Generate concise summary for LLM context
+                    tool_name = tc["function"]["name"]
+                    result_summary = summarize_tool_result(tool_name, tool_result, tool_error)
+
+                    tool_call_objects.append(
+                        ToolCallModel(
+                            id=tc["id"],
+                            name=tool_name,
+                            parameters=json.loads(tc["function"]["arguments"]),
+                            result=tool_result,
+                            result_summary=result_summary,
+                            error=tool_error,
+                            approved=True,
+                        )
+                    )
+
+                assistant_msg = ChatMessage(
+                    role=Role.ASSISTANT,
+                    content=normalized_description or "",
+                    metadata={"raw_content": raw_llm_content} if raw_llm_content is not None else {},
+                    tool_calls=tool_call_objects,
+                )
+                self.session_manager.add_message(assistant_msg, self.config.auto_save_interval)
+
+                if tool_call_objects:
+                    outcome = "error" if any(tc.error for tc in tool_call_objects) else "success"
+                    self._record_tool_learnings(query, tool_call_objects, outcome, agent)
+
+                # Break on excessive consecutive reads
+                if consecutive_reads >= 5:
+                    warning = "[yellow]AI is performing multiple read operations. Consider improving the query or providing more specific instructions.[/yellow]"
+                    self.console.print(warning)
+                    assistant_msg = ChatMessage(role=Role.ASSISTANT, content=warning)
+                    self.session_manager.add_message(assistant_msg, self.config.auto_save_interval)
+                    break
+
+            # Update status line
+            self._render_status_line()
+
+        except Exception as e:
+            self.console.print(f"[red]Error: {str(e)}[/red]")
+            import traceback
+            traceback.print_exc()
+            self._last_error = str(e)
+
+        return (self._last_operation_summary, self._last_error, self._last_latency_ms)

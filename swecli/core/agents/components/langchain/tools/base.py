@@ -63,78 +63,38 @@ class SWECLIToolWrapper(BaseTool):
 
         Args:
             *args: Positional arguments (unused for SWE-CLI tools)
-            mode_manager: Operation mode manager (optional, uses registry's if None)
-            approval_manager: Approval workflow manager (optional)
-            undo_manager: Undo/redo manager (optional)
+            mode_manager: Operation mode manager
+            approval_manager: Approval workflow manager
+            undo_manager: Undo/redo manager
             **kwargs: Tool arguments
 
         Returns:
             Formatted tool result as string
         """
         try:
-            # Prepare execution arguments - only include managers if provided
-            exec_kwargs = {
-                "tool_name": self._swetool_name,
-                "arguments": kwargs,
-            }
-
-            # Add optional managers only if provided
-            if mode_manager is not None:
-                exec_kwargs["mode_manager"] = mode_manager
-            if approval_manager is not None:
-                exec_kwargs["approval_manager"] = approval_manager
-            if undo_manager is not None:
-                exec_kwargs["undo_manager"] = undo_manager
-
             # Execute the tool through SWE-CLI's tool registry
-            result = self._swetool_registry.execute_tool(**exec_kwargs)
+            result = self._swetool_registry.execute_tool(
+                tool_name=self._swetool_name,
+                arguments=kwargs,
+                mode_manager=mode_manager,
+                approval_manager=approval_manager,
+                undo_manager=undo_manager,
+            )
 
             # Format the result for LangChain
             return self._format_result(result)
 
         except Exception as e:
             # Handle any unexpected errors
-            import traceback
-            error_trace = traceback.format_exc()
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Tool execution error for {self._swetool_name}: {e}\n{error_trace}")
             return f"Error executing {self._swetool_name}: {str(e)}"
 
     async def _arun(
         self,
         *args: Any,
-        mode_manager: Optional[Any] = None,
-        approval_manager: Optional[Any] = None,
-        undo_manager: Optional[Any] = None,
         **kwargs: Any,
     ) -> str:
-        """Async execution - runs sync tool in thread pool."""
-        import asyncio
-        import logging
-
-        logger = logging.getLogger(__name__)
-        logger.info(f"[ASYNC] Executing {self._swetool_name} asynchronously")
-
-        try:
-            # Run the synchronous _run method in a thread pool
-            # This prevents blocking the async event loop
-            result = await asyncio.to_thread(
-                self._run,
-                *args,
-                mode_manager=mode_manager,
-                approval_manager=approval_manager,
-                undo_manager=undo_manager,
-                **kwargs
-            )
-            logger.info(f"[ASYNC] {self._swetool_name} completed successfully")
-            return result
-
-        except Exception as e:
-            import traceback
-            error_trace = traceback.format_exc()
-            logger.error(f"[ASYNC] Tool execution error for {self._swetool_name}: {e}\n{error_trace}")
-            return f"Error executing {self._swetool_name}: {str(e)}"
+        """Async execution - not supported by SWE-CLI tools."""
+        return f"Error: {self.tool_name} does not support async execution"
 
     def _format_result(self, result: Dict[str, Any]) -> str:
         """Format SWE-CLI tool result for LangChain consumption.
@@ -269,40 +229,28 @@ class ToolRegistryAdapter:
         """
         self.tool_registry = tool_registry
         self._langchain_tools: Optional[list[BaseTool]] = None
-        self._mcp_adapter = None
-        self._mcp_tools_created = False
 
-    def get_langchain_tools(self, force_refresh: bool = False) -> list[BaseTool]:
+    def get_langchain_tools(self) -> list[BaseTool]:
         """Get LangChain-compatible tools from the SWE-CLI registry.
-
-        Args:
-            force_refresh: If True, force recreation of tools even if cached
 
         Returns:
             List of LangChain BaseTool instances
         """
-        if force_refresh or self._langchain_tools is None:
+        if self._langchain_tools is None:
             self._langchain_tools = self._create_langchain_tools()
 
         return self._langchain_tools
 
-    def refresh_tools(self) -> None:
-        """Force refresh of cached tools to pick up updated ordering."""
-        self._langchain_tools = None
-
     def _create_langchain_tools(self) -> list[BaseTool]:
         """Create LangChain tool instances from SWE-CLI registry.
-
-        NOTE: File operation tools (read_file, write_file, edit_file, ls, grep, glob)
-        are provided by Deep Agent's built-in FilesystemMiddleware. We only register
-        custom tools that provide unique functionality not available in Deep Agents.
 
         Returns:
             List of LangChain BaseTool instances
         """
-        # File tools are now handled by Deep Agent's built-in FilesystemMiddleware
-        # No need to import file_tools
-
+        from .file_tools import (
+            WriteFileTool, EditFileTool, ReadFileTool,
+            ListFilesTool, SearchTool
+        )
         from .bash_tools import (
             RunCommandTool, ListProcessesTool,
             GetProcessOutputTool, KillProcessTool
@@ -316,138 +264,86 @@ class ToolRegistryAdapter:
             CaptureScreenshotTool, ListScreenshotsTool, ClearScreenshotsTool
         )
         from .vlm_tools import AnalyzeImageTool
-        # Todo tools removed - using Deep Agent's built-in TodoListMiddleware (write_todos)
+        from .todo_tools import (
+            CreateTodoTool, UpdateTodoTool, CompleteTodoTool, ListTodosTool
+        )
 
-        # Create custom tools (built-in file and todo tools are provided by Deep Agent)
-        base_tools = [
-            # File operations: read_file, write_file, edit_file, ls, grep, glob
-            # are provided by Deep Agent's FilesystemMiddleware - NOT included here
+        tools = [
+            # File operations
+            WriteFileTool(self.tool_registry),
+            EditFileTool(self.tool_registry),
+            ReadFileTool(self.tool_registry),
+            ListFilesTool(self.tool_registry),
+            SearchTool(self.tool_registry),
 
-            # Todo operations: write_todos is provided by Deep Agent's TodoListMiddleware
-            # - NOT included here
-
-            # Process operations (custom - not in Deep Agent)
+            # Process operations
             RunCommandTool(self.tool_registry),
             ListProcessesTool(self.tool_registry),
             GetProcessOutputTool(self.tool_registry),
             KillProcessTool(self.tool_registry),
 
-            # Web operations (custom - not in Deep Agent)
+            # Web operations
             FetchUrlTool(self.tool_registry),
             OpenBrowserTool(self.tool_registry),
 
-            # Screenshot operations (custom - not in Deep Agent)
+            # Screenshot operations
             CaptureScreenshotTool(self.tool_registry),
             ListScreenshotsTool(self.tool_registry),
             ClearScreenshotsTool(self.tool_registry),
             CaptureWebScreenshotTool(self.tool_registry),
             ListWebScreenshotsTool(self.tool_registry),
             ClearWebScreenshotsTool(self.tool_registry),
-        ]
 
-        # Add VLM tool conditionally based on configuration
-        # Only include if VLM model is configured
-        if self._is_vlm_available():
-            base_tools.append(AnalyzeImageTool(self.tool_registry))
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.debug("VLM tool is available and included in tool list")
-        else:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.debug("VLM tool not configured, skipping AnalyzeImageTool")
+            # VLM operations
+            AnalyzeImageTool(self.tool_registry),
 
-        # Add individual todo management tools for proper workflow
-        # write_todos is built-in to Deep Agent, but update_todo and complete_todo are custom
-        from .todo_tools import UpdateTodoTool, CompleteTodoTool
-        base_tools.extend([
+            # Todo operations
+            CreateTodoTool(self.tool_registry),
             UpdateTodoTool(self.tool_registry),
             CompleteTodoTool(self.tool_registry),
-        ])
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.debug("Added individual todo management tools (update_todo, complete_todo)")
+            ListTodosTool(self.tool_registry),
+        ]
 
-        # Create MCP tools
+        # Add MCP tools if available
         mcp_tools = self._create_mcp_tools()
-
-        # 🔧 IMPORTANT: Put MCP tools FIRST to ensure LLM sees specific API tools before generic ones
-        # This fixes the issue where LLM chooses generic 'search' over GitHub-specific tools
         if mcp_tools:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.info(f"Placing {len(mcp_tools)} MCP tools first, followed by {len(base_tools)} base tools")
-            return mcp_tools + base_tools
-        else:
-            return base_tools
+            tools.extend(mcp_tools)
+
+        return tools
 
     def _create_mcp_tools(self) -> list[BaseTool]:
-        """Create LangChain tools for MCP tools using langchain-mcp-adapters.
+        """Create LangChain tools for MCP tools.
 
         Returns:
             List of MCP tool wrappers or empty list
         """
         if not hasattr(self.tool_registry, 'mcp_manager') or not self.tool_registry.mcp_manager:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.debug("No MCP manager available")
             return []
 
         mcp_tools = []
         try:
-            # Use the existing approach but with better error handling
-            mcp_manager = self.tool_registry.mcp_manager
-            import logging
-            logger = logging.getLogger(__name__)
-
-            # Debug: Check MCP manager state
-            if hasattr(mcp_manager, 'clients'):
-                logger.debug(f"MCP clients: {list(mcp_manager.clients.keys())}")
-            if hasattr(mcp_manager, 'server_tools'):
-                logger.debug(f"MCP server_tools: {list(mcp_manager.server_tools.keys())}")
-
-            all_tools = mcp_manager.get_all_tools()
-            logger.debug(f"Found {len(all_tools)} MCP tools from manager")
-
-            for mcp_tool in all_tools:
+            mcp_tool_list = self.tool_registry.mcp_manager.get_all_tools()
+            for mcp_tool in mcp_tools:
                 tool_name = mcp_tool.get("name")
                 tool_description = mcp_tool.get("description", "")
-                mcp_server = mcp_tool.get("mcp_server")
-                mcp_tool_name = mcp_tool.get("mcp_tool_name")
 
-                if not mcp_server or not mcp_tool_name:
-                    continue
-
-                # Create individual tool wrappers for each MCP tool
-                # This is what worked before and what the Deep Agent expects
-                from .mcp.langchain_individual_tool import MCPLangChainIndividualTool
-
-                mcp_tool_wrapper = MCPLangChainIndividualTool(
-                    server_name=mcp_server,
-                    mcp_tool_name=mcp_tool_name,
-                    mcp_tool_info=mcp_tool,
-                    mcp_manager=self.tool_registry.mcp_manager,
-                    tool_registry=self.tool_registry,
-                    description=tool_description,
+                # Create a dynamic wrapper for each MCP tool
+                mcp_wrapper = type(
+                    f"MCP{tool_name.title()}Tool",
+                    (SWECLIToolWrapper,),
+                    {
+                        "name": tool_name,
+                        "description": tool_description,
+                    }
                 )
 
-                mcp_tools.append(mcp_tool_wrapper)
-
-        except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Failed to create MCP tools: {e}", exc_info=True)
+                mcp_tools.append(mcp_wrapper(
+                    tool_name=tool_name,
+                    description=tool_description,
+                    tool_registry=self.tool_registry,
+                ))
+        except Exception:
             # If MCP tools can't be loaded, just skip them
             pass
 
         return mcp_tools
-
-    def _is_vlm_available(self) -> bool:
-        """Check if VLM (Vision Language Model) is configured and available.
-
-        Returns:
-            True if VLM tool is configured with a model, False otherwise
-        """
-        if not hasattr(self.tool_registry, 'vlm_tool') or not self.tool_registry.vlm_tool:
-            return False
-        return self.tool_registry.vlm_tool.is_available()

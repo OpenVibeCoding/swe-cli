@@ -23,34 +23,6 @@ Rule {
     margin: 0;
 }
 
-#todo-panel {
-    display: none;
-    background: $surface-darken-1;
-    border: solid #6a6a6a;
-    border-title-align: left;
-    margin-bottom: 1;
-}
-
-/* Collapsed state - show compact summary */
-#todo-panel.collapsed {
-    display: block !important;
-    height: 3;
-    max-height: 3;
-    min-height: 3;
-    overflow: hidden;
-    padding: 0 2;
-}
-
-/* Expanded state - show full todo list */
-#todo-panel.expanded {
-    display: block !important;
-    height: auto;
-    max-height: 15;
-    min-height: 3;
-    padding: 1 2;
-    overflow-y: auto;
-}
-
 #input-container {
     height: auto;
     layout: vertical;

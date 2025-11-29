@@ -10,15 +10,12 @@ from rich.console import Group
 from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.text import Text
-from textual.events import Mount
 from textual.geometry import Size
-from textual.message import Message
 from textual.timer import Timer
 from textual.widgets import RichLog
 
 from swecli.ui_textual.renderers import render_markdown_text_segment
 from swecli.ui_textual.constants import TOOL_ERROR_SENTINEL
-from swecli.ui_textual import style_tokens
 
 
 class ConversationLog(RichLog):
@@ -49,9 +46,6 @@ class ConversationLog(RichLog):
         self._approval_start: int | None = None
         self._tool_timer_start: float | None = None
         self._tool_last_elapsed: int | None = None
-        self._debug_enabled = True  # Enable debug messages by default
-        self._protected_lines: set[int] = set()  # Lines that should not be truncated
-        self.MAX_PROTECTED_LINES = 200
 
     def on_mount(self) -> None:
         return
@@ -61,90 +55,15 @@ class ConversationLog(RichLog):
             self._tool_spinner_timer.stop()
             self._tool_spinner_timer = None
 
-    def set_debug_enabled(self, enabled: bool) -> None:
-        """Enable or disable debug message display."""
-        self._debug_enabled = enabled
-
-    def add_debug_message(self, message: str, prefix: str = "DEBUG") -> None:
-        """Add a debug message with gray/dimmed styling for execution flow visibility.
-
-        Args:
-            message: The debug message to display
-            prefix: Optional prefix for categorizing debug messages (e.g., "QUERY", "TOOL", "AGENT")
-        """
-        if not self._debug_enabled:
-            return
-        debug_text = Text()
-        debug_text.append(f"  [{prefix}] ", style="dim cyan")
-        debug_text.append(message, style="dim")
-        self.write(debug_text)
-
-        # Mark this line as protected from truncation
-        line_idx = len(self.lines) - 1
-        self._protected_lines.add(line_idx)
-
-        # Prune old protected lines if we exceed the maximum
-        self._prune_old_protected_lines()
-
-    def _prune_old_protected_lines(self) -> None:
-        """Remove oldest protected line indices if we exceed MAX_PROTECTED_LINES."""
-        if len(self._protected_lines) > self.MAX_PROTECTED_LINES:
-            sorted_lines = sorted(self._protected_lines)
-            to_remove = len(self._protected_lines) - self.MAX_PROTECTED_LINES
-            for idx in sorted_lines[:to_remove]:
-                self._protected_lines.discard(idx)
-
-    def on_key(self, event) -> None:
-        """Detect manual scrolling via keyboard to disable auto-scroll."""
-        # Handle Page Up/Down (or Fn+Up/Down) with a smaller stride for finer control
-        if event.key == "pageup":
-            self.scroll_partial_page(direction=-1)
-            event.prevent_default()
-            return
-
-        elif event.key == "pagedown":
-            self.scroll_partial_page(direction=1)
-            event.prevent_default()
-            return
-
-        # For other scroll keys (arrows, home, end), mark as user-scrolled
-        # The default behavior will handle the actual scrolling
-        elif event.key in ("up", "down", "home", "end"):
-            self._user_scrolled = True
-            self.auto_scroll = False
-
-    def scroll_partial_page(self, direction: int) -> None:
-        """Scroll a fraction of the viewport instead of a full page."""
-        self._user_scrolled = True
-        self.auto_scroll = False
-        stride = max(self.size.height // 6, 3)  # Smaller jump for better control
-        self.scroll_relative(y=direction * stride)
-
-    def _reset_auto_scroll(self) -> None:
-        """Reset auto-scroll when new content arrives."""
-        # When new content arrives, check if we should re-enable auto-scroll
-        # If user hasn't manually scrolled away, enable auto-scroll
-        if not self._user_scrolled:
-            self.auto_scroll = True
-
-        # If we're back at the bottom (within 2 lines), re-enable auto-scroll
-        if self.scroll_offset.y >= self.max_scroll_y - 2:
-            self._user_scrolled = False
-            self.auto_scroll = True
-
     def add_user_message(self, message: str) -> None:
-        self._reset_auto_scroll()
         self.write(Text(f"› {message}", style="bold white"))
-        # Only add a blank line if it's not a command
-        if not message.strip().startswith("/"):
-            self.write(Text(""))
+        self.write(Text(""))
 
     def add_assistant_message(self, message: str) -> None:
         normalized = self._normalize_text(message)
         if normalized and normalized == self._last_assistant_rendered:
             return
 
-        self._reset_auto_scroll()
         self._last_assistant_rendered = normalized
         segments = self._split_code_blocks(message)
         text_output = False
@@ -172,11 +91,12 @@ class ConversationLog(RichLog):
     def add_system_message(self, message: str) -> None:
         self.write(Text(message, style="dim italic"))
 
-    def add_error(self, message: str, hint: str | None = None) -> None:
-        """Render an error message with unified style and clear any active spinner."""
+    def add_error(self, message: str) -> None:
+        """Render an error message with a red bullet and clear any active spinner."""
         self.stop_spinner()
-        for line in self._format_inline_error(message, hint):
-            self.write(line)
+        bullet = Text("⦿ ", style="bold red")
+        bullet.append(message, style="red")
+        self.write(bullet)
         self.write(Text(""))
 
     def add_tool_call(self, display: Text | str, *_: Any) -> None:
@@ -218,14 +138,7 @@ class ConversationLog(RichLog):
             self._tool_spinner_timer.stop()
             self._tool_spinner_timer = None
 
-    def add_tool_result(self, result: str | Any) -> None:
-        # Handle Rich Renderables (like Panel) directly
-        if hasattr(result, "__rich_console__") or hasattr(result, "__rich__"):
-            self.write(result)
-            self.write(Text(""))
-            return
-
-        # First try to extract edit payload using plain text (for compatibility)
+    def add_tool_result(self, result: str) -> None:
         try:
             result_plain = Text.from_markup(result).plain
         except Exception:
@@ -235,8 +148,7 @@ class ConversationLog(RichLog):
         if header:
             self._write_edit_result(header, diff_lines)
         else:
-            # For non-edit results, preserve Rich markup by passing the original result
-            self._write_generic_tool_result(result)
+            self._write_generic_tool_result(result_plain)
 
         self.write(Text(""))
 
@@ -275,8 +187,9 @@ class ConversationLog(RichLog):
 
     def _write_generic_tool_result(self, text: str) -> None:
         lines = text.rstrip("\n").splitlines() or [text]
+        grey = "#a0a4ad"
         for raw_line in lines:
-            line = Text(f"  {style_tokens.INLINE_ARROW}  ", style=style_tokens.SUBTLE)
+            line = Text("  ⎿  ", style=grey)
             message = raw_line.rstrip("\n")
             is_error = False
             is_interrupted = False
@@ -288,33 +201,10 @@ class ConversationLog(RichLog):
                 message = message[len("::interrupted::"):].lstrip()
 
             if is_interrupted:
-                line.append(message, style=f"bold {style_tokens.ERROR}")
-            elif is_error:
-                line.append(message, style=style_tokens.ERROR)
+                line.append(message, style="bold red")
             else:
-                # Preserve Rich markup colors (e.g., [dim], [yellow], [strike] from todos)
-                try:
-                    line.append(Text.from_markup(message))
-                except Exception:
-                    # Fallback to plain text if markup parsing fails
-                    line.append(message, style=style_tokens.SUBTLE)
+                line.append(message, style="red" if is_error else grey)
             self.write(line)
-
-    def _format_inline_error(self, message: str, hint: str | None = None) -> list[Text]:
-        """Build inline error lines with consistent iconography and spacing."""
-        primary = Text()
-        primary.append(f"  {style_tokens.INLINE_ARROW}  ", style=style_tokens.ERROR)
-        primary.append(f"{style_tokens.ERROR_ICON} ", style=style_tokens.ERROR)
-        primary.append(message, style=style_tokens.ERROR)
-
-        lines = [primary]
-        if hint:
-            hint_line = Text()
-            hint_line.append(f"     {style_tokens.HINT_ICON} ", style=style_tokens.SUBTLE)
-            hint_line.append(hint, style=style_tokens.SUBTLE)
-            lines.append(hint_line)
-
-        return lines
 
     def _write_edit_result(self, header: str, diff_lines: list[str]) -> None:
         if not diff_lines:
@@ -416,23 +306,7 @@ class ConversationLog(RichLog):
 
         start = min(self._spinner_start, len(self.lines))
         if start < len(self.lines):
-            # Only delete non-protected lines
-            to_delete = [i for i in range(start, len(self.lines)) if i not in self._protected_lines]
-            for i in sorted(to_delete, reverse=True):
-                if i < len(self.lines):
-                    del self.lines[i]
-
-            # Update protected line indices
-            new_protected = set()
-            for p in self._protected_lines:
-                if p < start:
-                    new_protected.add(p)
-                else:
-                    # Count deleted lines before this protected line
-                    deleted_before = len([i for i in to_delete if i < p])
-                    new_protected.add(p - deleted_before)
-            self._protected_lines = new_protected
-
+            del self.lines[start:]
             self._line_cache.clear()
             widths: List[int] = []
             for strip in self.lines:
@@ -462,23 +336,16 @@ class ConversationLog(RichLog):
 
     def _replace_tool_call_line(self, prefix: str) -> None:
         if self._tool_call_start is not None and self._tool_call_start < len(self.lines):
-            # Don't delete if it's a protected line
-            if self._tool_call_start not in self._protected_lines:
-                del self.lines[self._tool_call_start]
-                # Update protected line indices for lines after deleted line
-                self._protected_lines = {
-                    p - 1 if p > self._tool_call_start else p
-                    for p in self._protected_lines
-                }
-                self._line_cache.clear()
-                widths: List[int] = []
-                for strip in self.lines:
-                    cell_length = getattr(strip, "cell_length", None)
-                    widths.append(cell_length() if callable(cell_length) else cell_length or 0)
-                self._widest_line_width = max(widths, default=0)
-                self.virtual_size = Size(self._widest_line_width, len(self.lines))
-                if self.auto_scroll:
-                    self.scroll_end(animate=False)
+            del self.lines[self._tool_call_start]
+            self._line_cache.clear()
+            widths: List[int] = []
+            for strip in self.lines:
+                cell_length = getattr(strip, "cell_length", None)
+                widths.append(cell_length() if callable(cell_length) else cell_length or 0)
+            self._widest_line_width = max(widths, default=0)
+            self.virtual_size = Size(self._widest_line_width, len(self.lines))
+            if self.auto_scroll:
+                self.scroll_end(animate=False)
         else:
             self._tool_call_start = len(self.lines)
 
@@ -507,24 +374,7 @@ class ConversationLog(RichLog):
         elapsed = self._tool_elapsed_seconds()
         if elapsed is None:
             return None
-
-        # Format time intelligently based on duration
-        if elapsed < 60:
-            # Under 1 minute: show seconds
-            time_str = f"{elapsed}s"
-        elif elapsed < 3600:
-            # 1 minute to 1 hour: show minutes and seconds
-            minutes = elapsed // 60
-            seconds = elapsed % 60
-            time_str = f"{minutes}m {seconds}s"
-        else:
-            # 1+ hours: show hours, minutes, and seconds
-            hours = elapsed // 3600
-            minutes = (elapsed % 3600) // 60
-            seconds = elapsed % 60
-            time_str = f"{hours}h {minutes}m {seconds}s"
-
-        return Text(f" ({time_str})", style="cyan")
+        return Text(f" ({elapsed}s)", style="#7a8594")
 
     def _schedule_tool_spinner(self) -> None:
         if not self._spinner_active:
@@ -545,33 +395,8 @@ class ConversationLog(RichLog):
         if index >= len(self.lines):
             return
 
-        # Check if any protected lines would be affected
-        protected_in_range = [i for i in self._protected_lines if i >= index]
-        if protected_in_range:
-            # Don't truncate protected lines - find the first non-protected line after index
-            # or skip truncation entirely if all lines after index are protected
-            non_protected = [i for i in range(index, len(self.lines)) if i not in self._protected_lines]
-            if not non_protected:
-                return  # All lines after index are protected, skip truncation
-            # Only delete non-protected lines
-            for i in sorted(non_protected, reverse=True):
-                if i < len(self.lines):
-                    del self.lines[i]
-        else:
-            del self.lines[index:]
-
+        del self.lines[index:]
         self._line_cache.clear()
-
-        # Update protected line indices after deletion
-        new_protected = set()
-        for p in self._protected_lines:
-            if p < index:
-                new_protected.add(p)
-            elif p in protected_in_range:
-                # Recalculate position - count how many non-protected lines before this were deleted
-                deleted_before = len([i for i in range(index, p) if i not in self._protected_lines])
-                new_protected.add(p - deleted_before)
-        self._protected_lines = new_protected
 
         widths: List[int] = []
         for strip in self.lines:

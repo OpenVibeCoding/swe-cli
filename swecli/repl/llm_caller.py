@@ -180,6 +180,10 @@ class LLMCaller:
         Returns:
             Tuple of (response, latency_ms)
         """
+        import logging
+        import traceback
+        logger = logging.getLogger(__name__)
+
         from swecli.ui_textual.components.task_progress import TaskProgressDisplay
 
         # Get random thinking verb
@@ -197,10 +201,24 @@ class LLMCaller:
         time.sleep(0.05)
 
         try:
+            # DEBUG: Log before LLM call
+            logger.debug(f"[LLM_CALLER] Calling agent.call_llm with {len(messages)} messages")
+            logger.debug(f"[LLM_CALLER] Agent type: {type(agent).__name__}")
+
             # Call LLM
             started = time.perf_counter()
-            response = agent.call_llm(messages, task_monitor=task_monitor)
+            try:
+                response = agent.call_llm(messages, task_monitor=task_monitor)
+            except Exception as e:
+                logger.error(f"[LLM_CALLER] Exception in agent.call_llm: {type(e).__name__}: {e}")
+                logger.error(f"[LLM_CALLER] Full traceback:\n{traceback.format_exc()}")
+                # Re-raise to be handled by outer try
+                raise
             latency_ms = int((time.perf_counter() - started) * 1000)
+
+            # DEBUG: Log response
+            logger.debug(f"[LLM_CALLER] Response received: success={response.get('success')}")
+            logger.debug(f"[LLM_CALLER] Response keys: {list(response.keys()) if isinstance(response, dict) else 'not a dict'}")
 
             # Get LLM description
             message_payload = response.get("message", {}) or {}
@@ -211,6 +229,17 @@ class LLMCaller:
             progress.print_final_status(replacement_message=llm_description)
 
             return response, latency_ms
+        except Exception as e:
+            # DEBUG: Log any exception
+            logger.error(f"[LLM_CALLER] Exception during LLM call: {type(e).__name__}: {e}")
+            logger.error(f"[LLM_CALLER] Full traceback:\n{traceback.format_exc()}")
+            progress.stop()
+            # Return error response
+            return {
+                "success": False,
+                "error": str(e),
+                "content": f"Error: {e}",
+            }, 0
         finally:
             # Clear current monitor
             self._current_task_monitor = None

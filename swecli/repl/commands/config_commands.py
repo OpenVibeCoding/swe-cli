@@ -252,7 +252,7 @@ class ConfigCommands(CommandHandler):
         # Normal model (always show)
         if config.model:
             normal_name = config.model.split('/')[-1]
-            provider_name = config.model_provider.capitalize() if config.model_provider else "Unknown"
+            provider_name = config.model_provider.capitalize()
             lines.append(f"  ⎿  Normal: {provider_name}/{normal_name}")
 
         # Thinking model (if configured)

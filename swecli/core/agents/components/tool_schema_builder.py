@@ -14,177 +14,31 @@ class ToolSchemaBuilder:
 
     def build(self) -> list[dict[str, Any]]:
         """Return tool schema definitions including MCP extensions."""
-        # 🔧 IMPORTANT: Build MCP schemas FIRST to ensure LLM sees specific API tools before generic ones
-        # This fixes the issue where LLM chooses generic 'search' over GitHub-specific tools
-        mcp_schemas = self._build_mcp_schemas()
-        base_schemas: list[dict[str, Any]] = deepcopy(_BUILTIN_TOOL_SCHEMAS)
+        schemas: list[dict[str, Any]] = deepcopy(_BUILTIN_TOOL_SCHEMAS)
 
+        mcp_schemas = self._build_mcp_schemas()
         if mcp_schemas:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.info(f"Placing {len(mcp_schemas)} MCP tool schemas first, followed by {len(base_schemas)} base schemas")
-            return mcp_schemas + base_schemas
-        else:
-            return base_schemas
+            schemas.extend(mcp_schemas)
+        return schemas
 
     def _build_mcp_schemas(self) -> Sequence[dict[str, Any]]:
         if not self._tool_registry or not getattr(self._tool_registry, "mcp_manager", None):
             return []
 
-        try:
-            # Use the new langchain-mcp-adapters approach
-            from swecli.core.agents.components.langchain.tools.base import ToolRegistryAdapter
-
-            # Create a temporary adapter to get MCP tool schemas
-            adapter = ToolRegistryAdapter(self._tool_registry)
-
-            # Get all LangChain tools (including MCP tools) with force refresh to ensure updated ordering
-            langchain_tools = adapter.get_langchain_tools(force_refresh=True)
-
-            schemas: list[dict[str, Any]] = []
-
-            # Extract schemas from MCP tools specifically
-            for tool in langchain_tools:
-                # Check if this is an MCP tool by its name or type
-                if (hasattr(tool, 'server_name') or
-                    (hasattr(tool, 'name') and tool.name.startswith('mcp_')) or
-                    tool.__class__.__name__ in ['MCPLangChainAdaptersTool', 'MCPLangChainIndividualTool', 'MCPSWECLIToolWrapper']):
-
-                    # If it's our individual tool wrapper, get schema from it
-                    if hasattr(tool, 'get_tool_schema'):
-                        schema = tool.get_tool_schema()
-                        schemas.append(schema)
-                    elif hasattr(tool, 'get_tool_schemas'):
-                        # For the server-level wrapper
-                        tool_schemas = tool.get_tool_schemas()
-                        schemas.extend(tool_schemas)
-                    else:
-                        # Fallback: create schema from tool properties
-                        schema = {
-                            "type": "function",
-                            "function": {
-                                "name": tool.name,
-                                "description": tool.description or "",
-                            }
-                        }
-
-                        # Get parameters from tool regardless of args_schema
-                        parameters = self._get_tool_parameters(tool)
-                        if parameters:
-                            schema["function"]["parameters"] = parameters
-
-                        schemas.append(schema)
-
-            return schemas
-
-        except Exception as e:
-            logger.warning(f"Error building MCP schemas: {e}")
-            return []
-
-    def _get_tool_parameters(self, tool) -> dict[str, Any]:
-        """Extract parameter information from MCP tools systematically.
-
-        Args:
-            tool: The MCP tool instance
-
-        Returns:
-            Parameter schema dictionary or empty dict
-        """
-        try:
-            # Try to get parameters from different tool types
-
-            # Method 1: Check if tool has mcp_tool_info (our individual MCP tools)
-            if hasattr(tool, 'mcp_tool_info'):
-                mcp_tool_info = tool.mcp_tool_info
-                input_schema = mcp_tool_info.get('input_schema', {})
-                if input_schema and input_schema.get('type') == 'object':
-                    return self._convert_mcp_schema_to_json_schema(input_schema)
-
-            # Method 2: Check if tool has tools (server-level wrapper)
-            elif hasattr(tool, 'tools'):
-                # This is a server-level wrapper, look for the matching tool
-                tools = tool.tools
-                tool_name = getattr(tool, 'name', '')
-                if 'search_repositories' in tool_name.lower():
-                    for tool_info in tools:
-                        if 'search_repositories' in tool_info.get('name', ''):
-                            input_schema = tool_info.get('input_schema', {})
-                            if input_schema and input_schema.get('type') == 'object':
-                                return self._convert_mcp_schema_to_json_schema(input_schema)
-
-            # Method 3: Generic fallback for any MCP tool
-            elif hasattr(tool, 'server_name'):
-                # Try to get schema from MCP manager
-                try:
-                    if hasattr(tool, 'mcp_manager') and hasattr(tool, 'mcp_tool_name'):
-                        # Get the tool info from MCP manager
-                        server_name = getattr(tool, 'server_name', '')
-                        tool_name = getattr(tool, 'mcp_tool_name', '')
-
-                        server_info = tool.mcp_manager.server_info.get(server_name, {})
-                        tools_list = server_info.get('tools', [])
-
-                        for tool_info in tools_list:
-                            if tool_info.get('name') == tool_name:
-                                input_schema = tool_info.get('input_schema', {})
-                                if input_schema and input_schema.get('type') == 'object':
-                                    return self._convert_mcp_schema_to_json_schema(input_schema)
-                except Exception:
-                    pass
-
-            return {}
-
-        except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.warning(f"Failed to extract parameters for {getattr(tool, 'name', 'unknown')}: {e}")
-            return {}
-
-    def _convert_mcp_schema_to_json_schema(self, input_schema: dict) -> dict[str, Any]:
-        """Convert MCP input schema to JSON schema format.
-
-        Args:
-            input_schema: MCP tool input schema
-
-        Returns:
-            JSON schema dictionary
-        """
-        if not input_schema or input_schema.get('type') != 'object':
-            return {}
-
-        try:
-            properties = input_schema.get('properties', {})
-            required = input_schema.get('required', [])
-
-            json_schema = {
-                'type': 'object',
-                'properties': {},
-                'required': required
-            }
-
-            # Convert each property
-            for prop_name, prop_info in properties.items():
-                prop_type = prop_info.get('type', 'string')
-                prop_description = prop_info.get('description', '')
-
-                json_prop = {
-                    'type': prop_type,
-                    'description': prop_description
+        mcp_tools = self._tool_registry.mcp_manager.get_all_tools()  # type: ignore[attr-defined]
+        schemas: list[dict[str, Any]] = []
+        for tool in mcp_tools:
+            schemas.append(
+                {
+                    "type": "function",
+                    "function": {
+                        "name": tool.get("name"),
+                        "description": tool.get("description"),
+                        "parameters": tool.get("input_schema", {}),
+                    },
                 }
-
-                # Add default value if present
-                if 'default' in prop_info:
-                    json_prop['default'] = prop_info['default']
-
-                json_schema['properties'][prop_name] = json_prop
-
-            return json_schema
-
-        except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.warning(f"Failed to convert MCP schema to JSON schema: {e}")
-            return {}
+            )
+        return schemas
 
 
 _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
@@ -491,8 +345,7 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
                 "properties": {
                     "id": {
                         "type": "string",
-                        "description": "Todo ID in exact format 'todo-N' (e.g., 'todo-1', 'todo-2'). Use the ID shown in square brackets [N] in the todo panel. CRITICAL: Must match pattern 'todo-' followed by a number.",
-                        "pattern": "^todo-\\d+$",
+                        "description": "ID of the to-do to update (shown in the panel).",
                     },
                     "title": {
                         "type": "string",
@@ -526,8 +379,7 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
                 "properties": {
                     "id": {
                         "type": "string",
-                        "description": "Todo ID in exact format 'todo-N' (e.g., 'todo-1', 'todo-2'). Use the ID shown in square brackets [N] in the todo panel. CRITICAL: Must match pattern 'todo-' followed by a number.",
-                        "pattern": "^todo-\\d+$",
+                        "description": "ID of the to-do item to mark complete.",
                     },
                     "log": {
                         "type": "string",

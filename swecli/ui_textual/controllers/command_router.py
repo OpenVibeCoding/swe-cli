@@ -2,11 +2,7 @@
 
 from __future__ import annotations
 
-import asyncio
-import time
 from typing import TYPE_CHECKING
-
-from swecli.ui_textual.renderers.welcome_panel import render_welcome_panel
 
 if TYPE_CHECKING:  # pragma: no cover
     from swecli.ui_textual.chat_app import SWECLIChatApp
@@ -33,10 +29,7 @@ class CommandRouter:
         if cmd == "/clear":
             if conversation is not None:
                 conversation.clear()
-                render_welcome_panel(
-                    conversation,
-                    real_integration=bool(self.app.on_message)
-                )
+                conversation.add_system_message("Conversation cleared.")
             return True
 
         if cmd == "/demo":
@@ -66,7 +59,6 @@ class CommandRouter:
         conversation.add_system_message("  /demo - Show demo messages")
         conversation.add_system_message("  /scroll - Generate many messages (test scrolling)")
         conversation.add_system_message("  /models - Configure model slots")
-        conversation.add_system_message("  /mcp connect <server> - Connect to MCP server (non-blocking)")
         conversation.add_system_message("  /quit - Exit application")
         conversation.add_system_message("")
         conversation.add_system_message("✨ Multi-line Input:")

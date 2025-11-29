@@ -60,6 +60,7 @@ class ModelPickerController:
             "slot_items": [],
             "slot_index": 0,
             "panel_start": None,
+            "pending": {},
         }
 
         input_field = self.app.input_field
@@ -134,7 +135,7 @@ class ModelPickerController:
     def cancel(self) -> None:
         if not self.state:
             return
-        self.end(None, clear_panel=True)
+        self.end("Model selector closed.", clear_panel=True)
 
     async def confirm(self) -> None:
         state = self.state
@@ -150,6 +151,12 @@ class ModelPickerController:
             index = max(0, min(state.get("slot_index", 0), len(items) - 1))
             item = items[index]
             value = item.get("value")
+            if value == "save":
+                await self._commit_model_selections()
+                return
+            if value in {"cancel", None}:
+                self.cancel()
+                return
             state["slot"] = value
             state["stage"] = "provider"
             state["provider_index"] = 0
@@ -188,7 +195,7 @@ class ModelPickerController:
                 return
             index = max(0, min(state.get("model_index", 0), len(providers) - 1))
             model_info = providers[index]
-            await self._apply_model_selection(slot, provider_info, model_info)
+            self._stage_model_selection(slot, provider_info, model_info)
             state["stage"] = "slot"
             state["provider"] = None
             state["providers"] = []
@@ -209,7 +216,7 @@ class ModelPickerController:
         stage = state.get("stage")
 
         if stage == "slot":
-            if normalized in {"quit", "x", "cancel", "esc"}:
+            if normalized in {"quit"}:
                 self.cancel()
                 return True
 
@@ -227,7 +234,7 @@ class ModelPickerController:
 
             if match_index is None:
                 self.app.conversation.add_system_message(
-                    "Type 1-3 to select a slot, or Esc to cancel."
+                    "Type 1-3 to select a slot, S to save staged models, or X to cancel."
                 )
                 self.app.refresh()
                 return True
@@ -268,7 +275,7 @@ class ModelPickerController:
 
             if match_index is None:
                 self.app.conversation.add_system_message(
-                    "Enter a provider number, B to go back, or Esc to cancel."
+                    "Enter a provider number, B to go back, or X to cancel."
                 )
                 self.app.refresh()
                 return True
@@ -308,7 +315,7 @@ class ModelPickerController:
 
             if match_index is None:
                 self.app.conversation.add_system_message(
-                    "Enter a model number, B to go back, or Esc to cancel."
+                    "Enter a model number, B to go back, or X to cancel."
                 )
                 self.app.refresh()
                 return True
@@ -363,19 +370,25 @@ class ModelPickerController:
 
         config_snapshot = self._get_model_config_snapshot()
         labels = self._model_slot_labels()
+        pending: dict[str, dict[str, Any]] = state.get("pending", {})
 
         items: list[dict[str, str]] = []
         order = [("normal", "1"), ("thinking", "2"), ("vision", "3")]
         for slot, option in order:
             slot_label = labels.get(slot, slot.title())
             summary = "Not set"
-            current = config_snapshot.get(slot, {})
-            provider_display = current.get("provider_display") or current.get("provider") or ""
-            model_display = current.get("model_display") or current.get("model") or ""
-            if provider_display and model_display:
-                summary = f"{provider_display}/{model_display}"
-            elif provider_display:
-                summary = provider_display
+            if slot in pending:
+                provider_info = pending[slot]["provider"]
+                model_info = pending[slot]["model"]
+                summary = f"{provider_info.name}/{model_info.name} (pending)"
+            else:
+                current = config_snapshot.get(slot, {})
+                provider_display = current.get("provider_display") or current.get("provider") or ""
+                model_display = current.get("model_display") or current.get("model") or ""
+                if provider_display and model_display:
+                    summary = f"{provider_display}/{model_display}"
+                elif provider_display:
+                    summary = provider_display
             items.append(
                 {
                     "value": slot,
@@ -384,6 +397,23 @@ class ModelPickerController:
                     "option": option,
                 }
             )
+
+        items.append(
+            {
+                "value": "save",
+                "label": "Save models",
+                "summary": "Validate staged changes and persist configuration",
+                "option": "S",
+            }
+        )
+        items.append(
+            {
+                "value": "cancel",
+                "label": "Cancel",
+                "summary": "Close the selector",
+                "option": "X",
+            }
+        )
 
         state["slot_items"] = items
         index = state.get("slot_index", 0)
@@ -414,10 +444,13 @@ class ModelPickerController:
             )
 
         instructions = Text(
-            "Use ↑/↓ or 1-3 to choose a slot, Enter to select, Esc to cancel.",
+            "Use ↑/↓ or 1-3 to choose a slot, Enter to select, S to save staged models, X to cancel.",
             style="italic #7a8691",
         )
-        header = Text("Select which model slot you’d like to configure.", style="#9ccffd")
+        pending_hint = ""
+        if pending:
+            pending_hint = " • Pending selections are only applied when you save."
+        header = Text(f"Select which model slot you’d like to configure.{pending_hint}", style="#9ccffd")
         panel = Panel(
             Group(header, table, instructions),
             title="[bold]Model Configuration[/bold]",
@@ -634,7 +667,6 @@ class ModelPickerController:
         if registry is None:
             return []
 
-        allowed = self._allowed_providers(registry)
         capability_map = {
             "normal": None,
             "thinking": "reasoning",
@@ -645,8 +677,6 @@ class ModelPickerController:
 
         providers: list[dict[str, Any]] = []
         for provider in sorted(registry.list_providers(), key=lambda info: info.name.lower()):
-            if allowed and provider.id.lower() not in allowed:
-                continue
             is_universal = provider.id in universal_providers
             if slot == "normal":
                 models = provider.list_models()
@@ -672,40 +702,6 @@ class ModelPickerController:
             )
 
         return providers
-
-    def _allowed_providers(self, registry) -> set[str] | None:
-        """Restrict providers to core set plus any present in current config."""
-        if registry is None:
-            return None
-
-        # Always allow core providers
-        allowed: set[str] = {"openai", "anthropic", "fireworks"}
-
-        get_model_config = getattr(self.app, "get_model_config", None)
-        if not get_model_config:
-            return allowed
-
-        try:
-            snapshot = get_model_config()
-        except Exception:
-            return allowed
-
-        if not isinstance(snapshot, Mapping):
-            return allowed
-
-        name_to_id = {info.name.lower(): info.id.lower() for info in registry.list_providers()}
-
-        for entry in snapshot.values():
-            if not isinstance(entry, Mapping):
-                continue
-            provider_id = str(entry.get("provider") or "").lower()
-            provider_display = str(entry.get("provider_display") or "").lower()
-            if provider_id:
-                allowed.add(provider_id)
-            elif provider_display and provider_display in name_to_id:
-                allowed.add(name_to_id[provider_display])
-
-        return allowed or None
 
     def _get_model_config_snapshot(self) -> dict[str, dict[str, str]]:
         snapshot: dict[str, dict[str, str]] = {}
@@ -748,34 +744,84 @@ class ModelPickerController:
         conversation.scroll_end(animate=False)
         self.app.refresh()
 
-    async def _apply_model_selection(self, slot: str, provider_info, model_info) -> None:
-        """Apply a selected model immediately."""
+    def _stage_model_selection(self, slot: str, provider_info, model_info) -> None:
+        state = self.state
+        if not state:
+            return
+
+        pending = state.setdefault("pending", {})
+        pending[slot] = {"provider": provider_info, "model": model_info}
+
+        labels = self._model_slot_labels()
+        display_name = f"{provider_info.name}/{model_info.name}"
+        self.app.conversation.add_system_message(
+            f"Staged {labels.get(slot, slot.title())} → {display_name}. Select Save models to apply."
+        )
+        self.app.refresh()
+
+    async def _commit_model_selections(self) -> None:
+        state = self.state
+        if not state:
+            return
+
+        pending = state.get("pending") or {}
+        if not pending:
+            self.app.conversation.add_system_message("No pending model changes to save.")
+            self._render_model_summary()
+            self.end(None)
+            return
+
         if not self.app.on_model_selected:
             self.app.conversation.add_system_message("No handler available to update models.")
             return
 
-        try:
-            result = self.app.on_model_selected(slot, provider_info.id, model_info.id)
-            if inspect.isawaitable(result):
-                result = await result
-        except Exception as exc:  # pragma: no cover
-            self.app.conversation.add_error(f"Failed to apply model: {exc}")
-            return
+        failures: list[tuple[str, str]] = []
+        successes: list[tuple[str, Any, Any, str]] = []
+
+        for slot, selection in list(pending.items()):
+            provider_info = selection["provider"]
+            model_info = selection["model"]
+            try:
+                result = self.app.on_model_selected(slot, provider_info.id, model_info.id)
+                if inspect.isawaitable(result):
+                    result = await result
+            except Exception as exc:  # pragma: no cover
+                failures.append((slot, f"Exception while saving: {exc}"))
+                continue
+
+            if getattr(result, "success", None):
+                message = getattr(result, "message", "") or ""
+                successes.append((slot, provider_info, model_info, message))
+                pending.pop(slot, None)
+            else:
+                message = getattr(result, "message", None) or "Model update failed."
+                failures.append((slot, message))
 
         labels = self._model_slot_labels()
-        display_slot = labels.get(slot, slot.title())
-        summary = f"{provider_info.name}/{model_info.name}"
-        success = getattr(result, "success", True)
-        message = getattr(result, "message", "") or ""
 
-        if success:
-            extra = f" — {message}" if message else ""
-            self.app.conversation.add_system_message(f"✓ {display_slot} set to {summary}{extra}")
+        for slot, provider_info, model_info, message in successes:
+            summary = f"{provider_info.name}/{model_info.name}"
+            if message:
+                summary = f"{summary} — {message}"
+            self.app.conversation.add_system_message(
+                f"✓ {labels.get(slot, slot.title())} model saved: {summary}"
+            )
+
+        if failures:
+            for slot, message in failures:
+                self.app.conversation.add_error(
+                    f"{labels.get(slot, slot.title())} model not saved: {message}"
+                )
+            state["stage"] = "slot"
+            state["slot_index"] = 0
             self._render_model_slot_panel()
-            self.app.refresh()
-        else:
-            detail = f": {message}" if message else "."
-            self.app.conversation.add_error(f"{display_slot} model not saved{detail}")
+            return
+
+        state["pending"] = {}
+        state["stage"] = "slot"
+        state["slot_index"] = 0
+        self._render_model_summary()
+        self.end(None)
 
     @staticmethod
     def _model_slot_labels() -> dict[str, str]:
