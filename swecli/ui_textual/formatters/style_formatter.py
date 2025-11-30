@@ -137,6 +137,8 @@ class StyleFormatter:
         return [f"Created {Path(file_path).name} • {size_display} • {lines} lines"]
 
     def _format_edit_file_result(self, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
+        from swecli.ui_textual.formatters_internal.utils import DiffParser
+
         if not result.get("success"):
             error_msg = result.get("error", "Unknown error")
             if "interrupted by user" in error_msg.lower():
@@ -144,14 +146,42 @@ class StyleFormatter:
             return [self._error_line(error_msg)]
 
         file_path = tool_args.get("file_path", "unknown")
-        old_content = tool_args.get("old_content", "")
-        new_content = tool_args.get("new_content", "")
-        old_lines = old_content.splitlines() if old_content else []
-        new_lines = new_content.splitlines() if new_content else []
-        additions = len([line for line in new_lines if line not in old_lines])
-        deletions = len([line for line in old_lines if line not in new_lines])
+        lines_added = result.get("lines_added", 0) or 0
+        lines_removed = result.get("lines_removed", 0) or 0
+        diff_text = result.get("diff") or ""
 
-        return [f"Updated {Path(file_path).name} with {additions} additions and {deletions} removals"]
+        # ANSI color codes
+        GREEN = "\033[32m"
+        RED = "\033[31m"
+        DIM = "\033[2m"
+        RESET = "\033[0m"
+
+        def _plural(count: int, singular: str) -> str:
+            return f"{count} {singular}" if count == 1 else f"{count} {singular}s"
+
+        lines = []
+        lines.append(f"Updated {file_path} with {_plural(lines_added, 'addition')} and {_plural(lines_removed, 'removal')}")
+
+        # Parse and display diff if available
+        if diff_text:
+            diff_entries = DiffParser.parse_unified_diff(diff_text)
+            if diff_entries:
+                for entry_type, line_no, content in diff_entries:
+                    if entry_type == "hunk":
+                        lines.append(f"{DIM}{content}{RESET}")
+                        continue
+
+                    display_no = f"{line_no:>6}" if line_no is not None else "      "
+                    sanitized = content.replace("\t", "    ")
+
+                    if entry_type == "add":
+                        lines.append(f"{DIM}{display_no}{RESET} {GREEN}+{RESET} {GREEN}{sanitized}{RESET}")
+                    elif entry_type == "del":
+                        lines.append(f"{DIM}{display_no}{RESET} {RED}-{RESET} {RED}{sanitized}{RESET}")
+                    else:
+                        lines.append(f"{DIM}{display_no}   {sanitized}{RESET}")
+
+        return lines
 
     def _format_search_result(self, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
         if not result.get("success"):
