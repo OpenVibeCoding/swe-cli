@@ -12,14 +12,21 @@ from textual.timer import Timer
 if TYPE_CHECKING:  # pragma: no cover
     from swecli.ui_textual.chat_app import SWECLIChatApp
     from swecli.ui_textual.components import TipsManager
+    from swecli.core.tools.todo_handler import TodoHandler
 
 
 class SpinnerController:
     """Manages the in-conversation spinner animation."""
 
-    def __init__(self, app: "SWECLIChatApp", tips_manager: "TipsManager") -> None:
+    def __init__(
+        self,
+        app: "SWECLIChatApp",
+        tips_manager: "TipsManager",
+        todo_handler: Optional["TodoHandler"] = None,
+    ) -> None:
         self.app = app
         self.tips_manager = tips_manager
+        self.todo_handler = todo_handler
         self._frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
         self._timer: Timer | None = None
         self._frame_index = 0
@@ -43,7 +50,14 @@ class SpinnerController:
         if message is not None:
             self._message = message
         else:
-            self._message = self._default_message()
+            # Try to get activeForm from current in_progress todo
+            active_todo_msg = None
+            if self.todo_handler:
+                active_todo_msg = self.todo_handler.get_active_todo_message()
+            if active_todo_msg:
+                self._message = active_todo_msg
+            else:
+                self._message = self._default_message()
 
         self._frame_index = 0
         self._started_at = time.monotonic()

@@ -20,6 +20,7 @@ class TodoItem:
     id: str
     title: str
     status: str  # "todo", "doing", or "done"
+    active_form: str = ""  # Present continuous form for spinner display (e.g., "Running tests")
     log: str = ""
     expanded: bool = False
     created_at: str = ""
@@ -74,9 +75,10 @@ class TodoHandler:
             if isinstance(item, str):
                 normalized_todos.append(item)
             elif isinstance(item, dict):
-                # Extract 'content' and 'status' fields from Deep Agent's todo dict format
+                # Extract 'content', 'status', and 'activeForm' fields from Deep Agent's todo dict format
                 content = item.get("content", "")
                 status = item.get("status", "pending")
+                active_form = item.get("activeForm", "")
                 if content:
                     # Map Deep Agent status to internal status
                     status_mapping = {
@@ -88,8 +90,8 @@ class TodoHandler:
                         "done": "done"
                     }
                     mapped_status = status_mapping.get(status, "todo")
-                    # Store as tuple to preserve status information
-                    normalized_todos.append((content, mapped_status))
+                    # Store as tuple to preserve status and activeForm information
+                    normalized_todos.append((content, mapped_status, active_form))
             else:
                 # Skip invalid items
                 continue
@@ -116,18 +118,23 @@ class TodoHandler:
         for i, todo_item in enumerate(normalized_todos, 1):
             # Handle both string and tuple formats
             if isinstance(todo_item, tuple):
-                todo_text, todo_status = todo_item
+                if len(todo_item) == 3:
+                    todo_text, todo_status, todo_active_form = todo_item
+                else:
+                    todo_text, todo_status = todo_item
+                    todo_active_form = ""
             else:
                 todo_text = todo_item
                 todo_status = "todo"
+                todo_active_form = ""
 
             if not todo_text or not str(todo_text).strip():
                 failed_count += 1
                 results.append(f"  {i}. [SKIPPED] Empty todo")
                 continue
 
-            # Call create_todo for each item with correct status
-            result = self.create_todo(title=str(todo_text).strip(), status=todo_status)
+            # Call create_todo for each item with correct status and activeForm
+            result = self.create_todo(title=str(todo_text).strip(), status=todo_status, active_form=todo_active_form)
 
             if result.get("success"):
                 todo_id = result.get("todo_id", "?")
@@ -167,6 +174,7 @@ class TodoHandler:
         self,
         title: str,
         status: str = "todo",
+        active_form: str = "",
         log: str = "",
         expanded: bool = False,
     ) -> dict:
@@ -175,6 +183,7 @@ class TodoHandler:
         Args:
             title: Todo title/description
             status: Status ("todo", "doing", "done" OR "pending", "in_progress", "completed")
+            active_form: Present continuous form for spinner display (e.g., "Running tests")
             log: Optional log/notes
             expanded: Whether to show expanded in UI
 
@@ -207,6 +216,7 @@ class TodoHandler:
             id=todo_id,
             title=title,
             status=normalized_status,
+            active_form=active_form,
             log=log,
             expanded=expanded,
         )
@@ -323,6 +333,7 @@ class TodoHandler:
         id: str,
         title: Optional[str] = None,
         status: Optional[str] = None,
+        active_form: Optional[str] = None,
         log: Optional[str] = None,
         expanded: Optional[bool] = None,
     ) -> dict:
@@ -332,6 +343,7 @@ class TodoHandler:
             id: Todo ID
             title: New title (optional)
             status: New status ("todo", "doing", "done" OR "pending", "in_progress", "completed") (optional)
+            active_form: Present continuous form for spinner display (optional)
             log: New log/notes (optional)
             expanded: New expanded state (optional)
 
@@ -386,6 +398,8 @@ class TodoHandler:
                     if other_id != actual_id and other_todo.status == "doing":
                         other_todo.status = "todo"
 
+        if active_form is not None:
+            todo.active_form = active_form
         if log is not None:
             todo.log = log
         if expanded is not None:
@@ -606,3 +620,15 @@ class TodoHandler:
             "todos": [asdict(t) for t in sorted_todos],
             "count": len(self._todos),
         }
+
+    def get_active_todo_message(self) -> Optional[str]:
+        """Get the activeForm text of the current in_progress todo.
+
+        Returns:
+            The active_form string if there's a todo in "doing" status with active_form set,
+            otherwise None.
+        """
+        for todo in self._todos.values():
+            if todo.status == "doing" and todo.active_form:
+                return todo.active_form
+        return None

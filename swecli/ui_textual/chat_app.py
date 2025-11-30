@@ -108,7 +108,7 @@ class SWECLIChatApp(App):
         self._tips_manager = TipsManager()
         self._model_picker: ModelPickerController = ModelPickerController(self)
         self._approval_controller = ApprovalPromptController(self)
-        self._spinner = SpinnerController(self, self._tips_manager)
+        self._spinner = SpinnerController(self, self._tips_manager, todo_handler=self.todo_handler)
         self._console_buffer = ConsoleBufferManager(self)
         self._queued_console_renderables = self._console_buffer._queue
         self._tool_summary = ToolSummaryManager(self)
