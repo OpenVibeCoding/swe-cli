@@ -125,6 +125,13 @@ class ChatTextArea(TextArea):
         self._completion_entries = []
         self._highlight_index = None
         self.suggestion = ""
+        # Notify app to hide popup
+        try:
+            app = self.app  # type: ignore[attr-defined]
+            if app and hasattr(app, "update_autocomplete"):
+                app.update_autocomplete([], None)
+        except Exception:
+            pass
 
     def _dismiss_autocomplete(self) -> None:
         """Hide autocomplete suggestions and notify parent app."""
