@@ -72,23 +72,42 @@ If unsure about these commands, ask the user how they verify code quality.
 Unified search supporting text and structural modes.
 
 **Text mode (default):** Regex/string matching with ripgrep
-- `search("def calculate_tax", "src/")` - Find function definition
-- `search("import requests", "src/")` - Find imports
-- `search("\bTODO\b", "src/")` - Find exact word
+- **Best for:** Finding exact strings, comments, imports, or simple patterns.
+- **Use when:**
+  - Searching for a specific function name, variable, or error message.
+  - Finding "TODO" or "FIXME" comments.
+  - Locating imports or specific string literals.
+  - You don't know the exact structure of the code.
+- **Examples:**
+  - `search("def calculate_tax", "src/")` - Find function definition
+  - `search("import requests", "src/")` - Find imports
+  - `search("\bTODO\b", "src/")` - Find exact word
 
 **AST mode:** Structural code patterns with ast-grep
-- `search("$A && $A()", "src/", type="ast")` - Short-circuit patterns
-- `search("console.log($MSG)", "src/", type="ast")` - All console.logs
-- `search("await $PROMISE", "src/", type="ast")` - All await expressions
-- `search("def $FUNC($ARGS):", "src/", type="ast", lang="python")` - Function defs
-- Pattern syntax: `$VAR` matches any AST node
+- **Best for:** Finding code based on its syntactic structure, ignoring formatting/whitespace.
+- **Use when:**
+  - You need to find all calls to a function, regardless of arguments.
+  - You want to find specific code constructs like try/catch blocks, await expressions, or class definitions.
+  - You need to match complex patterns that regex struggles with (e.g., nested parentheses).
+  - You are refactoring or analyzing code structure.
+- **Examples:**
+  - `search("$A && $A()", "src/", type="ast")` - Short-circuit patterns
+  - `search("console.log($MSG)", "src/", type="ast")` - All console.logs
+  - `search("await $PROMISE", "src/", type="ast")` - All await expressions
+  - `search("def $FUNC($ARGS):", "src/", type="ast", lang="python")` - Function defs
+- **Pattern syntax:** `$VAR` matches any AST node.
 
-### When to Use Which Type
-| Need | Type | Example |
-|------|------|---------|
-| Exact string/symbol | `type="text"` | Find "getUserById" |
-| Code structure/pattern | `type="ast"` | Find all try/except blocks |
-| File discovery | `list_files()` | Find all Python files |
+### Search Strategy Guide
+
+**1. Text Search (ripgrep)**: *Precision & Speed*
+Use for **unique identifiers** and **literal strings**. It is the most efficient way to navigate when you know the exact name or message.
+- **Target**: Specific function names (`def process_payment`), error strings (`"Payment failed"`), or comments (`# TODO`).
+- **Why**: It ignores syntax complexity and finds exact text matches instantly.
+
+**2. AST Search (ast-grep)**: *Structure & Logic*
+Use for **code patterns** and **syntax-aware queries**. It is essential when the code format varies (newlines, spacing) or when searching for logic rather than text.
+- **Target**: "All calls to `logger.info`" (regardless of arguments), "All try-catch blocks", or "Function definitions with specific decorators".
+- **Why**: It understands code structure, making it robust against formatting differences that break regex.
 
 ## Command Execution
 - **`run_command(command, background)`**: Execute ANY bash/shell command

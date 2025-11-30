@@ -134,7 +134,7 @@ class ModelPickerController:
     def cancel(self) -> None:
         if not self.state:
             return
-        self.end("Model selector closed.", clear_panel=True)
+        self.end(None, clear_panel=True)
 
     async def confirm(self) -> None:
         state = self.state

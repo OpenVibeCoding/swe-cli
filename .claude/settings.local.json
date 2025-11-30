@@ -20,7 +20,10 @@
       "Bash(/Users/nghibui/codes/swe-cli/tests/test_deep_langchain_agent.py)",
       "Bash(/Users/nghibui/codes/swe-cli/tests/test_agent_factory_default.py)",
       "Bash(git cherry-pick:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:ast-grep.github.io)",
+      "Bash(sg --json:*)"
     ],
     "deny": [],
     "ask": []
