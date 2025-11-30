@@ -126,9 +126,10 @@ class FileOperations:
                 cmd.extend(["-C", str(context_lines)])
 
             # Add the search path if specified
-            if path:
+            if path and path not in (".", "./"):
                 search_path = self.working_dir / path
                 cmd.append(str(search_path))
+            # If path is "." or "./" or not specified, ripgrep uses cwd (which we set below)
 
             result = subprocess.run(
                 cmd,
@@ -175,7 +176,11 @@ class FileOperations:
         flags = re.IGNORECASE if case_insensitive else 0
         regex = re.compile(pattern, flags)
 
-        glob_pattern = file_pattern or "**/*"
+        # Handle "." and "./" as meaning "search all files"
+        if file_pattern in (None, ".", "./"):
+            glob_pattern = "**/*"
+        else:
+            glob_pattern = file_pattern
         for path in self.working_dir.glob(glob_pattern):
             if not path.is_file():
                 continue
