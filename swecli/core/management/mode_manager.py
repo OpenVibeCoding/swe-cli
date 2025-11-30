@@ -1,6 +1,7 @@
 """Mode management for controlling operation behavior."""
 
 from enum import Enum
+from typing import Optional
 
 from swecli.models.operation import OperationType
 
@@ -13,7 +14,7 @@ class OperationMode(str, Enum):
 
 
 class ModeManager:
-    """Manager for operation modes."""
+    """Manager for operation modes and plan storage."""
 
     def __init__(self, default_mode: OperationMode = OperationMode.NORMAL):
         """Initialize mode manager.
@@ -23,6 +24,11 @@ class ModeManager:
         """
         self._current_mode = default_mode
         self._operation_count = 0  # Track operations in normal mode
+
+        # Plan storage for auto-execute workflow
+        self._pending_plan: Optional[str] = None
+        self._plan_steps: list[str] = []
+        self._plan_goal: Optional[str] = None
 
     @property
     def current_mode(self) -> OperationMode:
@@ -143,3 +149,44 @@ class ModeManager:
             OperationMode.PLAN: "Planning only, no execution",
         }
         return descriptions.get(self._current_mode, "Unknown mode")
+
+    # Plan storage methods for auto-execute workflow
+
+    def store_plan(
+        self,
+        plan_text: str,
+        steps: list[str],
+        goal: Optional[str] = None,
+    ) -> None:
+        """Store an approved plan for execution.
+
+        Args:
+            plan_text: The full plan text
+            steps: List of implementation steps
+            goal: The plan goal (optional)
+        """
+        self._pending_plan = plan_text
+        self._plan_steps = steps
+        self._plan_goal = goal
+
+    def get_pending_plan(self) -> tuple[Optional[str], list[str], Optional[str]]:
+        """Return pending plan, steps, and goal.
+
+        Returns:
+            Tuple of (plan_text, steps, goal)
+        """
+        return self._pending_plan, self._plan_steps, self._plan_goal
+
+    def has_pending_plan(self) -> bool:
+        """Check if there's a pending plan awaiting approval.
+
+        Returns:
+            True if there's a pending plan
+        """
+        return self._pending_plan is not None
+
+    def clear_plan(self) -> None:
+        """Clear the pending plan after execution or cancellation."""
+        self._pending_plan = None
+        self._plan_steps = []
+        self._plan_goal = None

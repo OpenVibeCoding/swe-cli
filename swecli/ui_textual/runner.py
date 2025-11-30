@@ -11,6 +11,7 @@ from typing import Any, Callable, Optional
 from rich.ansi import AnsiDecoder
 from rich.text import Text
 
+from swecli.core.agents.components import extract_plan_from_response
 from swecli.core.management import ConfigManager, OperationMode, SessionManager
 from swecli.models.message import ChatMessage, Role
 from swecli.repl.repl import REPL
@@ -18,6 +19,12 @@ from swecli.ui_textual.managers.approval_manager import ChatApprovalManager
 from swecli.ui_textual.chat_app import create_chat_app
 from swecli.ui_textual.constants import TOOL_ERROR_SENTINEL
 from swecli.ui_textual.utils import build_tool_call_text
+
+# Approval phrases for plan execution
+PLAN_APPROVAL_PHRASES = {
+    "yes", "approve", "execute", "go ahead", "do it", "proceed",
+    "start", "run", "ok", "okay", "y", "sure", "go",
+}
 
 
 class TextualRunner:
@@ -438,6 +445,12 @@ class TextualRunner:
         """Execute a user query via the REPL and return new session messages."""
         import traceback
 
+        # Check for plan approval in PLAN mode
+        if self._check_and_execute_plan_approval(message):
+            # Plan approval handled, return updated messages
+            session = self.session_manager.get_current_session()
+            return list(session.messages) if session else []
+
         try:
             config = self.config_manager.get_config()
             self.config = config
@@ -514,11 +527,102 @@ class TextualRunner:
                 return []
 
             new_messages = session.messages[previous_count:]
+
+            # After PLAN mode query, check if response contains a plan to store
+            if self.repl.mode_manager.current_mode == OperationMode.PLAN:
+                self._store_plan_from_response(new_messages)
+
             return new_messages
         except Exception as e:
             error_msg = f"[ERROR] Query processing failed: {str(e)}\n{traceback.format_exc()}"
             self._enqueue_console_text(error_msg)
             return []
+
+    def _check_and_execute_plan_approval(self, message: str) -> bool:
+        """Check if user is approving a pending plan and execute it.
+
+        Args:
+            message: User message to check
+
+        Returns:
+            True if plan approval was handled, False otherwise
+        """
+        # Only check if we're in PLAN mode with a pending plan
+        if self.repl.mode_manager.current_mode != OperationMode.PLAN:
+            return False
+
+        if not self.repl.mode_manager.has_pending_plan():
+            return False
+
+        # Check if message is an approval phrase
+        normalized = message.strip().lower()
+        if normalized not in PLAN_APPROVAL_PHRASES:
+            # Not an approval - clear the pending plan and continue normally
+            self.repl.mode_manager.clear_plan()
+            return False
+
+        # Get the pending plan
+        plan_text, plan_steps, plan_goal = self.repl.mode_manager.get_pending_plan()
+        if not plan_text or not plan_steps:
+            return False
+
+        # Switch to NORMAL mode
+        self.repl.mode_manager.set_mode(OperationMode.NORMAL)
+        self.repl.agent = self.repl.normal_agent
+
+        # Update UI to show mode change
+        if hasattr(self.app, "status_bar"):
+            self.app.status_bar.set_mode("normal")
+
+        # Create todos from plan steps
+        todo_handler = getattr(self.repl.tool_registry, "todo_handler", None)
+        if todo_handler:
+            from swecli.core.agents.components import extract_plan_from_response
+            parsed = extract_plan_from_response(f"---BEGIN PLAN---\n{plan_text}\n---END PLAN---")
+            if parsed:
+                todos = parsed.get_todo_items()
+                todo_handler.write_todos(todos)
+
+        # Clear the pending plan
+        self.repl.mode_manager.clear_plan()
+
+        # Execute the plan by sending it to the normal agent
+        execution_prompt = f"""Execute this approved implementation plan step by step:
+
+{plan_text}
+
+Work through each implementation step in order. Mark each todo item as 'in_progress' when starting and 'completed' when done.
+"""
+        # Process the execution prompt through normal agent
+        self.repl._process_query(execution_prompt)
+
+        return True
+
+    def _store_plan_from_response(self, messages: list[ChatMessage]) -> None:
+        """Extract and store plan from assistant response for later approval.
+
+        Args:
+            messages: New messages from the response
+        """
+        # Look for assistant messages with plan content
+        for msg in messages:
+            if msg.role != Role.ASSISTANT:
+                continue
+
+            content = msg.content or ""
+            if "---BEGIN PLAN---" not in content:
+                continue
+
+            # Try to parse the plan
+            parsed = extract_plan_from_response(content)
+            if parsed and parsed.is_valid():
+                # Store the plan for approval
+                self.repl.mode_manager.store_plan(
+                    plan_text=parsed.raw_text,
+                    steps=parsed.steps,
+                    goal=parsed.goal,
+                )
+                break
 
     def _run_command(self, command: str) -> None:
         """Execute a slash command and capture console output."""

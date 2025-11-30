@@ -52,6 +52,15 @@ class SystemPromptBuilder:
 class PlanningPromptBuilder:
     """Constructs the PLAN mode strategic planning prompt."""
 
+    def __init__(self, working_dir: Union[Any, None] = None) -> None:
+        self._working_dir = working_dir
+
     def build(self) -> str:
-        """Return the static planning prompt."""
-        return load_prompt("system_prompt_planning")
+        """Return the planning prompt with working directory context."""
+        prompt = load_prompt("system_prompt_planning")
+
+        # Add working directory context
+        if self._working_dir:
+            prompt += f"\n\n# Working Directory Context\n\nYou are currently exploring the codebase in: `{self._working_dir}`\n\nUse this as the base directory for all file operations and searches.\n"
+
+        return prompt
