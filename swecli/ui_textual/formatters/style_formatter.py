@@ -196,8 +196,14 @@ class StyleFormatter:
 
         summary = []
         for match in matches[:3]:
-            location = match.get("location", "unknown")
-            summary.append(f"{location}: {match.get('preview', '').strip()}")
+            # Support both formats: {"file", "line", "content"} and {"location", "preview"}
+            if "file" in match:
+                location = f"{match['file']}:{match.get('line', '')}"
+                content = match.get("content", "").strip()
+            else:
+                location = match.get("location", "unknown")
+                content = match.get("preview", "").strip()
+            summary.append(f"{location}: {content}")
         if len(matches) > 3:
             summary.append(f"... and {len(matches) - 3} more")
 
