@@ -228,6 +228,11 @@ def format_tool_call(tool_name: str, tool_args: Mapping[str, Any]) -> str:
         params = []
         if "pattern" in tool_args and tool_args["pattern"]:
             params.append(f'pattern: "{tool_args["pattern"]}"')
+        # Show search type (text or ast)
+        search_type = tool_args.get("type", "text")
+        params.append(f'type: "{search_type}"')
+        if "lang" in tool_args and tool_args["lang"]:
+            params.append(f'lang: "{tool_args["lang"]}"')
         if "glob" in tool_args and tool_args["glob"]:
             params.append(f'glob: "{tool_args["glob"]}"')
         if "output_mode" in tool_args and tool_args["output_mode"]:

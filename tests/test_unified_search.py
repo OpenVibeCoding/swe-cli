@@ -303,6 +303,51 @@ class TestSearchFormatterIntegration:
         assert "... and 7 more" in lines[-1]
 
 
+class TestToolDisplay:
+    """Test the tool display formatting for search."""
+
+    def test_text_search_display_shows_type(self):
+        """Test text search shows type parameter."""
+        from swecli.ui_textual.utils.tool_display import format_tool_call
+
+        result = format_tool_call("search", {
+            "pattern": "def hello",
+            "path": "src/",
+        })
+
+        assert "Search(" in result
+        assert 'pattern: "def hello"' in result
+        assert 'type: "text"' in result  # Always show type
+
+    def test_ast_search_display_shows_type(self):
+        """Test AST search shows type parameter."""
+        from swecli.ui_textual.utils.tool_display import format_tool_call
+
+        result = format_tool_call("search", {
+            "pattern": "console.log($MSG)",
+            "path": "src/",
+            "type": "ast",
+        })
+
+        assert "Search(" in result
+        assert 'pattern: "console.log($MSG)"' in result
+        assert 'type: "ast"' in result
+
+    def test_ast_search_display_shows_lang(self):
+        """Test AST search shows lang parameter when provided."""
+        from swecli.ui_textual.utils.tool_display import format_tool_call
+
+        result = format_tool_call("search", {
+            "pattern": "def $FUNC($ARGS):",
+            "path": "src/",
+            "type": "ast",
+            "lang": "python",
+        })
+
+        assert 'type: "ast"' in result
+        assert 'lang: "python"' in result
+
+
 class TestFileOpsGrepFiles:
     """Test the underlying grep_files method."""
 
