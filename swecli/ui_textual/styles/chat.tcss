@@ -183,8 +183,9 @@ ScrollbarCorner {
 
 #todo-panel.collapsed {
     display: block;
-    height: 1;
-    max-height: 1;
+    height: 2;
+    max-height: 2;
+    border-bottom: solid $surface;
 }
 
 #todo-panel.expanded {

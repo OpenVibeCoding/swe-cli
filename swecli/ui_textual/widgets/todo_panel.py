@@ -50,15 +50,15 @@ class TodoPanel(Static):
 
         todos = list(self.todo_handler._todos.values())
 
-        if not todos:
-            self.update("[dim]No active todos[/dim]")
-            self.border_title = "TODOS"
-            # Hide completely when no todos
+        # Hide when no todos OR all todos are completed
+        if not todos or all(t.status == "done" for t in todos):
+            self.update("")
+            self.border_title = ""
+            # Hide completely
             if self.has_class("collapsed"):
                 self.remove_class("collapsed")
             if self.has_class("expanded"):
                 self.remove_class("expanded")
-            # Stop spinner when no todos
             self._stop_spinner()
             return
 
