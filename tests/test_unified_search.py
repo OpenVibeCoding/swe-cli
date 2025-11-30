@@ -348,6 +348,60 @@ class TestToolDisplay:
         assert 'lang: "python"' in result
 
 
+class TestSearchExclusions:
+    """Test the search exclusion functionality."""
+
+    def test_is_excluded_path_node_modules(self):
+        """Test node_modules is excluded."""
+        from swecli.tools.file_ops import FileOperations
+        from swecli.models.config import AppConfig
+        from pathlib import Path
+
+        config = AppConfig()
+        file_ops = FileOperations(config, Path("."))
+
+        assert file_ops._is_excluded_path("node_modules/lodash/index.js") is True
+        assert file_ops._is_excluded_path("/project/node_modules/react/index.js") is True
+        assert file_ops._is_excluded_path("src/components/Button.js") is False
+
+    def test_is_excluded_path_pycache(self):
+        """Test __pycache__ is excluded."""
+        from swecli.tools.file_ops import FileOperations
+        from swecli.models.config import AppConfig
+        from pathlib import Path
+
+        config = AppConfig()
+        file_ops = FileOperations(config, Path("."))
+
+        assert file_ops._is_excluded_path("__pycache__/module.cpython-39.pyc") is True
+        assert file_ops._is_excluded_path("src/__pycache__/utils.pyc") is True
+
+    def test_is_excluded_path_minified_files(self):
+        """Test minified JS files are excluded."""
+        from swecli.tools.file_ops import FileOperations
+        from swecli.models.config import AppConfig
+        from pathlib import Path
+
+        config = AppConfig()
+        file_ops = FileOperations(config, Path("."))
+
+        assert file_ops._is_excluded_path("dist/bundle.min.js") is True
+        assert file_ops._is_excluded_path("assets/app.bundle.js") is True
+        assert file_ops._is_excluded_path("src/app.js") is False
+
+    def test_is_excluded_path_venv(self):
+        """Test virtual environments are excluded."""
+        from swecli.tools.file_ops import FileOperations
+        from swecli.models.config import AppConfig
+        from pathlib import Path
+
+        config = AppConfig()
+        file_ops = FileOperations(config, Path("."))
+
+        assert file_ops._is_excluded_path(".venv/lib/python3.9/site-packages/requests/__init__.py") is True
+        assert file_ops._is_excluded_path("venv/bin/python") is True
+
+
 class TestFileOpsGrepFiles:
     """Test the underlying grep_files method."""
 

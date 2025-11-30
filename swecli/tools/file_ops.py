@@ -7,6 +7,30 @@ from typing import Optional
 
 from swecli.models.config import AppConfig
 
+# Default directories/patterns to exclude from search
+DEFAULT_SEARCH_EXCLUDES = [
+    "node_modules",
+    ".git",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "env",
+    ".env",
+    "dist",
+    "build",
+    ".next",
+    ".nuxt",
+    "coverage",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".tox",
+    "vendor",
+    "target",  # Rust
+    "*.min.js",
+    "*.bundle.js",
+    "*.map",
+]
+
 
 class FileOperations:
     """Tools for file operations."""
@@ -20,6 +44,20 @@ class FileOperations:
         """
         self.config = config
         self.working_dir = working_dir
+
+    def _is_excluded_path(self, file_path: str) -> bool:
+        """Check if path contains any excluded directory or matches excluded patterns."""
+        path_obj = Path(file_path)
+        path_parts = path_obj.parts
+
+        for exclude in DEFAULT_SEARCH_EXCLUDES:
+            if exclude.startswith("*"):
+                # Glob pattern like *.min.js
+                if path_obj.match(exclude):
+                    return True
+            elif exclude in path_parts:
+                return True
+        return False
 
     def read_file(self, file_path: str, line_start: Optional[int] = None,
                   line_end: Optional[int] = None) -> str:
@@ -120,6 +158,13 @@ class FileOperations:
             # Use ripgrep if available for better performance
             cmd = ["rg", "--json", pattern]
 
+            # Add default exclusions (ripgrep respects .gitignore, but this is a safety net)
+            for exclude in DEFAULT_SEARCH_EXCLUDES:
+                if exclude.startswith("*"):
+                    cmd.extend(["--glob", f"!{exclude}"])
+                else:
+                    cmd.extend(["--glob", f"!{exclude}/**"])
+
             if case_insensitive:
                 cmd.append("-i")
             if context_lines > 0:
@@ -210,6 +255,10 @@ class FileOperations:
 
         for path in search_root.glob(glob_pattern):
             if not path.is_file():
+                continue
+
+            # Skip excluded paths
+            if self._is_excluded_path(str(path)):
                 continue
 
             try:
@@ -357,8 +406,13 @@ class FileOperations:
                 # ast-grep outputs a JSON array, not newline-delimited objects
                 data = json.loads(result.stdout)
                 if isinstance(data, list):
-                    for item in data[:max_results]:
+                    for item in data:
                         file_path = item.get("file", "")
+
+                        # Skip excluded paths (ast-grep doesn't respect .gitignore)
+                        if self._is_excluded_path(file_path):
+                            continue
+
                         # Make path relative to working_dir for cleaner output
                         try:
                             rel_path = str(Path(file_path).relative_to(self.working_dir))
@@ -370,6 +424,9 @@ class FileOperations:
                             "line": item.get("range", {}).get("start", {}).get("line", 0),
                             "content": item.get("text", "").strip(),
                         })
+
+                        if len(matches) >= max_results:
+                            break
             except json.JSONDecodeError:
                 pass  # Invalid JSON, return empty matches
 
