@@ -126,6 +126,7 @@ class AppConfig(BaseModel):
 
     # UI settings
     verbose: bool = False
+    debug_logging: bool = False  # Show [QUERY], [REACT], [LLM] debug messages
     color_scheme: str = "monokai"
     show_token_count: bool = True
 

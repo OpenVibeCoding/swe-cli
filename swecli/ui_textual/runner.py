@@ -107,6 +107,8 @@ class TextualRunner:
             self.app = create_chat_app(**legacy_kwargs)
         if hasattr(self.repl.approval_manager, "chat_app"):
             self.repl.approval_manager.chat_app = self.app
+        # Store approval manager reference on the app for action_cycle_autonomy
+        self.app._approval_manager = self.repl.approval_manager
         if hasattr(self.repl, "config_commands"):
             self.repl.config_commands.chat_app = self.app
 
@@ -468,6 +470,10 @@ class TextualRunner:
                     conversation_widget = self.app.conversation
 
             if conversation_widget is not None:
+                # Apply debug_logging setting from config
+                config = self.config_manager.get_config()
+                conversation_widget.set_debug_enabled(config.debug_logging)
+
                 from swecli.ui_textual.ui_callback import TextualUICallback
                 ui_callback = TextualUICallback(conversation_widget, self.app)
             else:

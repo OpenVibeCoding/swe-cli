@@ -91,8 +91,21 @@ class ConfigManager:
 
         config_path.parent.mkdir(parents=True, exist_ok=True)
 
+        # Only save user-facing settings, not internal defaults
+        user_fields = {
+            "model_provider",
+            "model",
+            "model_thinking_provider",
+            "model_thinking",
+            "model_vlm_provider",
+            "model_vlm",
+            "api_key",
+            "api_base_url",
+            "debug_logging",
+        }
+        data = {k: v for k, v in config.model_dump().items() if k in user_fields and v is not None}
         with open(config_path, "w") as f:
-            json.dump(config.model_dump(exclude={"permissions"}), f, indent=2)
+            json.dump(data, f, indent=2)
 
     def ensure_directories(self) -> None:
         """Ensure all required directories exist."""
