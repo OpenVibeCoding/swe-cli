@@ -38,7 +38,7 @@ class SWECLIChatApp(App):
     ENABLE_MOUSE = False
 
     BINDINGS = [
-        Binding("ctrl+c", "quit", "", show=False, priority=True),
+        Binding("ctrl+c", "clear_or_quit", "", show=False, priority=True),
         Binding("ctrl+l", "clear_conversation", "", show=False),
         Binding("ctrl+t", "toggle_todo_panel", "Toggle Todos", show=False),
         Binding("escape", "interrupt", "", show=False),
@@ -430,6 +430,20 @@ class SWECLIChatApp(App):
                 self.on_interrupt()
             # Don't display system message here - let the tool result formatter handle it
             # This prevents duplicate "Processing interrupted" messages
+
+    def action_clear_or_quit(self) -> None:
+        """Clear input text or quit (Ctrl+C).
+
+        First Ctrl+C: Clear input text if there's any
+        Second Ctrl+C (empty input): Quit the application
+        """
+        # If input has text, clear it first
+        if self.input_field.text.strip():
+            self.input_field.clear()
+            return
+
+        # If input is empty, quit
+        self.exit()
 
     def action_quit(self) -> None:
         """Quit the application (Ctrl+C)."""
