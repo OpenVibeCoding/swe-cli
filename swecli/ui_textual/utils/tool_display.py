@@ -33,6 +33,10 @@ _TOOL_DISPLAY_PARTS: dict[str, tuple[str, str]] = {
     "analyze_image": ("Analyze", "image"),
     "git_commit": ("Commit", "changes"),
     "git_branch": ("Branch", "git"),
+    "write_todos": ("Write", "todos"),
+    "update_todo": ("Update", "todo"),
+    "complete_todo": ("Complete", "todo"),
+    "list_todos": ("List", "todos"),
 }
 
 _PATH_HINT_KEYS = {"file_path", "path", "directory", "dir", "image_path", "working_dir", "target"}

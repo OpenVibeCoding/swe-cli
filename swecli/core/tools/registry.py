@@ -11,6 +11,7 @@ from swecli.core.tools.mcp_handler import McpToolHandler
 from swecli.core.tools.process_handlers import ProcessToolHandler
 from swecli.core.tools.web_handlers import WebToolHandler
 from swecli.core.tools.screenshot_handler import ScreenshotToolHandler
+from swecli.core.tools.todo_handler import TodoHandler
 
 _PLAN_READ_ONLY_TOOLS = {
     "read_file",
@@ -53,6 +54,7 @@ class ToolRegistry:
         self._web_handler = WebToolHandler(web_fetch_tool)
         self._mcp_handler = McpToolHandler(mcp_manager)
         self._screenshot_handler = ScreenshotToolHandler()
+        self.todo_handler = TodoHandler()
         self.set_mcp_manager(mcp_manager)
 
         self._handlers: dict[str, Any] = {
@@ -73,7 +75,11 @@ class ToolRegistry:
             "analyze_image": self._analyze_image,
             "capture_web_screenshot": self._capture_web_screenshot,
             "list_web_screenshots": lambda args: self._list_web_screenshots(),
-            "clear_web_screenshots": self._clear_web_screenshots
+            "clear_web_screenshots": self._clear_web_screenshots,
+            "write_todos": self._write_todos,
+            "update_todo": self._update_todo,
+            "complete_todo": self._complete_todo,
+            "list_todos": lambda args, ctx=None: self.todo_handler.list_todos(),
         }
 
     def get_schemas(self) -> list[dict[str, Any]]:
@@ -293,3 +299,19 @@ class ToolRegistry:
                 "error": result.get("error", "Unknown error"),
                 "output": None,
             }
+
+    def _write_todos(self, arguments: dict[str, Any], context: Any = None) -> dict[str, Any]:
+        """Execute the write_todos tool."""
+        return self.todo_handler.write_todos(arguments.get("todos", []))
+
+    def _update_todo(self, arguments: dict[str, Any], context: Any = None) -> dict[str, Any]:
+        """Execute the update_todo tool."""
+        return self.todo_handler.update_todo(
+            id=arguments.get("id"),
+            status=arguments.get("status"),
+            title=arguments.get("title"),
+        )
+
+    def _complete_todo(self, arguments: dict[str, Any], context: Any = None) -> dict[str, Any]:
+        """Execute the complete_todo tool."""
+        return self.todo_handler.complete_todo(id=arguments.get("id"))

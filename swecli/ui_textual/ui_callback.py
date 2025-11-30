@@ -185,6 +185,10 @@ class TextualUICallback:
         if self.chat_app and hasattr(self.chat_app, "resume_reasoning_spinner"):
             self._run_on_ui(self.chat_app.resume_reasoning_spinner)
 
+        # Auto-refresh todo panel after todo tool execution
+        if tool_name in {"write_todos", "update_todo", "complete_todo"}:
+            self._refresh_todo_panel()
+
     def _normalize_arguments(self, tool_args: Any) -> Dict[str, Any]:
         """Ensure tool arguments are represented as a dictionary and normalize URLs for display."""
 

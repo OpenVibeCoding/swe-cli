@@ -6,7 +6,7 @@ from .bash_tools import RunCommandTool, ListProcessesTool, GetProcessOutputTool,
 from .web_tools import FetchUrlTool, OpenBrowserTool, CaptureWebScreenshotTool, ListWebScreenshotsTool, ClearWebScreenshotsTool
 from .screenshot_tools import CaptureScreenshotTool, ListScreenshotsTool, ClearScreenshotsTool
 from .vlm_tools import AnalyzeImageTool
-from .todo_tools import CreateTodoTool, UpdateTodoTool, CompleteTodoTool, ListTodosTool
+from .todo_tools import WriteTodosTool, UpdateTodoTool, CompleteTodoTool, ListTodosTool
 
 __all__ = [
     "SWECLIToolWrapper",
@@ -29,7 +29,7 @@ __all__ = [
     "ListScreenshotsTool",
     "ClearScreenshotsTool",
     "AnalyzeImageTool",
-    "CreateTodoTool",
+    "WriteTodosTool",
     "UpdateTodoTool",
     "CompleteTodoTool",
     "ListTodosTool",

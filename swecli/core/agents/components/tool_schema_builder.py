@@ -306,32 +306,37 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "type": "function",
         "function": {
-            "name": "create_todo",
-            "description": "Create a new to-do entry that appears in the live inline plan. Always call this before executing a new step.",
+            "name": "write_todos",
+            "description": "Create a todo list at the START of a complex task. Write 4-7 todo items that break down the work into steps. Each todo has 'content' (task description) and 'activeForm' (present continuous like 'Creating files'). Use 'pending' status for all initial items. REPLACES the entire todo list - call once at the beginning, then use update_todo to change status as you work.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "title": {
-                        "type": "string",
-                        "description": "Human-readable summary of the step you are about to perform.",
-                    },
-                    "status": {
-                        "type": "string",
-                        "enum": ["todo", "doing", "done"],
-                        "description": "Optional initial state. Defaults to todo.",
-                        "default": "todo",
-                    },
-                    "log": {
-                        "type": "string",
-                        "description": "Optional log entry describing additional context for this task.",
-                    },
-                    "expanded": {
-                        "type": "boolean",
-                        "description": "Whether to show log entries under this task in the panel.",
-                        "default": True,
+                    "todos": {
+                        "type": "array",
+                        "description": "List of todo items to create",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "content": {
+                                    "type": "string",
+                                    "description": "The task description",
+                                },
+                                "status": {
+                                    "type": "string",
+                                    "enum": ["pending", "in_progress", "completed"],
+                                    "description": "Task status. Defaults to 'pending'.",
+                                    "default": "pending",
+                                },
+                                "activeForm": {
+                                    "type": "string",
+                                    "description": "Present continuous form shown during execution (e.g., 'Running tests')",
+                                },
+                            },
+                            "required": ["content"],
+                        },
                     },
                 },
-                "required": ["title"],
+                "required": ["todos"],
             },
         },
     },
@@ -339,7 +344,7 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
         "type": "function",
         "function": {
             "name": "update_todo",
-            "description": "Update the status/title/log/expanded state of an existing to-do item.",
+            "description": "Update an existing todo's status as you work. Set status to 'in_progress' when starting a task, 'completed' when finished. Use the todo ID (e.g., 'todo-1' or just '1'). This is how you track progress through your plan.",
             "parameters": {
                 "type": "object",
                 "properties": {

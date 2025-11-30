@@ -86,6 +86,7 @@ class TextualRunner:
             "get_model_config": self._get_model_config_snapshot,
             "on_interrupt": self._handle_interrupt,
             "working_dir": str(self.working_dir),
+            "todo_handler": getattr(self.repl.tool_registry, "todo_handler", None) if hasattr(self.repl, "tool_registry") else None,
         }
         if self._auto_connect_mcp:
             create_kwargs["on_ready"] = self._start_mcp_connect_thread

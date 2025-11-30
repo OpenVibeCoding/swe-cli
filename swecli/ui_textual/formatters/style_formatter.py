@@ -35,6 +35,8 @@ class StyleFormatter:
             result_lines = self._format_analyze_image_result(tool_args, result)
         elif tool_name == "get_process_output":
             result_lines = self._format_process_output_result(tool_args, result)
+        elif tool_name == "write_todos":
+            result_lines = self._format_write_todos_result(tool_args, result)
         else:
             result_lines = self._format_generic_result(tool_name, tool_args, result)
 
@@ -283,6 +285,20 @@ class StyleFormatter:
 
         preview = first_line[:70] + ("..." if len(first_line) > 70 else "")
         return [f"{preview} ({len(lines)} lines)"]
+
+    def _format_write_todos_result(self, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
+        """Format write_todos result showing all created todos."""
+        if not result.get("success"):
+            error_msg = result.get("error", "Unknown error")
+            return [self._error_line(error_msg)]
+
+        output = result.get("output", "")
+        if isinstance(output, str):
+            # Show all lines from the output (no truncation for todos)
+            lines = output.strip().splitlines()
+            return lines if lines else ["Todos created"]
+
+        return ["Todos created"]
 
     def _format_generic_result(self, tool_name: str, tool_args: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
         if not result.get("success"):

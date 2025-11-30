@@ -169,6 +169,32 @@ ScrollbarCorner {
    LOADING INDICATOR
    ============================================ */
 
+/* ============================================
+   TODO PANEL
+   ============================================ */
+
+#todo-panel {
+    height: auto;
+    max-height: 12;
+    background: $background;
+    padding: 0 1;
+    display: none;
+}
+
+#todo-panel.collapsed {
+    display: block;
+    height: 1;
+    max-height: 1;
+}
+
+#todo-panel.expanded {
+    display: block;
+    height: auto;
+    max-height: 12;
+    border-top: solid $surface;
+    border-bottom: solid $surface;
+}
+
 LoadingIndicator {
     color: #007acc;              /* Muted blue (was bright cyan) */
     background: transparent;

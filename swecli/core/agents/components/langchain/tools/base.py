@@ -265,7 +265,7 @@ class ToolRegistryAdapter:
         )
         from .vlm_tools import AnalyzeImageTool
         from .todo_tools import (
-            CreateTodoTool, UpdateTodoTool, CompleteTodoTool, ListTodosTool
+            WriteTodosTool, UpdateTodoTool, CompleteTodoTool, ListTodosTool
         )
 
         tools = [
@@ -298,7 +298,7 @@ class ToolRegistryAdapter:
             AnalyzeImageTool(self.tool_registry),
 
             # Todo operations
-            CreateTodoTool(self.tool_registry),
+            WriteTodosTool(self.tool_registry),
             UpdateTodoTool(self.tool_registry),
             CompleteTodoTool(self.tool_registry),
             ListTodosTool(self.tool_registry),

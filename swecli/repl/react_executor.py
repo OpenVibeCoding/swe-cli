@@ -173,7 +173,6 @@ class MessagePersister:
 class ReActExecutor:
     """Executes ReAct loop (Reasoning → Acting → Observing)."""
 
-    SAFETY_LIMIT = 30
     READ_OPERATIONS = {"read_file", "list_files", "search_code"}
 
     def __init__(
@@ -263,11 +262,6 @@ class ReActExecutor:
                 # Debug: ReAct iteration
                 if ui_callback and hasattr(ui_callback, 'on_debug'):
                     ui_callback.on_debug(f"ReAct iteration #{iteration}", "REACT")
-
-                # Safety check
-                if iteration > self.SAFETY_LIMIT:
-                    self.react_controller.handle_safety_limit(agent, messages)
-                    break
 
                 # Execute single iteration
                 should_break, operation_cancelled = self._execute_iteration(

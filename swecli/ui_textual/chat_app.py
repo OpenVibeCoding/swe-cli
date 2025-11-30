@@ -14,6 +14,7 @@ from textual.widgets import Header, Rule, Static
 from swecli.ui_textual.widgets import ConversationLog
 from swecli.ui_textual.widgets.chat_text_area import ChatTextArea
 from swecli.ui_textual.widgets.status_bar import ModelFooter, StatusBar
+from swecli.ui_textual.widgets.todo_panel import TodoPanel
 from swecli.ui_textual.components import TipsManager
 from swecli.ui_textual.controllers.approval_prompt_controller import ApprovalPromptController
 from swecli.ui_textual.controllers.autocomplete_popup_controller import AutocompletePopupController
@@ -39,6 +40,7 @@ class SWECLIChatApp(App):
     BINDINGS = [
         Binding("ctrl+c", "quit", "", show=False, priority=True),
         Binding("ctrl+l", "clear_conversation", "", show=False),
+        Binding("ctrl+t", "toggle_todo_panel", "Toggle Todos", show=False),
         Binding("escape", "interrupt", "", show=False),
         Binding("pageup", "scroll_up", "Scroll Up", show=False),
         Binding("pagedown", "scroll_down", "Scroll Down", show=False),
@@ -61,6 +63,7 @@ class SWECLIChatApp(App):
         on_ready: Optional[Callable[[], None]] = None,
         on_interrupt: Optional[Callable[[], bool]] = None,
         working_dir: Optional[str] = None,
+        todo_handler: Optional[Any] = None,
         **kwargs,
     ):
         """Initialize chat application.
@@ -75,6 +78,7 @@ class SWECLIChatApp(App):
             on_ready: Callback invoked once the UI finishes its first layout pass
             on_interrupt: Callback for when user presses ESC to interrupt
             working_dir: Working directory path for repo display
+            todo_handler: TodoHandler instance for managing todos
         """
         # Set color system to inherit from terminal
         kwargs.setdefault("ansi_color", "auto")
@@ -89,6 +93,7 @@ class SWECLIChatApp(App):
         self.get_model_config = get_model_config
         self._on_ready = on_ready
         self.working_dir = working_dir or ""
+        self.todo_handler = todo_handler
         self.autocomplete_popup: Static | None = None
         self._autocomplete_controller: AutocompletePopupController | None = None
         self.footer: ModelFooter | None = None
@@ -120,6 +125,9 @@ class SWECLIChatApp(App):
 
             # Separator line between conversation and input
             yield Rule(line_style="solid")
+
+            # Todo panel (persistent, toggleable with Ctrl+T)
+            yield TodoPanel(todo_handler=self.todo_handler, id="todo-panel")
 
             # Input area
             with Vertical(id="input-container"):
@@ -508,6 +516,14 @@ class SWECLIChatApp(App):
         mode_label = new_mode.lower()
         self.status_bar.set_mode(mode_label)
 
+    def action_toggle_todo_panel(self) -> None:
+        """Toggle todo panel visibility (Ctrl+T)."""
+        try:
+            panel = self.query_one("#todo-panel", TodoPanel)
+            panel.toggle_expansion()
+        except Exception:  # pragma: no cover - defensive
+            pass
+
 
 def create_chat_app(
     on_message: Optional[Callable[[str], None]] = None,
@@ -520,6 +536,7 @@ def create_chat_app(
     on_ready: Optional[Callable[[], None]] = None,
     on_interrupt: Optional[Callable[[], bool]] = None,
     working_dir: Optional[str] = None,
+    todo_handler: Optional[Any] = None,
 ) -> SWECLIChatApp:
     """Create and return a new chat application instance.
 
@@ -533,6 +550,7 @@ def create_chat_app(
         on_ready: Callback invoked once the UI completes its first render pass
         on_interrupt: Callback for when user presses ESC to interrupt
         working_dir: Working directory path for repo display
+        todo_handler: TodoHandler instance for managing todos
 
     Returns:
         Configured SWECLIChatApp instance
@@ -548,6 +566,7 @@ def create_chat_app(
         on_ready=on_ready,
         on_interrupt=on_interrupt,
         working_dir=working_dir,
+        todo_handler=todo_handler,
     )
 
 
