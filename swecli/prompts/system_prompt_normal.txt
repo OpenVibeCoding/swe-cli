@@ -84,6 +84,35 @@ If unsure about these commands, ask the user how they verify code quality.
 - **`get_process_output(pid)`**: Get output from a background process
 - **`kill_process(pid)`**: Stop a background process
 
+## Task Management (Todo)
+Use todo tools to track progress on complex, multi-step tasks. This helps you stay organized and shows the user your progress.
+
+- **`write_todos(todos)`**: Create a todo list at the START of complex tasks
+  - Use for tasks requiring 3+ steps or multiple file changes
+  - Each todo item has: `content` (task description), `status` (pending/in_progress/completed), `activeForm` (present continuous like "Creating files")
+  - **REPLACES entire list** - call once at the beginning, then use update_todo
+  - Example: `write_todos([{"content": "Read existing code", "status": "pending"}, {"content": "Implement feature", "status": "pending"}])`
+
+- **`update_todo(id, status, title)`**: Update a todo's status as you work
+  - Set to `in_progress` when starting a task, `completed` when finished
+  - Use the todo ID shown in the panel (e.g., "todo-1" or just "1")
+  - **Only one todo should be `in_progress` at a time**
+
+- **`complete_todo(id, log)`**: Mark a todo as done with optional completion note
+
+- **`list_todos()`**: Display current todo list in console
+
+### When to Use Todos
+- **DO use** for: multi-file refactoring, feature implementation, bug fixes requiring investigation, build/test/fix cycles
+- **DON'T use** for: simple single-file edits, quick questions, straightforward commands
+
+### Best Practices
+1. Create todos BEFORE starting work on complex tasks
+2. Mark todo as `in_progress` when you begin working on it
+3. Mark as `completed` immediately when done (don't batch completions)
+4. Keep todos concise (4-7 items typically)
+5. Update status in real-time to show progress
+
 ## Web & Image Analysis
 - **`fetch_url(url, extract_text, max_length, deep_crawl, crawl_strategy, max_depth, include_external, max_pages, allowed_domains, blocked_domains, url_patterns)`**: Fetch content from single pages or crawl entire sections
   - Use **normal fetch** (deep_crawl=false) for a specific document, release note, or API reference
