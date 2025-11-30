@@ -16,6 +16,7 @@ class StatusBar(Static):
         super().__init__(**kwargs)
         self.mode = "normal"
         self.model = model
+        self.autonomy = "Manual"  # Autonomy level: Manual, Semi-Auto, Auto
         self.spinner_text: str | None = None
         self.spinner_tip: str | None = None
         self.working_dir = working_dir or ""
@@ -35,6 +36,15 @@ class StatusBar(Static):
         self.model = model
         self.update_status()
 
+    def set_autonomy(self, level: str) -> None:
+        """Update autonomy level display.
+
+        Args:
+            level: One of "Manual", "Semi-Auto", or "Auto"
+        """
+        self.autonomy = level
+        self.update_status()
+
     def set_spinner(self, text: str, tip: str | None = None) -> None:
         """Display spinner status."""
         self.spinner_text = text
@@ -49,13 +59,26 @@ class StatusBar(Static):
         self.update_status()
 
     def update_status(self) -> None:
-        """Update status bar text with mode hint, repo info, and spinner."""
+        """Update status bar text with mode hint, autonomy level, repo info, and spinner."""
         mode_color = "#ff8c00" if self.mode == "normal" else "#89d185"  # Orange for NORMAL
         status = Text()
 
         # Mode with cycling hint
+        status.append("Mode: ", style="#6a6a6a")
         status.append(f"{self.mode.upper()}", style=f"bold {mode_color}")
-        status.append(" (Shift + Tab to cycle)", style="#6a6a6a")
+        status.append(" (Shift+Tab)", style="#6a6a6a")
+
+        # Autonomy level with color coding
+        status.append("  │  ", style="#6a6a6a")
+        status.append("Autonomy: ", style="#6a6a6a")
+        autonomy_colors = {
+            "Manual": "#ffa500",    # Orange - caution, needs attention
+            "Semi-Auto": "#00bfff",  # Cyan - partial automation
+            "Auto": "#00ff00",       # Green - fully automated
+        }
+        autonomy_color = autonomy_colors.get(self.autonomy, "#6a6a6a")
+        status.append(self.autonomy, style=f"bold {autonomy_color}")
+        status.append(" (Ctrl+Shift+A)", style="#6a6a6a")
 
         # Repo info
         repo_display = self._get_repo_display()

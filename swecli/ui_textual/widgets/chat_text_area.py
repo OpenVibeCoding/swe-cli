@@ -367,6 +367,13 @@ class ChatTextArea(TextArea):
                 self.app.action_cycle_mode()
             return
 
+        if event.key == "ctrl+shift+a":
+            event.stop()
+            event.prevent_default()
+            if hasattr(self.app, "action_cycle_autonomy"):
+                self.app.action_cycle_autonomy()
+            return
+
         if event.key == "tab":
             event.stop()
             event.prevent_default()

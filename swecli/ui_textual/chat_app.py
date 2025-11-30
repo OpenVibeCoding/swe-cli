@@ -49,6 +49,7 @@ class SWECLIChatApp(App):
         Binding("ctrl+up", "focus_conversation", "Focus Conversation", show=False),
         Binding("ctrl+down", "focus_input", "Focus Input", show=False),
         Binding("shift+tab", "cycle_mode", "Switch Mode"),
+        Binding("ctrl+shift+a", "cycle_autonomy", "Autonomy", show=False),
     ]
 
     def __init__(
@@ -542,6 +543,21 @@ class SWECLIChatApp(App):
 
         mode_label = new_mode.lower()
         self.status_bar.set_mode(mode_label)
+
+    def action_cycle_autonomy(self) -> None:
+        """Cycle through autonomy levels: Manual -> Semi-Auto -> Auto (Shift+A)."""
+        levels = ["Manual", "Semi-Auto", "Auto"]
+        current = self.status_bar.autonomy
+        try:
+            next_idx = (levels.index(current) + 1) % len(levels)
+        except ValueError:
+            next_idx = 0
+        new_level = levels[next_idx]
+        self.status_bar.set_autonomy(new_level)
+
+        # Update approval manager if available
+        if hasattr(self, "_approval_manager"):
+            self._approval_manager.set_autonomy_level(new_level)
 
     def action_toggle_todo_panel(self) -> None:
         """Toggle todo panel visibility (Ctrl+T)."""

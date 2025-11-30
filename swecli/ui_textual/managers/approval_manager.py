@@ -1,6 +1,25 @@
 """Approval manager for chat interface with interactive prompts."""
 
 import asyncio
+from enum import Enum
+
+
+class AutonomyLevel(Enum):
+    """Autonomy levels for command approval."""
+    MANUAL = "Manual"
+    SEMI_AUTO = "Semi-Auto"
+    AUTO = "Auto"
+
+
+# Safe commands that can be auto-approved in Semi-Auto mode
+SAFE_COMMANDS = [
+    "ls", "cat", "head", "tail", "grep", "find", "wc", "pwd",
+    "echo", "which", "type", "file", "stat", "du", "df", "tree",
+    "git status", "git log", "git diff", "git branch", "git show",
+    "git remote", "git tag", "git stash list",
+    "python --version", "python3 --version", "node --version",
+    "npm --version", "cargo --version", "go version",
+]
 
 
 class ChatApprovalManager:
@@ -12,12 +31,40 @@ class ChatApprovalManager:
         self.auto_approve_remaining = False
         self.approved_patterns = set()
         self.pre_approved_commands = set()  # Commands that were already approved
+        self.autonomy_level = AutonomyLevel.MANUAL  # Current autonomy level
 
         # Initialize rules manager for Phase 3
         from swecli.core.approval import ApprovalRulesManager, RuleAction
 
         self.rules_manager = ApprovalRulesManager()
         self.RuleAction = RuleAction  # Store for use in methods
+
+    def set_autonomy_level(self, level: str) -> None:
+        """Set the autonomy level.
+
+        Args:
+            level: One of "Manual", "Semi-Auto", or "Auto"
+        """
+        level_map = {
+            "Manual": AutonomyLevel.MANUAL,
+            "Semi-Auto": AutonomyLevel.SEMI_AUTO,
+            "Auto": AutonomyLevel.AUTO,
+        }
+        self.autonomy_level = level_map.get(level, AutonomyLevel.MANUAL)
+
+    def _is_safe_command(self, command: str) -> bool:
+        """Check if a command is considered safe for auto-approval.
+
+        Args:
+            command: The command string to check
+
+        Returns:
+            True if the command starts with a safe prefix
+        """
+        if not command:
+            return False
+        cmd_lower = command.strip().lower()
+        return any(cmd_lower.startswith(safe.lower()) for safe in SAFE_COMMANDS)
 
     def _check_auto_approval(self, operation, command):
         """Check if operation should be auto-approved.
@@ -39,6 +86,24 @@ class ChatApprovalManager:
                 choice=ApprovalChoice.APPROVE,
                 apply_to_all=False,
             )
+
+        # Check autonomy level first
+        if self.autonomy_level == AutonomyLevel.AUTO:
+            # Auto mode: approve everything without prompting
+            return ApprovalResult(
+                approved=True,
+                choice=ApprovalChoice.APPROVE,
+                apply_to_all=True,
+            )
+
+        if self.autonomy_level == AutonomyLevel.SEMI_AUTO:
+            # Semi-Auto mode: auto-approve safe commands
+            if self._is_safe_command(command):
+                return ApprovalResult(
+                    approved=True,
+                    choice=ApprovalChoice.APPROVE,
+                    apply_to_all=False,
+                )
 
         # Check if pre-approved
         if command and command in self.pre_approved_commands:
@@ -323,7 +388,25 @@ class ChatApprovalManager:
         force_prompt: bool = False,
     ):
         """Request approval for an operation with interactive prompt."""
+        from swecli.core.approval import ApprovalResult, ApprovalChoice
+
         matched_rule = None
+
+        # AUTO mode always bypasses approval, even with force_prompt
+        if self.autonomy_level == AutonomyLevel.AUTO:
+            return ApprovalResult(
+                approved=True,
+                choice=ApprovalChoice.APPROVE,
+                apply_to_all=True,
+            )
+
+        # SEMI_AUTO mode: auto-approve safe commands even with force_prompt
+        if self.autonomy_level == AutonomyLevel.SEMI_AUTO and self._is_safe_command(command):
+            return ApprovalResult(
+                approved=True,
+                choice=ApprovalChoice.APPROVE,
+                apply_to_all=False,
+            )
 
         if not force_prompt:
             auto_result = self._check_auto_approval(operation, command)
