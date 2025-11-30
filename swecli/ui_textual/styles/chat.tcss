@@ -177,7 +177,7 @@ ScrollbarCorner {
     height: auto;
     max-height: 12;
     background: $background;
-    padding: 0 1;
+    padding: 0 2;
     display: none;
 }
 

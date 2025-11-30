@@ -585,23 +585,6 @@ class QueryProcessor:
             # Clear current monitor
             self._current_task_monitor = None
 
-    def _handle_safety_limit(self, agent, messages: list):
-        """Handle safety limit reached by requesting summary.
-
-        Args:
-            agent: Agent to use
-            messages: Message history
-        """
-        self.console.print(f"\n[yellow]⚠ Safety limit reached. Requesting summary...[/yellow]")
-        messages.append({
-            "role": "user",
-            "content": "Please provide a summary of what you've found and what needs to be done."
-        })
-        response = agent.call_llm(messages)
-        if response.get("content"):
-            self.console.print()
-            self._print_markdown_message(response["content"])
-
     def _should_nudge_agent(self, consecutive_reads: int, messages: list) -> bool:
         """Check if agent should be nudged to conclude.
 
@@ -677,16 +660,10 @@ class QueryProcessor:
             # ReAct loop: Reasoning → Acting → Observing
             consecutive_reads = 0
             iteration = 0
-            SAFETY_LIMIT = 30
             READ_OPERATIONS = {"read_file", "list_files", "search_code"}
 
             while True:
                 iteration += 1
-
-                # Safety check
-                if iteration > SAFETY_LIMIT:
-                    self._handle_safety_limit(agent, messages)
-                    break
 
                 # Call LLM
                 task_monitor = TaskMonitor()
@@ -878,7 +855,6 @@ class QueryProcessor:
             # ReAct loop: Reasoning → Acting → Observing
             consecutive_reads = 0
             iteration = 0
-            SAFETY_LIMIT = 30
             READ_OPERATIONS = {"read_file", "list_files", "search_code"}
 
             while True:
@@ -887,11 +863,6 @@ class QueryProcessor:
                 # Debug: ReAct iteration
                 if ui_callback and hasattr(ui_callback, 'on_debug'):
                     ui_callback.on_debug(f"ReAct iteration #{iteration}", "REACT")
-
-                # Safety check
-                if iteration > SAFETY_LIMIT:
-                    self._handle_safety_limit(agent, messages)
-                    break
 
                 # Debug: Calling LLM
                 if ui_callback and hasattr(ui_callback, 'on_debug'):
