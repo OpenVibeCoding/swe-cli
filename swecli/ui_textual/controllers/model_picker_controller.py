@@ -60,7 +60,6 @@ class ModelPickerController:
             "slot_items": [],
             "slot_index": 0,
             "panel_start": None,
-            "pending": {},
         }
 
         input_field = self.app.input_field
@@ -151,11 +150,7 @@ class ModelPickerController:
             index = max(0, min(state.get("slot_index", 0), len(items) - 1))
             item = items[index]
             value = item.get("value")
-            if value == "save":
-                await self._commit_model_selections()
-                return
-            if value in {"cancel", None}:
-                self.cancel()
+            if value is None:
                 return
             state["slot"] = value
             state["stage"] = "provider"
@@ -182,10 +177,10 @@ class ModelPickerController:
             return
 
         if stage == "model":
-            providers = state.get("models") or []
+            models = state.get("models") or []
             provider_info = state.get("provider")
             slot = state.get("slot")
-            if not providers:
+            if not models:
                 self.app.conversation.add_system_message("No models to select — press B to go back.")
                 self.app.refresh()
                 return
@@ -193,9 +188,10 @@ class ModelPickerController:
                 self.app.conversation.add_system_message("Internal model selector state invalid.")
                 self.app.refresh()
                 return
-            index = max(0, min(state.get("model_index", 0), len(providers) - 1))
-            model_info = providers[index]
-            self._stage_model_selection(slot, provider_info, model_info)
+            index = max(0, min(state.get("model_index", 0), len(models) - 1))
+            model_info = models[index]
+            # Save immediately and go back to slot menu
+            success = await self._commit_single_model(slot, provider_info, model_info)
             state["stage"] = "slot"
             state["provider"] = None
             state["providers"] = []
@@ -234,7 +230,7 @@ class ModelPickerController:
 
             if match_index is None:
                 self.app.conversation.add_system_message(
-                    "Type 1-3 to select a slot, S to save staged models, or X to cancel."
+                    "Type 1-3 to select a slot, or press Esc to cancel."
                 )
                 self.app.refresh()
                 return True
@@ -370,25 +366,19 @@ class ModelPickerController:
 
         config_snapshot = self._get_model_config_snapshot()
         labels = self._model_slot_labels()
-        pending: dict[str, dict[str, Any]] = state.get("pending", {})
 
         items: list[dict[str, str]] = []
         order = [("normal", "1"), ("thinking", "2"), ("vision", "3")]
         for slot, option in order:
             slot_label = labels.get(slot, slot.title())
             summary = "Not set"
-            if slot in pending:
-                provider_info = pending[slot]["provider"]
-                model_info = pending[slot]["model"]
-                summary = f"{provider_info.name}/{model_info.name} (pending)"
-            else:
-                current = config_snapshot.get(slot, {})
-                provider_display = current.get("provider_display") or current.get("provider") or ""
-                model_display = current.get("model_display") or current.get("model") or ""
-                if provider_display and model_display:
-                    summary = f"{provider_display}/{model_display}"
-                elif provider_display:
-                    summary = provider_display
+            current = config_snapshot.get(slot, {})
+            provider_display = current.get("provider_display") or current.get("provider") or ""
+            model_display = current.get("model_display") or current.get("model") or ""
+            if provider_display and model_display:
+                summary = f"{provider_display}/{model_display}"
+            elif provider_display:
+                summary = provider_display
             items.append(
                 {
                     "value": slot,
@@ -398,22 +388,6 @@ class ModelPickerController:
                 }
             )
 
-        items.append(
-            {
-                "value": "save",
-                "label": "Save models",
-                "summary": "Validate staged changes and persist configuration",
-                "option": "S",
-            }
-        )
-        items.append(
-            {
-                "value": "cancel",
-                "label": "Cancel",
-                "summary": "Close the selector",
-                "option": "X",
-            }
-        )
 
         state["slot_items"] = items
         index = state.get("slot_index", 0)
@@ -444,13 +418,10 @@ class ModelPickerController:
             )
 
         instructions = Text(
-            "Use ↑/↓ or 1-3 to choose a slot, Enter to select, S to save staged models, X to cancel.",
+            "Use ↑/↓ or 1-3 to select a slot, Enter to configure, Esc to cancel.",
             style="italic #7a8691",
         )
-        pending_hint = ""
-        if pending:
-            pending_hint = " • Pending selections are only applied when you save."
-        header = Text(f"Select which model slot you’d like to configure.{pending_hint}", style="#9ccffd")
+        header = Text("Select which model slot you'd like to configure.", style="#9ccffd")
         panel = Panel(
             Group(header, table, instructions),
             title="[bold]Model Configuration[/bold]",
@@ -663,9 +634,21 @@ class ModelPickerController:
         )
         self._post_model_panel(panel)
 
+    def _get_configured_provider_ids(self) -> set[str]:
+        """Get provider IDs from config/providers/*.json (excluding _archived_providers)."""
+        from pathlib import Path
+
+        providers_dir = Path(__file__).parent.parent.parent / "config" / "providers"
+        if not providers_dir.exists():
+            return set()
+        return {f.stem for f in providers_dir.glob("*.json")}
+
     def _compute_providers_for_slot(self, slot: str, registry) -> list[dict[str, Any]]:
         if registry is None:
             return []
+
+        # Get only configured providers (from config/providers/*.json)
+        configured_ids = self._get_configured_provider_ids()
 
         capability_map = {
             "normal": None,
@@ -677,6 +660,10 @@ class ModelPickerController:
 
         providers: list[dict[str, Any]] = []
         for provider in sorted(registry.list_providers(), key=lambda info: info.name.lower()):
+            # Skip providers not in config directory
+            if configured_ids and provider.id not in configured_ids:
+                continue
+
             is_universal = provider.id in universal_providers
             if slot == "normal":
                 models = provider.list_models()
@@ -744,84 +731,44 @@ class ModelPickerController:
         conversation.scroll_end(animate=False)
         self.app.refresh()
 
-    def _stage_model_selection(self, slot: str, provider_info, model_info) -> None:
-        state = self.state
-        if not state:
-            return
+    async def _commit_single_model(self, slot: str, provider_info, model_info) -> bool:
+        """Save a single model selection immediately.
 
-        pending = state.setdefault("pending", {})
-        pending[slot] = {"provider": provider_info, "model": model_info}
+        Returns:
+            True if saved successfully, False otherwise.
+        """
+        if not self.app.on_model_selected:
+            self.app.conversation.add_system_message("No handler available to update models.")
+            return False
 
         labels = self._model_slot_labels()
         display_name = f"{provider_info.name}/{model_info.name}"
-        self.app.conversation.add_system_message(
-            f"Staged {labels.get(slot, slot.title())} → {display_name}. Select Save models to apply."
-        )
-        self.app.refresh()
 
-    async def _commit_model_selections(self) -> None:
-        state = self.state
-        if not state:
-            return
+        try:
+            result = self.app.on_model_selected(slot, provider_info.id, model_info.id)
+            if inspect.isawaitable(result):
+                result = await result
+        except Exception as exc:  # pragma: no cover
+            self.app.conversation.add_error(
+                f"{labels.get(slot, slot.title())} model not saved: Exception while saving: {exc}"
+            )
+            return False
 
-        pending = state.get("pending") or {}
-        if not pending:
-            self.app.conversation.add_system_message("No pending model changes to save.")
-            self._render_model_summary()
-            self.end(None)
-            return
-
-        if not self.app.on_model_selected:
-            self.app.conversation.add_system_message("No handler available to update models.")
-            return
-
-        failures: list[tuple[str, str]] = []
-        successes: list[tuple[str, Any, Any, str]] = []
-
-        for slot, selection in list(pending.items()):
-            provider_info = selection["provider"]
-            model_info = selection["model"]
-            try:
-                result = self.app.on_model_selected(slot, provider_info.id, model_info.id)
-                if inspect.isawaitable(result):
-                    result = await result
-            except Exception as exc:  # pragma: no cover
-                failures.append((slot, f"Exception while saving: {exc}"))
-                continue
-
-            if getattr(result, "success", None):
-                message = getattr(result, "message", "") or ""
-                successes.append((slot, provider_info, model_info, message))
-                pending.pop(slot, None)
-            else:
-                message = getattr(result, "message", None) or "Model update failed."
-                failures.append((slot, message))
-
-        labels = self._model_slot_labels()
-
-        for slot, provider_info, model_info, message in successes:
-            summary = f"{provider_info.name}/{model_info.name}"
+        if getattr(result, "success", None):
+            message = getattr(result, "message", "") or ""
+            summary = display_name
             if message:
                 summary = f"{summary} — {message}"
             self.app.conversation.add_system_message(
                 f"✓ {labels.get(slot, slot.title())} model saved: {summary}"
             )
-
-        if failures:
-            for slot, message in failures:
-                self.app.conversation.add_error(
-                    f"{labels.get(slot, slot.title())} model not saved: {message}"
-                )
-            state["stage"] = "slot"
-            state["slot_index"] = 0
-            self._render_model_slot_panel()
-            return
-
-        state["pending"] = {}
-        state["stage"] = "slot"
-        state["slot_index"] = 0
-        self._render_model_summary()
-        self.end(None)
+            return True
+        else:
+            message = getattr(result, "message", None) or "Model update failed."
+            self.app.conversation.add_error(
+                f"{labels.get(slot, slot.title())} model not saved: {message}"
+            )
+            return False
 
     @staticmethod
     def _model_slot_labels() -> dict[str, str]:
