@@ -401,6 +401,118 @@ class TestSearchExclusions:
         assert file_ops._is_excluded_path(".venv/lib/python3.9/site-packages/requests/__init__.py") is True
         assert file_ops._is_excluded_path("venv/bin/python") is True
 
+    def test_is_excluded_path_rust_target(self):
+        """Test Rust target directory is excluded."""
+        from swecli.tools.file_ops import FileOperations
+        from swecli.models.config import AppConfig
+        from pathlib import Path
+
+        config = AppConfig()
+        file_ops = FileOperations(config, Path("."))
+
+        assert file_ops._is_excluded_path("target/debug/main") is True
+        assert file_ops._is_excluded_path("target/release/libfoo.so") is True
+
+    def test_is_excluded_path_java_gradle(self):
+        """Test Java/Gradle directories are excluded."""
+        from swecli.tools.file_ops import FileOperations
+        from swecli.models.config import AppConfig
+        from pathlib import Path
+
+        config = AppConfig()
+        file_ops = FileOperations(config, Path("."))
+
+        assert file_ops._is_excluded_path(".gradle/caches/modules-2/files-2.1") is True
+        assert file_ops._is_excluded_path(".m2/repository/org/junit/junit.jar") is True
+
+    def test_is_excluded_path_elixir_deps(self):
+        """Test Elixir deps directory is excluded."""
+        from swecli.tools.file_ops import FileOperations
+        from swecli.models.config import AppConfig
+        from pathlib import Path
+
+        config = AppConfig()
+        file_ops = FileOperations(config, Path("."))
+
+        assert file_ops._is_excluded_path("deps/phoenix/lib/phoenix.ex") is True
+        assert file_ops._is_excluded_path("_build/dev/lib/myapp/ebin") is True
+
+    def test_is_excluded_path_dotnet_obj(self):
+        """Test .NET obj/bin directories are excluded."""
+        from swecli.tools.file_ops import FileOperations
+        from swecli.models.config import AppConfig
+        from pathlib import Path
+
+        config = AppConfig()
+        file_ops = FileOperations(config, Path("."))
+
+        assert file_ops._is_excluded_path("obj/Debug/net6.0/app.dll") is True
+        assert file_ops._is_excluded_path("bin/Release/net6.0/app.exe") is True
+
+    def test_is_excluded_path_haskell_stack(self):
+        """Test Haskell .stack-work directory is excluded."""
+        from swecli.tools.file_ops import FileOperations
+        from swecli.models.config import AppConfig
+        from pathlib import Path
+
+        config = AppConfig()
+        file_ops = FileOperations(config, Path("."))
+
+        assert file_ops._is_excluded_path(".stack-work/install/x86_64-linux") is True
+        assert file_ops._is_excluded_path("dist-newstyle/build/x86_64-linux") is True
+
+    def test_is_excluded_path_swift_pods(self):
+        """Test Swift/CocoaPods directories are excluded."""
+        from swecli.tools.file_ops import FileOperations
+        from swecli.models.config import AppConfig
+        from pathlib import Path
+
+        config = AppConfig()
+        file_ops = FileOperations(config, Path("."))
+
+        assert file_ops._is_excluded_path("Pods/Alamofire/Source/Alamofire.swift") is True
+        assert file_ops._is_excluded_path("DerivedData/MyApp-abc123/Build") is True
+
+    def test_is_excluded_path_ide_dirs(self):
+        """Test IDE directories are excluded."""
+        from swecli.tools.file_ops import FileOperations
+        from swecli.models.config import AppConfig
+        from pathlib import Path
+
+        config = AppConfig()
+        file_ops = FileOperations(config, Path("."))
+
+        assert file_ops._is_excluded_path(".idea/workspace.xml") is True
+        assert file_ops._is_excluded_path(".vscode/settings.json") is True
+        assert file_ops._is_excluded_path(".vs/config.json") is True
+
+    def test_is_excluded_path_compiled_files(self):
+        """Test compiled file extensions are excluded."""
+        from swecli.tools.file_ops import FileOperations
+        from swecli.models.config import AppConfig
+        from pathlib import Path
+
+        config = AppConfig()
+        file_ops = FileOperations(config, Path("."))
+
+        assert file_ops._is_excluded_path("src/main.o") is True
+        assert file_ops._is_excluded_path("lib/utils.so") is True
+        assert file_ops._is_excluded_path("com/example/App.class") is True
+        assert file_ops._is_excluded_path("priv/beam/module.beam") is True
+
+    def test_is_excluded_path_version_control(self):
+        """Test version control directories are excluded."""
+        from swecli.tools.file_ops import FileOperations
+        from swecli.models.config import AppConfig
+        from pathlib import Path
+
+        config = AppConfig()
+        file_ops = FileOperations(config, Path("."))
+
+        assert file_ops._is_excluded_path(".git/objects/pack") is True
+        assert file_ops._is_excluded_path(".svn/pristine") is True
+        assert file_ops._is_excluded_path(".hg/store") is True
+
 
 class TestFileOpsGrepFiles:
     """Test the underlying grep_files method."""
