@@ -353,26 +353,24 @@ class FileOperations:
 
         matches = []
         if result.returncode == 0 and result.stdout.strip():
-            for line in result.stdout.strip().split("\n"):
-                if not line:
-                    continue
-                try:
-                    data = json.loads(line)
-                    file_path = data.get("file", "")
-                    # Make path relative to working_dir for cleaner output
-                    try:
-                        rel_path = str(Path(file_path).relative_to(self.working_dir))
-                    except ValueError:
-                        rel_path = file_path
+            try:
+                # ast-grep outputs a JSON array, not newline-delimited objects
+                data = json.loads(result.stdout)
+                if isinstance(data, list):
+                    for item in data[:max_results]:
+                        file_path = item.get("file", "")
+                        # Make path relative to working_dir for cleaner output
+                        try:
+                            rel_path = str(Path(file_path).relative_to(self.working_dir))
+                        except ValueError:
+                            rel_path = file_path
 
-                    matches.append({
-                        "file": rel_path,
-                        "line": data.get("range", {}).get("start", {}).get("line", 0),
-                        "content": data.get("text", "").strip(),
-                    })
-                    if len(matches) >= max_results:
-                        break
-                except json.JSONDecodeError:
-                    continue
+                        matches.append({
+                            "file": rel_path,
+                            "line": item.get("range", {}).get("start", {}).get("line", 0),
+                            "content": item.get("text", "").strip(),
+                        })
+            except json.JSONDecodeError:
+                pass  # Invalid JSON, return empty matches
 
         return matches
