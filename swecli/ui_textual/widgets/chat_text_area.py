@@ -383,6 +383,7 @@ class ChatTextArea(TextArea):
             return
 
         await super()._on_key(event)
+        self.update_suggestion()  # Refresh autocomplete after text changes
 
         if approval_mode and hasattr(app, "_render_approval_prompt"):
             app._render_approval_prompt()
