@@ -234,6 +234,13 @@ class ChatTextArea(TextArea):
         """Intercept Enter to submit while preserving Shift+Enter for new lines."""
 
         app = getattr(self, "app", None)
+
+        # Cancel exit confirmation on any key except Ctrl+C
+        if hasattr(app, "_exit_confirmation_mode") and app._exit_confirmation_mode:
+            if event.key != "ctrl+c":
+                if hasattr(app, "_cancel_exit_confirmation"):
+                    app._cancel_exit_confirmation()
+
         approval_controller = getattr(app, "_approval_controller", None)
         approval_mode = bool(approval_controller and getattr(approval_controller, "active", False))
 

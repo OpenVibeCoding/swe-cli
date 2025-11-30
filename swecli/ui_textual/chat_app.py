@@ -114,6 +114,7 @@ class SWECLIChatApp(App):
         self._command_router = CommandRouter(self)
         self._history = MessageHistory()
         self._message_controller = MessageController(self)
+        self._exit_confirmation_mode = False
 
     def compose(self) -> ComposeResult:
         """Create child widgets."""
@@ -155,6 +156,7 @@ class SWECLIChatApp(App):
         # Get widgets
         self.conversation = self.query_one("#conversation", ConversationLog)
         self.input_field = self.query_one("#input", ChatTextArea)
+        self.input_label = self.query_one("#input-label", Static)
         input_container = self.query_one("#input-container")
         self.status_bar = self.query_one("#status-bar", StatusBar)
         self.footer = self.query_one("#model-footer", ModelFooter)
@@ -434,16 +436,27 @@ class SWECLIChatApp(App):
     def action_clear_or_quit(self) -> None:
         """Clear input text or quit (Ctrl+C).
 
-        First Ctrl+C: Clear input text if there's any
-        Second Ctrl+C (empty input): Quit the application
+        First Ctrl+C: Clear input (if any) + show exit confirmation
+        Second Ctrl+C: Quit the application
         """
-        # If input has text, clear it first
-        if self.input_field.text.strip():
-            self.input_field.clear()
+        # If already in exit confirmation mode, quit
+        if self._exit_confirmation_mode:
+            self.exit()
             return
 
-        # If input is empty, quit
-        self.exit()
+        # Clear input if there's text
+        if self.input_field.text.strip():
+            self.input_field.clear()
+
+        # Enter exit confirmation mode
+        self._exit_confirmation_mode = True
+        self.input_label.update("› Press Ctrl+C again to quit")
+
+    def _cancel_exit_confirmation(self) -> None:
+        """Cancel exit confirmation and restore normal state."""
+        if self._exit_confirmation_mode:
+            self._exit_confirmation_mode = False
+            self.input_label.update("› Type your message (Enter to send, Shift+Enter for new line):")
 
     def action_quit(self) -> None:
         """Quit the application (Ctrl+C)."""
