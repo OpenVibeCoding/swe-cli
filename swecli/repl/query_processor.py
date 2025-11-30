@@ -1039,9 +1039,10 @@ class QueryProcessor:
 
                 # Break on excessive consecutive reads
                 if consecutive_reads >= 5:
-                    warning = "[yellow]AI is performing multiple read operations. Consider improving the query or providing more specific instructions.[/yellow]"
-                    self.console.print(warning)
-                    assistant_msg = ChatMessage(role=Role.ASSISTANT, content=warning)
+                    warning_display = "[yellow]AI is performing multiple read operations. Consider improving the query or providing more specific instructions.[/yellow]"
+                    warning_plain = "AI is performing multiple read operations. Consider improving the query or providing more specific instructions."
+                    self.console.print(warning_display)
+                    assistant_msg = ChatMessage(role=Role.ASSISTANT, content=warning_plain)
                     self.session_manager.add_message(assistant_msg, self.config.auto_save_interval)
                     break
 
