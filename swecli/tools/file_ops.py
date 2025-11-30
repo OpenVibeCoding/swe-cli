@@ -168,7 +168,7 @@ class FileOperations:
         return matches
 
     def _python_grep(
-        self, pattern: str, file_pattern: Optional[str],
+        self, pattern: str, search_path: Optional[str],
         max_results: int, case_insensitive: bool
     ) -> list[dict[str, any]]:
         """Fallback grep implementation using Python."""
@@ -176,12 +176,39 @@ class FileOperations:
         flags = re.IGNORECASE if case_insensitive else 0
         regex = re.compile(pattern, flags)
 
-        # Handle "." and "./" as meaning "search all files"
-        if file_pattern in (None, ".", "./"):
+        # Determine search root and glob pattern
+        if search_path in (None, ".", "./"):
+            # Search from working_dir with all files
+            search_root = self.working_dir
             glob_pattern = "**/*"
         else:
-            glob_pattern = file_pattern
-        for path in self.working_dir.glob(glob_pattern):
+            # Check if it's an absolute path
+            search_path_obj = Path(search_path)
+            if search_path_obj.is_absolute():
+                if search_path_obj.is_dir():
+                    search_root = search_path_obj
+                    glob_pattern = "**/*"
+                elif search_path_obj.is_file():
+                    # Single file search
+                    search_root = search_path_obj.parent
+                    glob_pattern = search_path_obj.name
+                else:
+                    return matches  # Path doesn't exist
+            else:
+                # Relative path - resolve from working_dir
+                resolved = self.working_dir / search_path
+                if resolved.is_dir():
+                    search_root = resolved
+                    glob_pattern = "**/*"
+                elif resolved.is_file():
+                    search_root = resolved.parent
+                    glob_pattern = resolved.name
+                else:
+                    # Treat as glob pattern
+                    search_root = self.working_dir
+                    glob_pattern = search_path
+
+        for path in search_root.glob(glob_pattern):
             if not path.is_file():
                 continue
 
@@ -189,9 +216,9 @@ class FileOperations:
                 with open(path, "r", encoding="utf-8", errors="ignore") as f:
                     for line_num, line in enumerate(f, 1):
                         if regex.search(line):
-                            rel_path = path.relative_to(self.working_dir)
+                            # Return absolute path for consistency with ripgrep output
                             matches.append({
-                                "file": str(rel_path),
+                                "file": str(path),
                                 "line": line_num,
                                 "content": line.strip(),
                             })
