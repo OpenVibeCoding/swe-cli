@@ -243,6 +243,49 @@ class FileToolHandler:
         except Exception as exc:  # noqa: BLE001
             return {"success": False, "error": str(exc), "output": None}
 
+    def ast_search(self, args: dict[str, Any]) -> dict[str, Any]:
+        """Search for code patterns using AST (ast-grep).
+
+        Unlike text search, ast_search matches code structure regardless of
+        formatting/whitespace. Use $VAR wildcards to match any AST node.
+        """
+        if not self._file_ops:
+            return {"success": False, "error": "FileOperations not available"}
+
+        pattern = args["pattern"]
+        path = args.get("path")
+        lang = args.get("lang")
+
+        try:
+            matches = self._file_ops.ast_grep(pattern, path, lang)
+            if not matches:
+                return {
+                    "success": True,
+                    "output": "No structural matches found",
+                    "matches": [],
+                }
+
+            lines = [
+                f"{match['file']}:{match['line']} - {match['content']}"
+                for match in matches[:50]
+            ]
+            if len(matches) > 50:
+                lines.append(f"\n... and {len(matches) - 50} more matches")
+            output = "\n".join(lines)
+
+            return {"success": True, "output": output, "matches": matches}
+        except FileNotFoundError:
+            return {
+                "success": False,
+                "error": "ast-grep (sg) not installed. Install with: brew install ast-grep",
+                "output": None,
+            }
+        except Exception as exc:  # noqa: BLE001
+            error_msg = str(exc)
+            if "timeout" in error_msg.lower():
+                error_msg = "AST search timed out. Try a more specific path."
+            return {"success": False, "error": error_msg, "output": None}
+
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------

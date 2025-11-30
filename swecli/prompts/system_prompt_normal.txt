@@ -63,14 +63,33 @@ If unsure about these commands, ask the user how they verify code quality.
   - Preserve existing code style and conventions
 
 ## Search & Navigation
-- **`list_files(path, pattern)`**: List directory contents with optional glob pattern
-  - Use to discover project structure
-  - Examples: "*.py", "src/**/*.js"
 
-- **`search(pattern, path)`**: Fast code search using ripgrep with regex
-  - Essential for finding function definitions, imports, usage patterns
-  - Use before making changes to understand context
-  - **CRITICAL**: NEVER use "." as path - always use specific directories to avoid timeouts
+### `list_files(path, pattern)` - Directory listing with glob
+- Use to discover project structure
+- Examples: "*.py", "src/**/*.js"
+
+### `search(pattern, path)` - Text/Regex Search (ripgrep)
+**Use for:** Exact string matches, finding specific symbols, tracing imports
+- `search("def calculate_tax", "src/")` - Find function definition
+- `search("import requests", "**/*.py")` - Find all imports
+- `search("\bTODO\b", "src/")` - Find exact word with boundaries
+- **CRITICAL**: NEVER use "." as path - always use specific directories
+
+### `ast_search(pattern, path, lang)` - Structural Search (ast-grep)
+**Use for:** Code patterns regardless of formatting, refactoring candidates
+- `ast_search("$A && $A()", "src/", "typescript")` - Short-circuit patterns
+- `ast_search("console.log($MSG)", "src/")` - All console.logs
+- `ast_search("if ($COND) { return $VAL }", "src/")` - Early returns
+- `ast_search("def $FUNC($ARGS): pass", "src/", "python")` - Empty functions
+- `ast_search("await $PROMISE", "src/")` - All await expressions
+- Pattern syntax: `$VAR` matches any AST node (like regex .* but for syntax)
+
+### When to Use Which Search Tool
+| Need | Tool | Example |
+|------|------|---------|
+| Exact string/symbol | `search()` | Find "getUserById" |
+| Code pattern/structure | `ast_search()` | Find all try/except blocks |
+| File discovery | `list_files()` | Find all Python files |
 
 ## Command Execution
 - **`run_command(command, background)`**: Execute ANY bash/shell command

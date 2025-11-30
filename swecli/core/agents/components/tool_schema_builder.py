@@ -3,7 +3,21 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any, Sequence
+from typing import Any, Sequence, Union
+
+
+# Read-only tools allowed in PLAN mode for codebase exploration
+PLANNING_TOOLS = {
+    "read_file",
+    "list_files",
+    "search",
+    "ast_search",  # AST-based structural code search
+    "fetch_url",
+    "list_processes",
+    "get_process_output",
+    "list_screenshots",
+    "list_web_screenshots",
+}
 
 
 class ToolSchemaBuilder:
@@ -39,6 +53,24 @@ class ToolSchemaBuilder:
                 }
             )
         return schemas
+
+
+class PlanningToolSchemaBuilder:
+    """Assemble read-only tool schemas for PLAN mode agents.
+
+    Planning agents can explore the codebase but cannot make changes.
+    """
+
+    def __init__(self, tool_registry: Union[Any, None] = None) -> None:
+        self._tool_registry = tool_registry
+
+    def build(self) -> list[dict[str, Any]]:
+        """Return only read-only tool schemas for planning mode."""
+        return [
+            deepcopy(schema)
+            for schema in _BUILTIN_TOOL_SCHEMAS
+            if schema["function"]["name"] in PLANNING_TOOLS
+        ]
 
 
 _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
@@ -155,6 +187,31 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
                     },
                 },
                 "required": ["pattern", "path"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ast_search",
+            "description": "Search for code STRUCTURE patterns using AST (ast-grep). Unlike text search, this matches code patterns regardless of formatting/whitespace. Use $VAR wildcards to match any AST node. Examples: '$A && $A()' finds short-circuit calls, 'console.log($MSG)' finds all console.logs, 'def $FUNC($ARGS):' finds Python function definitions.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "pattern": {
+                        "type": "string",
+                        "description": "AST pattern with $VAR wildcards (e.g., '$FUNC($ARGS)', 'await $PROMISE', 'try { $BODY } catch ($E) { $HANDLER }')",
+                    },
+                    "path": {
+                        "type": "string",
+                        "description": "Directory to search (default: current directory). Be specific to avoid timeouts.",
+                    },
+                    "lang": {
+                        "type": "string",
+                        "description": "Language hint: python, typescript, javascript, go, rust, java, c, cpp, etc. Auto-detected from file extension if not specified.",
+                    },
+                },
+                "required": ["pattern"],
             },
         },
     },

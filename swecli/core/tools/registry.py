@@ -17,6 +17,7 @@ _PLAN_READ_ONLY_TOOLS = {
     "read_file",
     "list_files",
     "search",
+    "ast_search",  # AST-based code search, read-only
     "fetch_url",
     "list_processes",
     "get_process_output",
@@ -63,6 +64,7 @@ class ToolRegistry:
             "read_file": self._file_handler.read_file,
             "list_files": self._file_handler.list_files,
             "search": self._file_handler.search,
+            "ast_search": self._file_handler.ast_search,
             "run_command": self._process_handler.run_command,
             "list_processes": lambda args, ctx: self._process_handler.list_processes(),
             "get_process_output": self._process_handler.get_process_output,

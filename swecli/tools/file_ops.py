@@ -276,3 +276,71 @@ class FileOperations:
         if p.is_absolute():
             return p
         return (self.working_dir / p).resolve()
+
+    def ast_grep(
+        self,
+        pattern: str,
+        path: Optional[str] = None,
+        lang: Optional[str] = None,
+        max_results: int = 50,
+    ) -> list[dict[str, any]]:
+        """Search for AST patterns using ast-grep.
+
+        ast-grep matches code structure, not text. Use $VAR wildcards to match
+        any AST node (similar to regex .* but for syntax trees).
+
+        Args:
+            pattern: AST pattern with $VAR wildcards (e.g., '$A && $A()')
+            path: Directory to search (relative to working_dir)
+            lang: Language hint (auto-detected from file extension if not specified)
+            max_results: Maximum matches to return
+
+        Returns:
+            List of matches with file, line, and matched code
+
+        Raises:
+            FileNotFoundError: If ast-grep (sg) is not installed
+        """
+        import json
+
+        cmd = ["sg", "--json", "-p", pattern]
+
+        if lang:
+            cmd.extend(["-l", lang])
+
+        search_path = str(self.working_dir / path) if path else str(self.working_dir)
+        cmd.append(search_path)
+
+        result = subprocess.run(
+            cmd,
+            cwd=self.working_dir,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+
+        matches = []
+        if result.returncode == 0 and result.stdout.strip():
+            for line in result.stdout.strip().split("\n"):
+                if not line:
+                    continue
+                try:
+                    data = json.loads(line)
+                    file_path = data.get("file", "")
+                    # Make path relative to working_dir for cleaner output
+                    try:
+                        rel_path = str(Path(file_path).relative_to(self.working_dir))
+                    except ValueError:
+                        rel_path = file_path
+
+                    matches.append({
+                        "file": rel_path,
+                        "line": data.get("range", {}).get("start", {}).get("line", 0),
+                        "content": data.get("text", "").strip(),
+                    })
+                    if len(matches) >= max_results:
+                        break
+                except json.JSONDecodeError:
+                    continue
+
+        return matches
