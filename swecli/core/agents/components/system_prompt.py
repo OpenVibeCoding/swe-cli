@@ -17,7 +17,7 @@ class SystemPromptBuilder:
     def build(self) -> str:
         """Return the formatted system prompt string."""
         # Load base prompt from file
-        prompt = load_prompt("agent_normal")
+        prompt = load_prompt("system_prompt_normal")
 
         # Add working directory context
         if self._working_dir:
@@ -54,4 +54,4 @@ class PlanningPromptBuilder:
 
     def build(self) -> str:
         """Return the static planning prompt."""
-        return load_prompt("agent_planning")
+        return load_prompt("system_prompt_planning")

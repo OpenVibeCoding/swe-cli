@@ -4,7 +4,7 @@ This directory contains all system prompts used by SWE-CLI agents. Prompts are s
 
 ## Available Prompts
 
-### 1. `agent_normal.txt`
+### 1. `system_prompt_normal.txt`
 **Purpose**: Base system prompt for the normal/execution agent
 **Used by**: `SystemPromptBuilder` in normal mode
 **Description**: Defines the ReAct pattern, lists available tools, and sets the tone for interactive coding sessions.
@@ -17,7 +17,7 @@ This directory contains all system prompts used by SWE-CLI agents. Prompts are s
 - Advanced search strategies and workflows
 - MCP integration, security, and best practices
 
-### 2. `agent_planning.txt`
+### 2. `system_prompt_planning.txt`
 **Purpose**: System prompt for the planning/analysis agent
 **Used by**: `PlanningPromptBuilder` in plan mode
 **Description**: Defines the planning agent's role as a strategic advisor without execution capabilities.
@@ -27,16 +27,6 @@ This directory contains all system prompts used by SWE-CLI agents. Prompts are s
 - Planning workflow
 - Output format template
 - Smart mode detection
-
-### 3. `agent_planning.txt`
-**Purpose**: Task planning and strategy development
-**Used by**: `PlanningAgent` for complex multi-step tasks
-**Description**: Instructions for breaking down complex queries into manageable steps.
-
-**Key sections**:
-- Task decomposition approach
-- Step validation criteria
-- Progress reporting format
 
 ## Note on Context Management
 
@@ -54,7 +44,7 @@ Simply edit the `.txt` files in this directory. Changes take effect immediately 
 
 ```bash
 # Edit a prompt
-vim swecli/prompts/agent_normal.txt
+vim swecli/prompts/system_prompt_normal.txt
 
 # Changes are loaded automatically on next agent initialization
 ```
@@ -65,13 +55,13 @@ vim swecli/prompts/agent_normal.txt
 from swecli.prompts import load_prompt, save_prompt, get_prompt_path
 
 # Load a prompt
-prompt = load_prompt("agent_normal")
+prompt = load_prompt("system_prompt_normal")
 
 # Get file path
-path = get_prompt_path("agent_planning")
+path = get_prompt_path("system_prompt_planning")
 
 # Save a modified prompt
-save_prompt("agent_normal", modified_content)
+save_prompt("system_prompt_normal", modified_content)
 ```
 
 ## Prompt Design Guidelines
@@ -93,9 +83,9 @@ Agent Initialization
   ↓
 SystemPromptBuilder.build()
   ↓
-load_prompt("agent_normal")
+load_prompt("system_prompt_normal")
   ↓
-Read from agent_normal.txt (consolidated prompt with all guidelines)
+Read from system_prompt_normal.txt (consolidated prompt with all guidelines)
   ↓
 Add working directory context + MCP tools
   ↓
@@ -124,7 +114,7 @@ To add dynamic content (like MCP tools), modify the builder class:
 ```python
 class SystemPromptBuilder:
     def build(self) -> str:
-        prompt = load_prompt("agent_normal")
+        prompt = load_prompt("system_prompt_normal")
 
         # Add custom dynamic section
         prompt += self._build_custom_section()
@@ -138,10 +128,10 @@ To support multiple languages, create language-specific prompt files:
 
 ```
 prompts/
-├── agent_normal.txt          # Default (English)
-├── agent_normal_es.txt       # Spanish
-├── agent_normal_zh.txt       # Chinese
-└── loader.py                 # Add language parameter
+├── system_prompt_normal.txt          # Default (English)
+├── system_prompt_normal_es.txt       # Spanish
+├── system_prompt_normal_zh.txt       # Chinese
+└── loader.py                         # Add language parameter
 ```
 
 ### User-Specific Customization
@@ -189,7 +179,7 @@ swecli
 ```python
 # Check if file exists
 from swecli.prompts import get_prompt_path
-path = get_prompt_path("agent_normal")
+path = get_prompt_path("system_prompt_normal")
 print(path.exists())  # Should be True
 
 # Manually read to debug
