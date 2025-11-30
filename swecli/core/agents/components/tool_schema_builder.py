@@ -10,8 +10,7 @@ from typing import Any, Sequence, Union
 PLANNING_TOOLS = {
     "read_file",
     "list_files",
-    "search",
-    "ast_search",  # AST-based structural code search
+    "search",  # Unified: type="text" (ripgrep) or "ast" (ast-grep)
     "fetch_url",
     "list_processes",
     "get_process_output",
@@ -173,45 +172,30 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
         "type": "function",
         "function": {
             "name": "search",
-            "description": "Search for a pattern in files using ripgrep. Fast and efficient. CRITICAL: NEVER use '.' as path - always use specific files or subdirectories to avoid timeouts. First explore with list_files, then search specific locations.",
+            "description": "Search for patterns in code. Supports two modes: 'text' (default) for regex/string search using ripgrep, and 'ast' for structural code pattern matching using ast-grep. AST mode matches code structure regardless of formatting - use $VAR wildcards to match any AST node.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "pattern": {
                         "type": "string",
-                        "description": "The search pattern (supports regex)",
+                        "description": "Search pattern. For text mode: regex pattern. For AST mode: structural pattern with $VAR wildcards (e.g., '$A && $A()', 'console.log($MSG)')",
                     },
                     "path": {
                         "type": "string",
-                        "description": "Specific file or directory to search. NEVER use '.' or './'. First list directories, then search specific targets like 'src/', 'opencli/core/', or 'package.json'.",
+                        "description": "Directory to search. Be specific to avoid timeouts.",
                     },
-                },
-                "required": ["pattern", "path"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "ast_search",
-            "description": "Search for code STRUCTURE patterns using AST (ast-grep). Unlike text search, this matches code patterns regardless of formatting/whitespace. Use $VAR wildcards to match any AST node. Examples: '$A && $A()' finds short-circuit calls, 'console.log($MSG)' finds all console.logs, 'def $FUNC($ARGS):' finds Python function definitions.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "pattern": {
+                    "type": {
                         "type": "string",
-                        "description": "AST pattern with $VAR wildcards (e.g., '$FUNC($ARGS)', 'await $PROMISE', 'try { $BODY } catch ($E) { $HANDLER }')",
-                    },
-                    "path": {
-                        "type": "string",
-                        "description": "Directory to search (default: current directory). Be specific to avoid timeouts.",
+                        "enum": ["text", "ast"],
+                        "description": "Search type: 'text' for regex/string matching (default), 'ast' for structural code patterns",
+                        "default": "text",
                     },
                     "lang": {
                         "type": "string",
-                        "description": "Language hint: python, typescript, javascript, go, rust, java, c, cpp, etc. Auto-detected from file extension if not specified.",
+                        "description": "Language hint for AST mode: python, typescript, javascript, go, rust, java, etc. Auto-detected if not specified.",
                     },
                 },
-                "required": ["pattern"],
+                "required": ["pattern", "path"],
             },
         },
     },

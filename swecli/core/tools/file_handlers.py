@@ -220,50 +220,33 @@ class FileToolHandler:
             return {"success": False, "error": str(exc), "output": None}
 
     def search(self, args: dict[str, Any]) -> dict[str, Any]:
-        if not self._file_ops:
-            return {"success": False, "error": "FileOperations not available"}
+        """Unified search handler supporting text and AST search modes.
 
-        pattern = args["pattern"]
-        path = sanitize_path(args.get("path", "."))
-
-        try:
-            matches = self._file_ops.grep_files(pattern, path)
-            if not matches:
-                output = "No matches found"
-            else:
-                lines = [
-                    f"{match['file']}:{match['line']} - {match['content']}"
-                    for match in matches[:50]
-                ]
-                if len(matches) > 50:
-                    lines.append(f"\n... and {len(matches) - 50} more matches")
-                output = "\n".join(lines)
-
-            return {"success": True, "output": output, "error": None}
-        except Exception as exc:  # noqa: BLE001
-            return {"success": False, "error": str(exc), "output": None}
-
-    def ast_search(self, args: dict[str, Any]) -> dict[str, Any]:
-        """Search for code patterns using AST (ast-grep).
-
-        Unlike text search, ast_search matches code structure regardless of
-        formatting/whitespace. Use $VAR wildcards to match any AST node.
+        Args:
+            pattern: Search pattern (regex for text, AST pattern for structural)
+            path: Directory to search
+            type: "text" (default) for ripgrep, "ast" for ast-grep
+            lang: Language hint for AST mode (auto-detected if not specified)
         """
         if not self._file_ops:
             return {"success": False, "error": "FileOperations not available"}
 
         pattern = args["pattern"]
-        path = args.get("path")
+        path = sanitize_path(args.get("path", "."))
+        search_type = args.get("type", "text")  # "text" or "ast"
         lang = args.get("lang")
 
         try:
-            matches = self._file_ops.ast_grep(pattern, path, lang)
-            if not matches:
-                return {
-                    "success": True,
-                    "output": "No structural matches found",
-                    "matches": [],
-                }
+            if search_type == "ast":
+                # AST-based structural search using ast-grep
+                matches = self._file_ops.ast_grep(pattern, path, lang)
+                if not matches:
+                    return {"success": True, "output": "No structural matches found", "matches": []}
+            else:
+                # Default: text/regex search using ripgrep
+                matches = self._file_ops.grep_files(pattern, path)
+                if not matches:
+                    return {"success": True, "output": "No matches found", "matches": []}
 
             lines = [
                 f"{match['file']}:{match['line']} - {match['content']}"
@@ -275,15 +258,13 @@ class FileToolHandler:
 
             return {"success": True, "output": output, "matches": matches}
         except FileNotFoundError:
-            return {
-                "success": False,
-                "error": "ast-grep (sg) not installed. Install with: brew install ast-grep",
-                "output": None,
-            }
+            if search_type == "ast":
+                return {"success": False, "error": "ast-grep (sg) not installed. Install: brew install ast-grep", "output": None}
+            return {"success": False, "error": "File or directory not found", "output": None}
         except Exception as exc:  # noqa: BLE001
             error_msg = str(exc)
             if "timeout" in error_msg.lower():
-                error_msg = "AST search timed out. Try a more specific path."
+                error_msg = "Search timed out. Try a more specific path."
             return {"success": False, "error": error_msg, "output": None}
 
     # ------------------------------------------------------------------

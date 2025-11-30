@@ -68,27 +68,26 @@ If unsure about these commands, ask the user how they verify code quality.
 - Use to discover project structure
 - Examples: "*.py", "src/**/*.js"
 
-### `search(pattern, path)` - Text/Regex Search (ripgrep)
-**Use for:** Exact string matches, finding specific symbols, tracing imports
+### `search(pattern, path, type, lang)` - Code Search
+Unified search supporting text and structural modes.
+
+**Text mode (default):** Regex/string matching with ripgrep
 - `search("def calculate_tax", "src/")` - Find function definition
-- `search("import requests", "**/*.py")` - Find all imports
-- `search("\bTODO\b", "src/")` - Find exact word with boundaries
-- **CRITICAL**: NEVER use "." as path - always use specific directories
+- `search("import requests", "src/")` - Find imports
+- `search("\bTODO\b", "src/")` - Find exact word
 
-### `ast_search(pattern, path, lang)` - Structural Search (ast-grep)
-**Use for:** Code patterns regardless of formatting, refactoring candidates
-- `ast_search("$A && $A()", "src/", "typescript")` - Short-circuit patterns
-- `ast_search("console.log($MSG)", "src/")` - All console.logs
-- `ast_search("if ($COND) { return $VAL }", "src/")` - Early returns
-- `ast_search("def $FUNC($ARGS): pass", "src/", "python")` - Empty functions
-- `ast_search("await $PROMISE", "src/")` - All await expressions
-- Pattern syntax: `$VAR` matches any AST node (like regex .* but for syntax)
+**AST mode:** Structural code patterns with ast-grep
+- `search("$A && $A()", "src/", type="ast")` - Short-circuit patterns
+- `search("console.log($MSG)", "src/", type="ast")` - All console.logs
+- `search("await $PROMISE", "src/", type="ast")` - All await expressions
+- `search("def $FUNC($ARGS):", "src/", type="ast", lang="python")` - Function defs
+- Pattern syntax: `$VAR` matches any AST node
 
-### When to Use Which Search Tool
-| Need | Tool | Example |
+### When to Use Which Type
+| Need | Type | Example |
 |------|------|---------|
-| Exact string/symbol | `search()` | Find "getUserById" |
-| Code pattern/structure | `ast_search()` | Find all try/except blocks |
+| Exact string/symbol | `type="text"` | Find "getUserById" |
+| Code structure/pattern | `type="ast"` | Find all try/except blocks |
 | File discovery | `list_files()` | Find all Python files |
 
 ## Command Execution
