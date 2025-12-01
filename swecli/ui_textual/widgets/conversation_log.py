@@ -244,11 +244,11 @@ class ConversationLog(RichLog):
         else:
             tool_text = Text(str(display), style="white")
 
-        # Build indented line with tree character
+        # Build indented line with bullet (like main agent tool calls)
         formatted = Text()
         indent = "  " * depth
         formatted.append(indent)
-        formatted.append("├─ ", style="dim")
+        formatted.append("⏺ ", style="green")
         formatted.append_text(tool_text)
 
         self.write(formatted, scroll_end=True, animate=False)
@@ -284,26 +284,30 @@ class ConversationLog(RichLog):
         formatted.append("completed", style="dim green")
         self.write(formatted, scroll_end=True, animate=False)
 
-    def add_todo_sub_result(self, text: str, depth: int) -> None:
+    def add_todo_sub_result(self, text: str, depth: int, is_last_parent: bool = True) -> None:
         """Add a single sub-result line for todo operations.
 
         Args:
             text: The sub-result text (e.g., "○ Create project structure")
             depth: Nesting depth for indentation
+            is_last_parent: If True, no vertical continuation line (parent is last tool)
         """
         formatted = Text()
         indent = "  " * depth
         formatted.append(indent)
-        formatted.append("    └─ ", style="dim")
+        # Use │ for vertical continuation only when more tools are coming
+        prefix = "    └─ " if is_last_parent else "│   └─ "
+        formatted.append(prefix, style="dim")
         formatted.append(text, style="dim")
         self.write(formatted, scroll_end=True, animate=False)
 
-    def add_todo_sub_results(self, items: list, depth: int) -> None:
+    def add_todo_sub_results(self, items: list, depth: int, is_last_parent: bool = True) -> None:
         """Add multiple sub-result lines for todo list operations.
 
         Args:
             items: List of (symbol, title) tuples
             depth: Nesting depth for indentation
+            is_last_parent: If True, no vertical continuation line (parent is last tool)
         """
         indent = "  " * depth
 
@@ -311,16 +315,18 @@ class ConversationLog(RichLog):
             formatted = Text()
             formatted.append(indent)
 
-            # Use └─ for last item, ├─ for others (no vertical continuation line)
-            if i == len(items) - 1:
-                formatted.append("    └─ ", style="dim")
+            is_last_item = i == len(items) - 1
+            # Use │ for vertical continuation only when more tools are coming
+            if is_last_parent:
+                prefix = "    └─ " if is_last_item else "    ├─ "
             else:
-                formatted.append("    ├─ ", style="dim")
+                prefix = "│   └─ " if is_last_item else "│   ├─ "
 
+            formatted.append(prefix, style="dim")
             formatted.append(f"{symbol} {title}", style="dim")
             self.write(formatted, scroll_end=True, animate=False)
 
-    def add_nested_tool_sub_results(self, lines: List[str], depth: int) -> None:
+    def add_nested_tool_sub_results(self, lines: List[str], depth: int, is_last_parent: bool = True) -> None:
         """Add tool result lines with proper nesting indentation.
 
         This is the unified method for displaying subagent tool results,
@@ -329,6 +335,7 @@ class ConversationLog(RichLog):
         Args:
             lines: List of result lines from StyleFormatter._format_*_result() methods
             depth: Nesting depth for indentation
+            is_last_parent: If True, no vertical continuation line (parent is last tool)
         """
         indent = "  " * depth
 
@@ -336,9 +343,13 @@ class ConversationLog(RichLog):
             formatted = Text()
             formatted.append(indent)
 
-            # Use └─ for last item, ├─ for others
-            is_last = i == len(lines) - 1
-            formatted.append("    └─ " if is_last else "    ├─ ", style="dim")
+            is_last_item = i == len(lines) - 1
+            # Use │ for vertical continuation only when more tools are coming
+            if is_last_parent:
+                prefix = "    └─ " if is_last_item else "    ├─ "
+            else:
+                prefix = "│   └─ " if is_last_item else "│   ├─ "
+            formatted.append(prefix, style="dim")
 
             # Handle error lines (marked with TOOL_ERROR_SENTINEL)
             if TOOL_ERROR_SENTINEL in line:
@@ -355,12 +366,13 @@ class ConversationLog(RichLog):
 
             self.write(formatted, scroll_end=True, animate=False)
 
-    def add_edit_diff_result(self, diff_text: str, depth: int) -> None:
+    def add_edit_diff_result(self, diff_text: str, depth: int, is_last_parent: bool = True) -> None:
         """Add diff lines for edit_file result in subagent output.
 
         Args:
             diff_text: The unified diff text
             depth: Nesting depth for indentation
+            is_last_parent: If True, no vertical continuation line (parent is last tool)
         """
         from swecli.ui_textual.formatters_internal.utils import DiffParser
 
@@ -374,9 +386,13 @@ class ConversationLog(RichLog):
             formatted = Text()
             formatted.append(indent)
 
-            # Use └─ for last item, ├─ for others (no vertical continuation line)
-            is_last = i == len(diff_entries) - 1
-            formatted.append("    └─ " if is_last else "    ├─ ", style="dim")
+            is_last_item = i == len(diff_entries) - 1
+            # Use │ for vertical continuation only when more tools are coming
+            if is_last_parent:
+                prefix = "    └─ " if is_last_item else "    ├─ "
+            else:
+                prefix = "│   └─ " if is_last_item else "│   ├─ "
+            formatted.append(prefix, style="dim")
 
             if entry_type == "hunk":
                 formatted.append(content, style="dim")
