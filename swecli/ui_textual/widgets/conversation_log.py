@@ -226,6 +226,64 @@ class ConversationLog(RichLog):
 
         self.write(Text(""))
 
+    def add_nested_tool_call(
+        self,
+        display: Text | str,
+        depth: int,
+        parent: str,
+    ) -> None:
+        """Add a nested tool call with indentation for subagent display.
+
+        Args:
+            display: The tool call display text
+            depth: Nesting depth level (1 = direct child of main agent)
+            parent: Name/identifier of the parent subagent
+        """
+        if isinstance(display, Text):
+            tool_text = display.copy()
+        else:
+            tool_text = Text(str(display), style="white")
+
+        # Build indented line with tree character
+        formatted = Text()
+        indent = "  " * depth
+        formatted.append(indent)
+        formatted.append("├─ ", style="dim")
+        formatted.append_text(tool_text)
+
+        self.write(formatted, scroll_end=True, animate=False)
+
+    def complete_nested_tool_call(
+        self,
+        tool_name: str,
+        depth: int,
+        parent: str,
+        success: bool,
+    ) -> None:
+        """Mark a nested tool call as complete (currently no-op, reserved for future status updates).
+
+        Args:
+            tool_name: Name of the tool that completed
+            depth: Nesting depth level
+            parent: Name/identifier of the parent subagent
+            success: Whether the tool execution succeeded
+        """
+        # Currently a no-op - nested tool calls are displayed inline without spinner
+        # Could be extended to update the line with a checkmark/X status
+        pass
+
+    def add_subagent_completion(self, parent: str) -> None:
+        """Add a completion marker after all nested tool calls.
+
+        Args:
+            parent: Name/identifier of the completed subagent
+        """
+        formatted = Text()
+        formatted.append("  └─ ", style="dim")
+        formatted.append(f"[{parent}] ", style="bold cyan")
+        formatted.append("completed", style="dim green")
+        self.write(formatted, scroll_end=True, animate=False)
+
     def render_approval_prompt(self, lines: list[Text]) -> None:
         if self._approval_start is None:
             self._approval_start = len(self.lines)
@@ -425,29 +483,41 @@ class ConversationLog(RichLog):
         self._replace_tool_call_line(spinner_char)
 
     def _replace_tool_call_line(self, prefix: str) -> None:
-        if self._tool_call_start is not None and self._tool_call_start < len(self.lines):
-            # Don't delete if it's a protected line
-            if self._tool_call_start not in self._protected_lines:
-                del self.lines[self._tool_call_start]
-                # Update protected line indices for lines after deleted line
-                self._protected_lines = {
-                    p - 1 if p > self._tool_call_start else p
-                    for p in self._protected_lines
-                }
-                self._line_cache.clear()
-                widths: List[int] = []
-                for strip in self.lines:
-                    cell_length = getattr(strip, "cell_length", None)
-                    widths.append(cell_length() if callable(cell_length) else cell_length or 0)
-                self._widest_line_width = max(widths, default=0)
-                self.virtual_size = Size(self._widest_line_width, len(self.lines))
-                if self.auto_scroll:
-                    self.scroll_end(animate=False)
-        else:
-            self._tool_call_start = len(self.lines)
+        """Replace the tool call line in-place, preserving its position."""
+        if self._tool_call_start is None or self._tool_display is None:
+            return
 
-        self._write_tool_call_line(prefix)
-        self._tool_call_start = len(self.lines) - 1
+        if self._tool_call_start >= len(self.lines):
+            # Line index out of bounds, fall back to append
+            self._tool_call_start = len(self.lines)
+            self._write_tool_call_line(prefix)
+            self._tool_call_start = len(self.lines) - 1
+            return
+
+        # Build the new line content
+        formatted = Text()
+        style = "green" if prefix == "⏺" else "white"
+        formatted.append(f"{prefix} ", style=style)
+        if self._tool_display is not None:
+            formatted += self._tool_display.copy()
+        timer = self._format_tool_timer()
+        if timer is not None:
+            formatted.append_text(timer)
+
+        # Convert Text to Strip for in-place storage in RichLog
+        from rich.console import Console
+        from textual.strip import Strip
+
+        console = Console(width=self.size.width or 80, force_terminal=True)
+        segments = list(console.render(formatted))
+        strip = Strip(segments)
+
+        # Update the line at the original position (in-place)
+        self.lines[self._tool_call_start] = strip
+
+        # Clear cache and refresh display
+        self._line_cache.clear()
+        self.refresh()
 
     def _write_tool_call_line(self, prefix: str) -> None:
         formatted = Text()

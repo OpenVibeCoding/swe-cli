@@ -12,6 +12,14 @@ from swecli.core.tools.process_handlers import ProcessToolHandler
 from swecli.core.tools.web_handlers import WebToolHandler
 from swecli.core.tools.screenshot_handler import ScreenshotToolHandler
 from swecli.core.tools.todo_handler import TodoHandler
+from swecli.core.tools.symbol_tools import (
+    handle_find_symbol,
+    handle_find_referencing_symbols,
+    handle_insert_before_symbol,
+    handle_insert_after_symbol,
+    handle_replace_symbol_body,
+    handle_rename_symbol,
+)
 
 _PLAN_READ_ONLY_TOOLS = {
     "read_file",
@@ -22,6 +30,11 @@ _PLAN_READ_ONLY_TOOLS = {
     "get_process_output",
     "list_screenshots",
     "analyze_image",  # VLM is read-only, safe for planning mode
+    # Symbol tools (read-only)
+    "find_symbol",
+    "find_referencing_symbols",
+    # Subagent spawning allowed in plan mode (subagents handle their own restrictions)
+    "spawn_subagent",
 }
 
 
@@ -55,6 +68,7 @@ class ToolRegistry:
         self._mcp_handler = McpToolHandler(mcp_manager)
         self._screenshot_handler = ScreenshotToolHandler()
         self.todo_handler = TodoHandler()
+        self._subagent_manager: Union[Any, None] = None
         self.set_mcp_manager(mcp_manager)
 
         self._handlers: dict[str, Any] = {
@@ -80,7 +94,97 @@ class ToolRegistry:
             "update_todo": self._update_todo,
             "complete_todo": self._complete_todo,
             "list_todos": lambda args, ctx=None: self.todo_handler.list_todos(),
+            # Symbol tools (LSP-based)
+            "find_symbol": lambda args: handle_find_symbol(args),
+            "find_referencing_symbols": lambda args: handle_find_referencing_symbols(args),
+            "insert_before_symbol": lambda args: handle_insert_before_symbol(args),
+            "insert_after_symbol": lambda args: handle_insert_after_symbol(args),
+            "replace_symbol_body": lambda args: handle_replace_symbol_body(args),
+            "rename_symbol": lambda args: handle_rename_symbol(args),
+            # Subagent spawning tool
+            "spawn_subagent": self._execute_spawn_subagent,
         }
+
+    def set_subagent_manager(self, manager: Any) -> None:
+        """Set the subagent manager for task tool execution.
+
+        Args:
+            manager: SubAgentManager instance
+        """
+        self._subagent_manager = manager
+
+    def get_subagent_manager(self) -> Union[Any, None]:
+        """Get the subagent manager.
+
+        Returns:
+            SubAgentManager instance or None
+        """
+        return self._subagent_manager
+
+    def _execute_spawn_subagent(self, arguments: dict[str, Any], context: Any = None) -> dict[str, Any]:
+        """Execute the spawn_subagent tool to spawn a subagent.
+
+        Args:
+            arguments: Tool arguments with 'description' and 'subagent_type'
+            context: Tool execution context
+
+        Returns:
+            Result from subagent execution
+        """
+        if not self._subagent_manager:
+            return {
+                "success": False,
+                "error": "SubAgentManager not configured. spawn_subagent tool unavailable.",
+                "output": None,
+            }
+
+        description = arguments.get("description", "")
+        subagent_type = arguments.get("subagent_type", "general-purpose")
+
+        if not description:
+            return {
+                "success": False,
+                "error": "Task description is required for spawn_subagent",
+                "output": None,
+            }
+
+        # Create deps from context
+        from swecli.core.agents.subagents.manager import SubAgentDeps
+
+        deps = SubAgentDeps(
+            mode_manager=context.mode_manager if context else None,
+            approval_manager=context.approval_manager if context else None,
+            undo_manager=context.undo_manager if context else None,
+        )
+
+        # Get ui_callback from context for nested tool call display
+        ui_callback = context.ui_callback if context else None
+
+        result = self._subagent_manager.execute_subagent(
+            name=subagent_type,
+            task=description,
+            deps=deps,
+            ui_callback=ui_callback,
+        )
+
+        # Format output for consistency
+        if result.get("success"):
+            content = result.get("content", "")
+            return {
+                "success": True,
+                "output": None,  # Don't show in tool result line
+                "separate_response": content,  # Show as separate assistant message
+                "subagent_type": subagent_type,
+            }
+        else:
+            # Check both "error" and "content" fields for error message
+            # SwecliAgent.run_sync() puts errors in "content", not "error"
+            error = result.get("error") or result.get("content") or "Unknown error"
+            return {
+                "success": False,
+                "error": f"[{subagent_type}] {error}",
+                "output": None,
+            }
 
     def get_schemas(self) -> list[dict[str, Any]]:
         """Compatibility hook (schemas generated elsewhere)."""
@@ -110,6 +214,7 @@ class ToolRegistry:
         undo_manager: Union[Any, None] = None,
         task_monitor: Union[Any, None] = None,
         session_manager: Union[Any, None] = None,
+        ui_callback: Union[Any, None] = None,
     ) -> dict[str, Any]:
         """Execute a tool by delegating to registered handlers."""
         if tool_name.startswith("mcp__"):
@@ -124,6 +229,7 @@ class ToolRegistry:
             undo_manager=undo_manager,
             task_monitor=task_monitor,
             session_manager=session_manager,
+            ui_callback=ui_callback,
         )
 
         if self._is_plan_blocked(tool_name, context):
@@ -131,7 +237,7 @@ class ToolRegistry:
 
         handler = self._handlers[tool_name]
         try:
-            if tool_name in {"write_file", "edit_file", "run_command"}:
+            if tool_name in {"write_file", "edit_file", "run_command", "spawn_subagent"}:
                 # Handlers requiring context
                 return handler(arguments, context)
 

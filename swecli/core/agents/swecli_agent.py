@@ -110,6 +110,8 @@ class SwecliAgent(BaseAgent):
         message: str,
         deps: Any,
         message_history: Optional[list[dict]] = None,
+        ui_callback: Optional[Any] = None,
+        max_iterations: Optional[int] = None,  # None = unlimited
     ) -> dict:
         messages = message_history or []
 
@@ -118,8 +120,17 @@ class SwecliAgent(BaseAgent):
 
         messages.append({"role": "user", "content": message})
 
-        max_iterations = 10
-        for _ in range(max_iterations):
+        iteration = 0
+        while True:
+            iteration += 1
+
+            # Safety limit only if explicitly set
+            if max_iterations is not None and iteration > max_iterations:
+                return {
+                    "content": "Max iterations reached without completion",
+                    "messages": messages,
+                    "success": False,
+                }
             # Check for interrupt request (for web UI)
             if hasattr(self, 'web_state') and self.web_state.is_interrupt_requested():
                 self.web_state.clear_interrupt()
@@ -187,6 +198,10 @@ class SwecliAgent(BaseAgent):
                 tool_name = tool_call["function"]["name"]
                 tool_args = json.loads(tool_call["function"]["arguments"])
 
+                # Notify UI callback before tool execution
+                if ui_callback and hasattr(ui_callback, "on_tool_call"):
+                    ui_callback.on_tool_call(tool_name, tool_args)
+
                 result = self.tool_registry.execute_tool(
                     tool_name,
                     tool_args,
@@ -194,6 +209,10 @@ class SwecliAgent(BaseAgent):
                     approval_manager=deps.approval_manager,
                     undo_manager=deps.undo_manager,
                 )
+
+                # Notify UI callback after tool execution
+                if ui_callback and hasattr(ui_callback, "on_tool_result"):
+                    ui_callback.on_tool_result(tool_name, tool_args, result)
 
                 tool_result = (
                     result.get("output", "")
@@ -207,9 +226,3 @@ class SwecliAgent(BaseAgent):
                         "content": tool_result,
                     }
                 )
-
-        return {
-            "content": "Max iterations reached without completion",
-            "messages": messages,
-            "success": False,
-        }
