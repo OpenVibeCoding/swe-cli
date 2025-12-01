@@ -33,10 +33,11 @@ _TOOL_DISPLAY_PARTS: dict[str, tuple[str, str]] = {
     "analyze_image": ("Analyze", "image"),
     "git_commit": ("Commit", "changes"),
     "git_branch": ("Branch", "git"),
-    "write_todos": ("Write", "todos"),
+    "write_todos": ("Create", "todos"),
     "update_todo": ("Update", "todo"),
     "complete_todo": ("Complete", "todo"),
     "list_todos": ("List", "todos"),
+    "spawn_subagent": ("Spawn", "subagent"),
 }
 
 _PATH_HINT_KEYS = {"file_path", "path", "directory", "dir", "image_path", "working_dir", "target"}
@@ -263,6 +264,37 @@ def format_tool_call(tool_name: str, tool_args: Mapping[str, Any]) -> str:
 
         if params:
             return f"Fetch({', '.join(params)})"
+
+    # Enhanced formatting for spawn_subagent tool
+    elif tool_name == "spawn_subagent" and tool_args:
+        subagent_type = tool_args.get("subagent_type", "general-purpose")
+        description = tool_args.get("description", "")
+        # Truncate description for display
+        if description and len(description) > 50:
+            description = description[:47] + "..."
+        if description:
+            return f"Spawn[{subagent_type}]({description})"
+        return f"Spawn[{subagent_type}]"
+
+    # Enhanced formatting for update_todo tool - show todo-N format
+    elif tool_name == "update_todo" and tool_args:
+        todo_id = tool_args.get("id", "?")
+        # Normalize ID to "todo-N" format
+        if str(todo_id).isdigit():
+            # Convert 0-based index to 1-based todo-N format
+            todo_id = f"todo-{int(todo_id) + 1}"
+        elif not str(todo_id).startswith("todo-"):
+            todo_id = f"todo-{todo_id}"
+        return f"Update ({todo_id})"
+
+    # Enhanced formatting for complete_todo tool - show todo-N format
+    elif tool_name == "complete_todo" and tool_args:
+        todo_id = tool_args.get("id", "?")
+        if str(todo_id).isdigit():
+            todo_id = f"todo-{int(todo_id) + 1}"
+        elif not str(todo_id).startswith("todo-"):
+            todo_id = f"todo-{todo_id}"
+        return f"Complete ({todo_id})"
 
     # Default formatting for other tools
     verb, label = get_tool_display_parts(tool_name)

@@ -626,7 +626,7 @@ class ConversationLog(RichLog):
 
         # Build the new line content
         formatted = Text()
-        style = "green" if prefix == "⏺" else "white"
+        style = "green" if prefix == "⏺" else "bright_cyan"
         formatted.append(f"{prefix} ", style=style)
         if self._tool_display is not None:
             formatted += self._tool_display.copy()
@@ -651,7 +651,7 @@ class ConversationLog(RichLog):
 
     def _write_tool_call_line(self, prefix: str) -> None:
         formatted = Text()
-        style = "green" if prefix == "⏺" else "white"
+        style = "green" if prefix == "⏺" else "bright_cyan"
         formatted.append(f"{prefix} ", style=style)
         timer = self._format_tool_timer()
         if self._tool_display is not None:
