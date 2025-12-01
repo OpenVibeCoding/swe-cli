@@ -513,7 +513,14 @@ class QueryProcessor:
 
         return "\n".join(lines)
 
-    def _execute_tool_call(self, tool_call: dict, tool_registry, approval_manager, undo_manager) -> dict:
+    def _execute_tool_call(
+        self,
+        tool_call: dict,
+        tool_registry,
+        approval_manager,
+        undo_manager,
+        ui_callback=None,
+    ) -> dict:
         """Execute a single tool call.
 
         Args:
@@ -521,6 +528,7 @@ class QueryProcessor:
             tool_registry: Tool registry
             approval_manager: Approval manager
             undo_manager: Undo manager
+            ui_callback: Optional UI callback for nested tool call display
 
         Returns:
             Tool execution result
@@ -554,7 +562,7 @@ class QueryProcessor:
             tool_progress.start()
 
         try:
-            # Execute tool with interrupt support
+            # Execute tool with interrupt support and ui_callback for nested display
             result = tool_registry.execute_tool(
                 tool_name,
                 tool_args,
@@ -563,6 +571,7 @@ class QueryProcessor:
                 undo_manager=undo_manager,
                 task_monitor=tool_monitor,
                 session_manager=self.session_manager,
+                ui_callback=ui_callback,
             )
 
             # Update state
@@ -576,9 +585,10 @@ class QueryProcessor:
             if tool_progress:
                 tool_progress.stop()
 
-            # Display result
-            panel = self.output_formatter.format_tool_result(tool_name, tool_args, result)
-            self.console.print(panel)
+            # Display result (skip for spawn_subagent since it shows separate_response)
+            if not result.get("separate_response"):
+                panel = self.output_formatter.format_tool_result(tool_name, tool_args, result)
+                self.console.print(panel)
 
             return result
         finally:
@@ -961,7 +971,14 @@ class QueryProcessor:
                             tool_call["function"]["arguments"]
                         )
 
-                    result = self._execute_tool_call(tool_call, tool_registry, approval_manager, undo_manager)
+                    # Pass ui_callback to tool execution for nested subagent display
+                    result = self._execute_tool_call(
+                        tool_call,
+                        tool_registry,
+                        approval_manager,
+                        undo_manager,
+                        ui_callback=ui_callback,
+                    )
 
                     # Debug: Tool result
                     if ui_callback and hasattr(ui_callback, 'on_debug'):
@@ -980,8 +997,22 @@ class QueryProcessor:
                             result
                         )
 
-                    # Add tool result to messages
-                    tool_result = result.get("output", "") if result["success"] else f"Error: {result.get('error', 'Tool execution failed')}"
+                    # Handle separate_response for spawn_subagent (display as assistant message)
+                    separate_response = result.get("separate_response")
+                    if separate_response and ui_callback:
+                        subagent_type = result.get("subagent_type", "subagent")
+                        # Add subagent completion marker via callback's conversation log
+                        if hasattr(ui_callback, 'conversation') and hasattr(ui_callback.conversation, 'add_subagent_completion'):
+                            ui_callback._run_on_ui(ui_callback.conversation.add_subagent_completion, subagent_type)
+                        # Display the final result as an assistant message
+                        if hasattr(ui_callback, 'on_assistant_message'):
+                            ui_callback.on_assistant_message(separate_response)
+
+                    # Add tool result to messages (use separate_response for spawn_subagent)
+                    if result["success"]:
+                        tool_result = separate_response if separate_response else result.get("output", "")
+                    else:
+                        tool_result = f"Error: {result.get('error', 'Tool execution failed')}"
                     messages.append({
                         "role": "tool",
                         "tool_call_id": tool_call["id"],
@@ -1037,14 +1068,9 @@ class QueryProcessor:
                     outcome = "error" if any(tc.error for tc in tool_call_objects) else "success"
                     self._record_tool_learnings(query, tool_call_objects, outcome, agent)
 
-                # Break on excessive consecutive reads
-                if consecutive_reads >= 5:
-                    warning_display = "[yellow]AI is performing multiple read operations. Consider improving the query or providing more specific instructions.[/yellow]"
-                    warning_plain = "AI is performing multiple read operations. Consider improving the query or providing more specific instructions."
-                    self.console.print(warning_display)
-                    assistant_msg = ChatMessage(role=Role.ASSISTANT, content=warning_plain)
-                    self.session_manager.add_message(assistant_msg, self.config.auto_save_interval)
-                    break
+                # Nudge agent if too many consecutive reads
+                if self._should_nudge_agent(consecutive_reads, messages):
+                    consecutive_reads = 0
 
             # Update status line
             self._render_status_line()
