@@ -189,6 +189,185 @@ class TextualUICallback:
         if tool_name in {"write_todos", "update_todo", "complete_todo"}:
             self._refresh_todo_panel()
 
+    def on_nested_tool_call(
+        self,
+        tool_name: str,
+        tool_args: Dict[str, Any],
+        depth: int,
+        parent: str,
+    ) -> None:
+        """Called when a nested tool call (from subagent) is about to be executed.
+
+        Args:
+            tool_name: Name of the tool being called
+            tool_args: Arguments for the tool call
+            depth: Nesting depth level (1 = direct child of main agent)
+            parent: Name/identifier of the parent subagent
+        """
+        normalized_args = self._normalize_arguments(tool_args)
+
+        # Display nested tool call with indentation
+        if hasattr(self.conversation, 'add_nested_tool_call'):
+            display_text = build_tool_call_text(tool_name, normalized_args)
+            self._run_on_ui(
+                self.conversation.add_nested_tool_call,
+                display_text,
+                depth,
+                parent,
+            )
+
+    def on_nested_tool_result(
+        self,
+        tool_name: str,
+        tool_args: Dict[str, Any],
+        result: Dict[str, Any],
+        depth: int,
+        parent: str,
+    ) -> None:
+        """Called when a nested tool execution (from subagent) completes.
+
+        Args:
+            tool_name: Name of the tool that was executed
+            tool_args: Arguments that were used
+            result: Result of the tool execution
+            depth: Nesting depth level
+            parent: Name/identifier of the parent subagent
+        """
+        # Update the nested tool call status to complete
+        if hasattr(self.conversation, 'complete_nested_tool_call'):
+            self._run_on_ui(
+                self.conversation.complete_nested_tool_call,
+                tool_name,
+                depth,
+                parent,
+                result.get("success", False),
+            )
+
+        normalized_args = self._normalize_arguments(tool_args)
+
+        # Special handling for todo tools (custom display format with icons)
+        if tool_name == "write_todos" and result.get("success"):
+            todos = tool_args.get("todos", [])
+            self._display_todo_sub_results(todos, depth)
+        elif tool_name == "update_todo" and result.get("success"):
+            todo_data = result.get("todo", {})
+            self._display_todo_update_result(tool_args, todo_data, depth)
+        elif tool_name == "complete_todo" and result.get("success"):
+            todo_data = result.get("todo", {})
+            self._display_todo_complete_result(todo_data, depth)
+        else:
+            # ALL other tools use unified StyleFormatter (same as main agent)
+            self._display_tool_sub_result(tool_name, normalized_args, result, depth)
+
+        # Auto-refresh todo panel after nested todo tool execution
+        if tool_name in {"write_todos", "update_todo", "complete_todo"}:
+            self._refresh_todo_panel()
+
+    def _display_tool_sub_result(
+        self, tool_name: str, tool_args: Dict[str, Any], result: Dict[str, Any], depth: int
+    ) -> None:
+        """Display tool result using StyleFormatter (same as main agent).
+
+        This ensures subagent results look identical to main agent results.
+        No code duplication - reuses the same formatting logic.
+
+        Args:
+            tool_name: Name of the tool that was executed
+            tool_args: Arguments that were used
+            result: Result of the tool execution
+            depth: Nesting depth for indentation
+        """
+        # Get result lines from StyleFormatter (same code path as main agent)
+        if tool_name == "read_file":
+            lines = self.formatter._format_read_file_result(tool_args, result)
+        elif tool_name == "write_file":
+            lines = self.formatter._format_write_file_result(tool_args, result)
+        elif tool_name == "edit_file":
+            lines = self.formatter._format_edit_file_result(tool_args, result)
+        elif tool_name == "search":
+            lines = self.formatter._format_search_result(tool_args, result)
+        elif tool_name in {"run_command", "bash_execute"}:
+            lines = self.formatter._format_shell_result(tool_args, result)
+        elif tool_name == "list_files":
+            lines = self.formatter._format_list_files_result(tool_args, result)
+        elif tool_name == "fetch_url":
+            lines = self.formatter._format_fetch_url_result(tool_args, result)
+        elif tool_name == "analyze_image":
+            lines = self.formatter._format_analyze_image_result(tool_args, result)
+        elif tool_name == "get_process_output":
+            lines = self.formatter._format_process_output_result(tool_args, result)
+        else:
+            lines = self.formatter._format_generic_result(tool_name, tool_args, result)
+
+        # Display each line with proper nesting
+        if lines and hasattr(self.conversation, 'add_nested_tool_sub_results'):
+            self._run_on_ui(self.conversation.add_nested_tool_sub_results, lines, depth)
+
+    def _display_todo_sub_results(self, todos: list, depth: int) -> None:
+        """Display nested list of created todos.
+
+        Args:
+            todos: List of todo items (dicts with content/status or strings)
+            depth: Nesting depth for indentation
+        """
+        if not todos:
+            return
+
+        items = []
+        for item in todos:
+            if isinstance(item, dict):
+                title = item.get("content", "")
+                status = item.get("status", "pending")
+            else:
+                title = str(item)
+                status = "pending"
+
+            symbol = {"pending": "○", "in_progress": "▶", "completed": "✓"}.get(status, "○")
+            items.append((symbol, title))
+
+        if items and hasattr(self.conversation, 'add_todo_sub_results'):
+            self._run_on_ui(self.conversation.add_todo_sub_results, items, depth)
+
+    def _display_todo_update_result(self, args: Dict[str, Any], todo_data: Dict[str, Any], depth: int) -> None:
+        """Display what was updated in the todo.
+
+        Args:
+            args: Tool arguments (contains status)
+            todo_data: The todo data from result
+            depth: Nesting depth for indentation
+        """
+        status = args.get("status", "")
+        title = todo_data.get("title", "") or todo_data.get("content", "")
+
+        if not title:
+            return
+
+        # Use icons only, no text like "doing:"
+        if status in ("in_progress", "doing"):
+            line = f"▶ {title}"
+        elif status in ("completed", "done"):
+            line = f"✓ {title}"
+        else:
+            line = f"○ {title}"
+
+        if hasattr(self.conversation, 'add_todo_sub_result'):
+            self._run_on_ui(self.conversation.add_todo_sub_result, line, depth)
+
+    def _display_todo_complete_result(self, todo_data: Dict[str, Any], depth: int) -> None:
+        """Display completed todo.
+
+        Args:
+            todo_data: The todo data from result
+            depth: Nesting depth for indentation
+        """
+        title = todo_data.get("title", "") or todo_data.get("content", "")
+
+        if not title:
+            return
+
+        if hasattr(self.conversation, 'add_todo_sub_result'):
+            self._run_on_ui(self.conversation.add_todo_sub_result, f"✓ {title}", depth)
+
     def _normalize_arguments(self, tool_args: Any) -> Dict[str, Any]:
         """Ensure tool arguments are represented as a dictionary and normalize URLs for display."""
 

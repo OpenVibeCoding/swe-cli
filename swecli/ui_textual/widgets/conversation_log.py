@@ -284,6 +284,120 @@ class ConversationLog(RichLog):
         formatted.append("completed", style="dim green")
         self.write(formatted, scroll_end=True, animate=False)
 
+    def add_todo_sub_result(self, text: str, depth: int) -> None:
+        """Add a single sub-result line for todo operations.
+
+        Args:
+            text: The sub-result text (e.g., "○ Create project structure")
+            depth: Nesting depth for indentation
+        """
+        formatted = Text()
+        indent = "  " * depth
+        formatted.append(indent)
+        formatted.append("    └─ ", style="dim")
+        formatted.append(text, style="dim")
+        self.write(formatted, scroll_end=True, animate=False)
+
+    def add_todo_sub_results(self, items: list, depth: int) -> None:
+        """Add multiple sub-result lines for todo list operations.
+
+        Args:
+            items: List of (symbol, title) tuples
+            depth: Nesting depth for indentation
+        """
+        indent = "  " * depth
+
+        for i, (symbol, title) in enumerate(items):
+            formatted = Text()
+            formatted.append(indent)
+
+            # Use └─ for last item, ├─ for others (no vertical continuation line)
+            if i == len(items) - 1:
+                formatted.append("    └─ ", style="dim")
+            else:
+                formatted.append("    ├─ ", style="dim")
+
+            formatted.append(f"{symbol} {title}", style="dim")
+            self.write(formatted, scroll_end=True, animate=False)
+
+    def add_nested_tool_sub_results(self, lines: List[str], depth: int) -> None:
+        """Add tool result lines with proper nesting indentation.
+
+        This is the unified method for displaying subagent tool results,
+        using the same formatting as the main agent via StyleFormatter.
+
+        Args:
+            lines: List of result lines from StyleFormatter._format_*_result() methods
+            depth: Nesting depth for indentation
+        """
+        indent = "  " * depth
+
+        for i, line in enumerate(lines):
+            formatted = Text()
+            formatted.append(indent)
+
+            # Use └─ for last item, ├─ for others
+            is_last = i == len(lines) - 1
+            formatted.append("    └─ " if is_last else "    ├─ ", style="dim")
+
+            # Handle error lines (marked with TOOL_ERROR_SENTINEL)
+            if TOOL_ERROR_SENTINEL in line:
+                error_msg = line.replace(TOOL_ERROR_SENTINEL, "").strip()
+                formatted.append(error_msg, style="red")
+            elif "::interrupted::" in line:
+                # Handle interrupted messages
+                interrupted_msg = line.replace("::interrupted::", "").strip()
+                formatted.append(interrupted_msg, style="bold red")
+            else:
+                # Strip ANSI codes for nested display (they don't render well in tree format)
+                clean_line = re.sub(r"\x1b\[[0-9;]*m", "", line)
+                formatted.append(clean_line, style="dim")
+
+            self.write(formatted, scroll_end=True, animate=False)
+
+    def add_edit_diff_result(self, diff_text: str, depth: int) -> None:
+        """Add diff lines for edit_file result in subagent output.
+
+        Args:
+            diff_text: The unified diff text
+            depth: Nesting depth for indentation
+        """
+        from swecli.ui_textual.formatters_internal.utils import DiffParser
+
+        diff_entries = DiffParser.parse_unified_diff(diff_text)
+        if not diff_entries:
+            return
+
+        indent = "  " * depth
+
+        for i, (entry_type, line_no, content) in enumerate(diff_entries):
+            formatted = Text()
+            formatted.append(indent)
+
+            # Use └─ for last item, ├─ for others (no vertical continuation line)
+            is_last = i == len(diff_entries) - 1
+            formatted.append("    └─ " if is_last else "    ├─ ", style="dim")
+
+            if entry_type == "hunk":
+                formatted.append(content, style="dim")
+            elif entry_type == "add":
+                display_no = f"{line_no:>4} " if line_no is not None else "     "
+                formatted.append(display_no, style="dim")
+                formatted.append("+ ", style="green")
+                formatted.append(content.replace("\t", "    "), style="green")
+            elif entry_type == "del":
+                display_no = f"{line_no:>4} " if line_no is not None else "     "
+                formatted.append(display_no, style="dim")
+                formatted.append("- ", style="red")
+                formatted.append(content.replace("\t", "    "), style="red")
+            else:
+                display_no = f"{line_no:>4} " if line_no is not None else "     "
+                formatted.append(display_no, style="dim")
+                formatted.append("  ", style="dim")
+                formatted.append(content.replace("\t", "    "), style="dim")
+
+            self.write(formatted, scroll_end=True, animate=False)
+
     def render_approval_prompt(self, lines: list[Text]) -> None:
         if self._approval_start is None:
             self._approval_start = len(self.lines)
