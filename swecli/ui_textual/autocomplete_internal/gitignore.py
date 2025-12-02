@@ -17,7 +17,46 @@ class GitIgnoreParser:
     """
 
     # Always ignore these directories regardless of .gitignore
-    ALWAYS_IGNORE_DIRS = {".git", ".hg", ".svn"}
+    # These are obviously generated/system dirs that are NEVER useful to autocomplete
+    ALWAYS_IGNORE_DIRS = {
+        # Version Control
+        ".git", ".hg", ".svn", ".bzr", "_darcs", ".fossil",
+
+        # OS Generated
+        ".DS_Store", ".Spotlight-V100", ".Trashes",
+        "Thumbs.db", "desktop.ini", "$RECYCLE.BIN",
+
+        # Python caches
+        "__pycache__", ".pytest_cache", ".mypy_cache", ".pytype", ".pyre",
+        ".hypothesis", ".tox", ".nox", "cython_debug", ".eggs",
+
+        # Node/JS caches
+        "node_modules", ".npm", ".yarn", ".pnpm-store",
+        ".next", ".nuxt", ".output", ".svelte-kit", ".angular",
+        ".parcel-cache", ".turbo",
+
+        # IDE/Editor
+        ".idea", ".vscode", ".vs", ".settings",
+
+        # Java/Kotlin
+        ".gradle",
+
+        # Elixir
+        "_build", "deps", ".elixir_ls",
+
+        # iOS
+        "Pods", "DerivedData", "xcuserdata",
+
+        # Ruby
+        ".bundle",
+
+        # Virtual Environments
+        ".venv", "venv",
+
+        # Misc caches
+        ".cache", ".sass-cache", ".eslintcache", ".stylelintcache",
+        ".tmp", ".temp", "tmp", "temp",
+    }
 
     def __init__(self, root_dir: Path):
         """Initialize the GitIgnore parser.

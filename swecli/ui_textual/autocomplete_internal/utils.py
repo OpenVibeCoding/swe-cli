@@ -17,12 +17,62 @@ class FileFinder:
     # Maximum files to cache
     MAX_CACHE_SIZE = 5000
 
-    # Fallback exclude dirs when no .gitignore exists
-    DEFAULT_EXCLUDE_DIRS = {
-        ".git", ".hg", ".svn", "__pycache__", "node_modules",
-        ".venv", "venv", ".pytest_cache", ".mypy_cache", ".tox",
-        "dist", "build", ".eggs", "*.egg-info",
+    # Tier 1: Always exclude (obviously generated, never source code)
+    ALWAYS_EXCLUDE_DIRS = {
+        # Version Control
+        ".git", ".hg", ".svn", ".bzr", "_darcs", ".fossil",
+
+        # OS Generated
+        ".DS_Store", ".Spotlight-V100", ".Trashes",
+        "Thumbs.db", "desktop.ini", "$RECYCLE.BIN",
+
+        # Python
+        "__pycache__", ".pytest_cache", ".mypy_cache",
+        ".pytype", ".pyre", ".hypothesis", ".tox", ".nox",
+        "cython_debug", ".eggs",
+
+        # Node/JS
+        "node_modules", ".npm", ".yarn", ".pnpm-store",
+        ".next", ".nuxt", ".output", ".svelte-kit", ".angular",
+        ".parcel-cache", ".turbo",
+
+        # IDE/Editor
+        ".idea", ".vscode", ".vs", ".settings",
+
+        # Java/Kotlin
+        ".gradle",
+
+        # Elixir
+        "_build", "deps", ".elixir_ls",
+
+        # iOS
+        "Pods", "DerivedData", "xcuserdata",
+
+        # Ruby
+        ".bundle",
+
+        # Virtual Environments
+        ".venv", "venv",
+
+        # Misc caches
+        ".cache", ".sass-cache", ".eslintcache",
+        ".tmp", ".temp", "tmp", "temp",
     }
+
+    # Tier 2: Likely exclude (common build output dirs)
+    # These MIGHT be source in some projects, but usually aren't
+    LIKELY_EXCLUDE_DIRS = {
+        "dist", "build", "out", "bin", "obj",
+        "target",  # Rust/Maven
+        "coverage", "htmlcov", "cover",  # Test coverage
+        "logs",
+        "vendor",  # Go/PHP/Ruby
+        "packages",  # .NET
+        "bower_components",  # Legacy JS
+    }
+
+    # Combined fallback when no .gitignore exists
+    DEFAULT_EXCLUDE_DIRS = ALWAYS_EXCLUDE_DIRS | LIKELY_EXCLUDE_DIRS
 
     def __init__(self, working_dir: Path):
         """Initialize file finder.

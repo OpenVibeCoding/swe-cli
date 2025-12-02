@@ -408,9 +408,40 @@ async def list_files(query: str = "") -> Dict[str, Any]:
             return {"files": []}
 
         # Fallback ignore patterns if no .gitignore exists
-        fallback_ignore_patterns = {'.git', '.hg', '.svn', '__pycache__', 'node_modules', '.venv', 'venv',
-                                    '.idea', '.vscode', 'dist', 'build', '.DS_Store', '.pytest_cache',
-                                    '.mypy_cache', '.tox', '.eggs'}
+        # Tier 1: Always exclude (obviously generated, never source code)
+        always_exclude = {
+            # Version Control
+            '.git', '.hg', '.svn', '.bzr', '_darcs', '.fossil',
+            # OS Generated
+            '.DS_Store', '.Spotlight-V100', '.Trashes', 'Thumbs.db', 'desktop.ini', '$RECYCLE.BIN',
+            # Python
+            '__pycache__', '.pytest_cache', '.mypy_cache', '.pytype', '.pyre',
+            '.hypothesis', '.tox', '.nox', 'cython_debug', '.eggs',
+            # Node/JS
+            'node_modules', '.npm', '.yarn', '.pnpm-store',
+            '.next', '.nuxt', '.output', '.svelte-kit', '.angular', '.parcel-cache', '.turbo',
+            # IDE/Editor
+            '.idea', '.vscode', '.vs', '.settings',
+            # Java/Kotlin
+            '.gradle',
+            # Elixir
+            '_build', 'deps', '.elixir_ls',
+            # iOS
+            'Pods', 'DerivedData', 'xcuserdata',
+            # Ruby
+            '.bundle',
+            # Virtual Environments
+            '.venv', 'venv',
+            # Misc caches
+            '.cache', '.sass-cache', '.eslintcache', '.tmp', '.temp', 'tmp', 'temp',
+        }
+        # Tier 2: Likely exclude (common build output dirs)
+        likely_exclude = {
+            'dist', 'build', 'out', 'bin', 'obj', 'target',
+            'coverage', 'htmlcov', 'cover', 'logs',
+            'vendor', 'packages', 'bower_components',
+        }
+        fallback_ignore_patterns = always_exclude | likely_exclude
 
         # Try to load gitignore parser
         gitignore_parser = None
