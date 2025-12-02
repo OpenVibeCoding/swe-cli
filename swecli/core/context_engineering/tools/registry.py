@@ -201,6 +201,7 @@ class ToolRegistry:
         task_monitor: Union[Any, None] = None,
         session_manager: Union[Any, None] = None,
         ui_callback: Union[Any, None] = None,
+        is_subagent: bool = False,
     ) -> dict[str, Any]:
         """Execute a tool by delegating to registered handlers."""
         if tool_name.startswith("mcp__"):
@@ -216,6 +217,7 @@ class ToolRegistry:
             task_monitor=task_monitor,
             session_manager=session_manager,
             ui_callback=ui_callback,
+            is_subagent=is_subagent,
         )
 
         if self._is_plan_blocked(tool_name, context):

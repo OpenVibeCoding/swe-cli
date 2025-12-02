@@ -66,6 +66,7 @@ class ProcessToolHandler:
             background=background,
             operation=operation,
             task_monitor=context.task_monitor,
+            auto_confirm=getattr(context, "is_subagent", False),
         )
 
         if result.success and context.undo_manager:

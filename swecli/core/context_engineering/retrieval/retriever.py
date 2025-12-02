@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-import subprocess
+
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -143,25 +143,13 @@ class ContextRetriever:
         if path.exists():
             return path
 
+        # Use native python traversal instead of subprocess find
+        target_name = Path(file_path).name
         try:
-            result = subprocess.run(
-                [
-                    "find",
-                    str(self.working_dir),
-                    "-type",
-                    "f",
-                    "-name",
-                    Path(file_path).name,
-                ],
-                capture_output=True,
-                text=True,
-                timeout=2,
-            )
-            if result.returncode == 0 and result.stdout.strip():
-                found_path = Path(result.stdout.strip().split("\n")[0])
-                if found_path.exists():
-                    return found_path
-        except (subprocess.TimeoutExpired, Exception):
+            for item in self.working_dir.rglob(target_name):
+                if item.is_file():
+                    return item
+        except Exception:
             pass
 
         return None

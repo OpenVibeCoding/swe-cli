@@ -1,5 +1,6 @@
 """Tool for executing bash commands safely."""
 
+import platform
 import re
 import subprocess
 import time
@@ -34,6 +35,19 @@ DANGEROUS_PATTERNS = [
     r"wget.*\|\s*bash",  # Download and execute
 ]
 
+# Commands that commonly require y/n confirmation (safe scaffolding tools)
+INTERACTIVE_COMMANDS = [
+    r"\bnpx\b",  # npx create-*, npx degit, etc.
+    r"\bnpm\s+init\b",  # npm init
+    r"\byarn\s+create\b",  # yarn create
+    r"\bng\s+new\b",  # Angular CLI
+    r"\bvue\s+create\b",  # Vue CLI
+    r"\bcreate-react-app\b",  # CRA
+    r"\bnext\s+create\b",  # Next.js
+    r"\bvite\s+create\b",  # Vite
+    r"\bpnpm\s+create\b",  # pnpm create
+]
+
 
 class BashTool(BaseTool):
     """Tool for executing bash commands with safety checks."""
@@ -60,6 +74,20 @@ class BashTool(BaseTool):
         # Track background processes: {pid: {process, command, start_time, stdout_lines, stderr_lines}}
         self._background_processes = {}
 
+    def _needs_auto_confirm(self, command: str) -> bool:
+        """Check if command likely requires interactive confirmation.
+
+        Args:
+            command: The command string to check
+
+        Returns:
+            True if command matches known interactive patterns
+        """
+        for pattern in INTERACTIVE_COMMANDS:
+            if re.search(pattern, command, re.IGNORECASE):
+                return True
+        return False
+
     def execute(
         self,
         command: str,
@@ -70,6 +98,7 @@ class BashTool(BaseTool):
         background: bool = False,
         operation: Optional[Operation] = None,
         task_monitor: Optional[Any] = None,
+        auto_confirm: bool = False,
     ) -> BashResult:
         """Execute a bash command.
 
@@ -82,6 +111,7 @@ class BashTool(BaseTool):
             background: Run in background (not implemented yet)
             operation: Operation object for tracking
             task_monitor: Optional TaskMonitor for interrupt support
+            auto_confirm: Automatically confirm y/n prompts for interactive commands
 
         Returns:
             BashResult with execution details
@@ -212,16 +242,37 @@ class BashTool(BaseTool):
                     operation_id=operation.id if operation else None,
                 )
 
+            # Auto-confirm interactive commands when requested
+            use_stdin_confirm = False
+            if auto_confirm and self._needs_auto_confirm(command):
+                if platform.system() != "Windows":
+                    # Unix: use yes | wrapper to handle multiple prompts
+                    command = f"yes | {command}"
+                else:
+                    # Windows: will use stdin.write() approach
+                    use_stdin_confirm = True
+
             # Regular synchronous execution with interrupt support
             process = subprocess.Popen(
                 command,
                 shell=True,
+                stdin=subprocess.PIPE if use_stdin_confirm else None,
                 stdout=subprocess.PIPE if capture_output else None,
                 stderr=subprocess.PIPE if capture_output else None,
                 text=True,
                 cwd=str(work_dir),
                 env=env,
             )
+
+            # Windows fallback: write y to stdin for interactive prompts
+            if use_stdin_confirm and process.stdin:
+                try:
+                    # Send multiple y's for commands with multiple prompts
+                    process.stdin.write("y\ny\ny\ny\ny\n")
+                    process.stdin.flush()
+                    process.stdin.close()
+                except Exception:
+                    pass
 
             # Poll process with interrupt checking
             stdout_lines = []

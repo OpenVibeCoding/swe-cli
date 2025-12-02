@@ -3,16 +3,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Optional
 
 
 @dataclass
 class ToolExecutionContext:
     """Holds runtime managers supplied during tool execution."""
 
-    mode_manager: Union[Any, None] = None
-    approval_manager: Union[Any, None] = None
-    undo_manager: Union[Any, None] = None
-    task_monitor: Union[Any, None] = None
-    session_manager: Union[Any, None] = None
-    ui_callback: Union[Any, None] = None
+    mode_manager: Optional[Any] = None
+    approval_manager: Optional[Any] = None
+    undo_manager: Optional[Any] = None
+    task_monitor: Optional[Any] = None
+    session_manager: Optional[Any] = None
+    ui_callback: Optional[Any] = None
+    is_subagent: bool = False  # True when executing in subagent context

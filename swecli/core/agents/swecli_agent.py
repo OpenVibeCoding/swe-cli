@@ -190,12 +190,16 @@ class SwecliAgent(BaseAgent):
                 if ui_callback and hasattr(ui_callback, "on_tool_call"):
                     ui_callback.on_tool_call(tool_name, tool_args)
 
+                # Check if this is a subagent (has overridden system prompt)
+                is_subagent = hasattr(self, "_subagent_system_prompt") and self._subagent_system_prompt is not None
+
                 result = self.tool_registry.execute_tool(
                     tool_name,
                     tool_args,
                     mode_manager=deps.mode_manager,
                     approval_manager=deps.approval_manager,
                     undo_manager=deps.undo_manager,
+                    is_subagent=is_subagent,
                 )
 
                 # Notify UI callback after tool execution

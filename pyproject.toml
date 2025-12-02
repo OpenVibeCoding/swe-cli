@@ -98,8 +98,11 @@ swecli = [
     "config/**/*.json",
     "prompts/**/*.txt",
     "prompts/**/*.md",
+    "core/agents/prompts/**/*.txt",
+    "core/agents/prompts/**/*.md",
     "commands/**/*.txt",
     "web/static/**/*",
+    "ui_textual/styles/**/*.tcss",
 ]
 
 [tool.black]

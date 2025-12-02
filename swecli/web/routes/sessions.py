@@ -413,31 +413,37 @@ async def list_files(query: str = "") -> Dict[str, Any]:
 
         files = []
         try:
-            for item in working_dir.rglob('*'):
-                # Skip directories and ignored patterns
-                if item.is_dir():
-                    continue
+            # Use os.walk for more efficient traversal with pruning
+            for root, dirs, filenames in os.walk(working_dir):
+                # Modify dirs in-place to skip ignored directories
+                dirs[:] = [d for d in dirs if d not in ignore_patterns and not any(p in ignore_patterns for p in Path(os.path.join(root, d)).parts)]
+                
+                for filename in filenames:
+                    file_path = Path(root) / filename
+                    
+                    # Get relative path
+                    try:
+                        rel_path = file_path.relative_to(working_dir)
+                        path_str = str(rel_path)
 
-                # Check if any parent directory is in ignore patterns
-                if any(part in ignore_patterns for part in item.parts):
-                    continue
+                        # Filter by query if provided
+                        if query and query.lower() not in path_str.lower():
+                            continue
 
-                # Get relative path
-                try:
-                    rel_path = item.relative_to(working_dir)
-                    path_str = str(rel_path)
-
-                    # Filter by query if provided
-                    if query and query.lower() not in path_str.lower():
+                        files.append({
+                            'path': path_str,
+                            'name': filename,
+                            'is_file': True
+                        })
+                    except ValueError:
                         continue
-
-                    files.append({
-                        'path': path_str,
-                        'name': item.name,
-                        'is_file': True
-                    })
-                except ValueError:
-                    continue
+                        
+                    # Limit early if we have enough results
+                    if len(files) >= 100:
+                        break
+                
+                if len(files) >= 100:
+                    break
 
         except PermissionError:
             pass  # Skip directories we can't access
