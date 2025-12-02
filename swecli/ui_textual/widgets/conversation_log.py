@@ -49,6 +49,12 @@ class ConversationLog(RichLog):
         self._debug_enabled = True  # Enable debug messages by default
         self._protected_lines: set[int] = set()  # Lines that should not be truncated
         self.MAX_PROTECTED_LINES = 200
+        # Nested tool call pulsing animation state
+        self._nested_tool_line: int | None = None  # Line index of last nested tool call
+        self._nested_tool_text: Text | None = None  # Original text for the nested tool
+        self._nested_tool_depth: int = 1  # Depth for indentation
+        self._nested_pulse_bright = True  # Toggle for dim/bright pulsing
+        self._nested_pulse_counter = 0  # Counter to slow down pulse rate
 
     def on_mount(self) -> None:
         return
@@ -253,6 +259,13 @@ class ConversationLog(RichLog):
 
         self.write(formatted, scroll_end=True, animate=False)
 
+        # Track this nested tool call for pulsing animation
+        self._nested_tool_line = len(self.lines) - 1
+        self._nested_tool_text = tool_text.copy()
+        self._nested_tool_depth = depth
+        self._nested_pulse_bright = True
+        self._nested_pulse_counter = 0
+
     def complete_nested_tool_call(
         self,
         tool_name: str,
@@ -260,7 +273,7 @@ class ConversationLog(RichLog):
         parent: str,
         success: bool,
     ) -> None:
-        """Mark a nested tool call as complete (currently no-op, reserved for future status updates).
+        """Mark a nested tool call as complete.
 
         Args:
             tool_name: Name of the tool that completed
@@ -268,9 +281,10 @@ class ConversationLog(RichLog):
             parent: Name/identifier of the parent subagent
             success: Whether the tool execution succeeded
         """
-        # Currently a no-op - nested tool calls are displayed inline without spinner
-        # Could be extended to update the line with a checkmark/X status
-        pass
+        # Clear nested tool tracking - this tool is no longer "running"
+        # The next add_nested_tool_call will set up a new one to pulse
+        self._nested_tool_line = None
+        self._nested_tool_text = None
 
     def add_subagent_completion(self, parent: str) -> None:
         """Add a completion marker after all nested tool calls.
@@ -339,11 +353,30 @@ class ConversationLog(RichLog):
         """
         indent = "  " * depth
 
-        for i, line in enumerate(lines):
+        # Flatten any multi-line strings into individual lines
+        all_lines = []
+        for line in lines:
+            if '\n' in line:
+                all_lines.extend(line.split('\n'))
+            else:
+                all_lines.append(line)
+
+        # Filter trailing empty lines
+        while all_lines and not all_lines[-1].strip():
+            all_lines.pop()
+
+        # Filter out empty lines and track non-empty ones for proper tree formatting
+        non_empty_lines = [(i, line) for i, line in enumerate(all_lines) if line.strip()]
+
+        # Check if any line contains error or interrupted markers - if so, all lines should be styled accordingly
+        has_error = any(TOOL_ERROR_SENTINEL in line for _, line in non_empty_lines)
+        has_interrupted = any("::interrupted::" in line for _, line in non_empty_lines)
+
+        for idx, (orig_i, line) in enumerate(non_empty_lines):
             formatted = Text()
             formatted.append(indent)
 
-            is_last_item = i == len(lines) - 1
+            is_last_item = idx == len(non_empty_lines) - 1
             # Use │ for vertical continuation only when more tools are coming
             if is_last_parent:
                 prefix = "    └─ " if is_last_item else "    ├─ "
@@ -351,17 +384,17 @@ class ConversationLog(RichLog):
                 prefix = "│   └─ " if is_last_item else "│   ├─ "
             formatted.append(prefix, style="dim")
 
-            # Handle error lines (marked with TOOL_ERROR_SENTINEL)
-            if TOOL_ERROR_SENTINEL in line:
-                error_msg = line.replace(TOOL_ERROR_SENTINEL, "").strip()
-                formatted.append(error_msg, style="red")
-            elif "::interrupted::" in line:
-                # Handle interrupted messages
-                interrupted_msg = line.replace("::interrupted::", "").strip()
-                formatted.append(interrupted_msg, style="bold red")
+            # Strip markers from content
+            clean_line = line.replace(TOOL_ERROR_SENTINEL, "").replace("::interrupted::", "").strip()
+            # Strip ANSI codes for nested display (they don't render well in tree format)
+            clean_line = re.sub(r"\x1b\[[0-9;]*m", "", clean_line)
+
+            # Apply consistent styling based on error state
+            if has_interrupted:
+                formatted.append(clean_line, style="bold red")
+            elif has_error:
+                formatted.append(clean_line, style="red")
             else:
-                # Strip ANSI codes for nested display (they don't render well in tree format)
-                clean_line = re.sub(r"\x1b\[[0-9;]*m", "", line)
                 formatted.append(clean_line, style="dim")
 
             self.write(formatted, scroll_end=True, animate=False)
@@ -638,7 +671,9 @@ class ConversationLog(RichLog):
         from rich.console import Console
         from textual.strip import Strip
 
-        console = Console(width=self.size.width or 80, force_terminal=True)
+        # Use max width to prevent premature text wrapping that causes corruption
+        # The actual display will handle truncation at render time
+        console = Console(width=max(self.size.width or 200, 200), force_terminal=True)
         segments = list(console.render(formatted))
         strip = Strip(segments)
 
@@ -686,7 +721,49 @@ class ConversationLog(RichLog):
 
         self._render_tool_spinner_frame()
         self._spinner_index = (self._spinner_index + 1) % len(self._spinner_chars)
+
+        # Pulse nested tool indicator at slower rate (every 4 frames = ~0.5s)
+        self._nested_pulse_counter += 1
+        if self._nested_pulse_counter >= 4:
+            self._nested_pulse_counter = 0
+            self._nested_pulse_bright = not self._nested_pulse_bright
+            self._pulse_nested_tool_line()
+
         self._schedule_tool_spinner()
+
+    def _pulse_nested_tool_line(self) -> None:
+        """Update the nested tool call line with pulsing dim/bright effect."""
+        if self._nested_tool_line is None or self._nested_tool_text is None:
+            return
+
+        if self._nested_tool_line >= len(self.lines):
+            # Line index out of bounds
+            return
+
+        # Build the pulsed line
+        formatted = Text()
+        indent = "  " * self._nested_tool_depth
+        formatted.append(indent)
+
+        # Apply dim/bright pulsing to the bullet
+        bullet_style = "green" if self._nested_pulse_bright else "dim green"
+        formatted.append("⏺ ", style=bullet_style)
+        formatted.append_text(self._nested_tool_text.copy())
+
+        # Convert Text to Strip for in-place storage in RichLog
+        from rich.console import Console
+        from textual.strip import Strip
+
+        console = Console(width=max(self.size.width or 200, 200), force_terminal=True)
+        segments = list(console.render(formatted))
+        strip = Strip(segments)
+
+        # Update the line at the tracked position (in-place)
+        self.lines[self._nested_tool_line] = strip
+
+        # Clear cache and refresh display
+        self._line_cache.clear()
+        self.refresh()
 
     def _truncate_from(self, index: int) -> None:
         if index >= len(self.lines):
