@@ -38,7 +38,7 @@ DOCUMENTATION_SYSTEM_PROMPT = """You are a documentation specialist. Create clea
 """
 
 DOCUMENTATION_SUBAGENT = SubAgentSpec(
-    name="documentation",
+    name="Documentation",
     description="Documentation specialist that creates and updates clear, accurate documentation.",
     system_prompt=DOCUMENTATION_SYSTEM_PROMPT,
     tools=["read_file", "write_file", "edit_file", "search", "list_files"],

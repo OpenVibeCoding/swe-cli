@@ -38,7 +38,7 @@ TEST_WRITER_SYSTEM_PROMPT = """You are a test specialist. Write comprehensive, m
 """
 
 TEST_WRITER_SUBAGENT = SubAgentSpec(
-    name="test-writer",
+    name="Test-Writer",
     description="Test specialist that writes comprehensive tests following project conventions.",
     system_prompt=TEST_WRITER_SYSTEM_PROMPT,
     tools=["read_file", "write_file", "edit_file", "search", "list_files", "run_command"],

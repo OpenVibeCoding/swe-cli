@@ -45,7 +45,7 @@ For each issue:
 """
 
 CODE_REVIEWER_SUBAGENT = SubAgentSpec(
-    name="code-reviewer",
+    name="Code-Reviewer",
     description="Expert code reviewer analyzing for bugs, security issues, performance problems, and maintainability concerns.",
     system_prompt=CODE_REVIEWER_SYSTEM_PROMPT,
     tools=["read_file", "search", "list_files"],
