@@ -34,12 +34,3 @@ class ToolRegistryInterface(Protocol):
     ) -> Mapping[str, Any]:
         """Execute a tool with the provided arguments and contextual managers."""
 
-    def get_langchain_tools(self) -> Sequence[Any]:
-        """Return LangChain-compatible tool instances.
-
-        This method provides access to LangChain BaseTool instances that wrap
-        the SWE-CLI tools while preserving permission and approval systems.
-
-        Returns:
-            Sequence of LangChain BaseTool instances
-        """

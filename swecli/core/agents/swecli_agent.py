@@ -41,18 +41,6 @@ class SwecliAgent(BaseAgent):
         self._working_dir = working_dir
         super().__init__(config, tool_registry, mode_manager)
 
-        # Integrate with LangChain tools if enabled
-        self._setup_langchain_tools()
-
-    def _setup_langchain_tools(self) -> None:
-        """Set up LangChain tools if LangChain is enabled."""
-        import os
-        if os.getenv("SWECO_LANGCHAIN_ENABLED", "false").lower() == "true":
-            # Check if the HTTP client is a LangChain adapter
-            from swecli.core.agents.components.langchain.langchain_adapter import LangChainLLMAdapter
-            if isinstance(self._http_client, LangChainLLMAdapter):
-                self._http_client.set_tool_registry(self.tool_registry)
-
     def build_system_prompt(self) -> str:
         return SystemPromptBuilder(self.tool_registry, self._working_dir).build()
 

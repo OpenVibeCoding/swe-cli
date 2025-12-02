@@ -230,35 +230,38 @@ class TodoHandler:
             "todo": asdict(todo),
         }
 
-    def _find_todo(self, id: str) -> tuple[Optional[str], Optional[TodoItem]]:
+    def _find_todo(self, id: str | int) -> tuple[Optional[str], Optional[TodoItem]]:
         """Find a todo by ID, trying multiple matching strategies.
 
-        Deep Agent uses 0-based indexing (0, 1, 2...) while we use 1-based IDs (todo-1, todo-2, todo-3...).
-        This method handles the conversion. Also supports finding by title string, kebab-case slugs, and fuzzy matching.
-
-        Logs warnings when fuzzy matching is used to help improve ID usage reliability.
+        Supports both 1-based indexing (Claude's default) and 0-based indexing.
+        Also supports finding by title string, kebab-case slugs, and fuzzy matching.
 
         Args:
-            id: Todo ID in formats: "0", "1", "todo-1", exact title, kebab-case slug like "implement-basic-level"
+            id: Todo ID in formats: 1, "1", "todo-1", exact title, kebab-case slug
 
         Returns:
             Tuple of (actual_id, todo_item) or (None, None) if not found
         """
+        # Convert to string first (handle both int and str inputs)
+        id = str(id)
+
         # Try exact match first (no warning needed)
         if id in self._todos:
             return id, self._todos[id]
 
-        # If numeric ID provided, convert from 0-based to 1-based then try "todo-X" format
+        # If numeric ID provided, try both 1-based and 0-based indexing
         if id.isdigit():
             numeric_id = int(id)
-            # Deep Agent uses 0-based indexing, convert to 1-based
+
+            # Try 1-based indexing first (Claude uses 1-based): "1" → "todo-1"
+            todo_id = f"todo-{numeric_id}"
+            if todo_id in self._todos:
+                return todo_id, self._todos[todo_id]
+
+            # Fallback to 0-based indexing: "0" → "todo-1"
             one_based_id = numeric_id + 1
             todo_id = f"todo-{one_based_id}"
             if todo_id in self._todos:
-                logger.warning(
-                    f"[TODO] ID '{id}' fuzzy-matched to '{todo_id}'. "
-                    f"Recommend using exact format 'todo-N' for reliability."
-                )
                 return todo_id, self._todos[todo_id]
 
         # If "todo-X" provided, try numeric format

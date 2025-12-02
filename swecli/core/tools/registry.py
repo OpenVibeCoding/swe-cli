@@ -190,20 +190,6 @@ class ToolRegistry:
         """Compatibility hook (schemas generated elsewhere)."""
         return []
 
-    def get_langchain_tools(self) -> list[Any]:
-        """Return LangChain-compatible tool instances.
-
-        Returns:
-            List of LangChain BaseTool instances wrapping SWE-CLI tools
-        """
-        try:
-            from swecli.core.agents.components.langchain.tools import ToolRegistryAdapter
-            adapter = ToolRegistryAdapter(self)
-            return adapter.get_langchain_tools()
-        except ImportError:
-            # LangChain not available, return empty list
-            return []
-
     def execute_tool(
         self,
         tool_name: str,
