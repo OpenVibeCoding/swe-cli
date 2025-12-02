@@ -50,8 +50,12 @@ class SubAgentManager:
         self._all_tool_names: list[str] = self._get_all_tool_names()
 
     def _get_all_tool_names(self) -> list[str]:
-        """Get list of all available tool names from registry."""
-        # These are the core tools available
+        """Get list of all available tool names from registry.
+
+        Note: Todo tools (write_todos, update_todo, etc.) are intentionally
+        excluded. Only the main agent manages task tracking - subagents
+        focus purely on execution.
+        """
         return [
             "read_file",
             "write_file",

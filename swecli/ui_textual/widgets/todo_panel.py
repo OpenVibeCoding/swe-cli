@@ -113,34 +113,33 @@ class TodoPanel(Static):
         lines = []
 
         for todo in sorted_todos:
-            # Extract numeric ID for display (todo-1 → 1)
-            id_num = todo.id.replace("todo-", "") if todo.id.startswith("todo-") else todo.id
-
             if todo.status == "done":
                 # Completed: gray with strikethrough
-                lines.append(f"[dim]✓ [{id_num}] [strike]{todo.title}[/strike][/dim]")
+                lines.append(f"[dim]✓ [strike]{todo.title}[/strike][/dim]")
             elif todo.status == "doing":
                 # In-progress: yellow
-                lines.append(f"[yellow]▶ [{id_num}] {todo.title}[/yellow]")
+                lines.append(f"[yellow]▶ {todo.title}[/yellow]")
             else:
                 # Pending: gray
-                lines.append(f"[dim]○ [{id_num}] {todo.title}[/dim]")
+                lines.append(f"[dim]○ {todo.title}[/dim]")
 
         # Join all lines and update display
         self.update("\n".join(lines))
 
     def _get_active_todo_text(self, todos: list) -> str | None:
-        """Get the title of the currently active todo.
+        """Get the activeForm or title of the currently active todo.
 
         Args:
             todos: List of TodoItem objects
 
         Returns:
-            The title of the first todo with status "doing", or None if no active todo
+            The active_form (or title as fallback) of the first todo with status "doing",
+            or None if no active todo
         """
         for todo in todos:
             if todo.status == "doing":
-                return todo.title
+                # Prefer active_form (present continuous) for spinner display
+                return todo.active_form if todo.active_form else todo.title
         return None
 
     def _start_spinner(self) -> None:

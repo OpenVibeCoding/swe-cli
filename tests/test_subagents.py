@@ -61,14 +61,14 @@ class TestDefaultSubAgents:
     def test_required_subagent_types(self):
         """Test that required subagent types are present."""
         names = [spec["name"] for spec in ALL_SUBAGENTS]
-        assert "explorer" in names
-        assert "code-reviewer" in names
-        assert "test-writer" in names
-        assert "documentation" in names
+        assert "Code-Explorer" in names
+        assert "Code-Reviewer" in names
+        assert "Test-Writer" in names
+        assert "Documentation" in names
 
     def test_explorer_has_readonly_tools(self):
         """Test that explorer agent only has read-only tools."""
-        explorer = next(s for s in ALL_SUBAGENTS if s["name"] == "explorer")
+        explorer = next(s for s in ALL_SUBAGENTS if s["name"] == "Code-Explorer")
         tools = explorer.get("tools", [])
         # Should not have write/edit/run tools
         assert "write_file" not in tools
@@ -165,10 +165,10 @@ class TestSubAgentManager:
         manager.register_defaults()
 
         available = manager.get_available_types()
-        assert "explorer" in available
-        assert "code-reviewer" in available
-        assert "test-writer" in available
-        assert "documentation" in available
+        assert "Code-Explorer" in available
+        assert "Code-Reviewer" in available
+        assert "Test-Writer" in available
+        assert "Documentation" in available
 
     @patch("swecli.core.agents.SwecliAgent")
     def test_get_subagent(self, mock_agent_class, manager):
@@ -373,10 +373,10 @@ class TestSpawnSubagentToolSchema:
     def mock_manager(self):
         """Create a mock SubAgentManager."""
         manager = MagicMock()
-        manager.get_available_types.return_value = ["explorer", "code-reviewer"]
+        manager.get_available_types.return_value = ["Code-Explorer", "Code-Reviewer"]
         manager.get_descriptions.return_value = {
-            "explorer": "Codebase exploration agent",
-            "code-reviewer": "Code review agent",
+            "Code-Explorer": "Codebase exploration agent",
+            "Code-Reviewer": "Code review agent",
         }
         return manager
 
@@ -411,16 +411,16 @@ class TestSpawnSubagentToolSchema:
         subagent_type = schema["function"]["parameters"]["properties"]["subagent_type"]
 
         assert "enum" in subagent_type
-        assert "explorer" in subagent_type["enum"]
-        assert "code-reviewer" in subagent_type["enum"]
+        assert "Code-Explorer" in subagent_type["enum"]
+        assert "Code-Reviewer" in subagent_type["enum"]
 
     def test_tool_schema_description_includes_subagents(self, mock_manager):
         """Test that tool description lists available subagents."""
         schema = create_task_tool_schema(mock_manager)
         description = schema["function"]["description"]
 
-        assert "explorer" in description
-        assert "code-reviewer" in description
+        assert "Code-Explorer" in description
+        assert "Code-Reviewer" in description
 
 
 class TestToolRegistryIntegration:
@@ -475,7 +475,7 @@ class TestToolRegistryIntegration:
 
         result = registry.execute_tool(
             "spawn_subagent",
-            {"description": "Test task", "subagent_type": "explorer"},
+            {"description": "Test task", "subagent_type": "Code-Explorer"},
         )
 
         assert result["success"] is False
@@ -491,7 +491,7 @@ class TestToolRegistryIntegration:
 
         result = registry.execute_tool(
             "spawn_subagent",
-            {"subagent_type": "explorer"},
+            {"subagent_type": "Code-Explorer"},
         )
 
         assert result["success"] is False

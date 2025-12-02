@@ -330,11 +330,6 @@ class ChatApprovalManager:
             )
             self.rules_manager.add_rule(rule)
 
-            if self.chat_app:
-                self.chat_app.add_assistant_message(
-                    f"✓ Rule created: Commands starting with '{base_cmd}' will be auto-approved"
-                )
-
         self._show_edited_command(command, edited_command)
 
         self.rules_manager.add_history(

@@ -459,6 +459,22 @@ class SWECLIChatApp(App):
             self._exit_confirmation_mode = False
             self.input_label.update("› Type your message (Enter to send, Shift+Enter for new line):")
 
+    def update_queue_indicator(self, queue_size: int) -> None:
+        """Update input label to show queue status.
+
+        Args:
+            queue_size: Number of messages waiting in queue
+        """
+        # Don't override exit confirmation message
+        if self._exit_confirmation_mode:
+            return
+
+        if queue_size > 0:
+            msg = "message" if queue_size == 1 else "messages"
+            self.input_label.update(f"› {queue_size} {msg} queued")
+        else:
+            self.input_label.update("› Type your message (Enter to send, Shift+Enter for new line):")
+
     def action_quit(self) -> None:
         """Quit the application (Ctrl+C)."""
         self.exit()

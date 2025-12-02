@@ -15,3 +15,4 @@ class ToolExecutionContext:
     undo_manager: Union[Any, None] = None
     task_monitor: Union[Any, None] = None
     session_manager: Union[Any, None] = None
+    ui_callback: Union[Any, None] = None

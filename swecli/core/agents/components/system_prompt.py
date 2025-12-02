@@ -17,7 +17,10 @@ class SystemPromptBuilder:
     def build(self) -> str:
         """Return the formatted system prompt string."""
         # Load base prompt from file
-        prompt = load_prompt("system_prompt_normal")
+        prompt = load_prompt("main_system_prompt")
+
+        # Replace {available_agents} placeholder with actual subagent list
+        prompt = self._inject_available_agents(prompt)
 
         # Add working directory context
         if self._working_dir:
@@ -29,6 +32,32 @@ class SystemPromptBuilder:
             prompt += mcp_prompt
 
         return prompt
+
+    def _inject_available_agents(self, prompt: str) -> str:
+        """Replace {available_agents} placeholder with actual subagent descriptions."""
+        if "{available_agents}" not in prompt:
+            return prompt
+
+        if not self._tool_registry:
+            return prompt.replace("{available_agents}", "(No subagents available)")
+
+        subagent_manager = getattr(self._tool_registry, "_subagent_manager", None)
+        if not subagent_manager:
+            return prompt.replace("{available_agents}", "(No subagents available)")
+
+        available_types = subagent_manager.get_available_types()
+        if not available_types:
+            return prompt.replace("{available_agents}", "(No subagents available)")
+
+        # Build the available agents list
+        descriptions = subagent_manager.get_descriptions()
+        agent_lines = []
+        for name in available_types:
+            desc = descriptions.get(name, "No description")
+            agent_lines.append(f"- **{name}**: {desc}")
+
+        available_agents_str = "\n".join(agent_lines)
+        return prompt.replace("{available_agents}", available_agents_str)
 
     def _build_mcp_section(self) -> str:
         """Render the MCP tool section when servers are connected."""
@@ -57,7 +86,7 @@ class PlanningPromptBuilder:
 
     def build(self) -> str:
         """Return the planning prompt with working directory context."""
-        prompt = load_prompt("system_prompt_planning")
+        prompt = load_prompt("planner_system_prompt")
 
         # Add working directory context
         if self._working_dir:

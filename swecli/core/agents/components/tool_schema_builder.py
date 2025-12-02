@@ -16,6 +16,11 @@ PLANNING_TOOLS = {
     "get_process_output",
     "list_screenshots",
     "list_web_screenshots",
+    # Symbol tools (read-only)
+    "find_symbol",
+    "find_referencing_symbols",
+    # Subagent spawning (subagents handle their own restrictions)
+    "spawn_subagent",
 }
 
 
@@ -26,13 +31,31 @@ class ToolSchemaBuilder:
         self._tool_registry = tool_registry
 
     def build(self) -> list[dict[str, Any]]:
-        """Return tool schema definitions including MCP extensions."""
+        """Return tool schema definitions including MCP and task tool extensions."""
         schemas: list[dict[str, Any]] = deepcopy(_BUILTIN_TOOL_SCHEMAS)
 
+        # Add task tool schema if subagent manager is configured
+        task_schema = self._build_task_schema()
+        if task_schema:
+            schemas.append(task_schema)
+
+        # Add MCP tool schemas
         mcp_schemas = self._build_mcp_schemas()
         if mcp_schemas:
             schemas.extend(mcp_schemas)
         return schemas
+
+    def _build_task_schema(self) -> dict[str, Any] | None:
+        """Build task tool schema with available subagent types."""
+        if not self._tool_registry:
+            return None
+
+        subagent_manager = getattr(self._tool_registry, "_subagent_manager", None)
+        if not subagent_manager:
+            return None
+
+        from swecli.core.agents.subagents.task_tool import create_task_tool_schema
+        return create_task_tool_schema(subagent_manager)
 
     def _build_mcp_schemas(self) -> Sequence[dict[str, Any]]:
         if not self._tool_registry or not getattr(self._tool_registry, "mcp_manager", None):
@@ -620,6 +643,159 @@ _BUILTIN_TOOL_SCHEMAS: list[dict[str, Any]] = [
                     },
                 },
                 "required": [],
+            },
+        },
+    },
+    # ===== Symbol Tools (LSP-based) =====
+    {
+        "type": "function",
+        "function": {
+            "name": "find_symbol",
+            "description": "Find symbols (functions, classes, variables, etc.) by name using LSP. Supports name path patterns like 'MyClass.method', partial matches like 'method', or wildcards like 'My*'. Returns symbol locations with file, line, and kind information.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "symbol_name": {
+                        "type": "string",
+                        "description": "Name path pattern to search for. Examples: 'MyClass' (class), 'MyClass.method' (method in class), 'my_func' (function), 'My*' (wildcard)",
+                    },
+                    "file_path": {
+                        "type": "string",
+                        "description": "Optional file path to limit search scope. If not provided, searches the workspace.",
+                    },
+                },
+                "required": ["symbol_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "find_referencing_symbols",
+            "description": "Find all code locations that reference a specific symbol. Useful for understanding how a function, class, or variable is used throughout the codebase.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "symbol_name": {
+                        "type": "string",
+                        "description": "Name of the symbol to find references for",
+                    },
+                    "file_path": {
+                        "type": "string",
+                        "description": "Path to file where the symbol is defined (required to locate the symbol)",
+                    },
+                    "include_declaration": {
+                        "type": "boolean",
+                        "description": "Whether to include the declaration itself in results",
+                        "default": True,
+                    },
+                },
+                "required": ["symbol_name", "file_path"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "insert_before_symbol",
+            "description": "Insert code immediately before a symbol (function, class, etc.). The content is inserted at the same indentation level as the symbol.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "symbol_name": {
+                        "type": "string",
+                        "description": "Name of the symbol to insert before",
+                    },
+                    "file_path": {
+                        "type": "string",
+                        "description": "Path to file containing the symbol",
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "Code content to insert",
+                    },
+                },
+                "required": ["symbol_name", "file_path", "content"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "insert_after_symbol",
+            "description": "Insert code immediately after a symbol (function, class, etc.). The content is inserted at the same indentation level as the symbol.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "symbol_name": {
+                        "type": "string",
+                        "description": "Name of the symbol to insert after",
+                    },
+                    "file_path": {
+                        "type": "string",
+                        "description": "Path to file containing the symbol",
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "Code content to insert",
+                    },
+                },
+                "required": ["symbol_name", "file_path", "content"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "replace_symbol_body",
+            "description": "Replace the body of a symbol (function, method, class) with new content. By default preserves the signature for functions/methods.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "symbol_name": {
+                        "type": "string",
+                        "description": "Name of the symbol whose body to replace",
+                    },
+                    "file_path": {
+                        "type": "string",
+                        "description": "Path to file containing the symbol",
+                    },
+                    "new_body": {
+                        "type": "string",
+                        "description": "New body content for the symbol",
+                    },
+                    "preserve_signature": {
+                        "type": "boolean",
+                        "description": "Whether to keep the function/method signature (default: true)",
+                        "default": True,
+                    },
+                },
+                "required": ["symbol_name", "file_path", "new_body"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "rename_symbol",
+            "description": "Rename a symbol across the entire codebase using LSP refactoring. This is a safe rename that updates all references to the symbol.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "symbol_name": {
+                        "type": "string",
+                        "description": "Current name of the symbol to rename",
+                    },
+                    "file_path": {
+                        "type": "string",
+                        "description": "Path to file where symbol is defined",
+                    },
+                    "new_name": {
+                        "type": "string",
+                        "description": "New name for the symbol",
+                    },
+                },
+                "required": ["symbol_name", "file_path", "new_name"],
             },
         },
     },

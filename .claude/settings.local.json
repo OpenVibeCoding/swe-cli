@@ -23,7 +23,16 @@
       "Bash(git rm:*)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:ast-grep.github.io)",
-      "Bash(sg --json:*)"
+      "Bash(sg --json:*)",
+      "WebSearch",
+      "Bash(git -C /Users/nghibui/codes/swe-cli log --oneline -20)",
+      "Bash(git -C /Users/nghibui/codes/swe-cli diff deepagents)",
+      "Bash(git -C /Users/nghibui/codes/swe-cli log --oneline -5)",
+      "Bash(git -C /Users/nghibui/codes/swe-cli add swecli/ui_textual/ui_callback.py swecli/ui_textual/widgets/conversation_log.py)",
+      "Bash(git -C /Users/nghibui/codes/swe-cli diff swecli/repl/query_processor.py)",
+      "Bash(git -C /Users/nghibui/codes/swe-cli push)",
+      "Bash(git -C /Users/nghibui/codes/swe-cli status:*)",
+      "Bash(git -C /Users/nghibui/codes/swe-cli add swecli/cli.py swecli/tools/__init__.py)"
     ],
     "deny": [],
     "ask": []

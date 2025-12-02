@@ -245,6 +245,34 @@ class StyleFormatter:
                 return ["Packages installed successfully"]
             return ["npm install completed"]
 
+        # lsof - count processes (skip header row)
+        if "lsof" in normalized_cmd:
+            lines = stdout.splitlines()
+            count = max(0, len(lines) - 1)  # Exclude header
+            if count == 0:
+                return ["No processes found"]
+            return [f"{count} process(es) listening"]
+
+        # ps - count processes (skip header row)
+        if normalized_cmd.startswith("ps "):
+            lines = stdout.splitlines()
+            count = max(0, len(lines) - 1)
+            return [f"{count} process(es)"]
+
+        # netstat/ss - count connections (skip header row)
+        if "netstat" in normalized_cmd or normalized_cmd.startswith("ss "):
+            lines = [l for l in stdout.splitlines() if l.strip()]
+            count = max(0, len(lines) - 1)
+            return [f"{count} connection(s)"]
+
+        # wc - show the actual count
+        if normalized_cmd.startswith("wc "):
+            # wc output is typically: "  123 filename" or just "123"
+            first_line = stdout.splitlines()[0].strip() if stdout else ""
+            parts = first_line.split()
+            if parts:
+                return [parts[0]]  # Just the count
+
         if stdout:
             lines = stdout.splitlines()
             first_line = lines[0].strip()

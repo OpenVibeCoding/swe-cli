@@ -41,5 +41,5 @@ DOCUMENTATION_SUBAGENT = SubAgentSpec(
     name="Documentation",
     description="Documentation specialist that creates and updates clear, accurate documentation.",
     system_prompt=DOCUMENTATION_SYSTEM_PROMPT,
-    tools=["read_file", "write_file", "edit_file", "search", "list_files"],
+    tools=["read_file", "write_file", "edit_file", "search", "list_files", "run_command"],
 )
