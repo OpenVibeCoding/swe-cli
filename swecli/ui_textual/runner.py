@@ -527,6 +527,11 @@ class TextualRunner:
                     except queue.Empty:
                         continue
 
+                    # Update queue indicator immediately after dequeuing
+                    # This ensures the count shows only messages WAITING to be processed,
+                    # not the one currently being processed
+                    self._notify_queue_update(from_ui_thread=False)
+
                     is_command = message.startswith("/")
 
                     # Start spinner for non-command messages (ensures spinner runs for queued messages)
