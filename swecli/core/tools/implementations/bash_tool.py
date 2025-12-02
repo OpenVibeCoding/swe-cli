@@ -8,7 +8,7 @@ from typing import Any, Optional
 
 from swecli.models.config import AppConfig
 from swecli.models.operation import BashResult, Operation
-from swecli.tools.base import BaseTool
+from swecli.core.tools.implementations.base import BaseTool
 
 
 # Safe commands that are generally allowed
@@ -206,7 +206,7 @@ class BashTool(BaseTool):
                     success=True,
                     command=command,
                     exit_code=0,  # Process started
-                    stdout=f"Background process started with PID {process.pid}",
+                    stdout="",  # Background process started, output captured separately
                     stderr="",
                     duration=0.0,
                     operation_id=operation.id if operation else None,

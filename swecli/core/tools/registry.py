@@ -6,12 +6,12 @@ from typing import Any, Union
 
 from swecli.core.management import OperationMode
 from swecli.core.tools.context import ToolExecutionContext
-from swecli.core.tools.file_handlers import FileToolHandler
-from swecli.core.tools.mcp_handler import McpToolHandler
-from swecli.core.tools.process_handlers import ProcessToolHandler
-from swecli.core.tools.web_handlers import WebToolHandler
-from swecli.core.tools.screenshot_handler import ScreenshotToolHandler
-from swecli.core.tools.todo_handler import TodoHandler
+from swecli.core.tools.handlers.file_handlers import FileToolHandler
+from swecli.core.tools.handlers.mcp_handler import McpToolHandler
+from swecli.core.tools.handlers.process_handlers import ProcessToolHandler
+from swecli.core.tools.handlers.web_handlers import WebToolHandler
+from swecli.core.tools.handlers.screenshot_handler import ScreenshotToolHandler
+from swecli.core.tools.handlers.todo_handler import TodoHandler
 from swecli.core.tools.symbol_tools import (
     handle_find_symbol,
     handle_find_referencing_symbols,

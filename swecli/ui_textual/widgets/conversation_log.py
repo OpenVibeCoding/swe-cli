@@ -201,7 +201,7 @@ class ConversationLog(RichLog):
         self._render_tool_spinner_frame()
         self._schedule_tool_spinner()
 
-    def stop_tool_execution(self) -> None:
+    def stop_tool_execution(self, success: bool = True) -> None:
         self._spinner_active = False
         if self._tool_timer_start is not None:
             self._tool_last_elapsed = max(int(time.monotonic() - self._tool_timer_start), 0)
@@ -209,7 +209,7 @@ class ConversationLog(RichLog):
             self._tool_last_elapsed = None
         self._tool_timer_start = None
         if self._tool_call_start is not None and self._tool_display is not None:
-            self._replace_tool_call_line("⏺")
+            self._replace_tool_call_line("⏺", success=success)
 
         self._tool_display = None
         self._tool_call_start = None
@@ -250,11 +250,11 @@ class ConversationLog(RichLog):
         else:
             tool_text = Text(str(display), style="white")
 
-        # Build indented line with bullet (like main agent tool calls)
+        # Build indented line with bullet - START DIM to indicate "running"
         formatted = Text()
         indent = "  " * depth
         formatted.append(indent)
-        formatted.append("⏺ ", style="green")
+        formatted.append("⏺ ", style="dim green")  # Dim = running state
         formatted.append_text(tool_text)
 
         self.write(formatted, scroll_end=True, animate=False)
@@ -263,7 +263,7 @@ class ConversationLog(RichLog):
         self._nested_tool_line = len(self.lines) - 1
         self._nested_tool_text = tool_text.copy()
         self._nested_tool_depth = depth
-        self._nested_pulse_bright = True
+        self._nested_pulse_bright = False  # Start dim (running)
         self._nested_pulse_counter = 0
 
     def complete_nested_tool_call(
@@ -281,8 +281,12 @@ class ConversationLog(RichLog):
             parent: Name/identifier of the parent subagent
             success: Whether the tool execution succeeded
         """
+        # Update the line to final state (green for success, red for failure)
+        if self._nested_tool_line is not None and self._nested_tool_text is not None:
+            self._nested_pulse_bright = True  # Bright = completed state
+            self._pulse_nested_tool_line(success=success)
+
         # Clear nested tool tracking - this tool is no longer "running"
-        # The next add_nested_tool_call will set up a new one to pulse
         self._nested_tool_line = None
         self._nested_tool_text = None
 
@@ -645,7 +649,7 @@ class ConversationLog(RichLog):
         spinner_char = self._spinner_chars[self._spinner_index]
         self._replace_tool_call_line(spinner_char)
 
-    def _replace_tool_call_line(self, prefix: str) -> None:
+    def _replace_tool_call_line(self, prefix: str, success: bool = True) -> None:
         """Replace the tool call line in-place, preserving its position."""
         if self._tool_call_start is None or self._tool_display is None:
             return
@@ -659,7 +663,10 @@ class ConversationLog(RichLog):
 
         # Build the new line content
         formatted = Text()
-        style = "green" if prefix == "⏺" else "bright_cyan"
+        if prefix == "⏺":
+            style = "green" if success else "red"
+        else:
+            style = "bright_cyan"
         formatted.append(f"{prefix} ", style=style)
         if self._tool_display is not None:
             formatted += self._tool_display.copy()
@@ -731,7 +738,7 @@ class ConversationLog(RichLog):
 
         self._schedule_tool_spinner()
 
-    def _pulse_nested_tool_line(self) -> None:
+    def _pulse_nested_tool_line(self, success: bool = True) -> None:
         """Update the nested tool call line with pulsing dim/bright effect."""
         if self._nested_tool_line is None or self._nested_tool_text is None:
             return
@@ -745,8 +752,11 @@ class ConversationLog(RichLog):
         indent = "  " * self._nested_tool_depth
         formatted.append(indent)
 
-        # Apply dim/bright pulsing to the bullet
-        bullet_style = "green" if self._nested_pulse_bright else "dim green"
+        # Apply dim/bright pulsing to the bullet (red for failure, green for success)
+        if success:
+            bullet_style = "green" if self._nested_pulse_bright else "dim green"
+        else:
+            bullet_style = "red" if self._nested_pulse_bright else "dim red"
         formatted.append("⏺ ", style=bullet_style)
         formatted.append_text(self._nested_tool_text.copy())
 

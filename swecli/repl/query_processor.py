@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from swecli.core.management import ModeManager, SessionManager
     from swecli.core.approval import ApprovalManager
     from swecli.core.management import UndoManager
-    from swecli.tools.file_ops import FileOperations
+    from swecli.core.tools.implementations import FileOperations
     from swecli.ui_textual.formatters_internal.output_formatter import OutputFormatter
     from swecli.ui_textual.components import StatusLine
     from swecli.models.config import Config

@@ -6,8 +6,8 @@ from typing import Optional
 
 from swecli.models.config import AppConfig
 from swecli.models.operation import EditResult, Operation
-from swecli.tools.base import BaseTool
-from swecli.tools.diff_preview import DiffPreview, Diff
+from swecli.core.tools.implementations.base import BaseTool
+from swecli.core.tools.implementations.diff_preview import DiffPreview, Diff
 
 
 class EditTool(BaseTool):

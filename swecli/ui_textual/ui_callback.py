@@ -142,8 +142,10 @@ class TextualUICallback:
             result: Result of the tool execution
         """
         # Stop spinner animation (blocking so the bullet restores before results render)
+        # Pass success status to color the bullet (green for success, red for failure)
+        success = result.get("success", True)
         if hasattr(self.conversation, 'stop_tool_execution'):
-            self._run_on_ui(self.conversation.stop_tool_execution)
+            self._run_on_ui(lambda: self.conversation.stop_tool_execution(success))
 
         # Skip displaying "Operation cancelled by user" errors
         # These are already shown by the approval controller interrupt message

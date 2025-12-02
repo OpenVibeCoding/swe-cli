@@ -5,7 +5,7 @@ from typing import Optional
 
 from swecli.models.config import AppConfig
 from swecli.models.operation import WriteResult, Operation
-from swecli.tools.base import BaseTool
+from swecli.core.tools.implementations.base import BaseTool
 
 
 class WriteTool(BaseTool):

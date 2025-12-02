@@ -118,13 +118,15 @@ class AgentExecutor:
             Agent response
         """
         from swecli.core.services import RuntimeService
-        from swecli.tools.file_ops import FileOperations
-        from swecli.tools.write_tool import WriteTool
-        from swecli.tools.edit_tool import EditTool
-        from swecli.tools.bash_tool import BashTool
-        from swecli.tools.web_fetch_tool import WebFetchTool
-        from swecli.tools.open_browser_tool import OpenBrowserTool
-        from swecli.tools.web_screenshot_tool import WebScreenshotTool
+        from swecli.core.tools.implementations import (
+            FileOperations,
+            WriteTool,
+            EditTool,
+            BashTool,
+            WebFetchTool,
+            OpenBrowserTool,
+            WebScreenshotTool,
+        )
         from swecli.web.web_approval_manager import WebApprovalManager
         from swecli.web.ws_tool_broadcaster import WebSocketToolBroadcaster
 

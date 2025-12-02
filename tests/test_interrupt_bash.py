@@ -6,7 +6,7 @@ from pathlib import Path
 
 from swecli.core.monitoring import TaskMonitor
 from swecli.models.config import AppConfig
-from swecli.tools.bash_tool import BashTool
+from swecli.core.tools.implementations import BashTool
 
 
 def test_bash_interrupt():

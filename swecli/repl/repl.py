@@ -24,10 +24,12 @@ from swecli.core.services import RuntimeService
 from swecli.models.message import ChatMessage, Role
 from swecli.models.operation import Operation, OperationType
 from swecli.models.agent_deps import AgentDependencies
-from swecli.tools.file_ops import FileOperations
-from swecli.tools.write_tool import WriteTool
-from swecli.tools.edit_tool import EditTool
-from swecli.tools.bash_tool import BashTool
+from swecli.core.tools.implementations import (
+    FileOperations,
+    WriteTool,
+    EditTool,
+    BashTool,
+)
 from swecli.ui_textual.components.console_animations import Spinner
 from swecli.ui_textual.components import StatusLine, NotificationCenter
 from swecli.ui_textual.autocomplete import SwecliCompleter
@@ -89,10 +91,12 @@ class REPL:
 
     def _init_tools(self):
         """Initialize file operation and command tools."""
-        from swecli.tools.web_fetch_tool import WebFetchTool
-        from swecli.tools.open_browser_tool import OpenBrowserTool
-        from swecli.tools.vlm_tool import VLMTool
-        from swecli.tools.web_screenshot_tool import WebScreenshotTool
+        from swecli.core.tools.implementations import (
+            WebFetchTool,
+            OpenBrowserTool,
+            VLMTool,
+            WebScreenshotTool,
+        )
         from swecli.mcp.manager import MCPManager
 
         self.file_ops = FileOperations(self.config, self.config_manager.working_dir)
