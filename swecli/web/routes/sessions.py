@@ -407,20 +407,46 @@ async def list_files(query: str = "") -> Dict[str, Any]:
         if not working_dir.exists() or not working_dir.is_dir():
             return {"files": []}
 
-        # Get all files recursively, excluding common ignore patterns
-        ignore_patterns = {'.git', '__pycache__', 'node_modules', '.venv', 'venv',
-                          '.idea', '.vscode', 'dist', 'build', '.DS_Store'}
+        # Fallback ignore patterns if no .gitignore exists
+        fallback_ignore_patterns = {'.git', '.hg', '.svn', '__pycache__', 'node_modules', '.venv', 'venv',
+                                    '.idea', '.vscode', 'dist', 'build', '.DS_Store', '.pytest_cache',
+                                    '.mypy_cache', '.tox', '.eggs'}
+
+        # Try to load gitignore parser
+        gitignore_parser = None
+        gitignore_path = working_dir / ".gitignore"
+        if gitignore_path.exists():
+            from swecli.ui_textual.autocomplete_internal.gitignore import GitIgnoreParser
+            gitignore_parser = GitIgnoreParser(working_dir)
+
+        def should_skip_dir(dir_path: Path, dir_name: str) -> bool:
+            """Check if a directory should be skipped."""
+            if gitignore_parser:
+                return gitignore_parser.should_skip_dir(dir_path)
+            return dir_name in fallback_ignore_patterns
+
+        def should_skip_file(file_path: Path) -> bool:
+            """Check if a file should be skipped."""
+            if gitignore_parser:
+                return gitignore_parser.is_ignored(file_path)
+            return False
 
         files = []
         try:
             # Use os.walk for more efficient traversal with pruning
             for root, dirs, filenames in os.walk(working_dir):
+                root_path = Path(root)
+
                 # Modify dirs in-place to skip ignored directories
-                dirs[:] = [d for d in dirs if d not in ignore_patterns and not any(p in ignore_patterns for p in Path(os.path.join(root, d)).parts)]
-                
+                dirs[:] = [d for d in dirs if not should_skip_dir(root_path / d, d)]
+
                 for filename in filenames:
-                    file_path = Path(root) / filename
-                    
+                    file_path = root_path / filename
+
+                    # Skip ignored files
+                    if should_skip_file(file_path):
+                        continue
+
                     # Get relative path
                     try:
                         rel_path = file_path.relative_to(working_dir)
@@ -437,11 +463,11 @@ async def list_files(query: str = "") -> Dict[str, Any]:
                         })
                     except ValueError:
                         continue
-                        
+
                     # Limit early if we have enough results
                     if len(files) >= 100:
                         break
-                
+
                 if len(files) >= 100:
                     break
 

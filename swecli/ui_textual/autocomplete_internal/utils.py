@@ -3,7 +3,10 @@
 import os
 import time
 from pathlib import Path
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
+
+if TYPE_CHECKING:
+    from .gitignore import GitIgnoreParser
 
 
 class FileFinder:
@@ -14,6 +17,13 @@ class FileFinder:
     # Maximum files to cache
     MAX_CACHE_SIZE = 5000
 
+    # Fallback exclude dirs when no .gitignore exists
+    DEFAULT_EXCLUDE_DIRS = {
+        ".git", ".hg", ".svn", "__pycache__", "node_modules",
+        ".venv", "venv", ".pytest_cache", ".mypy_cache", ".tox",
+        "dist", "build", ".eggs", "*.egg-info",
+    }
+
     def __init__(self, working_dir: Path):
         """Initialize file finder.
 
@@ -21,15 +31,13 @@ class FileFinder:
             working_dir: Working directory to search in
         """
         self.working_dir = working_dir
-        self._exclude_dirs = {
-            ".git", ".hg", ".svn", "__pycache__", "node_modules",
-            ".venv", "venv", ".pytest_cache", ".mypy_cache", ".tox",
-            "dist", "build", ".eggs", "*.egg-info",
-        }
         # Cache: list of (relative_path_str_lower, Path) tuples
         self._cache: Optional[List[tuple[str, Path]]] = None
         self._cache_time: float = 0.0
         self._cache_working_dir: Optional[Path] = None
+        # GitIgnore parser (lazy loaded)
+        self._gitignore_parser: Optional["GitIgnoreParser"] = None
+        self._gitignore_loaded: bool = False
 
     def _is_cache_valid(self) -> bool:
         """Check if the cache is still valid."""
@@ -41,16 +49,68 @@ class FileFinder:
             return False
         return True
 
+    def _get_gitignore_parser(self) -> Optional["GitIgnoreParser"]:
+        """Get or create the GitIgnore parser (lazy loading).
+
+        Returns:
+            GitIgnoreParser instance or None if .gitignore doesn't exist
+        """
+        if not self._gitignore_loaded:
+            self._gitignore_loaded = True
+            # Check if .gitignore exists before loading the parser
+            gitignore_path = self.working_dir / ".gitignore"
+            if gitignore_path.exists():
+                from .gitignore import GitIgnoreParser
+                self._gitignore_parser = GitIgnoreParser(self.working_dir)
+        return self._gitignore_parser
+
+    def _should_skip_dir(self, dir_path: Path, dir_name: str) -> bool:
+        """Check if a directory should be skipped during traversal.
+
+        Args:
+            dir_path: Full path to the directory
+            dir_name: Name of the directory
+
+        Returns:
+            True if the directory should be skipped
+        """
+        parser = self._get_gitignore_parser()
+        if parser:
+            return parser.should_skip_dir(dir_path)
+        # Fallback to default excludes if no .gitignore
+        return dir_name in self.DEFAULT_EXCLUDE_DIRS
+
+    def _should_skip_file(self, file_path: Path) -> bool:
+        """Check if a file should be skipped.
+
+        Args:
+            file_path: Full path to the file
+
+        Returns:
+            True if the file should be skipped
+        """
+        parser = self._get_gitignore_parser()
+        if parser:
+            return parser.is_ignored(file_path)
+        return False
+
     def _build_cache(self) -> None:
         """Build the file cache by walking the directory tree once."""
         cache: List[tuple[str, Path]] = []
 
+        # Reset gitignore parser when rebuilding cache (it may have changed)
+        self._gitignore_loaded = False
+        self._gitignore_parser = None
+
         try:
             for root, dirs, files in os.walk(self.working_dir):
-                # Filter out excluded directories
-                dirs[:] = [d for d in dirs if d not in self._exclude_dirs]
-
                 root_path = Path(root)
+
+                # Filter out excluded directories using gitignore or fallback
+                dirs[:] = [
+                    d for d in dirs
+                    if not self._should_skip_dir(root_path / d, d)
+                ]
 
                 # Add directories
                 for dirname in dirs:
@@ -61,9 +121,14 @@ class FileFinder:
                     except ValueError:
                         continue
 
-                # Add files
+                # Add files (filter using gitignore)
                 for filename in files:
                     file_path = root_path / filename
+
+                    # Skip ignored files
+                    if self._should_skip_file(file_path):
+                        continue
+
                     try:
                         rel_path = file_path.relative_to(self.working_dir)
                         cache.append((str(rel_path).lower(), file_path))
