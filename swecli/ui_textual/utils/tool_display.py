@@ -215,7 +215,8 @@ def build_tool_call_text(tool_name: str, tool_args: Mapping[str, Any]) -> Text:
         tool_part, params_part = formatted.split('(', 1)
         params_part = params_part[:-1]  # Remove closing parenthesis
 
-        text = Text(tool_part)
+        # Strip trailing space from tool_part to avoid double space
+        text = Text(tool_part.rstrip())
         if params_part:
             text.append(f" ({params_part})", style="dim")
         return text

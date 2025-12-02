@@ -678,10 +678,14 @@ class ConversationLog(RichLog):
         from rich.console import Console
         from textual.strip import Strip
 
-        # Use max width to prevent premature text wrapping that causes corruption
+        # Use very large width and no_wrap to prevent text wrapping that causes corruption
         # The actual display will handle truncation at render time
-        console = Console(width=max(self.size.width or 200, 200), force_terminal=True)
-        segments = list(console.render(formatted))
+        console = Console(width=1000, force_terminal=True, no_color=False)
+        # Render with explicit options to avoid wrapping
+        with console.capture() as capture:
+            console.print(formatted, end="", overflow="ignore", no_wrap=True)
+        # Get segments directly from the Text object instead of console render
+        segments = list(formatted.render(console))
         strip = Strip(segments)
 
         # Update the line at the original position (in-place)
