@@ -19,13 +19,15 @@ from swecli.models.message import ChatMessage, Role
 from swecli.ui_textual.runner import launch_textual_cli
 from swecli.setup import run_setup_wizard
 from swecli.setup.wizard import config_exists
-from swecli.tools.bash_tool import BashTool
-from swecli.tools.edit_tool import EditTool
-from swecli.tools.file_ops import FileOperations
-from swecli.tools.web_fetch_tool import WebFetchTool
-from swecli.tools.vlm_tool import VLMTool
-from swecli.tools.web_screenshot_tool import WebScreenshotTool
-from swecli.tools.write_tool import WriteTool
+from swecli.core.tools.implementations import (
+    BashTool,
+    EditTool,
+    FileOperations,
+    VLMTool,
+    WebFetchTool,
+    WebScreenshotTool,
+    WriteTool,
+)
 
 
 def main() -> None:
@@ -58,7 +60,9 @@ Examples:
         "--resume",
         "-r",
         metavar="SESSION_ID",
-        help="Resume a previous session by ID",
+        nargs="?",
+        const="__LIST__",
+        help="Resume a previous session by ID (shows list if no ID provided)",
     )
 
     parser.add_argument(
@@ -274,6 +278,11 @@ Examples:
         session_manager = SessionManager(session_dir)
 
         if args.list_sessions:
+            _print_sessions(console, session_manager)
+            return
+
+        # Handle --resume without argument (show session list)
+        if args.resume == "__LIST__":
             _print_sessions(console, session_manager)
             return
 

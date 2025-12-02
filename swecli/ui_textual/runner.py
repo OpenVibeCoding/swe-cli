@@ -302,12 +302,14 @@ class TextualRunner:
 
         summary = getattr(tool_call, "result_summary", None)
         if summary:
+            # Use result_summary (matches real-time display from StyleFormatter)
             add_line(str(summary).strip())
-
-        raw_result = getattr(tool_call, "result", None)
-        snippet = self._truncate_tool_output(raw_result)
-        if snippet:
-            add_line(snippet)
+        else:
+            # Only fall back to truncated raw_result if no summary available
+            raw_result = getattr(tool_call, "result", None)
+            snippet = self._truncate_tool_output(raw_result)
+            if snippet:
+                add_line(snippet)
 
         if not lines:
             add_line("✓ Tool completed")
