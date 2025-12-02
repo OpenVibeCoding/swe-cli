@@ -277,6 +277,26 @@ class TextualUICallback:
             result: Result of the tool execution
             depth: Nesting depth for indentation
         """
+        # Special handling for edit_file - use dedicated diff display with colors
+        # This avoids ANSI code stripping that happens in add_nested_tool_sub_results
+        if tool_name == "edit_file" and result.get("success"):
+            diff_text = result.get("diff", "")
+            if diff_text and hasattr(self.conversation, 'add_edit_diff_result'):
+                # Show summary line first
+                file_path = tool_args.get("file_path", "unknown")
+                lines_added = result.get("lines_added", 0) or 0
+                lines_removed = result.get("lines_removed", 0) or 0
+
+                def _plural(count: int, singular: str) -> str:
+                    return f"{count} {singular}" if count == 1 else f"{count} {singular}s"
+
+                summary = f"Updated {file_path} with {_plural(lines_added, 'addition')} and {_plural(lines_removed, 'removal')}"
+                self._run_on_ui(self.conversation.add_nested_tool_sub_results, [summary], depth)
+                # Then show colored diff
+                self._run_on_ui(self.conversation.add_edit_diff_result, diff_text, depth)
+                return
+            # Fall through to generic display if no diff
+
         # Get result lines from StyleFormatter (same code path as main agent)
         if tool_name == "read_file":
             lines = self.formatter._format_read_file_result(tool_args, result)
