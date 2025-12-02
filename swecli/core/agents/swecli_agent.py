@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any, Optional
 
-from swecli.core.abstract import BaseAgent
+from swecli.core.base.abstract import BaseAgent
 from swecli.core.agents.components import (
     ResponseCleaner,
     SystemPromptBuilder,

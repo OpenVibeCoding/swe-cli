@@ -7,7 +7,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-from swecli.core.management import SessionManager
+from swecli.core.context_engineering.history import SessionManager
 
 
 class StatsCommandHandler:

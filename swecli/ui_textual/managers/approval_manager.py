@@ -34,7 +34,7 @@ class ChatApprovalManager:
         self.autonomy_level = AutonomyLevel.MANUAL  # Current autonomy level
 
         # Initialize rules manager for Phase 3
-        from swecli.core.approval import ApprovalRulesManager, RuleAction
+        from swecli.core.runtime.approval import ApprovalRulesManager, RuleAction
 
         self.rules_manager = ApprovalRulesManager()
         self.RuleAction = RuleAction  # Store for use in methods
@@ -76,7 +76,7 @@ class ChatApprovalManager:
         Returns:
             ApprovalResult if auto-approved, None otherwise
         """
-        from swecli.core.approval import ApprovalResult, ApprovalChoice
+        from swecli.core.runtime.approval import ApprovalResult, ApprovalChoice
         from swecli.models.operation import OperationType
 
         # Only show approval for bash commands
@@ -133,7 +133,7 @@ class ChatApprovalManager:
         Returns:
             Tuple of (ApprovalResult or None, matched_rule or None)
         """
-        from swecli.core.approval import ApprovalResult, ApprovalChoice
+        from swecli.core.runtime.approval import ApprovalResult, ApprovalChoice
 
         if not command:
             return None, None
@@ -273,7 +273,7 @@ class ChatApprovalManager:
         Returns:
             ApprovalResult
         """
-        from swecli.core.approval import ApprovalResult, ApprovalChoice
+        from swecli.core.runtime.approval import ApprovalResult, ApprovalChoice
 
         self._show_edited_command(command, edited_command)
 
@@ -302,8 +302,8 @@ class ChatApprovalManager:
         Returns:
             ApprovalResult
         """
-        from swecli.core.approval import ApprovalResult, ApprovalChoice
-        from swecli.core.approval.rules import ApprovalRule, RuleType, RuleAction
+        from swecli.core.runtime.approval import ApprovalResult, ApprovalChoice
+        from swecli.core.runtime.approval.rules import ApprovalRule, RuleType, RuleAction
         from datetime import datetime
         import uuid
 
@@ -356,7 +356,7 @@ class ChatApprovalManager:
         Returns:
             ApprovalResult
         """
-        from swecli.core.approval import ApprovalResult, ApprovalChoice
+        from swecli.core.runtime.approval import ApprovalResult, ApprovalChoice
 
         self.rules_manager.add_history(
             command,
@@ -383,7 +383,7 @@ class ChatApprovalManager:
         force_prompt: bool = False,
     ):
         """Request approval for an operation with interactive prompt."""
-        from swecli.core.approval import ApprovalResult, ApprovalChoice
+        from swecli.core.runtime.approval import ApprovalResult, ApprovalChoice
 
         matched_rule = None
 

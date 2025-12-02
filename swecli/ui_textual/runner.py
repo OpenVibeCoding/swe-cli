@@ -14,7 +14,8 @@ from rich.ansi import AnsiDecoder
 from rich.text import Text
 
 from swecli.core.agents.components import extract_plan_from_response
-from swecli.core.management import ConfigManager, OperationMode, SessionManager
+from swecli.core.runtime import ConfigManager, OperationMode
+from swecli.core.context_engineering.history import SessionManager
 from swecli.models.message import ChatMessage, Role
 from swecli.repl.repl import REPL
 from swecli.ui_textual.managers.approval_manager import ChatApprovalManager
@@ -161,11 +162,75 @@ class TextualRunner:
         """Ensure history hydration runs before any existing on_ready hook."""
 
         def _callback() -> None:
-            self._hydrate_conversation_history()
+            # Start async history hydration in background - don't block UI
+            self._start_async_history_hydration()
             if downstream:
                 downstream()
 
         return _callback
+
+    def _start_async_history_hydration(self) -> None:
+        """Start hydrating conversation history in background batches."""
+        if self._history_restored or not self._initial_messages:
+            self._history_restored = True
+            return
+
+        # Run hydration in a worker to not block the UI thread
+        import threading
+
+        def hydrate_in_batches():
+            conversation = getattr(self.app, "conversation", None)
+            if conversation is None:
+                self._history_restored = True
+                return
+
+            # Clear and prepare - do this on UI thread
+            self.app.call_from_thread(conversation.clear)
+
+            history = getattr(self.app, "_history", None)
+            record_assistant = getattr(self.app, "record_assistant_message", None)
+
+            # Process messages in batches to keep UI responsive
+            BATCH_SIZE = 5
+            messages = self._initial_messages
+
+            for i in range(0, len(messages), BATCH_SIZE):
+                batch = messages[i:i + BATCH_SIZE]
+
+                # Process batch on UI thread
+                def process_batch(batch_messages=batch):
+                    for message in batch_messages:
+                        content = (message.content or "").strip()
+                        if message.role == Role.USER:
+                            if not content:
+                                continue
+                            conversation.add_user_message(content)
+                            if history is not None and hasattr(history, "record"):
+                                history.record(content)
+                        elif message.role == Role.ASSISTANT:
+                            if content:
+                                conversation.add_assistant_message(content)
+                                if callable(record_assistant):
+                                    record_assistant(content)
+                            if getattr(message, "tool_calls", None):
+                                self._render_stored_tool_calls(conversation, message.tool_calls)
+                            elif not content:
+                                continue
+                        elif message.role == Role.SYSTEM:
+                            if not content:
+                                continue
+                            conversation.add_system_message(content)
+
+                self.app.call_from_thread(process_batch)
+
+                # Small delay between batches to let UI breathe
+                import time
+                time.sleep(0.01)
+
+            self._history_restored = True
+
+        thread = threading.Thread(target=hydrate_in_batches, daemon=True)
+        thread.start()
 
     def _build_model_slots(self) -> dict[str, tuple[str, str]]:
         """Prepare formatted model slot information for the footer."""
@@ -801,7 +866,7 @@ Work through each implementation step in order. Mark each todo item as 'in_progr
         transport_text = server_config.transport or "stdio"
         info_table.add_row("Transport", transport_text)
 
-        from swecli.mcp.config import get_config_path, get_project_config_path
+        from swecli.core.context_engineering.mcp.config import get_config_path, get_project_config_path
 
         config_location = ""
         try:
@@ -921,7 +986,7 @@ Work through each implementation step in order. Mark each todo item as 'in_progr
         """Toggle between NORMAL and PLAN modes and return the active mode."""
 
         current = self.repl.mode_manager.current_mode
-        from swecli.core.management import OperationMode
+        from swecli.core.runtime import OperationMode
 
         new_mode = (
             OperationMode.PLAN

@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from swecli.core.management.session_manager import SessionManager
+from swecli.core.context_engineering.history.session_manager import SessionManager
 from swecli.models.message import ChatMessage, Role
 
 

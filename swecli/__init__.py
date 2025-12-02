@@ -2,8 +2,8 @@
 
 import warnings
 
-# Suppress transformers warning about missing ML frameworks
-# SWE-CLI uses LLM APIs directly and doesn't need local models
-warnings.filterwarnings("ignore", message=".*None of PyTorch, TensorFlow.*found.*")
+# Suppress warnings from third-party dependencies
+warnings.filterwarnings("ignore", message=".*None of PyTorch, TensorFlow.*found.*")  # transformers
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="crawl4ai")  # crawl4ai/pydantic
 
 __version__ = "0.1.0"

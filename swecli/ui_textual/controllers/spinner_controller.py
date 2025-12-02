@@ -12,7 +12,7 @@ from textual.timer import Timer
 if TYPE_CHECKING:  # pragma: no cover
     from swecli.ui_textual.chat_app import SWECLIChatApp
     from swecli.ui_textual.components import TipsManager
-    from swecli.core.tools.todo_handler import TodoHandler
+    from swecli.core.context_engineering.tools.todo_handler import TodoHandler
 
 
 class SpinnerController:

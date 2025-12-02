@@ -422,33 +422,23 @@ class TextualUICallback:
         return result
 
     def _run_on_ui(self, func, *args, **kwargs) -> None:
-        """Execute a function on the Textual UI thread and WAIT for completion."""
-        from concurrent.futures import Future
+        """Execute a function on the Textual UI thread WITHOUT waiting.
 
+        Note: This was previously blocking with a 5-second timeout, causing
+        severe UI responsiveness issues. Now uses non-blocking calls for
+        better performance.
+        """
         if self._app is not None:
-            # Create a future to wait for completion
-            future = Future()
-
-            def wrapper():
-                try:
-                    result = func(*args, **kwargs)
-                    future.set_result(result)
-                except Exception as e:
-                    future.set_exception(e)
-
-            # Schedule on UI thread
-            self._app.call_from_thread(wrapper)
-
-            # BLOCK until UI update completes (max 5 seconds timeout)
-            try:
-                future.result(timeout=5.0)
-            except Exception:
-                pass  # Timeout or error - continue anyway
+            # Schedule on UI thread but don't wait - much faster
+            self._app.call_from_thread(func, *args, **kwargs)
         else:
             func(*args, **kwargs)
 
     def _run_on_ui_non_blocking(self, func, *args, **kwargs) -> None:
-        """Execute a function on the Textual UI thread WITHOUT waiting."""
+        """Execute a function on the Textual UI thread WITHOUT waiting.
+
+        Note: This is now identical to _run_on_ui. Kept for API compatibility.
+        """
         if self._app is not None:
             # Schedule on UI thread but don't wait
             self._app.call_from_thread(func, *args, **kwargs)

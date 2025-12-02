@@ -9,7 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from swecli.ui_textual.runner import TextualRunner
-from swecli.core.management import ConfigManager, SessionManager
+from swecli.core.runtime import ConfigManager, SessionManager
 
 def test_runner_initialization():
     """Test that the runner initializes properly."""

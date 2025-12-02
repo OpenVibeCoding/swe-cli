@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from rich.console import Console
 
 from swecli.models.agent_deps import AgentDependencies
-from swecli.prompts import load_prompt
+from swecli.core.agents.prompts import load_prompt
 
 
 class InitCommandArgs(BaseModel):

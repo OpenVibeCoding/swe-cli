@@ -14,7 +14,7 @@ try:
 except ImportError:
     PYNPUT_AVAILABLE = False
 
-from swecli.core.monitoring import TaskMonitor
+from swecli.core.runtime.monitoring import TaskMonitor
 from swecli.ui_textual.formatters_internal.markdown_formatter import markdown_to_plain_text
 
 

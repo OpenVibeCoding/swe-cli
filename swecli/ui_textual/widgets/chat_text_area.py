@@ -16,6 +16,9 @@ from textual.widgets import TextArea
 class ChatTextArea(TextArea):
     """Multi-line text area that sends on Enter and inserts newline on Shift+Enter."""
 
+    # Debounce delay for autocomplete in seconds
+    AUTOCOMPLETE_DEBOUNCE_MS = 100
+
     def __init__(
         self,
         *args,
@@ -32,6 +35,8 @@ class ChatTextArea(TextArea):
         self._paste_counter = 0
         self._large_paste_cache: dict[str, str] = {}
         self._suppress_next_autocomplete = False
+        self._autocomplete_timer = None
+        self._last_autocomplete_text: str = ""
 
     @dataclass
     class Submitted(Message):
@@ -52,8 +57,10 @@ class ChatTextArea(TextArea):
         self.update_suggestion()
 
     def update_suggestion(self) -> None:
-        """Populate the inline suggestion using the configured completer."""
+        """Populate the inline suggestion using the configured completer.
 
+        Uses debouncing to avoid blocking the UI on every keystroke.
+        """
         super().update_suggestion()
 
         if getattr(self, "_suppress_next_autocomplete", False):
@@ -73,6 +80,32 @@ class ChatTextArea(TextArea):
         if not text:
             self._clear_completions()
             return
+
+        # Skip if text hasn't changed (avoid redundant work)
+        if text == self._last_autocomplete_text:
+            return
+
+        # Cancel any pending autocomplete timer
+        if self._autocomplete_timer is not None:
+            self._autocomplete_timer.stop()
+            self._autocomplete_timer = None
+
+        # Debounce: schedule autocomplete to run after a short delay
+        self._autocomplete_timer = self.set_timer(
+            self.AUTOCOMPLETE_DEBOUNCE_MS / 1000.0,
+            self._do_autocomplete,
+        )
+
+    def _do_autocomplete(self) -> None:
+        """Actually perform the autocomplete lookup (called after debounce)."""
+        self._autocomplete_timer = None
+
+        text = self.text or ""
+        if not text:
+            self._clear_completions()
+            return
+
+        self._last_autocomplete_text = text
 
         try:
             cursor_index = self.document.get_index_from_location(self.cursor_location)

@@ -2,24 +2,20 @@
 
 import argparse
 import sys
-import warnings
 from pathlib import Path
-
-# Suppress transformers warning about missing ML frameworks
-# SWE-CLI uses LLM APIs directly and doesn't need local models
-warnings.filterwarnings("ignore", message=".*None of PyTorch, TensorFlow.*found.*")
 
 from rich.console import Console
 
-from swecli.core.approval import ApprovalManager
-from swecli.core.management import ConfigManager, ModeManager, SessionManager, UndoManager
-from swecli.core.services import RuntimeService
+from swecli.core.runtime.approval import ApprovalManager
+from swecli.core.runtime import ConfigManager, ModeManager
+from swecli.core.context_engineering.history import SessionManager, UndoManager
+from swecli.core.runtime.services import RuntimeService
 from swecli.models.agent_deps import AgentDependencies
 from swecli.models.message import ChatMessage, Role
 from swecli.ui_textual.runner import launch_textual_cli
 from swecli.setup import run_setup_wizard
 from swecli.setup.wizard import config_exists
-from swecli.core.tools.implementations import (
+from swecli.core.context_engineering.tools.implementations import (
     BashTool,
     EditTool,
     FileOperations,
@@ -464,7 +460,7 @@ def _handle_mcp_command(args) -> None:
     Args:
         args: Parsed command-line arguments
     """
-    from swecli.mcp.manager import MCPManager
+    from swecli.core.context_engineering.mcp.manager import MCPManager
     from rich.table import Table
 
     console = Console()
@@ -541,7 +537,7 @@ def _handle_mcp_command(args) -> None:
             if args.no_auto_start:
                 config = mcp_manager.get_config()
                 config.mcp_servers[args.name].auto_start = False
-                from swecli.mcp.config import save_config
+                from swecli.core.context_engineering.mcp.config import save_config
                 save_config(config)
 
             console.print(f"[green]✓[/green] Added MCP server '{args.name}'")
@@ -596,9 +592,10 @@ def _handle_run_command(args) -> None:
             # Show spinner while starting up
             with console.status("[cyan]Starting Web UI…[/cyan]", spinner="dots"):
                 # Initialize managers for backend
-                from swecli.core.management import ConfigManager, ModeManager, SessionManager, UndoManager
-                from swecli.core.approval import ApprovalManager
-                from swecli.mcp.manager import MCPManager
+                from swecli.core.runtime import ConfigManager, ModeManager
+                from swecli.core.context_engineering.history import SessionManager, UndoManager
+                from swecli.core.runtime.approval import ApprovalManager
+                from swecli.core.context_engineering.mcp.manager import MCPManager
                 import webbrowser
 
                 working_dir = Path.cwd()

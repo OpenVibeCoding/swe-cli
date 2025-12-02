@@ -434,13 +434,13 @@ class TestToolRegistryIntegration:
     def skip_if_lsp_unavailable(self):
         """Skip tests if LSP modules are not available."""
         try:
-            from swecli.core.tools.registry import ToolRegistry  # noqa: F401
+            from swecli.core.context_engineering.tools.registry import ToolRegistry  # noqa: F401
         except (ImportError, ModuleNotFoundError) as e:
             pytest.skip(f"ToolRegistry import failed: {e}")
 
     def test_tool_registry_set_subagent_manager(self):
         """Test setting subagent manager on tool registry."""
-        from swecli.core.tools.registry import ToolRegistry
+        from swecli.core.context_engineering.tools.registry import ToolRegistry
 
         registry = ToolRegistry()
         mock_manager = MagicMock()
@@ -451,7 +451,7 @@ class TestToolRegistryIntegration:
 
     def test_tool_registry_get_subagent_manager(self):
         """Test getting subagent manager from tool registry."""
-        from swecli.core.tools.registry import ToolRegistry
+        from swecli.core.context_engineering.tools.registry import ToolRegistry
 
         registry = ToolRegistry()
         mock_manager = MagicMock()
@@ -461,14 +461,14 @@ class TestToolRegistryIntegration:
 
     def test_tool_registry_spawn_subagent_handler_exists(self):
         """Test that spawn_subagent handler is registered."""
-        from swecli.core.tools.registry import ToolRegistry
+        from swecli.core.context_engineering.tools.registry import ToolRegistry
 
         registry = ToolRegistry()
         assert "spawn_subagent" in registry._handlers
 
     def test_execute_spawn_subagent_without_manager(self):
         """Test executing spawn_subagent tool without manager returns error."""
-        from swecli.core.tools.registry import ToolRegistry
+        from swecli.core.context_engineering.tools.registry import ToolRegistry
 
         registry = ToolRegistry()
         # Don't set subagent manager
@@ -483,7 +483,7 @@ class TestToolRegistryIntegration:
 
     def test_execute_spawn_subagent_without_description(self):
         """Test executing spawn_subagent tool without description returns error."""
-        from swecli.core.tools.registry import ToolRegistry
+        from swecli.core.context_engineering.tools.registry import ToolRegistry
 
         registry = ToolRegistry()
         mock_manager = MagicMock()
@@ -501,7 +501,7 @@ class TestToolRegistryIntegration:
 def _can_import_agent_factory():
     """Check if AgentFactory can be imported."""
     try:
-        from swecli.core.factories.agent_factory import AgentFactory  # noqa: F401
+        from swecli.core.base.factories.agent_factory import AgentFactory  # noqa: F401
         return True
     except (ImportError, ModuleNotFoundError):
         return False
@@ -538,15 +538,15 @@ class TestAgentFactoryIntegration:
         """Create a mock mode manager."""
         return MagicMock()
 
-    @patch("swecli.core.factories.agent_factory.SwecliAgent")
-    @patch("swecli.core.factories.agent_factory.PlanningAgent")
-    @patch("swecli.core.factories.agent_factory.SubAgentManager")
+    @patch("swecli.core.base.factories.agent_factory.SwecliAgent")
+    @patch("swecli.core.base.factories.agent_factory.PlanningAgent")
+    @patch("swecli.core.base.factories.agent_factory.SubAgentManager")
     def test_agent_factory_creates_subagent_manager(
         self, mock_subagent_manager_class, mock_planning, mock_swecli,
         mock_config, mock_tool_registry, mock_mode_manager
     ):
         """Test that AgentFactory creates SubAgentManager when enabled."""
-        from swecli.core.factories.agent_factory import AgentFactory
+        from swecli.core.base.factories.agent_factory import AgentFactory
 
         mock_manager_instance = MagicMock()
         mock_subagent_manager_class.return_value = mock_manager_instance
@@ -564,14 +564,14 @@ class TestAgentFactoryIntegration:
         mock_tool_registry.set_subagent_manager.assert_called_once_with(mock_manager_instance)
         assert suite.subagent_manager == mock_manager_instance
 
-    @patch("swecli.core.factories.agent_factory.SwecliAgent")
-    @patch("swecli.core.factories.agent_factory.PlanningAgent")
+    @patch("swecli.core.base.factories.agent_factory.SwecliAgent")
+    @patch("swecli.core.base.factories.agent_factory.PlanningAgent")
     def test_agent_factory_skips_subagents_when_disabled(
         self, mock_planning, mock_swecli,
         mock_config, mock_tool_registry, mock_mode_manager
     ):
         """Test that AgentFactory skips SubAgentManager when disabled."""
-        from swecli.core.factories.agent_factory import AgentFactory
+        from swecli.core.base.factories.agent_factory import AgentFactory
 
         factory = AgentFactory(
             config=mock_config,

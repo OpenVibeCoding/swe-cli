@@ -11,7 +11,7 @@ from swecli.models.message import ChatMessage
 from swecli.models.file_change import FileChange, FileChangeType
 
 if TYPE_CHECKING:
-    from swecli.core.context_management import Playbook
+    from swecli.core.context_engineering.memory import Playbook
 
 
 class SessionMetadata(BaseModel):
@@ -54,7 +54,7 @@ class Session(BaseModel):
         Returns:
             ACE Playbook instance loaded from session data
         """
-        from swecli.core.context_management import Playbook
+        from swecli.core.context_engineering.memory import Playbook
 
         if not self.playbook:
             return Playbook()

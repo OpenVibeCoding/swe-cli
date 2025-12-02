@@ -6,7 +6,7 @@ import random
 from datetime import datetime
 from typing import TYPE_CHECKING, Iterable
 
-from swecli.core.context_management import (
+from swecli.core.context_engineering.memory import (
     Playbook,
     AgentResponse,
     Reflector,
@@ -18,14 +18,15 @@ from swecli.ui_textual.utils.tool_display import format_tool_call
 
 if TYPE_CHECKING:
     from rich.console import Console
-    from swecli.core.management import ModeManager, SessionManager
-    from swecli.core.approval import ApprovalManager
-    from swecli.core.management import UndoManager
-    from swecli.core.tools.implementations import FileOperations
+    from swecli.core.runtime import ModeManager
+    from swecli.core.context_engineering.history import SessionManager
+    from swecli.core.runtime.approval import ApprovalManager
+    from swecli.core.context_engineering.history import UndoManager
+    from swecli.core.context_engineering.tools.implementations import FileOperations
     from swecli.ui_textual.formatters_internal.output_formatter import OutputFormatter
     from swecli.ui_textual.components import StatusLine
     from swecli.models.config import Config
-    from swecli.core.management import ConfigManager
+    from swecli.core.runtime import ConfigManager
     from swecli.models.message import ToolCall
 
 
@@ -533,9 +534,9 @@ class QueryProcessor:
         Returns:
             Tool execution result
         """
-        from swecli.core.monitoring import TaskMonitor
+        from swecli.core.runtime.monitoring import TaskMonitor
         from swecli.ui_textual.components.task_progress import TaskProgressDisplay
-        from swecli.core.management import OperationMode
+        from swecli.core.runtime import OperationMode
         import json
 
         tool_name = tool_call["function"]["name"]
@@ -654,7 +655,7 @@ class QueryProcessor:
             Tuple of (last_operation_summary, last_error, last_latency_ms)
         """
         from swecli.models.message import ChatMessage, Role
-        from swecli.core.monitoring import TaskMonitor
+        from swecli.core.runtime.monitoring import TaskMonitor
 
         # Add user message to session
         user_msg = ChatMessage(role=Role.USER, content=query)
@@ -841,7 +842,7 @@ class QueryProcessor:
             Tuple of (last_operation_summary, last_error, last_latency_ms)
         """
         from swecli.models.message import ChatMessage, Role
-        from swecli.core.monitoring import TaskMonitor
+        from swecli.core.runtime.monitoring import TaskMonitor
 
         # Notify UI that thinking is starting
         if ui_callback and hasattr(ui_callback, 'on_thinking_start'):

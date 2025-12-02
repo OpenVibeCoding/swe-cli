@@ -4,12 +4,13 @@ from typing import TYPE_CHECKING
 
 from rich.console import Console
 
-from swecli.core.management import OperationMode
+from swecli.core.runtime import OperationMode
 from swecli.repl.commands.base import CommandHandler, CommandResult
 
 if TYPE_CHECKING:
-    from swecli.core.management import ModeManager, UndoManager
-    from swecli.core.approval import ApprovalManager
+    from swecli.core.runtime import ModeManager
+    from swecli.core.context_engineering.history import UndoManager
+    from swecli.core.runtime.approval import ApprovalManager
 
 
 class ModeCommands(CommandHandler):

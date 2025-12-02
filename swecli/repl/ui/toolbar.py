@@ -5,7 +5,8 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.formatted_text import FormattedText
 
 if TYPE_CHECKING:
-    from swecli.core.management import ModeManager, SessionManager
+    from swecli.core.runtime import ModeManager
+    from swecli.core.context_engineering.history import SessionManager
     from swecli.models.config import Config
 
 
@@ -35,7 +36,7 @@ class Toolbar:
         Returns:
             FormattedText for bottom toolbar
         """
-        from swecli.core.management import OperationMode
+        from swecli.core.runtime import OperationMode
 
         mode = self.mode_manager.current_mode.value.upper()
         limit = self.config.max_context_tokens or 1

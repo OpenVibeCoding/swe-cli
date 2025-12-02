@@ -1,7 +1,7 @@
 """Tests for ACE (Agentic Context Engine) integration."""
 
 import pytest
-from swecli.core.context_management import (
+from swecli.core.context_engineering.memory import (
     Playbook,
     Bullet,
     AgentResponse,
@@ -131,7 +131,7 @@ class TestACEIntegration:
 
     def test_playbook_delta_operations(self):
         """Test delta operations for playbook evolution."""
-        from swecli.core.context_management import DeltaOperation, DeltaBatch
+        from swecli.core.context_engineering.memory import DeltaOperation, DeltaBatch
 
         playbook = Playbook()
         bullet = playbook.add_bullet("test", "Original content")

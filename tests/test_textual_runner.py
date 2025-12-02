@@ -7,8 +7,8 @@ from rich.console import Console
 
 from swecli.models.config import AppConfig
 from swecli.models.message import ChatMessage, Role
-from swecli.core.management.config_manager import ConfigManager
-from swecli.core.management.session_manager import SessionManager
+from swecli.core.runtime.config import ConfigManager
+from swecli.core.context_engineering.history.session_manager import SessionManager
 from swecli.ui_textual.runner import TextualRunner
 
 

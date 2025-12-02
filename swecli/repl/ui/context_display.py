@@ -9,7 +9,8 @@ from rich.table import Table
 from swecli.repl.ui.text_utils import truncate_text
 
 if TYPE_CHECKING:
-    from swecli.core.management import ModeManager, SessionManager, ConfigManager
+    from swecli.core.runtime import ModeManager, ConfigManager
+    from swecli.core.context_engineering.history import SessionManager
     from swecli.ui_textual.components import NotificationCenter
 
 

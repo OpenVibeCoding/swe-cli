@@ -1,6 +1,6 @@
 """ACE (Adaptive Context Engine) component initialization."""
 
-from swecli.core.context_management import Reflector, Curator
+from swecli.core.context_engineering.memory import Reflector, Curator
 
 
 class AgentClientAdapter:

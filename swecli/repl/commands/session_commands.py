@@ -12,7 +12,8 @@ from rich import box
 from swecli.repl.commands.base import CommandHandler, CommandResult
 
 if TYPE_CHECKING:
-    from swecli.core.management import SessionManager, ConfigManager
+    from swecli.core.runtime import ConfigManager
+    from swecli.core.context_engineering.history import SessionManager
 
 
 class SessionCommands(CommandHandler):

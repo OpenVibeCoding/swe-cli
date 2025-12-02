@@ -1,12 +1,18 @@
 """Utility functions for autocomplete system."""
 
 import os
+import time
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 
 class FileFinder:
-    """Utility class for finding files in directory trees."""
+    """Utility class for finding files in directory trees with caching."""
+
+    # Cache duration in seconds
+    CACHE_TTL = 30.0
+    # Maximum files to cache
+    MAX_CACHE_SIZE = 5000
 
     def __init__(self, working_dir: Path):
         """Initialize file finder.
@@ -20,9 +26,69 @@ class FileFinder:
             ".venv", "venv", ".pytest_cache", ".mypy_cache", ".tox",
             "dist", "build", ".eggs", "*.egg-info",
         }
+        # Cache: list of (relative_path_str_lower, Path) tuples
+        self._cache: Optional[List[tuple[str, Path]]] = None
+        self._cache_time: float = 0.0
+        self._cache_working_dir: Optional[Path] = None
+
+    def _is_cache_valid(self) -> bool:
+        """Check if the cache is still valid."""
+        if self._cache is None:
+            return False
+        if self._cache_working_dir != self.working_dir:
+            return False
+        if time.time() - self._cache_time > self.CACHE_TTL:
+            return False
+        return True
+
+    def _build_cache(self) -> None:
+        """Build the file cache by walking the directory tree once."""
+        cache: List[tuple[str, Path]] = []
+
+        try:
+            for root, dirs, files in os.walk(self.working_dir):
+                # Filter out excluded directories
+                dirs[:] = [d for d in dirs if d not in self._exclude_dirs]
+
+                root_path = Path(root)
+
+                # Add directories
+                for dirname in dirs:
+                    dir_path = root_path / dirname
+                    try:
+                        rel_path = dir_path.relative_to(self.working_dir)
+                        cache.append((str(rel_path).lower(), dir_path))
+                    except ValueError:
+                        continue
+
+                # Add files
+                for filename in files:
+                    file_path = root_path / filename
+                    try:
+                        rel_path = file_path.relative_to(self.working_dir)
+                        cache.append((str(rel_path).lower(), file_path))
+                    except ValueError:
+                        continue
+
+                    # Limit cache size
+                    if len(cache) >= self.MAX_CACHE_SIZE:
+                        break
+
+                if len(cache) >= self.MAX_CACHE_SIZE:
+                    break
+
+        except (PermissionError, OSError):
+            pass
+
+        # Sort by path length then alphabetically for consistent ordering
+        cache.sort(key=lambda x: (len(x[0]), x[0]))
+
+        self._cache = cache
+        self._cache_time = time.time()
+        self._cache_working_dir = self.working_dir
 
     def find_files(self, query: str, max_results: int = 50, include_dirs: bool = False) -> List[Path]:
-        """Find files matching query.
+        """Find files matching query using cached file list.
 
         Args:
             query: Search query
@@ -32,65 +98,32 @@ class FileFinder:
         Returns:
             List of matching file paths
         """
-        matches: list[Path] = []
+        # Rebuild cache if needed
+        if not self._is_cache_valid():
+            self._build_cache()
+
+        if self._cache is None:
+            return []
+
         query_lower = query.lower()
-        seen: set[Path] = set()
+        matches: List[Path] = []
 
-        try:
-            for root, dirs, files in os.walk(self.working_dir):
-                # Filter out excluded directories
-                dirs[:] = [d for d in dirs if d not in self._exclude_dirs]
+        for rel_path_lower, file_path in self._cache:
+            # Filter directories if not requested
+            if not include_dirs and file_path.is_dir():
+                continue
 
+            # Match query
+            if not query_lower or query_lower in rel_path_lower:
+                matches.append(file_path)
                 if len(matches) >= max_results:
                     break
 
-                root_path = Path(root)
+        return matches
 
-                if include_dirs:
-                    for dirname in dirs:
-                        dir_path = root_path / dirname
-                        if dir_path in seen:
-                            continue
-                        try:
-                            rel_dir = dir_path.relative_to(self.working_dir)
-                            rel_dir_str = str(rel_dir).lower()
-                        except ValueError:
-                            continue
-
-                        if not query_lower or query_lower in rel_dir_str:
-                            matches.append(dir_path)
-                            seen.add(dir_path)
-                            if len(matches) >= max_results:
-                                break
-                    if len(matches) >= max_results:
-                        break
-
-                for file in files:
-                    file_path = root_path / file
-                    if file_path in seen:
-                        continue
-
-                    try:
-                        rel_path = file_path.relative_to(self.working_dir)
-                        rel_path_str = str(rel_path).lower()
-                    except ValueError:
-                        continue
-
-                    if not query_lower or query_lower in rel_path_str:
-                        matches.append(file_path)
-                        seen.add(file_path)
-
-                        if len(matches) >= max_results:
-                            break
-
-        except (PermissionError, OSError):
-            # Handle permission errors gracefully
-            pass
-
-        # Sort matches by relevance (shorter paths first, then alphabetically)
-        matches.sort(key=lambda p: (len(str(p)), str(p)))
-
-        return matches[:max_results]
+    def invalidate_cache(self) -> None:
+        """Invalidate the cache to force a refresh on next query."""
+        self._cache = None
 
 
 class FileSizeFormatter:

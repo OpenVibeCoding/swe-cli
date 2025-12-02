@@ -2,7 +2,7 @@
 
 import asyncio
 from swecli.models.config import AppConfig
-from swecli.core.context import ContextTokenMonitor
+from swecli.core.context_engineering.retrieval import ContextTokenMonitor
 from swecli.core.agents.compact_agent import CompactAgent
 
 

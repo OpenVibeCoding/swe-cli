@@ -6,9 +6,9 @@ import pytest
 from rich.console import Console
 
 from swecli.cli import _run_non_interactive
-from swecli.core.approval import ApprovalManager
-from swecli.core.management import ConfigManager, SessionManager, UndoManager
-from swecli.core.services import RuntimeService
+from swecli.core.runtime.approval import ApprovalManager
+from swecli.core.runtime import ConfigManager, SessionManager, UndoManager
+from swecli.core.runtime.services import RuntimeService
 from swecli.models.message import ChatMessage, Role
 
 

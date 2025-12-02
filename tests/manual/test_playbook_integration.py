@@ -2,7 +2,7 @@
 """Test script to verify playbook integration."""
 
 from swecli.models.session import Session
-from swecli.core.context_management import SessionPlaybook, ExecutionReflector
+from swecli.core.context_engineering.memory import SessionPlaybook, ExecutionReflector
 from swecli.models.message import ToolCall
 
 def test_session_playbook():

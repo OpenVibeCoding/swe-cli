@@ -4,15 +4,16 @@ import json
 from typing import TYPE_CHECKING, Optional
 
 from swecli.models.message import ChatMessage, Role, ToolCall as ToolCallModel
-from swecli.core.monitoring import TaskMonitor
+from swecli.core.runtime.monitoring import TaskMonitor
 from swecli.core.utils.tool_result_summarizer import summarize_tool_result
 from swecli.ui_textual.utils.tool_display import format_tool_call
 
 if TYPE_CHECKING:
     from rich.console import Console
-    from swecli.core.management import SessionManager, ModeManager
-    from swecli.core.approval import ApprovalManager
-    from swecli.core.management import UndoManager
+    from swecli.core.runtime import ModeManager
+    from swecli.core.context_engineering.history import SessionManager
+    from swecli.core.runtime.approval import ApprovalManager
+    from swecli.core.context_engineering.history import UndoManager
     from swecli.models.config import Config
 
 

@@ -4,9 +4,9 @@ import threading
 import time
 from pathlib import Path
 
-from swecli.core.monitoring import TaskMonitor
+from swecli.core.runtime.monitoring import TaskMonitor
 from swecli.models.config import AppConfig
-from swecli.core.tools.implementations import BashTool
+from swecli.core.context_engineering.tools.implementations import BashTool
 
 
 def test_bash_interrupt():

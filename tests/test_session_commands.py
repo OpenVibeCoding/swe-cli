@@ -4,7 +4,7 @@ from pathlib import Path
 
 from rich.console import Console
 
-from swecli.core.management import ConfigManager, SessionManager
+from swecli.core.runtime import ConfigManager, SessionManager
 from swecli.models.message import ChatMessage, Role
 from swecli.repl.commands.session_commands import SessionCommands
 

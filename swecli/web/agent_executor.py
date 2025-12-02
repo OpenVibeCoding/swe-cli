@@ -12,7 +12,7 @@ from swecli.web.state import WebState
 from swecli.web.logging_config import logger
 from swecli.models.message import ChatMessage, Role
 from swecli.models.agent_deps import AgentDependencies
-from swecli.core.management import ConfigManager
+from swecli.core.runtime import ConfigManager
 from swecli.models.config import AppConfig
 
 
@@ -117,8 +117,8 @@ class AgentExecutor:
         Returns:
             Agent response
         """
-        from swecli.core.services import RuntimeService
-        from swecli.core.tools.implementations import (
+        from swecli.core.runtime.services import RuntimeService
+        from swecli.core.context_engineering.tools.implementations import (
             FileOperations,
             WriteTool,
             EditTool,

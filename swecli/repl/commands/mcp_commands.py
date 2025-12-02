@@ -9,7 +9,7 @@ from swecli.repl.commands.base import CommandHandler, CommandResult
 from swecli.ui_textual.modals.mcp_viewer_modal import show_mcp_server
 
 if TYPE_CHECKING:
-    from swecli.mcp.manager import MCPManager
+    from swecli.core.context_engineering.mcp.manager import MCPManager
 
 
 class MCPCommands(CommandHandler):
@@ -394,7 +394,7 @@ class MCPCommands(CommandHandler):
             # For now, just show tools if they exist
 
         # Get config location
-        from swecli.mcp.config import get_config_path, get_project_config_path
+        from swecli.core.context_engineering.mcp.config import get_config_path, get_project_config_path
         global_config = get_config_path()
         project_config = get_project_config_path(self.mcp_manager.working_dir)
 

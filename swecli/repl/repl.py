@@ -11,20 +11,19 @@ from prompt_toolkit.styles import Style
 from rich.console import Console
 from rich.panel import Panel
 
-from swecli.core.approval import ApprovalManager
-from swecli.core.management import (
+from swecli.core.runtime.approval import ApprovalManager
+from swecli.core.runtime import (
     ConfigManager,
     ModeManager,
     OperationMode,
-    SessionManager,
-    UndoManager,
 )
-from swecli.core.monitoring import ErrorHandler
-from swecli.core.services import RuntimeService
+from swecli.core.context_engineering.history import SessionManager, UndoManager
+from swecli.core.runtime.monitoring import ErrorHandler
+from swecli.core.runtime.services import RuntimeService
 from swecli.models.message import ChatMessage, Role
 from swecli.models.operation import Operation, OperationType
 from swecli.models.agent_deps import AgentDependencies
-from swecli.core.tools.implementations import (
+from swecli.core.context_engineering.tools.implementations import (
     FileOperations,
     WriteTool,
     EditTool,
@@ -91,13 +90,13 @@ class REPL:
 
     def _init_tools(self):
         """Initialize file operation and command tools."""
-        from swecli.core.tools.implementations import (
+        from swecli.core.context_engineering.tools.implementations import (
             WebFetchTool,
             OpenBrowserTool,
             VLMTool,
             WebScreenshotTool,
         )
-        from swecli.mcp.manager import MCPManager
+        from swecli.core.context_engineering.mcp.manager import MCPManager
 
         self.file_ops = FileOperations(self.config, self.config_manager.working_dir)
         self.write_tool = WriteTool(self.config, self.config_manager.working_dir)

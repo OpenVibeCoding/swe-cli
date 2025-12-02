@@ -67,7 +67,7 @@ class ToolExecutor:
         Returns:
             Tool execution result
         """
-        from swecli.core.monitoring import TaskMonitor
+        from swecli.core.runtime.monitoring import TaskMonitor
         from swecli.ui_textual.components.task_progress import TaskProgressDisplay
         from swecli.ui_textual.utils.tool_display import format_tool_call
 

@@ -6,8 +6,8 @@ from unittest.mock import Mock, patch, MagicMock
 import tempfile
 import os
 
-from swecli.core.tools.handlers import FileToolHandler
-from swecli.core.tools.implementations import FileOperations
+from swecli.core.context_engineering.tools.handlers import FileToolHandler
+from swecli.core.context_engineering.tools.implementations import FileOperations
 from swecli.models.config import AppConfig
 
 
@@ -353,7 +353,7 @@ class TestSearchExclusions:
 
     def test_is_excluded_path_node_modules(self):
         """Test node_modules is excluded."""
-        from swecli.core.tools.implementations import FileOperations
+        from swecli.core.context_engineering.tools.implementations import FileOperations
         from swecli.models.config import AppConfig
         from pathlib import Path
 
@@ -366,7 +366,7 @@ class TestSearchExclusions:
 
     def test_is_excluded_path_pycache(self):
         """Test __pycache__ is excluded."""
-        from swecli.core.tools.implementations import FileOperations
+        from swecli.core.context_engineering.tools.implementations import FileOperations
         from swecli.models.config import AppConfig
         from pathlib import Path
 
@@ -378,7 +378,7 @@ class TestSearchExclusions:
 
     def test_is_excluded_path_minified_files(self):
         """Test minified JS files are excluded."""
-        from swecli.core.tools.implementations import FileOperations
+        from swecli.core.context_engineering.tools.implementations import FileOperations
         from swecli.models.config import AppConfig
         from pathlib import Path
 
@@ -391,7 +391,7 @@ class TestSearchExclusions:
 
     def test_is_excluded_path_venv(self):
         """Test virtual environments are excluded."""
-        from swecli.core.tools.implementations import FileOperations
+        from swecli.core.context_engineering.tools.implementations import FileOperations
         from swecli.models.config import AppConfig
         from pathlib import Path
 
@@ -403,7 +403,7 @@ class TestSearchExclusions:
 
     def test_is_excluded_path_rust_target(self):
         """Test Rust target directory is excluded."""
-        from swecli.core.tools.implementations import FileOperations
+        from swecli.core.context_engineering.tools.implementations import FileOperations
         from swecli.models.config import AppConfig
         from pathlib import Path
 
@@ -415,7 +415,7 @@ class TestSearchExclusions:
 
     def test_is_excluded_path_java_gradle(self):
         """Test Java/Gradle directories are excluded."""
-        from swecli.core.tools.implementations import FileOperations
+        from swecli.core.context_engineering.tools.implementations import FileOperations
         from swecli.models.config import AppConfig
         from pathlib import Path
 
@@ -427,7 +427,7 @@ class TestSearchExclusions:
 
     def test_is_excluded_path_elixir_deps(self):
         """Test Elixir deps directory is excluded."""
-        from swecli.core.tools.implementations import FileOperations
+        from swecli.core.context_engineering.tools.implementations import FileOperations
         from swecli.models.config import AppConfig
         from pathlib import Path
 
@@ -439,7 +439,7 @@ class TestSearchExclusions:
 
     def test_is_excluded_path_dotnet_obj(self):
         """Test .NET obj/bin directories are excluded."""
-        from swecli.core.tools.implementations import FileOperations
+        from swecli.core.context_engineering.tools.implementations import FileOperations
         from swecli.models.config import AppConfig
         from pathlib import Path
 
@@ -451,7 +451,7 @@ class TestSearchExclusions:
 
     def test_is_excluded_path_haskell_stack(self):
         """Test Haskell .stack-work directory is excluded."""
-        from swecli.core.tools.implementations import FileOperations
+        from swecli.core.context_engineering.tools.implementations import FileOperations
         from swecli.models.config import AppConfig
         from pathlib import Path
 
@@ -463,7 +463,7 @@ class TestSearchExclusions:
 
     def test_is_excluded_path_swift_pods(self):
         """Test Swift/CocoaPods directories are excluded."""
-        from swecli.core.tools.implementations import FileOperations
+        from swecli.core.context_engineering.tools.implementations import FileOperations
         from swecli.models.config import AppConfig
         from pathlib import Path
 
@@ -475,7 +475,7 @@ class TestSearchExclusions:
 
     def test_is_excluded_path_ide_dirs(self):
         """Test IDE directories are excluded."""
-        from swecli.core.tools.implementations import FileOperations
+        from swecli.core.context_engineering.tools.implementations import FileOperations
         from swecli.models.config import AppConfig
         from pathlib import Path
 
@@ -488,7 +488,7 @@ class TestSearchExclusions:
 
     def test_is_excluded_path_compiled_files(self):
         """Test compiled file extensions are excluded."""
-        from swecli.core.tools.implementations import FileOperations
+        from swecli.core.context_engineering.tools.implementations import FileOperations
         from swecli.models.config import AppConfig
         from pathlib import Path
 
@@ -502,7 +502,7 @@ class TestSearchExclusions:
 
     def test_is_excluded_path_version_control(self):
         """Test version control directories are excluded."""
-        from swecli.core.tools.implementations import FileOperations
+        from swecli.core.context_engineering.tools.implementations import FileOperations
         from swecli.models.config import AppConfig
         from pathlib import Path
 

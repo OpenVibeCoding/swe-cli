@@ -8,7 +8,7 @@ from swecli.models.message import ChatMessage, Role
 
 if TYPE_CHECKING:  # pragma: no cover
     from swecli.ui_textual.chat_app import SWECLIChatApp
-    from swecli.core.management import SessionManager
+    from swecli.core.context_engineering.history import SessionManager
 
 
 class SessionHistoryManager:

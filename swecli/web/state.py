@@ -5,20 +5,16 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 from threading import Lock
 
-from swecli.core.management import (
-    ConfigManager,
-    SessionManager,
-    ModeManager,
-    UndoManager,
-)
-from swecli.core.approval import ApprovalManager
+from swecli.core.runtime import ConfigManager, ModeManager
+from swecli.core.context_engineering.history import SessionManager, UndoManager
+from swecli.core.runtime.approval import ApprovalManager
 from swecli.models.message import ChatMessage
 
 
 # Type imports
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from swecli.mcp.manager import MCPManager
+    from swecli.core.context_engineering.mcp.manager import MCPManager
 
 
 class WebState:
@@ -201,9 +197,10 @@ def get_state() -> WebState:
     if _state is None:
         # Auto-initialize with default managers for standalone server
         from pathlib import Path
-        from swecli.core.management import ConfigManager, SessionManager, ModeManager, UndoManager
-        from swecli.core.approval import ApprovalManager
-        from swecli.mcp.manager import MCPManager
+        from swecli.core.runtime import ConfigManager, ModeManager
+        from swecli.core.context_engineering.history import SessionManager, UndoManager
+        from swecli.core.runtime.approval import ApprovalManager
+        from swecli.core.context_engineering.mcp.manager import MCPManager
         from rich.console import Console
 
         console = Console()

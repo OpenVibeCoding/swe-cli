@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Sequence, Union
 
-from swecli.prompts import load_prompt
+from swecli.core.agents.prompts import load_prompt
 
 
 class SystemPromptBuilder:

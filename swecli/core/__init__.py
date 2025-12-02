@@ -28,17 +28,17 @@ __all__ = [
 
 _EXPORTS: Dict[str, Tuple[str, str]] = {
     "SwecliAgent": ("swecli.core.agents", "SwecliAgent"),
-    "ConfigManager": ("swecli.core.management", "ConfigManager"),
-    "SessionManager": ("swecli.core.management", "SessionManager"),
-    "ModeManager": ("swecli.core.management", "ModeManager"),
-    "OperationMode": ("swecli.core.management", "OperationMode"),
-    "UndoManager": ("swecli.core.management", "UndoManager"),
-    "ApprovalManager": ("swecli.core.approval", "ApprovalManager"),
-    "ApprovalChoice": ("swecli.core.approval", "ApprovalChoice"),
-    "ApprovalResult": ("swecli.core.approval", "ApprovalResult"),
-    "ErrorHandler": ("swecli.core.monitoring", "ErrorHandler"),
-    "ErrorAction": ("swecli.core.monitoring", "ErrorAction"),
-    "ToolRegistry": ("swecli.core.tools", "ToolRegistry"),
+    "ConfigManager": ("swecli.core.runtime", "ConfigManager"),
+    "SessionManager": ("swecli.core.context_engineering.history", "SessionManager"),
+    "ModeManager": ("swecli.core.runtime", "ModeManager"),
+    "OperationMode": ("swecli.core.runtime", "OperationMode"),
+    "UndoManager": ("swecli.core.context_engineering.history", "UndoManager"),
+    "ApprovalManager": ("swecli.core.runtime.approval", "ApprovalManager"),
+    "ApprovalChoice": ("swecli.core.runtime.approval", "ApprovalChoice"),
+    "ApprovalResult": ("swecli.core.runtime.approval", "ApprovalResult"),
+    "ErrorHandler": ("swecli.core.runtime.monitoring", "ErrorHandler"),
+    "ErrorAction": ("swecli.core.runtime.monitoring", "ErrorAction"),
+    "ToolRegistry": ("swecli.core.context_engineering.tools", "ToolRegistry"),
 }
 
 

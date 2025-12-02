@@ -9,7 +9,7 @@ from swecli.config import get_model_registry
 from swecli.repl.commands.base import CommandHandler, CommandResult
 
 if TYPE_CHECKING:
-    from swecli.core.management import ConfigManager
+    from swecli.core.runtime import ConfigManager
 
 
 class ConfigCommands(CommandHandler):
