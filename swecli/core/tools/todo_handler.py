@@ -105,6 +105,11 @@ class TodoHandler:
 
         todos = normalized_todos
 
+        # Check if this is a status-only update (same content, different statuses)
+        # This avoids duplicate display when AI calls write_todos twice with same list
+        if self._todos and self._is_status_only_update(normalized_todos):
+            return self._apply_status_updates(normalized_todos)
+
         # Clear existing todos - write_todos replaces the entire list
         self._todos.clear()
         self._next_id = 1
@@ -622,6 +627,76 @@ class TodoHandler:
             "output": output,
             "todos": [asdict(t) for t in sorted_todos],
             "count": len(self._todos),
+        }
+
+    def _is_status_only_update(self, new_todos: list) -> bool:
+        """Check if new todos have same content as existing, just different statuses.
+
+        This detects when write_todos is called with the same todo list but only
+        status changes (e.g., marking one item as in_progress).
+
+        Args:
+            new_todos: Normalized todo list (list of strings or tuples)
+
+        Returns:
+            True if content matches existing todos and only statuses differ
+        """
+        if len(new_todos) != len(self._todos):
+            return False
+
+        existing_titles = [t.title for t in self._todos.values()]
+        new_titles = []
+        for item in new_todos:
+            if isinstance(item, tuple):
+                new_titles.append(item[0])
+            else:
+                new_titles.append(str(item))
+
+        return existing_titles == new_titles
+
+    def _apply_status_updates(self, new_todos: list) -> dict:
+        """Update only the statuses without recreating todos.
+
+        This is called when write_todos detects a status-only update,
+        avoiding the overhead of clearing and recreating all todos.
+
+        Args:
+            new_todos: Normalized todo list with new statuses
+
+        Returns:
+            Result dict with minimal output
+        """
+        updated = []
+        for i, (todo_id, todo) in enumerate(self._todos.items()):
+            if i < len(new_todos):
+                item = new_todos[i]
+                if isinstance(item, tuple) and len(item) >= 2:
+                    new_status = item[1]
+                    new_active_form = item[2] if len(item) >= 3 else ""
+                    if todo.status != new_status:
+                        todo.status = new_status
+                        if new_active_form:
+                            todo.active_form = new_active_form
+                        todo.updated_at = datetime.now().isoformat()
+                        updated.append(todo.title)
+
+                        # ENFORCEMENT: Ensure only one todo can be "doing" at a time
+                        if new_status == "doing":
+                            for other_id, other_todo in self._todos.items():
+                                if other_id != todo_id and other_todo.status == "doing":
+                                    other_todo.status = "todo"
+
+        if updated:
+            # Return minimal output - just note the update
+            return {
+                "success": True,
+                "output": f"▶ Now working on: {updated[0]}" if len(updated) == 1 else f"Updated {len(updated)} todos",
+                "updated_count": len(updated),
+            }
+        return {
+            "success": True,
+            "output": "No changes needed",
+            "updated_count": 0,
         }
 
     def get_active_todo_message(self) -> Optional[str]:
