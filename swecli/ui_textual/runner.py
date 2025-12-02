@@ -5,6 +5,8 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import os
+import queue
+import threading
 from pathlib import Path
 from typing import Any, Callable, Optional
 
@@ -119,18 +121,28 @@ class TextualRunner:
         if hasattr(self.repl, "config_commands"):
             self.repl.config_commands.chat_app = self.app
 
-        self._pending: asyncio.Queue[str] = asyncio.Queue()
+        # Store runner reference on app for queue indicator updates
+        self.app._runner = self
+
+        # Queue holds tuples of (message, needs_display)
+        # needs_display=True means the message wasn't shown yet (was queued while processing)
+        # Using queue.Queue (thread-safe) instead of asyncio.Queue for cross-thread access
+        self._pending: queue.Queue[tuple[str, bool]] = queue.Queue()
+        self._processor_thread: threading.Thread | None = None
+        self._processor_stop = threading.Event()
         self._console_queue: asyncio.Queue[str] = asyncio.Queue()
         self._ansi_decoder = AnsiDecoder()
         self._install_console_bridge()
         self._loop = asyncio.new_event_loop()
-        self._message_task: asyncio.Task[None] | None = None
         self._console_task: asyncio.Task[None] | None = None
         self._connect_inflight = False
         self._last_console_line: str | None = None
         self._last_assistant_message: str | None = None
         self._suppress_console_duplicate = False
         self._last_assistant_message_normalized: str | None = None
+
+        # Set up queue indicator callback
+        self._queue_update_callback: Callable[[int], None] | None = self.app.update_queue_indicator
 
     def _snapshot_session_history(self) -> list[ChatMessage]:
         """Capture a copy of existing session messages for later hydration."""
@@ -401,45 +413,98 @@ class TextualRunner:
 
         self.session_manager.create_session(working_directory=str(self.working_dir))
 
-    def enqueue_message(self, text: str) -> None:
-        """Queue a message from the UI for processing."""
-        try:
-            running_loop = asyncio.get_running_loop()
-        except RuntimeError:
-            running_loop = None
+    def get_queue_size(self) -> int:
+        """Get number of messages waiting in queue."""
+        return self._pending.qsize()
 
-        if running_loop is self._loop:
-            self._pending.put_nowait(text)
-        elif self._loop.is_running():
-            self._loop.call_soon_threadsafe(self._pending.put_nowait, text)
-        else:
-            self._pending.put_nowait(text)
+    def _notify_queue_update(self, from_ui_thread: bool = False) -> None:
+        """Notify UI of queue size change.
 
-    async def _process_messages(self) -> None:
-        """Consume queued submissions and delegate to the REPL pipeline."""
+        Args:
+            from_ui_thread: If True, we're already on the UI thread and can call directly
+        """
+        if self._queue_update_callback:
+            size = self.get_queue_size()
+            if from_ui_thread:
+                # Already on UI thread, call directly
+                self._queue_update_callback(size)
+            else:
+                # On different thread, use call_from_thread
+                self.app.call_from_thread(self._queue_update_callback, size)
 
-        try:
-            while True:
-                message = await self._pending.get()
-                is_command = message.startswith("/")
+    def enqueue_message(self, text: str, needs_display: bool = False) -> None:
+        """Queue a message from the UI for processing.
+
+        Args:
+            text: The message text to queue
+            needs_display: If True, the message will be displayed in conversation
+                          when it starts processing (because it was queued while
+                          another message was being processed)
+        """
+        item = (text, needs_display)
+        # queue.Queue is thread-safe, can be called from any thread
+        self._pending.put_nowait(item)
+
+        # Notify UI of queue update (called from UI thread)
+        self._notify_queue_update(from_ui_thread=True)
+
+    def _start_message_processor(self) -> None:
+        """Start background thread to process messages from the queue."""
+
+        def processor() -> None:
+            while not self._processor_stop.is_set():
                 try:
-                    if is_command:
-                        await asyncio.to_thread(self._run_command, message)
-                    else:
-                        new_messages = await asyncio.to_thread(self._run_query, message)
-                        if new_messages:
-                            self._render_responses(new_messages)
-                except Exception as exc:  # pragma: no cover - defensive guard
-                    if is_command:
-                        self.app.conversation.add_error(str(exc))
-                    else:
-                        self.app.notify_processing_error(str(exc))
-                finally:
+                    # Use timeout to allow checking stop event periodically
+                    try:
+                        message, needs_display = self._pending.get(timeout=0.5)
+                    except queue.Empty:
+                        continue
+
+                    is_command = message.startswith("/")
+
+                    # Start spinner for non-command messages (ensures spinner runs for queued messages)
                     if not is_command:
-                        self.app.notify_processing_complete()
-                    self._pending.task_done()
-        except asyncio.CancelledError:  # pragma: no cover - task shutdown
-            return
+                        self.app.call_from_thread(self.app._start_local_spinner)
+
+                    # Display user message if it was queued (not shown yet)
+                    if needs_display and not is_command:
+                        self.app.call_from_thread(
+                            self.app.conversation.add_user_message, message
+                        )
+
+                    try:
+                        if is_command:
+                            self._run_command(message)
+                        else:
+                            new_messages = self._run_query(message)
+                            if new_messages:
+                                self.app.call_from_thread(self._render_responses, new_messages)
+                    except Exception as exc:  # pragma: no cover - defensive guard
+                        if is_command:
+                            self.app.call_from_thread(self.app.conversation.add_error, str(exc))
+                        else:
+                            self.app.call_from_thread(self.app.notify_processing_error, str(exc))
+                    finally:
+                        if not is_command:
+                            self.app.call_from_thread(self.app.notify_processing_complete)
+                        self._pending.task_done()
+                        # Notify UI of queue update after processing
+                        if self._queue_update_callback:
+                            self.app.call_from_thread(
+                                self._queue_update_callback, self._pending.qsize()
+                            )
+                except Exception:  # pragma: no cover - defensive
+                    continue  # Keep processing on any unexpected error
+
+        self._processor_thread = threading.Thread(target=processor, daemon=True, name="message-processor")
+        self._processor_thread.start()
+
+    def _stop_message_processor(self) -> None:
+        """Stop the background message processor thread."""
+        if self._processor_thread is not None:
+            self._processor_stop.set()
+            self._processor_thread.join(timeout=2.0)
+            self._processor_thread = None
 
     def _run_query(self, message: str) -> list[ChatMessage]:
         """Execute a user query via the REPL and return new session messages."""
@@ -1025,7 +1090,8 @@ Work through each implementation step in order. Mark each todo item as 'in_progr
     async def _run_app(self) -> None:
         """Run Textual app alongside background processing tasks."""
 
-        self._message_task = asyncio.create_task(self._process_messages())
+        # Start message processor thread (uses queue.Queue, not asyncio)
+        self._start_message_processor()
         self._console_task = asyncio.create_task(self._drain_console_queue())
         try:
             # Use alternate screen mode (inline=False) for clean TUI with no terminal noise
@@ -1033,11 +1099,12 @@ Work through each implementation step in order. Mark each todo item as 'in_progr
             # Disable mouse to allow natural terminal text selection
             await self.app.run_async(inline=False, mouse=False)
         finally:
-            tasks = [task for task in (self._message_task, self._console_task) if task]
-            for task in tasks:
-                task.cancel()
-            if tasks:
-                await asyncio.gather(*tasks, return_exceptions=True)
+            # Stop message processor thread
+            self._stop_message_processor()
+            # Cancel console task
+            if self._console_task:
+                self._console_task.cancel()
+                await asyncio.gather(self._console_task, return_exceptions=True)
 
     def _notify_manual_mcp_connect(self) -> None:
         """Inform users how to connect MCP servers when auto-connect is disabled."""

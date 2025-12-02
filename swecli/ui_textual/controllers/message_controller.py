@@ -29,6 +29,10 @@ class MessageController:
         message_with_placeholders = raw_text.rstrip("\n")
         message = input_field.resolve_large_pastes(message_with_placeholders)
 
+        # Check if already processing BEFORE displaying
+        # If processing, message will be queued and displayed when it starts processing
+        already_processing = app._is_processing
+
         self._reset_interaction_state()
 
         input_field.load_text("")
@@ -37,7 +41,10 @@ class MessageController:
         if hasattr(app, "_history"):
             app._history.record(message)
 
-        app.conversation.add_user_message(message)
+        # Only display user message if NOT already processing
+        # Queued messages are displayed when they start processing in runner
+        if not already_processing:
+            app.conversation.add_user_message(message)
 
         if app._model_picker.active:
             handled = await app._model_picker.handle_input(message.strip())
@@ -52,13 +59,20 @@ class MessageController:
                 app.on_message(message)
             return
 
-        await self._process_message(message)
+        await self._process_message(message, needs_display=already_processing)
 
     async def process(self, message: str) -> None:
         """Process a message that has already been recorded in history."""
-        await self._process_message(message)
+        await self._process_message(message, needs_display=False)
 
-    async def _process_message(self, message: str) -> None:
+    async def _process_message(self, message: str, needs_display: bool = False) -> None:
+        """Submit message to backend for processing.
+
+        Args:
+            message: The message text to process
+            needs_display: If True, the message will be displayed in conversation
+                          when it starts processing (for queued messages)
+        """
         app = self.app
         if not app.on_message:
             app.conversation.add_error("No backend handler configured; unable to process message.")
@@ -67,7 +81,13 @@ class MessageController:
         self._set_processing_state(True)
 
         try:
-            app.on_message(message)
+            # Use runner's enqueue_message with needs_display flag if available
+            runner = getattr(app, '_runner', None)
+            if runner and hasattr(runner, 'enqueue_message'):
+                runner.enqueue_message(message, needs_display=needs_display)
+            else:
+                # Fallback to on_message callback
+                app.on_message(message)
         except Exception as exc:  # pragma: no cover - defensive
             self.notify_processing_error(f"Failed to submit message: {exc}")
 
